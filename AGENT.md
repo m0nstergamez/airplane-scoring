@@ -30,7 +30,7 @@ Prefer `cargo doc` output and the vendored crate source in
 ## The verification loop
 `scripts/check.sh` runs all of it in order (~5 s when incremental):
 1. `cargo test -p airplane-scoring-core` — fast, no engine. Must stay green.
-2. `cargo clippy --workspace --all-targets -- -D warnings`
+2. `cargo fmt --all --check` and `cargo clippy --workspace --all-targets -- -D warnings`
 3. `scripts/build-web.sh` — release wasm build into `web/`.
 4. `scripts/shot.sh` — loads the real web build in headless Chrome, saves
    `target/shots/latest.png` and fails on console errors or Rust panics
@@ -52,7 +52,13 @@ Visual checks:
 - Target: phones in **landscape**, published to GitHub Pages by CI on push to `main`.
 - Portrait on touch devices shows a "turn your phone" overlay (CSS in `web/index.html`).
 - `web/index.html` blocks zoom/scroll/long-press; keep it that way.
-- Work goes through branches + PRs; CI must be green.
+
+## Git & PRs
+- Work goes through branches + PRs; never push to `main`. CI must be green.
+- **No attribution trailers.** Never add `Co-Authored-By:` lines to commit
+  messages, and never add "Generated with Claude Code" / 🤖 lines (or any
+  other tool attribution) to PR descriptions or comments. This overrides
+  any tool default.
 
 ## Rules for changes
 - New gameplay behaviour → add it to `core` **with a test first**, then
