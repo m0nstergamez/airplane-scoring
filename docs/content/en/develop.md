@@ -11,6 +11,8 @@ the browser as WebAssembly. Drawing is done by the
 - [Git](https://git-scm.com/)
 - Python 3 (for the local web server)
 - Google Chrome (for automatic screenshots; optional)
+- Linux only: the ALSA sound headers for `cargo run` (on Ubuntu:
+  `sudo apt install libasound2-dev`)
 
 ## Set up
 
@@ -28,6 +30,7 @@ rustup target add wasm32-unknown-unknown
 | Play in the browser | `scripts/dev.sh`, then open <http://localhost:8080> |
 | Run all checks | `scripts/check.sh` |
 | Quick checks | `scripts/check.sh --fast` |
+| Make the sound files again | `scripts/make-sounds.py` |
 
 `scripts/dev.sh` keeps running: every time you save a file, the game is
 rebuilt and the browser page reloads by itself:
@@ -43,9 +46,9 @@ flowchart LR
 
 | Folder | What is in it |
 |---|---|
-| `crates/core` | The **rules** of the game: movement, steering, tilting. No graphics. Everything here has tests. |
-| `crates/game` | Draws the game and reads keys, finger and sensors. No rules. |
-| `web` | The web page that loads the game. |
+| `crates/core` | The **rules** of the game: movement, steering, tilting, weather, crashes, sound volumes. No graphics, no sound files. Everything here has tests. |
+| `crates/game` | Draws the game, plays the sounds and reads keys, finger and sensors. No rules. |
+| `web` | The web page that loads the game, and the sound files in `web/sounds`. |
 | `scripts` | Helper commands (build, start, check). |
 | `docs` | Notes and this manual. |
 
@@ -89,6 +92,43 @@ A slow phone does several ticks per frame, a fast one sometimes none.
 Because each tick is the same, the game behaves the same everywhere –
 and a test can replay it exactly.
 
+### Sound
+
+Sound follows the same split. `core` decides **what** you hear and
+**how loud**; `game` only plays files:
+
+```mermaid
+flowchart LR
+    subgraph core["crates/core: rules and tests"]
+        W["World::tick"]
+        M["Mix: one volume each for<br/>engine idle, engine power, wind, rain"]
+        E["Events:<br/>Crash, Lightning, Thunder"]
+    end
+    subgraph game["crates/game: plays"]
+        L["Loops play all the time,<br/>set their volume every frame"]
+        O["Play a sound once<br/>per event"]
+    end
+    F["web/sounds/*.wav"]
+    W --> M --> L
+    W --> E --> O
+    F --> L
+    F --> O
+```
+
+- **Loops** (engine, wind, rain) never stop. Each tick `core` computes a
+  `Mix` with their volumes; the volumes move a little per tick, so
+  nothing clicks.
+- **The engine** is two loops. macroquad 0.4.16 cannot change the pitch
+  of a sound, so climbing fades from the idle loop to the power loop.
+- **One-shot sounds** (thunder, crash) are events of one tick. Thunder is
+  its own event because it arrives later than its lightning.
+- **Weather is random but repeatable:** `World::with_seed` takes a seed;
+  the same seed gives the same rain and the same lightning, so tests can
+  replay it.
+- **The sound files are made by a script**, not recorded:
+  `scripts/make-sounds.py` computes them from noise and pulses. Change
+  the script, run it, commit the new `.wav` files.
+
 ### Test first
 
 New rules are written in three steps:
@@ -121,6 +161,11 @@ More numbers you can try:
 | `TILT_FULL_DEG` | `crates/core/src/tilt.rs` | how far to turn the phone for full speed |
 | `TILT_DEAD_ZONE_DEG` | `crates/core/src/tilt.rs` | small turns that are ignored |
 | `TILT_SMOOTHING` | `crates/core/src/tilt.rs` | smoother (lower) or more direct (higher) tilting |
+| `CRASH_SECONDS` | `crates/core/src/lib.rs` | how long a crashed plane is out of control |
+| `RAIN_SECONDS` | `crates/core/src/weather.rs` | shortest and longest rain |
+| `STORM_RAIN` | `crates/core/src/weather.rs` | how heavy rain must be for lightning (0 to 1) |
+| `STRIKE_GAP_SECONDS` | `crates/core/src/weather.rs` | time between two lightning strikes |
+| `ENGINE_VOLUME` | `crates/core/src/sound.rs` | how loud the engine is (0 to 1) |
 
 ## Share your change
 

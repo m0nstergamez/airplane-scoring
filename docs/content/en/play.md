@@ -60,6 +60,34 @@ On a computer, hold down the mouse button instead.
 |---|---|
 | ↑ or W | climb |
 | ↓ or S | dive |
+| M | sound on or off |
+
+## Weather and crashes
+
+The weather changes while you fly. It starts dry. After a while rain
+sets in, gets heavier and fades again. Heavy rain is a **thunderstorm**:
+lightning lights up the sky, and the thunder follows. The further away
+the lightning, the later and quieter the thunder.
+
+If you touch the other plane, you **crash**: your plane smokes, falls
+and ignores the controls for a moment (1.5 seconds). Then you fly again.
+
+## Sound
+
+| You hear | When |
+|---|---|
+| Engine | Always. Climbing sounds like full power, diving like idling. |
+| Wind | Always. Louder in rain, in gusts and when you dive. |
+| Rain | While it rains. Louder the harder it rains. |
+| Thunder | A moment after each lightning. |
+| Crash | When you touch the other plane. |
+
+Browsers only allow sound after you have touched the page. On a phone
+that is the tap on "Tap to fly"; on a computer the first click or key
+press.
+
+To switch the sound off or on, tap the **speaker button** at the top
+right or press **M**. The game remembers your choice.
 
 ## Install on your phone
 
@@ -85,6 +113,14 @@ Add the game to your home screen. It then opens full screen like an app.
   back, close Safari completely and open the game again.
 - Is the phone lying flat on the table? Tilting needs the phone held up.
 - You can always steer with your finger instead.
+
+### I hear nothing
+
+- Is the speaker button at the top right crossed out? Tap it.
+- iPhone: is the switch on the side set to silent? Silent mode also
+  mutes the game. Switch it to ring.
+- Turn up the volume with the buttons on the side of the phone.
+- Computer: click into the game once. Sound only starts after that.
 
 ### The plane drifts by itself
 

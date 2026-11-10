@@ -61,6 +61,35 @@ Maustaste gedrückt.
 |---|---|
 | ↑ oder W | steigen |
 | ↓ oder S | sinken |
+| M | Ton ein oder aus |
+
+## Wetter und Zusammenstösse
+
+Das Wetter ändert sich, während du fliegst. Am Anfang ist es trocken.
+Nach einer Weile setzt Regen ein, wird stärker und lässt wieder nach.
+Starker Regen ist ein **Gewitter**: Blitze erhellen den Himmel, und der
+Donner folgt. Je weiter weg der Blitz, desto später und leiser der Donner.
+
+Berührst du das andere Flugzeug, gibt es einen **Zusammenstoss**: Dein
+Flugzeug raucht, fällt und lässt sich einen Moment lang (1,5 Sekunden)
+nicht steuern. Danach fliegst du wieder.
+
+## Ton
+
+| Du hörst | Wann |
+|---|---|
+| Motor | Immer. Steigen klingt nach Vollgas, Sinken nach Leerlauf. |
+| Wind | Immer. Lauter bei Regen, in Böen und wenn du sinkst. |
+| Regen | Solange es regnet. Je stärker der Regen, desto lauter. |
+| Donner | Einen Moment nach jedem Blitz. |
+| Zusammenstoss | Wenn du das andere Flugzeug berührst. |
+
+Browser erlauben Ton erst, nachdem du die Seite berührt hast. Auf dem
+Handy ist das der Tipp auf «Tap to fly», am Computer der erste Klick
+oder Tastendruck.
+
+Um den Ton aus- oder einzuschalten, tippe oben rechts auf den
+**Lautsprecher-Knopf** oder drücke **M**. Das Spiel merkt sich deine Wahl.
 
 ## Aufs Handy installieren
 
@@ -87,6 +116,14 @@ App im Vollbild.
   Frage nicht wieder, schliesse Safari ganz und öffne das Spiel erneut.
 - Liegt das Handy flach auf dem Tisch? Zum Kippen musst du es hochhalten.
 - Mit dem Finger kannst du immer steuern.
+
+### Ich höre nichts
+
+- Ist der Lautsprecher-Knopf oben rechts durchgestrichen? Tippe darauf.
+- iPhone: Steht der Schalter an der Seite auf lautlos? Der Lautlos-Modus
+  schaltet auch das Spiel stumm. Stell ihn auf Klingeln.
+- Mach den Ton mit den Tasten an der Seite des Handys lauter.
+- Computer: Klicke einmal ins Spiel. Der Ton startet erst danach.
 
 ### Das Flugzeug fliegt von selbst nach oben oder unten
 
