@@ -26,7 +26,11 @@ impl Sounds {
             let path = format!("sounds/{name}.wav");
             load_sound(&path)
                 .await
-                .map_err(|e| macroquad::logging::error!("no sound: {}: {}", path, e))
+                .map_err(|e| {
+                    // Block body: macroquad's `error!` ends in `;`, which newer
+                    // rustc rejects in expression position.
+                    macroquad::logging::error!("no sound: {}: {}", path, e);
+                })
                 .ok()
         }
         Some(Sounds {
