@@ -58,8 +58,13 @@ Visual checks:
 - Target: phones in **landscape**, published to GitHub Pages by CI on push to `main`.
 - Portrait on touch devices shows a "turn your phone" overlay (CSS in `web/index.html`).
 - `web/index.html` blocks zoom/scroll/long-press; keep it that way.
-- Phones get a "Tap to fly" overlay (`pointer: coarse` only; desktop and
-  `scripts/shot.sh` skip it). That tap requests iOS motion permission.
+- Start screen (`#start` in `web/index.html`): phones (`pointer: coarse`)
+  get "Tap to fly", whose tap requests iOS motion permission. Computers get
+  "Click to fly" (or Enter/Space), the key list and a QR code to the live
+  game (`web/qr.svg`, made by `scripts/make-qr.py`; rerun it only if the
+  URL changes). `?play` skips the start screen; `scripts/shot.sh` adds it
+  unless `START=1`. To see the phone variant in headless Chrome, pass
+  `--blink-settings=primaryPointerType=2,availablePointerTypes=2,primaryHoverType=1,availableHoverTypes=1`.
 - Tilt: emulate in a browser tool by dispatching
   `new DeviceMotionEvent('devicemotion', {accelerationIncludingGravity: {x, y, z}})`
   at ~60 Hz after tapping "Tap to fly"; stub `DeviceMotionEvent.requestPermission`
@@ -147,10 +152,11 @@ crates/game/          macroquad shell
 web/index.html        canvas page; loads mq_js_bundle.js + airplane-scoring.wasm
 web/sounds/           generated .wav files (engine, wind, rain, thunder, crash)
 web/levels/           rendered level backgrounds (PNG, from art/levels)
+web/qr.svg            QR code to the live game (scripts/make-qr.py)
 art/levels/levelN/    background.svg (source) + local photo.* (gitignored)
 .cargo/config.toml    wasm linker flag needed by the audio feature
 scripts/              check.sh, check-docs.sh, check-mermaid.sh, shot.sh, dev.sh, watch.sh, build-web.sh, serve.sh,
-                      docs.sh, vendor-js.sh, make-sounds.py, make-backgrounds.sh
+                      docs.sh, vendor-js.sh, make-sounds.py, make-backgrounds.sh, make-qr.py
 docs/                 project notes; docs/content/{de,en} = manual;
                       docs/glossary.md = de/en Wörterbuch
 ```
