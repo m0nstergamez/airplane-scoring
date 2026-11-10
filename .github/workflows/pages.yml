@@ -27,6 +27,8 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - name: Core tests
         run: cargo test -p airplane-scoring-core
+      - name: Manual in sync (de/en)
+        run: scripts/check-docs.sh
       - name: Format
         run: cargo fmt --all --check
       - name: Clippy
