@@ -27,6 +27,10 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - name: Core tests
         run: cargo test -p airplane-scoring-core
+      - name: Manual in sync (de/en)
+        run: scripts/check-docs.sh
+      - name: Diagrams render (Mermaid)
+        run: scripts/check-mermaid.sh
       - name: Format
         run: cargo fmt --all --check
       - name: Clippy

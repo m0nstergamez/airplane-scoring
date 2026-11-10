@@ -30,7 +30,8 @@ Prefer `cargo doc` output and the vendored crate source in
 ## The verification loop
 `scripts/check.sh` runs all of it in order (~5 s when incremental):
 1. `cargo test -p airplane-scoring-core` — fast, no engine. Must stay green.
-2. `cargo fmt --all --check` and `cargo clippy --workspace --all-targets -- -D warnings`
+2. `cargo fmt --all --check`, `cargo clippy --workspace --all-targets -- -D warnings`
+   and `scripts/check-docs.sh` (manual de/en in sync)
 3. `scripts/build-web.sh` — release wasm build into `web/`.
 4. `scripts/shot.sh` — loads the real web build in headless Chrome, saves
    `target/shots/latest.png` and fails on console errors or Rust panics
@@ -66,6 +67,48 @@ Visual checks:
   other tool attribution) to PR descriptions or comments. This overrides
   any tool default.
 
+## Languages
+- **Chat:** answer in the language the user writes in. German message →
+  German answer; mixing (German with English tech terms) is fine.
+- **Repo texts are English:** code, identifiers, comments, commit
+  messages, PR titles and descriptions, this file, `docs/README.md`,
+  script output. This holds even when the user writes German.
+- **Manual:** German and English, kept in sync (see below). A request in
+  one language changes both versions.
+- **German style:** **Swiss spelling: always "ss", never "ß"** (grösser,
+  schliessen, gleichmässig). Applies to the manual, the glossary and to
+  German chat answers. Address the reader with «du». **Swiss quotation marks «…»**
+  (nested ‹…›, no spaces inside), never „…“ or “…”.
+  `scripts/check-docs.sh` fails on any "ß" in `docs/` and on „“” in
+  German docs.
+- **Terms:** use the agreed translations in `docs/glossary.md`
+  (Wörterbuch). New term → add it there in the same PR. Branch, Commit,
+  Pull Request, Merge, Tick and on-screen labels stay English.
+
+## Manual (`docs/content/{de,en}`)
+- Player and developer manual in **German and English. Keep them in sync**:
+  same files, same sections, same steps. Change both in the same PR.
+- `scripts/check-docs.sh` enforces the structure (headings, steps,
+  bullets, table rows, code blocks); it cannot check the meaning, so
+  translate the content, not just the headings.
+- Any change players or developers notice (controls, setup, commands,
+  constants named in the manual) → update the manual in both languages.
+- German uses "du"; keep the UI's English button labels ("Tap to fly")
+  as they appear on screen. Terms follow `docs/glossary.md`.
+
+## Diagrams (Mermaid)
+- Use Mermaid diagrams in `docs/` to **explain concepts** (how things
+  connect, what happens in which order, which input wins), not to decorate.
+  Put each next to the text it explains.
+- Manual diagrams exist in both languages with the same shape: same lines,
+  same arrows, only labels translated (`check-docs.sh` compares type, line
+  count and arrows per diagram).
+- Charts of game behaviour use values computed from the real formula in
+  `core`, not hand-drawn guesses.
+- After touching a diagram run `scripts/check-mermaid.sh` (needs Chrome +
+  network; CI runs it too). It fails on syntax errors and writes
+  `target/shots/mermaid.png` / `mermaid.html` — look at them.
+
 ## Rules for changes
 - New gameplay behaviour → add it to `core` **with a test first**, then
   wire it in `game`. Never put rules in `main.rs`.
@@ -84,7 +127,8 @@ Cargo.toml            workspace, pinned deps, release profile for small wasm
 crates/core/          pure logic + tests
 crates/game/          macroquad shell
 web/index.html        canvas page; loads mq_js_bundle.js + airplane-scoring.wasm
-scripts/              check.sh, shot.sh, dev.sh, watch.sh, build-web.sh, serve.sh,
+scripts/              check.sh, check-docs.sh, check-mermaid.sh, shot.sh, dev.sh, watch.sh, build-web.sh, serve.sh,
                       docs.sh, vendor-js.sh
-docs/                 project notes
+docs/                 project notes; docs/content/{de,en} = manual;
+                      docs/glossary.md = de/en Wörterbuch
 ```

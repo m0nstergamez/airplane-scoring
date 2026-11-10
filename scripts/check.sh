@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # The full verification loop from AGENT.md. A change is done when this passes.
 #   scripts/check.sh          tests, clippy, wasm build, headless screenshot
-#   scripts/check.sh --fast   tests, format and clippy only (seconds; for tight loops)
+#   scripts/check.sh --fast   tests, format, clippy and manual sync only (seconds; for tight loops)
 set -euo pipefail
 cd "$(dirname "$0")/.."
 step() { printf '\n\033[1m==> %s\033[0m\n' "$*"; }
@@ -9,7 +9,8 @@ step() { printf '\n\033[1m==> %s\033[0m\n' "$*"; }
 step "1/4 core tests"
 cargo test -q -p airplane-scoring-core
 
-step "2/4 format + clippy"
+step "2/4 format + clippy + manual sync"
+scripts/check-docs.sh
 cargo fmt --all --check || { echo "Run: cargo fmt --all" >&2; exit 1; }
 cargo clippy -q --workspace --all-targets -- -D warnings
 cargo clippy -q --target wasm32-unknown-unknown -p airplane-scoring -- -D warnings
