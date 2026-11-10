@@ -1,0 +1,16 @@
+[workspace]
+resolver = "2"
+members = ["crates/core", "crates/game"]
+
+[workspace.package]
+edition = "2021"
+version = "0.1.0"
+
+[workspace.dependencies]
+# Engine version is pinned exactly. Change it here and in AGENT.md together.
+macroquad = "=0.4.16"
+
+[profile.release]
+opt-level = "s"   # smaller wasm
+lto = true
+codegen-units = 1

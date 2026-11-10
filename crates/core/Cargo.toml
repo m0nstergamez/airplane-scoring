@@ -1,0 +1,8 @@
+[package]
+name = "airplane-scoring-core"
+version.workspace = true
+edition.workspace = true
+
+# Pure logic: no engine, no I/O, no platform deps. Must stay that way so
+# `cargo test -p airplane-scoring-core` is fast and runs anywhere.
+[dependencies]

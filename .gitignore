@@ -1,0 +1,4 @@
+/target
+web/*.wasm
+.DS_Store
+.playwright-mcp/

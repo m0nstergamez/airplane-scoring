@@ -1,0 +1,8 @@
+[package]
+name = "airplane-scoring"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+airplane-scoring-core = { path = "../core" }
+macroquad = { workspace = true }

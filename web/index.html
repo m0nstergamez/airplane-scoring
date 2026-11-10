@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>airplane scoring</title>
+  <style>
+    html, body { margin: 0; padding: 0; height: 100%; background: #14181f; overflow: hidden; }
+    canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+  </style>
+</head>
+<body>
+  <canvas id="glcanvas" tabindex="1"></canvas>
+  <!-- macroquad/miniquad JS glue. Vendored by scripts/vendor-js.sh; pinned to the engine version. -->
+  <script src="mq_js_bundle.js"></script>
+  <script>load("airplane-scoring.wasm");</script>
+  <script>
+    // Dev live reload: on localhost only, reload when a new .wasm is built
+    // (scripts/watch.sh / scripts/dev.sh). Harmless anywhere else.
+    if (["localhost", "127.0.0.1"].includes(location.hostname)) {
+      let seen = null;
+      setInterval(async () => {
+        try {
+          const r = await fetch("airplane-scoring.wasm", { method: "HEAD", cache: "no-store" });
+          const v = r.headers.get("Last-Modified");
+          if (seen && v && v !== seen) location.reload();
+          seen = v || seen;
+        } catch (_) { /* server restarting; try again */ }
+      }, 1000);
+    }
+  </script>
+</body>
+</html>
