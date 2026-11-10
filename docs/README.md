@@ -17,3 +17,13 @@ that isn't code here. Keep entries short and dated.
   Pointer wins over keys. Tilt will be a third source.
 - macroquad 0.4.16 quirk: `touches()` is in physical pixels, mouse and
   drawing in logical ones. The game divides touch by `dpi_scale()`.
+- Tilt = the phone is the plane: rotate it like a steering wheel, right
+  side (nose) up = climb. Uses the angle of `devicemotion`
+  accelerationIncludingGravity in the device x/y plane, relative to a
+  neutral captured on "Tap to fly" and on orientation change. Relative
+  angle makes it immune to landscape-left/right and iOS's negated sign
+  convention. Dead zone 2°, full steer at 25°, unusable when lying flat.
+- JS -> Rust bridge: miniquad plugin "tilt" in web/index.html, imports
+  declared with #[link(wasm_import_module = "env")] in game/src/tilt_js.rs
+  (wasm-ld needs that, same as miniquad's own imports).
+- Priority: finger > pressed keys > tilt.

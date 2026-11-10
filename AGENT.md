@@ -52,6 +52,12 @@ Visual checks:
 - Target: phones in **landscape**, published to GitHub Pages by CI on push to `main`.
 - Portrait on touch devices shows a "turn your phone" overlay (CSS in `web/index.html`).
 - `web/index.html` blocks zoom/scroll/long-press; keep it that way.
+- Phones get a "Tap to fly" overlay (`pointer: coarse` only; desktop and
+  `scripts/shot.sh` skip it). That tap requests iOS motion permission.
+- Tilt: emulate in a browser tool by dispatching
+  `new DeviceMotionEvent('devicemotion', {accelerationIncludingGravity: {x, y, z}})`
+  at ~60 Hz after tapping "Tap to fly"; stub `DeviceMotionEvent.requestPermission`
+  to test the iOS path. Steering maths is tested in `core/src/tilt.rs`.
 
 ## Git & PRs
 - Work goes through branches + PRs; never push to `main`. CI must be green.

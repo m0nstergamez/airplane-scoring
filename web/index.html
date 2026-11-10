@@ -39,6 +39,22 @@
     @media (orientation: portrait) and (pointer: coarse) {
       #rotate { display: flex; }
     }
+
+    /* Tap to fly: phones only. The tap is the user gesture iOS needs before
+       it grants motion sensors (and later, sound). Desktop starts directly. */
+    #start {
+      display: none; position: fixed; inset: 0; z-index: 9;
+      background: rgba(20, 24, 31, 0.82); color: #fff;
+      font: 600 18px/1.4 system-ui, sans-serif; text-align: center;
+      flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+    }
+    @media (pointer: coarse) { #start { display: flex; } }
+    #start.gone { display: none; }
+    #start button {
+      font: 700 22px system-ui, sans-serif; color: #fff; background: #1f6feb;
+      border: 0; border-radius: 999px; padding: 14px 40px;
+    }
+    #start small { font-weight: 400; opacity: 0.75; max-width: 30em; }
   </style>
 </head>
 <body>
@@ -49,8 +65,49 @@
     </svg>
     <div>Turn your phone sideways<br>to fly</div>
   </div>
+  <div id="start">
+    <button type="button">Tap to fly</button>
+    <small>Hold your phone like a steering wheel and turn it to climb or dive.<br>Or drag your finger.</small>
+  </div>
   <!-- macroquad/miniquad JS glue. Vendored by scripts/vendor-js.sh; pinned to the engine version. -->
   <script src="mq_js_bundle.js"></script>
+  <script>
+    // Tilt plugin: keeps the latest gravity sample for the Rust side
+    // (crates/game/src/tilt_js.rs). Steering maths lives in core (Tilt).
+    const tilt = { has: 0, gx: 0, gy: 0, epoch: 0 };
+    addEventListener("devicemotion", (e) => {
+      const g = e.accelerationIncludingGravity;
+      if (g && g.x != null && g.y != null) { tilt.gx = g.x; tilt.gy = g.y; tilt.has = 1; }
+    });
+    // New epoch = recalibrate neutral (the phone was turned around).
+    const recalibrate = () => { tilt.epoch++; };
+    if (screen.orientation) screen.orientation.addEventListener("change", recalibrate);
+    else addEventListener("orientationchange", recalibrate);
+
+    miniquad_add_plugin({
+      name: "tilt",
+      version: 1, // must match tilt_crate_version() in tilt_js.rs
+      register_plugin: (importObject) => {
+        importObject.env.tilt_has_sample = () => tilt.has;
+        importObject.env.tilt_gx = () => tilt.gx;
+        importObject.env.tilt_gy = () => tilt.gy;
+        importObject.env.tilt_epoch = () => tilt.epoch;
+      },
+    });
+
+    // Tap to fly. iOS only hands out motion data after a permission prompt
+    // triggered by a tap; Android needs no prompt (HTTPS only, both).
+    const start = document.getElementById("start");
+    start.querySelector("button").addEventListener("click", async () => {
+      const ask = window.DeviceMotionEvent && DeviceMotionEvent.requestPermission;
+      if (ask) {
+        try { await DeviceMotionEvent.requestPermission(); } catch (_) { /* denied: drag still works */ }
+      }
+      recalibrate(); // neutral = how the player holds the phone right now
+      start.classList.add("gone");
+      document.getElementById("glcanvas").focus();
+    });
+  </script>
   <script>load("airplane-scoring.wasm");</script>
   <script>
     // Dev live reload: on localhost only, reload when a new .wasm is built
