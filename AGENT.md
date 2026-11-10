@@ -75,8 +75,10 @@ Visual checks:
   script output. This holds even when the user writes German.
 - **Manual:** German and English, kept in sync (see below). A request in
   one language changes both versions.
-- **German style:** standard German spelling (with „ß“), address the
-  reader with „du“, German quotation marks „…“.
+- **German style:** **Swiss spelling: always "ss", never "ß"** (grösser,
+  schliessen, gleichmässig). Applies to the manual, the glossary and to
+  German chat answers. Address the reader with „du“, quotation marks „…“.
+  `scripts/check-docs.sh` fails on any "ß" in `docs/`.
 - **Terms:** use the agreed translations in `docs/glossary.md`
   (Wörterbuch). New term → add it there in the same PR. Branch, Commit,
   Pull Request, Merge, Tick and on-screen labels stay English.

@@ -3,6 +3,7 @@
 # the same files, and each pair the same structure (heading levels in order,
 # numbered steps, bullets, table rows, code blocks; for diagrams also type,
 # line count and number of arrows). Wording may differ.
+# German uses Swiss spelling: no "ß" anywhere in docs/.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 exec python3 - <<'PY'
@@ -50,8 +51,13 @@ for other in langs[1:]:
             if a[k] != b[k]:
                 errors.append(f"{f}: {k} differ ({base}: {a[k]}, {other}: {b[k]})")
 
+for md in sorted(pathlib.Path("docs").rglob("*.md")):
+    for n, line in enumerate(md.read_text(encoding="utf-8").splitlines(), 1):
+        if "\u00df" in line:
+            errors.append(f"{md}:{n}: use Swiss spelling 'ss' instead of the sharp s")
+
 if errors:
-    print("Manual out of sync (docs/content):", *errors, sep="\n  ", file=sys.stderr)
+    print("Docs check failed:", *errors, sep="\n  ", file=sys.stderr)
     sys.exit(1)
 print(f"manual in sync: {', '.join(langs)} x {len(files[base])} files")
 PY

@@ -47,7 +47,7 @@ xychart-beta
 ```
 
 Zwischen −2° und +2° passiert nichts (so fliegt eine ruhige Hand
-geradeaus), danach wird die Steuerung gleichmäßig stärker, und ab 25° ist sie voll.
+geradeaus), danach wird die Steuerung gleichmässig stärker, und ab 25° ist sie voll.
 
 ### Finger (Handy und Computer)
 
@@ -84,7 +84,7 @@ App im Vollbild.
 - Hast du auf **„Tap to fly“** getippt? Kippen geht erst danach.
 - iPhone: Hast du „Bewegung & Ausrichtung“ erlaubt? Wenn du Nein gesagt
   hast, lade die Seite neu und tippe nochmals auf „Tap to fly“. Kommt die
-  Frage nicht wieder, schließe Safari ganz und öffne das Spiel erneut.
+  Frage nicht wieder, schliesse Safari ganz und öffne das Spiel erneut.
 - Liegt das Handy flach auf dem Tisch? Zum Kippen musst du es hochhalten.
 - Mit dem Finger kannst du immer steuern.
 
