@@ -8,7 +8,9 @@
 3. Tippe auf **«Tap to fly»**. Auf dem iPhone erlaubst du den Zugriff auf
    «Bewegung & Ausrichtung», wenn danach gefragt wird.
 
-Am Computer startet das Spiel sofort.
+Am Computer zeigt die Startanzeige die Tasten und einen **QR-Code**.
+Scanne ihn mit der Kamera deines Handys, um das Spiel dort zu öffnen. Um
+am Computer zu fliegen, klicke auf **«Click to fly»** oder drücke Enter.
 
 ## Steuerung
 

@@ -8,7 +8,9 @@
 3. Tap **"Tap to fly"**. On an iPhone, allow access to "Motion & Orientation"
    when asked.
 
-On a computer the game starts right away.
+On a computer the start screen shows the keys and a **QR code**. Scan
+it with your phone's camera to open the game there. To fly on the
+computer, click **"Click to fly"** or press Enter.
 
 ## Controls
 

@@ -74,6 +74,16 @@ that isn't code here. Keep entries short and dated.
   state in `World`. Only level 1 exists; picking a level comes later.
   The SVG is split into layer groups so parallax can come later.
 
+- Desktop start screen: computers now also get the start overlay
+  ("Click to fly", Enter/Space) with the keys and a QR code to the live
+  URL. It is the click that unlocks audio there too. The QR SVG is made by
+  `scripts/make-qr.py`, a small stdlib-only encoder (byte mode, level M,
+  v1-6) because no QR tool is installed by default; checked by decoding
+  with macOS CoreImage (CIDetector) for v1-v6 and from the real screenshot.
+  Phones never see the QR (no use scanning your own screen).
+- German: the game's start screen is «Startanzeige», because
+  «Startbildschirm» already means Android's home screen.
+
 ## Concepts
 
 ### Tilt: from sensor to steering

@@ -40,23 +40,46 @@
       #rotate { display: flex; }
     }
 
-    /* Tap to fly: phones only. The tap is the user gesture iOS needs before
-       it grants motion sensors, and the one every browser needs before a
-       page may play sound (mq_js_bundle.js resumes audio on the first
-       touch, click or key). Desktop starts directly, silent until then. */
+    /* Start screen. Phones: "Tap to fly"; the tap is the user gesture iOS
+       needs before it grants motion sensors. Computers: "Click to fly",
+       the controls, and a QR code to play on a phone. Either way the tap,
+       click or key is the gesture every browser needs before a page may
+       play sound (mq_js_bundle.js resumes audio on it). */
     #start {
-      display: none; position: fixed; inset: 0; z-index: 9;
+      display: flex; position: fixed; inset: 0; z-index: 9;
       background: rgba(20, 24, 31, 0.82); color: #fff;
       font: 600 18px/1.4 system-ui, sans-serif; text-align: center;
-      flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+      align-items: center; justify-content: center; gap: 56px;
+      padding: 24px; box-sizing: border-box;
     }
-    @media (pointer: coarse) { #start { display: flex; } }
     #start.gone { display: none; }
+    #start .intro { display: flex; flex-direction: column; align-items: center; gap: 14px; }
     #start button {
       font: 700 22px system-ui, sans-serif; color: #fff; background: #1f6feb;
-      border: 0; border-radius: 999px; padding: 14px 40px;
+      border: 0; border-radius: 999px; padding: 14px 40px; cursor: pointer;
     }
     #start small { font-weight: 400; opacity: 0.75; max-width: 30em; }
+    #start .keys { margin: 4px 0 0; padding: 0; list-style: none; font-weight: 400; line-height: 2; }
+    #start kbd {
+      display: inline-block; min-width: 1.4em; padding: 0 6px; margin: 0 1px;
+      border: 1px solid rgba(255, 255, 255, 0.35); border-bottom-width: 3px; border-radius: 6px;
+      font: 600 15px/1.5 system-ui, sans-serif;
+    }
+    #start figure { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+    /* QR on a white card with a quiet zone, so cameras find it. */
+    #start figure img {
+      width: 164px; height: 164px; padding: 14px; background: #fff; border-radius: 12px;
+      image-rendering: pixelated;
+    }
+    #start figcaption { font-weight: 400; font-size: 16px; }
+    #start .url { opacity: 0.7; font-size: 14px; }
+    /* Phone or computer: show only that half of the start screen. */
+    #start .phone { display: none; }
+    @media (pointer: coarse) {
+      #start { flex-direction: column; gap: 14px; }
+      #start .phone { display: block; }
+      #start .computer { display: none; }
+    }
 
     /* Sound on/off, top right, clear of the notch. Big enough for a thumb. */
     #mute {
@@ -87,8 +110,20 @@
     <div>Turn your phone sideways<br>to fly</div>
   </div>
   <div id="start">
-    <button type="button">Tap to fly</button>
-    <small>Hold your phone like a steering wheel and turn it to climb or dive.<br>Or drag your finger.</small>
+    <div class="intro">
+      <button type="button"><span class="phone">Tap to fly</span><span class="computer">Click to fly</span></button>
+      <small class="phone">Hold your phone like a steering wheel and turn it to climb or dive.<br>Or drag your finger.</small>
+      <ul class="keys computer">
+        <li><kbd>&uarr;</kbd><kbd>&darr;</kbd> or <kbd>W</kbd><kbd>S</kbd> climb and dive</li>
+        <li>Hold the mouse button: fly to the pointer</li>
+        <li><kbd>M</kbd> sound on or off</li>
+      </ul>
+      <small class="computer">Start with a click or <kbd>Enter</kbd></small>
+    </div>
+    <figure class="computer">
+      <img src="qr.svg" alt="QR code for m0nstergamez.github.io/airplane-scoring">
+      <figcaption>Fly on your phone:<br>scan with the camera<br><span class="url">m0nstergamez.github.io/airplane-scoring</span></figcaption>
+    </figure>
   </div>
   <!-- macroquad/miniquad JS glue. Vendored by scripts/vendor-js.sh; pinned to the engine version. -->
   <script src="mq_js_bundle.js"></script>
@@ -147,18 +182,28 @@
       },
     });
 
-    // Tap to fly. iOS only hands out motion data after a permission prompt
-    // triggered by a tap; Android needs no prompt (HTTPS only, both).
+    // Start screen. iOS only hands out motion data after a permission
+    // prompt triggered by a tap; Android needs no prompt (HTTPS only, both).
+    // Computers have no tilt, so they skip the prompt (Safari on a Mac
+    // would show it). "?play" skips the start screen (scripts/shot.sh).
     const start = document.getElementById("start");
-    start.querySelector("button").addEventListener("click", async () => {
-      const ask = window.DeviceMotionEvent && DeviceMotionEvent.requestPermission;
+    const isPhone = matchMedia("(pointer: coarse)").matches;
+    const fly = async () => {
+      if (start.classList.contains("gone")) return;
+      start.classList.add("gone");
+      const ask = isPhone && window.DeviceMotionEvent && DeviceMotionEvent.requestPermission;
       if (ask) {
         try { await DeviceMotionEvent.requestPermission(); } catch (_) { /* denied: drag still works */ }
       }
       recalibrate(); // neutral = how the player holds the phone right now
-      start.classList.add("gone");
       document.getElementById("glcanvas").focus();
+    };
+    start.querySelector("button").addEventListener("click", fly);
+    addEventListener("keydown", (e) => {
+      const waiting = !start.classList.contains("gone");
+      if (waiting && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); fly(); }
     });
+    if (new URLSearchParams(location.search).has("play")) start.classList.add("gone");
   </script>
   <script>load("airplane-scoring.wasm");</script>
   <script>

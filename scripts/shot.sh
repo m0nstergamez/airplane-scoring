@@ -7,6 +7,8 @@
 #   out.png  default target/shots/latest.png
 #   ms       virtual time to let the game run before the shot (default 3000)
 # Env: CHROME=/path/to/chrome   SIZE=800,450   SKIP_BUILD=1
+#      START=1   show the start screen ("Click to fly"); by default the page
+#                gets "?play" and skips it, so the shot shows the game
 set -euo pipefail
 cd "$(dirname "$0")/.."
 out="${1:-target/shots/latest.png}"
@@ -37,10 +39,13 @@ server=$!
 trap 'kill $server 2>/dev/null; rm -rf "$tmpdir"' EXIT
 for _ in $(seq 50); do curl -sf "http://127.0.0.1:$port/" >/dev/null && break; sleep 0.1; done
 
+page="?play"
+[ -z "${START:-}" ] || page=""
+
 "$chrome" --headless=new --use-angle=swiftshader --enable-unsafe-swiftshader \
   --window-size="$size" --hide-scrollbars --user-data-dir="$tmpdir/profile" \
   --virtual-time-budget="$ms" --enable-logging=stderr --v=0 \
-  --screenshot="$out" "http://127.0.0.1:$port/" 2>"$tmpdir/chrome.log" >/dev/null
+  --screenshot="$out" "http://127.0.0.1:$port/$page" 2>"$tmpdir/chrome.log" >/dev/null
 
 console=$(grep 'CONSOLE' "$tmpdir/chrome.log" | sed 's/.*CONSOLE[^]]*\] "//; s/", source: .*//' | awk '!seen[$0]++' || true)
 unexpected=$(printf '%s\n' "$console" | grep -vE "$known" | grep -v '^$' || true)
