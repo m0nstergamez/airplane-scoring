@@ -80,7 +80,8 @@ that isn't code here. Keep entries short and dated.
   `scripts/make-qr.py`, a small stdlib-only encoder (byte mode, level M,
   v1-6) because no QR tool is installed by default; checked by decoding
   with macOS CoreImage (CIDetector) for v1-v6 and from the real screenshot.
-  Phones never see the QR (no use scanning your own screen).
+  Phones show it too, smaller, captioned "Friends scan this to fly too"
+  (share the game with the people around you).
 - German: the game's start screen is «Startanzeige», because
   «Startbildschirm» already means Android's home screen.
 

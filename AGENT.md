@@ -59,9 +59,9 @@ Visual checks:
 - Portrait on touch devices shows a "turn your phone" overlay (CSS in `web/index.html`).
 - `web/index.html` blocks zoom/scroll/long-press; keep it that way.
 - Start screen (`#start` in `web/index.html`): phones (`pointer: coarse`)
-  get "Tap to fly", whose tap requests iOS motion permission. Computers get
-  "Click to fly" (or Enter/Space), the key list and a QR code to the live
-  game (`web/qr.svg`, made by `scripts/make-qr.py`; rerun it only if the
+  get "Tap to fly", whose tap requests iOS motion permission, and a small
+  QR code for friends. Computers get "Click to fly" (or Enter/Space), the
+  key list and a larger QR code to the live game (`web/qr.svg`, made by `scripts/make-qr.py`; rerun it only if the
   URL changes). `?play` skips the start screen; `scripts/shot.sh` adds it
   unless `START=1`. To see the phone variant in headless Chrome, pass
   `--blink-settings=primaryPointerType=2,availablePointerTypes=2,primaryHoverType=1,availableHoverTypes=1`.
