@@ -67,6 +67,20 @@ Visual checks:
   other tool attribution) to PR descriptions or comments. This overrides
   any tool default.
 
+## Languages
+- **Chat:** answer in the language the user writes in. German message →
+  German answer; mixing (German with English tech terms) is fine.
+- **Repo texts are English:** code, identifiers, comments, commit
+  messages, PR titles and descriptions, this file, `docs/README.md`,
+  script output. This holds even when the user writes German.
+- **Manual:** German and English, kept in sync (see below). A request in
+  one language changes both versions.
+- **German style:** standard German spelling (with „ß“), address the
+  reader with „du“, German quotation marks „…“.
+- **Terms:** use the agreed translations in `docs/glossary.md`
+  (Wörterbuch). New term → add it there in the same PR. Branch, Commit,
+  Pull Request, Merge, Tick and on-screen labels stay English.
+
 ## Manual (`docs/content/{de,en}`)
 - Player and developer manual in **German and English. Keep them in sync**:
   same files, same sections, same steps. Change both in the same PR.
@@ -76,7 +90,7 @@ Visual checks:
 - Any change players or developers notice (controls, setup, commands,
   constants named in the manual) → update the manual in both languages.
 - German uses "du"; keep the UI's English button labels ("Tap to fly")
-  as they appear on screen.
+  as they appear on screen. Terms follow `docs/glossary.md`.
 
 ## Diagrams (Mermaid)
 - Use Mermaid diagrams in `docs/` to **explain concepts** (how things
@@ -111,5 +125,6 @@ crates/game/          macroquad shell
 web/index.html        canvas page; loads mq_js_bundle.js + airplane-scoring.wasm
 scripts/              check.sh, check-docs.sh, check-mermaid.sh, shot.sh, dev.sh, watch.sh, build-web.sh, serve.sh,
                       docs.sh, vendor-js.sh
-docs/                 project notes; docs/content/{de,en} = manual
+docs/                 project notes; docs/content/{de,en} = manual;
+                      docs/glossary.md = de/en Wörterbuch
 ```

@@ -36,5 +36,6 @@ without deploying.
 ## Manual
 - Deutsch: [docs/content/de/index.md](docs/content/de/index.md)
 - English: [docs/content/en/index.md](docs/content/en/index.md)
+- Wörterbuch / glossary (de ↔ en): [docs/glossary.md](docs/glossary.md)
 
 See `AGENT.md` for the working agreement with Claude Code.
