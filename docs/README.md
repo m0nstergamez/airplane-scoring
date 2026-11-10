@@ -12,3 +12,8 @@ that isn't code here. Keep entries short and dated.
 - Planned: tilt steering via `deviceorientation` (iOS needs a tap-to-start
   permission prompt; HTTPS required), touch + keyboard fallbacks, all mapped
   to one `steer` value in core.
+- Input: every device maps to one `steer` in [-1, 1] (core `input.rs`).
+  Touch/mouse = plane flies to the finger's height; keys = Up/W, Down/S.
+  Pointer wins over keys. Tilt will be a third source.
+- macroquad 0.4.16 quirk: `touches()` is in physical pixels, mouse and
+  drawing in logical ones. The game divides touch by `dpi_scale()`.
