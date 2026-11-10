@@ -49,9 +49,20 @@ that isn't code here. Keep entries short and dated.
 - quad-snd 0.2.8 lacks `#[link(wasm_import_module = "env")]` on its JS
   imports; `.cargo/config.toml` passes `--import-undefined` to wasm-ld.
 - Browsers start audio suspended. `mq_js_bundle.js` resumes it on the
-  first touchstart/touchend/mousedown/keydown; loops started before that
-  begin playing then. Chrome logs "AudioContext was not allowed to start"
-  until then (filtered in `scripts/shot.sh`).
+  first touchstart/touchend/mousedown/keydown and then stops listening;
+  loops started before that begin playing then. Chrome logs
+  "AudioContext was not allowed to start" until then (filtered in
+  `scripts/shot.sh`).
+- iPhone was silent (2026-11-10): on a phone that first event is
+  touchstart, and Safari only counts touchend/click as a user gesture, so
+  the bundle's single resume() was refused for good. Chrome counts
+  touchstart, which is why desktop and Android tests never showed it.
+  Fix in `web/index.html` (before the bundle, which stays unpatched):
+  remember every AudioContext and resume it on each touchend, click and
+  keydown, for good (also recovers after iOS interrupts audio). Verified
+  in Chrome with Safari's rule emulated (resume() rejected during
+  touchstart): without the fix the game's context stays "suspended",
+  with it "running". Not verifiable here on a real iPhone.
 - Mute: the page owns it (button `#mute`, localStorage
   `airplane-scoring.muted`, plugin "sound"); key M goes through Rust to
   the same toggle. iOS silent mode mutes Web Audio; nothing we can do.

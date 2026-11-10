@@ -44,7 +44,7 @@
        needs before it grants motion sensors. Computers: "Click to fly",
        the controls, and a QR code to play on a phone. Either way the tap,
        click or key is the gesture every browser needs before a page may
-       play sound (mq_js_bundle.js resumes audio on it). */
+       play sound (the audio unlock script below resumes audio on it). */
     #start {
       display: flex; position: fixed; inset: 0; z-index: 9;
       background: rgba(20, 24, 31, 0.82); color: #fff;
@@ -132,6 +132,33 @@
       <figcaption><span class="computer">Fly on your phone:<br>scan with the camera</span><span class="phone">Friends scan this<br>to fly too</span><span class="url">m0nstergamez.github.io/airplane-scoring</span></figcaption>
     </figure>
   </div>
+  <script>
+    // Audio unlock for iOS. Must run before mq_js_bundle.js.
+    // The bundle's own unlock resumes its AudioContext on the *first*
+    // touchstart/touchend/mousedown/keydown and then stops listening. On a
+    // phone that first event is touchstart, which Safari does not count as
+    // a user gesture (only touchend and click do), so the resume is refused
+    // and the game stays silent on iPhones. Fix without patching the pinned
+    // bundle: remember every AudioContext it creates and resume them on
+    // each touchend, click and keydown. Listening for good also brings the
+    // sound back after iOS interrupts it (a call, switching apps).
+    (() => {
+      const Native = window.AudioContext || window.webkitAudioContext;
+      if (!Native) return;
+      const contexts = [];
+      class Remembered extends Native {
+        constructor(...args) { super(...args); contexts.push(this); }
+      }
+      window.AudioContext = Remembered;
+      if (window.webkitAudioContext) window.webkitAudioContext = Remembered;
+      const resume = () => {
+        for (const c of contexts) if (c.state !== "running" && c.state !== "closed") c.resume().catch(() => {});
+      };
+      for (const type of ["touchend", "click", "keydown"]) {
+        document.addEventListener(type, resume, { capture: true, passive: true });
+      }
+    })();
+  </script>
   <!-- macroquad/miniquad JS glue. Vendored by scripts/vendor-js.sh; pinned to the engine version. -->
   <script src="mq_js_bundle.js"></script>
   <script>
