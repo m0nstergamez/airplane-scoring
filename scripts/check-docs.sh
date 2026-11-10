@@ -3,7 +3,8 @@
 # the same files, and each pair the same structure (heading levels in order,
 # numbered steps, bullets, table rows, code blocks; for diagrams also type,
 # line count and number of arrows). Wording may differ.
-# German uses Swiss spelling: no "ß" anywhere in docs/.
+# German uses Swiss spelling: no "ß" anywhere in docs/, and Swiss
+# quotation marks «…» (no „…“ or “…”) in the German manual and glossary.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 exec python3 - <<'PY'
@@ -55,6 +56,9 @@ for md in sorted(pathlib.Path("docs").rglob("*.md")):
     for n, line in enumerate(md.read_text(encoding="utf-8").splitlines(), 1):
         if "\u00df" in line:
             errors.append(f"{md}:{n}: use Swiss spelling 'ss' instead of the sharp s")
+        german = md.parts[1:3] == ("content", "de") or md.name == "glossary.md"
+        if german and any(q in line for q in "\u201e\u201c\u201d"):
+            errors.append(f"{md}:{n}: use Swiss quotation marks \u00ab\u2026\u00bb")
 
 if errors:
     print("Docs check failed:", *errors, sep="\n  ", file=sys.stderr)

@@ -25,7 +25,7 @@ short **meaning**.
 | Glättung | smoothing | `TILT_SMOOTHING` | Evens out shaky hands |
 | Finger | finger | `pointer` | Steering by touching the screen |
 | Taste | key | `steer_from_keys` | Keyboard key (↑/W, ↓/S) |
-| Spielerin / Spieler (kurz: Spieler:in) | player | — | Person playing. In running text „Spielerin oder Spieler“, in short labels „Spieler:in“ |
+| Spielerin / Spieler (kurz: Spieler:in) | player | — | Person playing. In running text «Spielerin oder Spieler», in short labels «Spieler:in» |
 | Hindernis | obstacle | — | Coming soon |
 | Punkte | points | — | Coming soon |
 
@@ -37,10 +37,10 @@ short **meaning**.
 | Querformat | landscape | `orientation: landscape` | Phone held sideways; the game's format |
 | Hochformat | portrait | `orientation: portrait` | Phone held upright |
 | quer drehen | turn sideways | — | Rotate the phone into landscape |
-| Ausrichtungssperre | rotation lock | — | iPhone setting; Android: „Automatisch drehen“ / "Auto-rotate" |
+| Ausrichtungssperre | rotation lock | — | iPhone setting; Android: «Automatisch drehen» / "Auto-rotate" |
 | Bewegung & Ausrichtung | Motion & Orientation | `DeviceMotionEvent` | iPhone permission needed for tilting |
-| Home-Bildschirm | home screen | `manifest.webmanifest` | iPhone: „Zum Home-Bildschirm“ / "Add to Home Screen" |
-| Startbildschirm | home screen | `manifest.webmanifest` | Android: „Zum Startbildschirm hinzufügen“ / "Add to Home screen" |
+| Home-Bildschirm | home screen | `manifest.webmanifest` | iPhone: «Zum Home-Bildschirm» / "Add to Home Screen" |
+| Startbildschirm | home screen | `manifest.webmanifest` | Android: «Zum Startbildschirm hinzufügen» / "Add to Home screen" |
 | Vollbild | full screen | `display: fullscreen` | Game fills the whole screen |
 | Bildschirm | screen | — | |
 

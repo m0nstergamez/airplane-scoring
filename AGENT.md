@@ -77,8 +77,10 @@ Visual checks:
   one language changes both versions.
 - **German style:** **Swiss spelling: always "ss", never "ß"** (grösser,
   schliessen, gleichmässig). Applies to the manual, the glossary and to
-  German chat answers. Address the reader with „du“, quotation marks „…“.
-  `scripts/check-docs.sh` fails on any "ß" in `docs/`.
+  German chat answers. Address the reader with «du». **Swiss quotation marks «…»**
+  (nested ‹…›, no spaces inside), never „…“ or “…”.
+  `scripts/check-docs.sh` fails on any "ß" in `docs/` and on „“” in
+  German docs.
 - **Terms:** use the agreed translations in `docs/glossary.md`
   (Wörterbuch). New term → add it there in the same PR. Branch, Commit,
   Pull Request, Merge, Tick and on-screen labels stay English.
