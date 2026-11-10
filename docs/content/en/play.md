@@ -64,6 +64,9 @@ On a computer, hold down the mouse button instead.
 
 ## Weather and crashes
 
+You fly along a coast: the landscape slides past behind your plane. In
+rain it gets darker.
+
 The weather changes while you fly. It starts dry. After a while rain
 sets in, gets heavier and fades again. Heavy rain is a **thunderstorm**:
 lightning lights up the sky, and the thunder follows. The further away

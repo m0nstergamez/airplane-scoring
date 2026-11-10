@@ -13,6 +13,8 @@ the browser as WebAssembly. Drawing is done by the
 - Google Chrome (for automatic screenshots; optional)
 - Linux only: the ALSA sound headers for `cargo run` (on Ubuntu:
   `sudo apt install libasound2-dev`)
+- Only for level backgrounds: `rsvg-convert` and ImageMagick (macOS:
+  `brew install librsvg imagemagick`)
 
 ## Set up
 
@@ -31,6 +33,7 @@ rustup target add wasm32-unknown-unknown
 | Run all checks | `scripts/check.sh` |
 | Quick checks | `scripts/check.sh --fast` |
 | Make the sound files again | `scripts/make-sounds.py` |
+| Make the level backgrounds again | `scripts/make-backgrounds.sh` |
 
 `scripts/dev.sh` keeps running: every time you save a file, the game is
 rebuilt and the browser page reloads by itself:
@@ -46,9 +49,10 @@ flowchart LR
 
 | Folder | What is in it |
 |---|---|
-| `crates/core` | The **rules** of the game: movement, steering, tilting, weather, crashes, sound volumes. No graphics, no sound files. Everything here has tests. |
+| `crates/core` | The **rules** of the game: movement, steering, tilting, weather, crashes, sound volumes, scrolling. No graphics, no sound files. Everything here has tests. |
 | `crates/game` | Draws the game, plays the sounds and reads keys, finger and sensors. No rules. |
-| `web` | The web page that loads the game, and the sound files in `web/sounds`. |
+| `web` | The web page that loads the game, the sound files in `web/sounds` and the level backgrounds in `web/levels`. |
+| `art` | Drawings the game is made from: one folder per level in `art/levels`. |
 | `scripts` | Helper commands (build, start, check). |
 | `docs` | Notes and this manual. |
 
@@ -129,6 +133,69 @@ flowchart LR
   `scripts/make-sounds.py` computes them from noise and pulses. Change
   the script, run it, commit the new `.wav` files.
 
+### Level backgrounds
+
+Each level has a landscape behind the plane. It starts as a photo and
+ends as a picture the game repeats side by side while it scrolls:
+
+```mermaid
+flowchart LR
+    P["Photo<br/>art/levels/level1/photo.jpg<br/>(stays on your computer)"] --> S["Drawing<br/>art/levels/level1/background.svg"]
+    S --> M["scripts/make-backgrounds.sh"] --> G["Picture<br/>web/levels/level1.png"]
+    G --> D["Game: copies side by side,<br/>sliding left"]
+```
+
+Every level has its own folder with the same file names:
+
+```text
+art/levels/
+  level1/
+    photo.jpg         the photo (not committed)
+    background.svg    the drawing (committed)
+  level2/
+  level3/
+```
+
+A new level background in five steps:
+
+1. Make the folder, for example `art/levels/level2/`.
+2. Put your photo in it as `photo.jpg`. Take a photo held sideways,
+   without people. It is never committed: the repository is public and
+   phone photos contain the place where they were taken.
+3. Draw `background.svg` from the photo, or ask Claude Code: "Make
+   `art/levels/level2/background.svg` from `photo.jpg`, like level 1."
+   Copy `art/levels/level1/background.svg` as a start: its comments
+   explain the rules below.
+4. Run `scripts/make-backgrounds.sh level2`. It makes
+   `web/levels/level2.png` and checks the seam.
+5. Look at the picture, then commit the SVG and the PNG.
+
+The SVG has to follow a few rules, because the right edge of one copy
+touches the left edge of the next:
+
+- **Size:** `viewBox="0 0 1600 740"`, about the shape of a phone held
+  sideways. The game scales it to the screen height.
+- **Flat colours, calm and a bit pale**, so the plane and the white text
+  stand out.
+- **Things that span the whole width** (sky, water, road, grass) only
+  change from top to bottom, never from left to right.
+- **Everything else is drawn three times** (at x = −1600, 0 and +1600).
+  A cloud that sticks out on the right comes back in on the left.
+- **One group per layer** (sky, hills, water, shore, road, grass,
+  fence). Later the layers can scroll at different speeds.
+
+If the edges do not match, `make-backgrounds.sh` stops with "seam too
+visible". The game itself only knows how far the landscape has moved,
+`background_x` in `crates/core/src/scenery.rs`, and draws as many copies
+as the screen needs:
+
+```mermaid
+flowchart LR
+    T["Ticks so far"] --> D["scroll_distance:<br/>ticks × SCROLL_SPEED"]
+    D --> X["background_x:<br/>where copy 1 starts (0 to −width)"]
+    X --> C["Draw copies side by side<br/>until the screen is full"]
+```
+
 ### Test first
 
 New rules are written in three steps:
@@ -166,6 +233,7 @@ More numbers you can try:
 | `STORM_RAIN` | `crates/core/src/weather.rs` | how heavy rain must be for lightning (0 to 1) |
 | `STRIKE_GAP_SECONDS` | `crates/core/src/weather.rs` | time between two lightning strikes |
 | `ENGINE_VOLUME` | `crates/core/src/sound.rs` | how loud the engine is (0 to 1) |
+| `SCROLL_SPEED` | `crates/core/src/scenery.rs` | how fast the landscape slides past (pixels per second) |
 
 ## Share your change
 

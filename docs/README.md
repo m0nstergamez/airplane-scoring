@@ -58,6 +58,22 @@ that isn't code here. Keep entries short and dated.
 - Not verified by ear: the sounds were checked as spectrograms and by
   recording Web Audio calls in headless Chrome, never listened to.
 
+- Level backgrounds: photo -> hand-traced SVG -> PNG. Photos live in
+  `art/levels/levelN/photo.*` and are gitignored (public repo, phone photos
+  carry GPS, may show people). The SVG (own work, traced from our own
+  photo) is the source; `scripts/make-backgrounds.sh` renders it with
+  rsvg-convert at 2x (3200x1480) into `web/levels/levelN.png` and fails if
+  the left and right edges do not match. PNGs are committed like the
+  sounds; CI does not need rsvg.
+- macroquad 0.4.16 cannot load SVG; adding resvg would cost far more wasm
+  than PNG. Loading PNGs pulls in the png decoder: wasm 489 KB -> 632 KB
+  (raw, before wasm-opt). level1.png is about 530 KB, loaded in a
+  coroutine like the sounds; until it arrives the old plain sky shows.
+- Scrolling: core `scroll_distance(ticks)` and `background_x(distance,
+  tile_width)` (`scenery.rs`); derived from the tick count, so no new
+  state in `World`. Only level 1 exists; picking a level comes later.
+  The SVG is split into layer groups so parallax can come later.
+
 ## Concepts
 
 ### Tilt: from sensor to steering
