@@ -12,6 +12,7 @@ cargo test -q -p airplane-scoring-core
 step "2/4 format + clippy"
 cargo fmt --all --check || { echo "Run: cargo fmt --all" >&2; exit 1; }
 cargo clippy -q --workspace --all-targets -- -D warnings
+cargo clippy -q --target wasm32-unknown-unknown -p airplane-scoring -- -D warnings
 
 if [ "${1:-}" = "--fast" ]; then
   printf '\n\033[32mFast checks passed\033[0m (run without --fast before calling it done)\n'

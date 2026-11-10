@@ -46,9 +46,14 @@ pub fn steer_toward(target_y: f32, plane_y: f32) -> f32 {
     ((target_y - plane_y) / TOUCH_EASE_DISTANCE).clamp(-1.0, 1.0)
 }
 
-/// Combine devices: a finger (or held mouse) on screen wins over the keys.
-pub fn pick_steer(pointer: Option<f32>, keys: f32) -> f32 {
-    pointer.unwrap_or(keys)
+/// Combine devices. A finger (or held mouse) on screen wins, then keys
+/// that are pressed, then tilt; otherwise fly level.
+pub fn pick_steer(pointer: Option<f32>, keys: f32, tilt: Option<f32>) -> f32 {
+    match pointer {
+        Some(p) => p,
+        None if keys != 0.0 => keys,
+        None => tilt.unwrap_or(0.0),
+    }
 }
 
 #[cfg(test)]
@@ -99,12 +104,22 @@ mod tests {
     }
 
     #[test]
-    fn pointer_on_screen_wins_over_keys() {
-        assert_eq!(pick_steer(Some(0.3), -1.0), 0.3);
+    fn pointer_on_screen_wins_over_keys_and_tilt() {
+        assert_eq!(pick_steer(Some(0.3), -1.0, Some(0.8)), 0.3);
     }
 
     #[test]
-    fn keys_steer_when_no_pointer_is_down() {
-        assert_eq!(pick_steer(None, -1.0), -1.0);
+    fn pressed_keys_win_over_tilt() {
+        assert_eq!(pick_steer(None, -1.0, Some(0.8)), -1.0);
+    }
+
+    #[test]
+    fn tilt_steers_when_no_pointer_or_key_is_used() {
+        assert_eq!(pick_steer(None, 0.0, Some(0.8)), 0.8);
+    }
+
+    #[test]
+    fn nothing_used_flies_level() {
+        assert_eq!(pick_steer(None, 0.0, None), 0.0);
     }
 }

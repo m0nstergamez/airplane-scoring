@@ -2,9 +2,11 @@
 //! This file should only: read input, call `World::tick`, draw state.
 
 use airplane_scoring_core::{
-    pick_steer, steer_from_keys, steer_toward, Bounds, Input, Vec2, World, TICK_SECONDS,
+    pick_steer, steer_from_keys, steer_toward, Bounds, Input, Tilt, Vec2, World, TICK_SECONDS,
 };
 use macroquad::prelude::*;
+
+mod tilt_js;
 
 fn window_conf() -> Conf {
     Conf {
@@ -29,6 +31,8 @@ async fn main() {
     );
 
     let mut accumulator = 0.0_f32;
+    let mut tilt = Tilt::default();
+    let mut tilt_epoch = tilt_js::epoch();
 
     loop {
         // Keep the logical bounds in sync with the canvas (browser resizes).
@@ -42,6 +46,11 @@ async fn main() {
             is_key_down(KeyCode::Up) || is_key_down(KeyCode::W),
             is_key_down(KeyCode::Down) || is_key_down(KeyCode::S),
         );
+        if tilt_js::epoch() != tilt_epoch {
+            tilt_epoch = tilt_js::epoch();
+            tilt.recalibrate();
+        }
+        let gravity = tilt_js::sample();
 
         // Fixed-step simulation; cap to avoid spiral of death after a tab sleeps.
         accumulator += get_frame_time().min(0.25);
@@ -49,7 +58,8 @@ async fn main() {
             // Recomputed each step: steering toward a finger depends on where
             // the plane is now.
             let pointer = pointer_y.map(|y| steer_toward(y, world.player.pos.y));
-            world.tick(&Input::new(pick_steer(pointer, keys)));
+            let tilted = gravity.and_then(|(gx, gy)| tilt.update(gx, gy));
+            world.tick(&Input::new(pick_steer(pointer, keys, tilted)));
             accumulator -= TICK_SECONDS;
         }
 
@@ -74,7 +84,15 @@ async fn main() {
             WHITE,
         );
         draw_text(
-            format!("drag or arrow keys to fly  |  ticks: {}", world.ticks),
+            format!(
+                "{}  |  ticks: {}",
+                if gravity.is_some() {
+                    "tilt or drag to fly"
+                } else {
+                    "drag or arrow keys to fly"
+                },
+                world.ticks
+            ),
             12.0,
             screen_height() - 12.0,
             20.0,

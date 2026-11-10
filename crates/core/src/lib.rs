@@ -6,7 +6,9 @@
 pub const TICK_SECONDS: f32 = 1.0 / 60.0;
 
 mod input;
+mod tilt;
 pub use input::{pick_steer, steer_from_keys, steer_toward, Input, TOUCH_EASE_DISTANCE};
+pub use tilt::{Tilt, TILT_DEAD_ZONE_DEG, TILT_FULL_DEG, TILT_MIN_GRAVITY, TILT_SMOOTHING};
 
 /// Vertical speed of the player plane at full steer, in px per second.
 pub const PLAYER_CLIMB_SPEED: f32 = 300.0;
