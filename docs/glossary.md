@@ -81,8 +81,8 @@ short **meaning**.
 | Bewegung & Ausrichtung | Motion & Orientation | `DeviceMotionEvent` | iPhone permission needed for tilting |
 | Home-Bildschirm | home screen | `manifest.webmanifest` | iPhone: «Zum Home-Bildschirm» / "Add to Home Screen" |
 | Startbildschirm | home screen | `manifest.webmanifest` | Android: «Zum Startbildschirm hinzufügen» / "Add to Home screen" |
-| Startanzeige | start screen | `#start` | Shown before flying: "Tap to fly" on phones, "Click to fly" with keys and QR code on computers |
-| QR-Code | QR code | `web/qr.svg` | Square code on the computer's start screen; the phone camera opens the game with it |
+| Startanzeige | start screen | `#start` | Shown before flying: "Tap to fly" on phones, "Click to fly" with keys on computers; both with a QR code |
+| QR-Code | QR code | `web/qr.svg` | Square code on the start screen; a phone camera opens the game with it |
 | Vollbild | full screen | `display: fullscreen` | Game fills the whole screen |
 | Bildschirm | screen | — | |
 

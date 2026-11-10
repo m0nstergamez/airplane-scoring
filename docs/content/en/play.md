@@ -6,7 +6,8 @@
 2. Turn your phone **sideways** (landscape). Held upright, the game asks
    you to turn it.
 3. Tap **"Tap to fly"**. On an iPhone, allow access to "Motion & Orientation"
-   when asked.
+   when asked. Next to the button is a **QR code**: friends scan it with
+   their camera to fly too.
 
 On a computer the start screen shows the keys and a **QR code**. Scan
 it with your phone's camera to open the game there. To fly on the

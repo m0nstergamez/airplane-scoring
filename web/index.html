@@ -72,13 +72,20 @@
       image-rendering: pixelated;
     }
     #start figcaption { font-weight: 400; font-size: 16px; }
-    #start .url { opacity: 0.7; font-size: 14px; }
-    /* Phone or computer: show only that half of the start screen. */
+    #start .url { display: block; opacity: 0.7; font-size: 14px; }
+    /* Phone or computer: show only the matching texts. Both show the QR
+       code: on a computer to open the game on your phone, on a phone so
+       friends can scan it. Phones in landscape are low, so it is smaller. */
     #start .phone { display: none; }
     @media (pointer: coarse) {
-      #start { flex-direction: column; gap: 14px; }
+      #start { gap: 32px; padding: 12px calc(16px + env(safe-area-inset-right)) 12px calc(16px + env(safe-area-inset-left)); }
       #start .phone { display: block; }
       #start .computer { display: none; }
+      #start .intro small { max-width: 20em; }
+      #start figure { gap: 8px; }
+      #start figure img { width: 112px; height: 112px; padding: 10px; }
+      #start figcaption { font-size: 14px; }
+      #start .url { font-size: 12px; }
     }
 
     /* Sound on/off, top right, clear of the notch. Big enough for a thumb. */
@@ -120,9 +127,9 @@
       </ul>
       <small class="computer">Start with a click or <kbd>Enter</kbd></small>
     </div>
-    <figure class="computer">
+    <figure>
       <img src="qr.svg" alt="QR code for m0nstergamez.github.io/airplane-scoring">
-      <figcaption>Fly on your phone:<br>scan with the camera<br><span class="url">m0nstergamez.github.io/airplane-scoring</span></figcaption>
+      <figcaption><span class="computer">Fly on your phone:<br>scan with the camera</span><span class="phone">Friends scan this<br>to fly too</span><span class="url">m0nstergamez.github.io/airplane-scoring</span></figcaption>
     </figure>
   </div>
   <!-- macroquad/miniquad JS glue. Vendored by scripts/vendor-js.sh; pinned to the engine version. -->

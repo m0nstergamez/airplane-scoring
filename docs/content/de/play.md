@@ -6,7 +6,9 @@
 2. Dreh dein Handy **quer**. Hältst du es aufrecht, bittet dich das Spiel,
    es zu drehen.
 3. Tippe auf **«Tap to fly»**. Auf dem iPhone erlaubst du den Zugriff auf
-   «Bewegung & Ausrichtung», wenn danach gefragt wird.
+   «Bewegung & Ausrichtung», wenn danach gefragt wird. Neben dem Knopf ist
+   ein **QR-Code**: Deine Freunde scannen ihn mit der Kamera und fliegen
+   auch.
 
 Am Computer zeigt die Startanzeige die Tasten und einen **QR-Code**.
 Scanne ihn mit der Kamera deines Handys, um das Spiel dort zu öffnen. Um
