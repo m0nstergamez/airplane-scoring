@@ -2,15 +2,53 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Mobile-first: no zoom, draw under the notch (viewport-fit=cover). -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <title>airplane scoring</title>
+  <meta name="theme-color" content="#14181f">
+  <!-- "Add to Home Screen" opens full screen (iOS Safari has no fullscreen API for pages). -->
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Airplane">
+  <link rel="apple-touch-icon" href="icon-180.png">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
   <style>
-    html, body { margin: 0; padding: 0; height: 100%; background: #14181f; overflow: hidden; }
-    canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+    html, body {
+      margin: 0; padding: 0; height: 100%; background: #14181f; overflow: hidden;
+      position: fixed; inset: 0;           /* no rubber-band scrolling on iOS */
+      overscroll-behavior: none;            /* no pull-to-refresh on Android */
+      touch-action: none;                   /* no pan, pinch or double-tap zoom */
+      -webkit-user-select: none; user-select: none;
+      -webkit-touch-callout: none;          /* no long-press menu */
+      -webkit-tap-highlight-color: transparent;
+    }
+    canvas { position: absolute; inset: 0; width: 100%; height: 100%; outline: none; }
+
+    /* Landscape game: on phones held upright, ask to rotate. */
+    #rotate {
+      display: none; position: fixed; inset: 0; z-index: 10;
+      background: #14181f; color: #fff;
+      font: 600 20px/1.4 system-ui, sans-serif; text-align: center;
+      flex-direction: column; align-items: center; justify-content: center; gap: 16px;
+      padding: env(safe-area-inset-top) 24px env(safe-area-inset-bottom);
+    }
+    #rotate svg { width: 72px; height: 72px; animation: turn 2s ease-in-out infinite; }
+    @keyframes turn { 0%, 30% { transform: rotate(0); } 60%, 100% { transform: rotate(-90deg); } }
+    @media (orientation: portrait) and (pointer: coarse) {
+      #rotate { display: flex; }
+    }
   </style>
 </head>
 <body>
   <canvas id="glcanvas" tabindex="1"></canvas>
+  <div id="rotate" role="alert">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+      <rect x="7" y="2" width="10" height="20" rx="2"/><line x1="11" y1="18.5" x2="13" y2="18.5"/>
+    </svg>
+    <div>Turn your phone sideways<br>to fly</div>
+  </div>
   <!-- macroquad/miniquad JS glue. Vendored by scripts/vendor-js.sh; pinned to the engine version. -->
   <script src="mq_js_bundle.js"></script>
   <script>load("airplane-scoring.wasm");</script>

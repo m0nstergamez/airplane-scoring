@@ -41,12 +41,18 @@ While iterating, `scripts/check.sh --fast` (steps 1–2) takes ~1 s.
 
 Visual checks:
 - `scripts/shot.sh out.png 5000` — custom path, let the game run 5 s first.
-  `SIZE=1280,720` changes the viewport. Known console noise from the vendored
+  `SIZE=844,390` = phone in landscape (the main target). Known console noise from the vendored
   JS bundle is filtered in the script; add new noise there, not errors.
 - For interaction (key presses, waiting for a state), use a browser tool
   against `scripts/dev.sh` (http://localhost:8080); it live-reloads on rebuild.
 - The game runs on real time, so screenshots are approximate. Assert exact
   behaviour in `core` tests, use screenshots to confirm it looks right.
+
+## Mobile-first
+- Target: phones in **landscape**, published to GitHub Pages by CI on push to `main`.
+- Portrait on touch devices shows a "turn your phone" overlay (CSS in `web/index.html`).
+- `web/index.html` blocks zoom/scroll/long-press; keep it that way.
+- Work goes through branches + PRs; CI must be green.
 
 ## Rules for changes
 - New gameplay behaviour → add it to `core` **with a test first**, then
