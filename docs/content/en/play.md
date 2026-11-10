@@ -13,7 +13,17 @@ On a computer the game starts right away.
 ## Controls
 
 You have three ways to steer. If you use several at once, the finger
-wins, then the keys, then tilting.
+wins, then the keys, then tilting:
+
+```mermaid
+flowchart TD
+    F{"Finger on the screen?"} -- yes --> FS["Fly to the finger's height"]
+    F -- no --> K{"Key pressed?"}
+    K -- yes --> KS["Climb or dive"]
+    K -- no --> T{"Tilting active?"}
+    T -- yes --> TS["Steer by tilting"]
+    T -- no --> L["Fly level"]
+```
 
 ### Tilt (phone)
 
@@ -25,7 +35,19 @@ Hold your phone like a steering wheel. **The phone is the plane:**
 
 The position you hold the phone in when you tap "Tap to fly" counts as
 "level". Small wobbles are ignored; turning about a quarter of the way
-to vertical (25°) is full speed.
+to vertical (25°) is full speed:
+
+```mermaid
+%%{init: {"themeVariables": {"xyChart": {"plotColorPalette": "#1f6feb"}}}}%%
+xychart-beta
+    title "How far you turn → how strongly you steer"
+    x-axis "Turn in degrees (minus = right side up)" -30 --> 30
+    y-axis "Steering (-1 = full climb, +1 = full dive)" -1 --> 1
+    line [-1, -1, -1, -1, -1, -1, -0.96, -0.91, -0.87, -0.83, -0.78, -0.74, -0.7, -0.65, -0.61, -0.57, -0.52, -0.48, -0.43, -0.39, -0.35, -0.3, -0.26, -0.22, -0.17, -0.13, -0.09, -0.04, 0, 0, 0, 0, 0, 0.04, 0.09, 0.13, 0.17, 0.22, 0.26, 0.3, 0.35, 0.39, 0.43, 0.48, 0.52, 0.57, 0.61, 0.65, 0.7, 0.74, 0.78, 0.83, 0.87, 0.91, 0.96, 1, 1, 1, 1, 1, 1]
+```
+
+Between −2° and +2° nothing happens (so a calm hand flies level), from
+there steering grows evenly, and from 25° on it is at full strength.
 
 ### Finger (phone and computer)
 

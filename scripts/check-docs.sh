@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Keep the manual in sync: docs/content/de and docs/content/en must have
 # the same files, and each pair the same structure (heading levels in order,
-# numbered steps, bullets, table rows, code blocks). Wording may differ.
+# numbered steps, bullets, table rows, code blocks; for diagrams also type,
+# line count and number of arrows). Wording may differ.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 exec python3 - <<'PY'
@@ -12,14 +13,20 @@ langs = sorted(p.name for p in root.iterdir() if p.is_dir())
 files = {l: sorted(p.relative_to(root / l).as_posix() for p in (root / l).rglob("*.md")) for l in langs}
 
 def shape(path):
-    s = {"headings": [], "steps": 0, "bullets": 0, "table rows": 0, "code blocks": 0}
-    in_code = False
+    s = {"headings": [], "steps": 0, "bullets": 0, "table rows": 0, "code blocks": []}
+    block = None  # [language, lines, arrows] of the code block we are in
     for line in path.read_text(encoding="utf-8").splitlines():
         if line.startswith("```"):
-            in_code = not in_code
-            s["code blocks"] += in_code
+            if block is None:
+                block = [line[3:].strip() or "text", 0, 0]
+            else:
+                s["code blocks"].append(tuple(block))
+                block = None
             continue
-        if in_code:
+        if block is not None:
+            if line.strip():
+                block[1] += 1
+                block[2] += len(re.findall(r"-->|->>|-->>", line))
             continue
         if m := re.match(r"(#+) ", line):
             s["headings"].append(len(m.group(1)))

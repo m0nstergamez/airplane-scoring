@@ -27,3 +27,39 @@ that isn't code here. Keep entries short and dated.
   declared with #[link(wasm_import_module = "env")] in game/src/tilt_js.rs
   (wasm-ld needs that, same as miniquad's own imports).
 - Priority: finger > pressed keys > tilt.
+
+## Concepts
+
+### Tilt: from sensor to steering
+
+```mermaid
+sequenceDiagram
+    participant S as Phone sensor
+    participant J as web/index.html (tilt plugin)
+    participant G as game (tilt_js.rs)
+    participant C as core (Tilt)
+    S->>J: devicemotion: gravity x, y
+    J->>J: keep latest sample
+    Note over J: "Tap to fly" or rotation: epoch + 1
+    loop every tick (60 per second)
+        G->>J: tilt_gx(), tilt_gy(), tilt_epoch()
+        opt epoch changed
+            G->>C: recalibrate()
+        end
+        G->>C: update(gx, gy)
+        C-->>G: steer -1..+1, or none (phone flat)
+    end
+```
+
+The JS side only stores numbers; the Rust shell only fetches them. All
+decisions (neutral pose, smoothing, dead zone) are in `core/src/tilt.rs`
+with tests.
+
+### Build and publish
+
+```mermaid
+flowchart LR
+    PR["Pull request"] --> CI["CI: tests, fmt, clippy,<br/>manual sync, wasm build"]
+    CI -- red --> PR
+    CI -- green --> M["Merge to main"] --> CD["CI again + deploy"] --> P["GitHub Pages:<br/>m0nstergamez.github.io/airplane-scoring"]
+```

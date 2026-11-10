@@ -30,7 +30,14 @@ rustup target add wasm32-unknown-unknown
 | Schnelle Prüfungen | `scripts/check.sh --fast` |
 
 `scripts/dev.sh` läuft weiter: Jedes Mal, wenn du eine Datei speicherst,
-wird das Spiel neu gebaut und die Seite im Browser lädt sich von selbst neu.
+wird das Spiel neu gebaut und die Seite im Browser lädt sich von selbst neu:
+
+```mermaid
+flowchart LR
+    S["Du speicherst eine Datei"] --> W["watch.sh merkt es"] --> B{"Bauen OK?"}
+    B -- ja --> L["Browser lädt neu"]
+    B -- nein --> E["Fehler im Terminal,<br/>Browser behält die letzte gute Version"]
+```
 
 ## So ist das Projekt aufgebaut
 
@@ -44,7 +51,57 @@ wird das Spiel neu gebaut und die Seite im Browser lädt sich von selbst neu.
 
 Die wichtigste Regel: **Spielregeln kommen in `core`, zuerst mit einem Test.**
 `game` gibt nur weiter, was die Spielerin oder der Spieler tut, und zeichnet,
-was `core` sagt.
+was `core` sagt:
+
+```mermaid
+flowchart LR
+    subgraph player["Spieler:in"]
+        I["Finger, Tasten, Kippen"]
+    end
+    subgraph game["crates/game: liest und zeichnet"]
+        R["Eingabe lesen"]
+        D["Zeichnen"]
+    end
+    subgraph core["crates/core: Regeln und Tests"]
+        S["Ein Steuerwert<br/>von -1 bis +1"]
+        W["World::tick<br/>bewegt das Flugzeug"]
+    end
+    I --> R --> S --> W --> D -- "Bildschirm" --> I
+```
+
+Jede Art zu steuern endet als dieselbe einzelne Zahl, `steer`. Darum ist
+es `core` egal, ob du kippst, ziehst oder Tasten drückst – und eine neue
+Steuerung ist einfach ein weiterer Weg, diese Zahl zu erzeugen.
+
+### Die Spielschleife
+
+Das Spiel rechnet in festen Schritten von 1/60 Sekunde, den **Ticks**,
+egal wie schnell ein Gerät zeichnen kann:
+
+```mermaid
+flowchart TD
+    A["Neues Bild"] --> B["Finger, Tasten, Kippen lesen"]
+    B --> C{"Zeit für noch einen Tick?<br/>(einer alle 1/60 s)"}
+    C -- ja --> T["World::tick:<br/>Flugzeug um steer bewegen"] --> C
+    C -- nein --> D["Welt zeichnen"] --> A
+```
+
+Ein langsames Handy macht mehrere Ticks pro Bild, ein schnelles manchmal
+keinen. Weil jeder Tick gleich ist, verhält sich das Spiel überall gleich –
+und ein Test kann es genau nachspielen.
+
+### Zuerst der Test
+
+Neue Regeln entstehen in drei Schritten:
+
+```mermaid
+flowchart LR
+    R["1. Test schreiben<br/>er schlägt fehl: rot"] --> G["2. Code schreiben<br/>der Test läuft: grün"]
+    G --> C["3. Aufräumen<br/>Tests bleiben grün"] --> R
+```
+
+Der fehlschlagende Test beweist, dass der Test die neue Regel wirklich
+prüft. Wäre er sofort grün, würde er nichts Neues testen.
 
 ## Deine erste Änderung
 
@@ -69,6 +126,13 @@ Weitere Zahlen zum Ausprobieren:
 ## Änderung teilen
 
 Änderungen kommen über einen **Pull Request** auf GitHub ins Spiel:
+
+```mermaid
+flowchart LR
+    B["Branch"] --> C["Commit"] --> P["Pull Request"] --> K{"Prüfungen grün?"}
+    K -- nein --> C
+    K -- ja --> M["Merge"] --> D["GitHub Pages"] --> O["Online für alle"]
+```
 
 1. Neuen Branch anlegen: `git switch -c meine-aenderung`
 2. Committen: `git commit -am "Schnelleres Flugzeug"`

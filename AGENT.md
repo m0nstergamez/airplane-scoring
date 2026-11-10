@@ -78,6 +78,19 @@ Visual checks:
 - German uses "du"; keep the UI's English button labels ("Tap to fly")
   as they appear on screen.
 
+## Diagrams (Mermaid)
+- Use Mermaid diagrams in `docs/` to **explain concepts** (how things
+  connect, what happens in which order, which input wins), not to decorate.
+  Put each next to the text it explains.
+- Manual diagrams exist in both languages with the same shape: same lines,
+  same arrows, only labels translated (`check-docs.sh` compares type, line
+  count and arrows per diagram).
+- Charts of game behaviour use values computed from the real formula in
+  `core`, not hand-drawn guesses.
+- After touching a diagram run `scripts/check-mermaid.sh` (needs Chrome +
+  network; CI runs it too). It fails on syntax errors and writes
+  `target/shots/mermaid.png` / `mermaid.html` — look at them.
+
 ## Rules for changes
 - New gameplay behaviour → add it to `core` **with a test first**, then
   wire it in `game`. Never put rules in `main.rs`.
@@ -96,7 +109,7 @@ Cargo.toml            workspace, pinned deps, release profile for small wasm
 crates/core/          pure logic + tests
 crates/game/          macroquad shell
 web/index.html        canvas page; loads mq_js_bundle.js + airplane-scoring.wasm
-scripts/              check.sh, check-docs.sh, shot.sh, dev.sh, watch.sh, build-web.sh, serve.sh,
+scripts/              check.sh, check-docs.sh, check-mermaid.sh, shot.sh, dev.sh, watch.sh, build-web.sh, serve.sh,
                       docs.sh, vendor-js.sh
 docs/                 project notes; docs/content/{de,en} = manual
 ```
