@@ -6,9 +6,20 @@
 pub const TICK_SECONDS: f32 = 1.0 / 60.0;
 
 mod input;
+mod rng;
+mod sound;
 mod tilt;
+mod weather;
 pub use input::{pick_steer, steer_from_keys, steer_toward, Input, TOUCH_EASE_DISTANCE};
+pub use sound::{
+    Mix, CRASH_VOLUME, DIVE_WIND, ENGINE_VOLUME, MIX_CHANGE_PER_SECOND, RAIN_VOLUME, WIND_VOLUME,
+};
 pub use tilt::{Tilt, TILT_DEAD_ZONE_DEG, TILT_FULL_DEG, TILT_MIN_GRAVITY, TILT_SMOOTHING};
+pub use weather::{
+    Weather, CALM_WIND, DRY_SECONDS, FIRST_DRY_SECONDS, FLASH_SECONDS, GUST_WIND,
+    RAIN_CHANGE_PER_SECOND, RAIN_PEAK, RAIN_SECONDS, RAIN_WIND, STORM_RAIN, STRIKE_GAP_SECONDS,
+    THUNDER_DELAY_SECONDS, THUNDER_VOLUME,
+};
 
 /// Vertical speed of the player plane at full steer, in px per second.
 pub const PLAYER_CLIMB_SPEED: f32 = 300.0;
@@ -18,6 +29,34 @@ pub const PLAYER_HALF_HEIGHT: f32 = 18.0;
 
 /// The player's plane sits at this fraction of the screen width.
 pub const PLAYER_X_FRACTION: f32 = 0.2;
+
+/// Radius of the other planes, in px.
+pub const PLANE_RADIUS: f32 = 24.0;
+
+/// The player's plane crashes when another plane's centre comes closer
+/// than this plus [`PLANE_RADIUS`].
+pub const PLAYER_HIT_RADIUS: f32 = 16.0;
+
+/// After a crash the plane is out of control for this long.
+pub const CRASH_SECONDS: f32 = 1.5;
+
+/// [`CRASH_SECONDS`] in ticks.
+pub const CRASH_TICKS: u32 = (CRASH_SECONDS * 60.0) as u32;
+
+/// A crashed plane falls this fast, in px per second.
+pub const CRASH_FALL_SPEED: f32 = 120.0;
+
+/// Something that happened during a tick. The game crate reacts to these
+/// with one-shot effects (a sound, a flash); they never change the rules.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum Event {
+    /// The player's plane hit another plane.
+    Crash,
+    /// Lightning struck. `distance` is 0 (overhead) to 1 (far away).
+    Lightning { distance: f32 },
+    /// Thunder from an earlier strike arrives. `volume` is 0..1.
+    Thunder { volume: f32 },
+}
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Vec2 {
@@ -43,6 +82,30 @@ pub struct Plane {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Player {
     pub pos: Vec2,
+    /// The steer value used in the last tick (0 while crashed).
+    pub steer: f32,
+    /// Ticks left until a crashed plane flies again; 0 = flying.
+    pub crash_ticks: u32,
+    /// Overlapping another plane right now. A crash needs a *new* touch,
+    /// so a plane that recovers inside another one does not crash again.
+    touching: bool,
+}
+
+impl Player {
+    /// A plane flying level at `pos`.
+    pub const fn at(pos: Vec2) -> Self {
+        Self {
+            pos,
+            steer: 0.0,
+            crash_ticks: 0,
+            touching: false,
+        }
+    }
+
+    /// Out of control after hitting another plane.
+    pub fn is_crashed(&self) -> bool {
+        self.crash_ticks > 0
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -56,20 +119,40 @@ pub struct World {
     pub bounds: Bounds,
     pub player: Player,
     pub planes: Vec<Plane>,
+    pub weather: Weather,
+    /// Volumes of the looping sounds, eased toward what fits the world now.
+    pub mix: Mix,
     pub ticks: u64,
+    events: Vec<Event>,
 }
 
 impl World {
+    /// A world with the weather of seed 0.
     pub fn new(bounds: Bounds) -> Self {
-        let player = Player {
-            pos: Vec2::new(bounds.width * PLAYER_X_FRACTION, bounds.height / 2.0),
-        };
+        Self::with_seed(bounds, 0)
+    }
+
+    /// The seed decides the weather. Same seed and inputs, same game.
+    pub fn with_seed(bounds: Bounds, seed: u64) -> Self {
+        let player = Player::at(Vec2::new(
+            bounds.width * PLAYER_X_FRACTION,
+            bounds.height / 2.0,
+        ));
         Self {
             bounds,
             player,
             planes: Vec::new(),
+            weather: Weather::new(seed),
+            mix: Mix::SILENT,
             ticks: 0,
+            events: Vec::new(),
         }
+    }
+
+    /// What happened in the last tick. Read it after every `tick`:
+    /// the next one starts a new list.
+    pub fn events(&self) -> &[Event] {
+        &self.events
     }
 
     pub fn spawn_plane(&mut self, name: impl Into<String>, pos: Vec2, vel: Vec2) -> usize {
@@ -85,9 +168,19 @@ impl World {
     /// Deterministic: same inputs, same output, every time.
     pub fn tick(&mut self, input: &Input) {
         let Bounds { width, height } = self.bounds;
+        self.events.clear();
 
+        // A crashed plane ignores the controls and falls until it recovers.
+        let fall = if self.player.is_crashed() {
+            self.player.crash_ticks -= 1;
+            self.player.steer = 0.0;
+            CRASH_FALL_SPEED
+        } else {
+            self.player.steer = input.steer();
+            input.steer() * PLAYER_CLIMB_SPEED
+        };
         let p = &mut self.player.pos;
-        let y = p.y + input.steer() * PLAYER_CLIMB_SPEED * TICK_SECONDS;
+        let y = p.y + fall * TICK_SECONDS;
         p.y = if height > 2.0 * PLAYER_HALF_HEIGHT {
             y.clamp(PLAYER_HALF_HEIGHT, height - PLAYER_HALF_HEIGHT)
         } else {
@@ -114,6 +207,26 @@ impl World {
                 m.vel.y = -m.vel.y;
             }
         }
+
+        // Crash: the player's plane newly touches another plane.
+        let player = &mut self.player;
+        let reach = PLANE_RADIUS + PLAYER_HIT_RADIUS;
+        let touching = self.planes.iter().any(|m| {
+            let (dx, dy) = (m.pos.x - player.pos.x, m.pos.y - player.pos.y);
+            dx * dx + dy * dy < reach * reach
+        });
+        if touching && !player.touching && !player.is_crashed() {
+            player.crash_ticks = CRASH_TICKS;
+            player.steer = 0.0;
+            self.events.push(Event::Crash);
+        }
+        player.touching = touching;
+
+        self.weather.tick(&mut self.events);
+        self.mix = self.mix.approach(
+            Mix::target(&self.player, &self.weather),
+            MIX_CHANGE_PER_SECOND * TICK_SECONDS,
+        );
         self.ticks += 1;
     }
 
@@ -170,6 +283,144 @@ mod tests {
     fn player_starts_on_the_left_at_mid_height() {
         let w = world();
         assert_eq!(w.player.pos, Vec2::new(100.0 * PLAYER_X_FRACTION, 25.0));
+    }
+
+    /// A big world with a plane parked `gap` px to the right of the player.
+    fn world_with_plane_ahead(gap: f32) -> World {
+        let mut w = World::new(Bounds {
+            width: 800.0,
+            height: 400.0,
+        });
+        let p = w.player.pos;
+        w.spawn_plane("m", Vec2::new(p.x + gap, p.y), Vec2::new(0.0, 0.0));
+        w
+    }
+
+    #[test]
+    fn touching_another_plane_is_a_crash() {
+        let mut w = world_with_plane_ahead(PLANE_RADIUS + PLAYER_HIT_RADIUS - 1.0);
+        w.tick(&Input::NONE);
+        assert_eq!(w.events(), [Event::Crash]);
+        assert!(w.player.is_crashed());
+        assert_eq!(w.player.crash_ticks, CRASH_TICKS);
+    }
+
+    #[test]
+    fn a_near_miss_is_not_a_crash() {
+        let mut w = world_with_plane_ahead(PLANE_RADIUS + PLAYER_HIT_RADIUS + 1.0);
+        for _ in 0..100 {
+            w.tick(&Input::NONE);
+            assert_eq!(w.events(), []);
+        }
+        assert!(!w.player.is_crashed());
+    }
+
+    #[test]
+    fn a_crashed_plane_falls_and_ignores_the_controls() {
+        let mut w = world_with_plane_ahead(0.0);
+        w.tick(&Input::NONE);
+        let y = w.player.pos.y;
+        w.tick(&Input::new(-1.0)); // full climb: no effect
+        assert!((w.player.pos.y - (y + CRASH_FALL_SPEED * TICK_SECONDS)).abs() < 1e-4);
+        assert_eq!(w.player.steer, 0.0);
+    }
+
+    #[test]
+    fn the_plane_flies_again_after_the_crash_time() {
+        let mut w = world_with_plane_ahead(0.0);
+        w.tick(&Input::NONE); // crash
+        for _ in 0..CRASH_TICKS {
+            assert!(w.player.is_crashed());
+            w.tick(&Input::NONE);
+        }
+        assert!(!w.player.is_crashed());
+        let y = w.player.pos.y;
+        w.tick(&Input::new(-1.0));
+        assert!(w.player.pos.y < y, "controls work again");
+    }
+
+    #[test]
+    fn one_touch_is_one_crash() {
+        // The other plane stays on top of the player the whole time.
+        let mut w = world_with_plane_ahead(0.0);
+        w.planes[0].vel = Vec2::new(0.0, CRASH_FALL_SPEED); // falls along
+        let mut crashes = 0;
+        for _ in 0..10 * CRASH_TICKS {
+            w.tick(&Input::NONE);
+            crashes += w.events().iter().filter(|e| **e == Event::Crash).count();
+            w.planes[0].pos = w.player.pos;
+        }
+        assert_eq!(crashes, 1);
+    }
+
+    #[test]
+    fn a_second_touch_after_flying_free_crashes_again() {
+        let mut w = world_with_plane_ahead(0.0);
+        w.tick(&Input::NONE);
+        w.planes[0].pos.x += 500.0; // far away
+        for _ in 0..=CRASH_TICKS {
+            w.tick(&Input::NONE);
+        }
+        assert!(!w.player.is_crashed());
+        w.planes[0].pos = w.player.pos;
+        w.tick(&Input::NONE);
+        assert_eq!(w.events(), [Event::Crash]);
+    }
+
+    #[test]
+    fn events_last_for_one_tick() {
+        let mut w = world_with_plane_ahead(0.0);
+        w.tick(&Input::NONE);
+        assert_eq!(w.events().len(), 1);
+        w.tick(&Input::NONE);
+        assert_eq!(w.events(), []);
+    }
+
+    #[test]
+    fn the_engine_fades_in_at_the_start_and_cuts_out_in_a_crash() {
+        let mut w = world_with_plane_ahead(300.0);
+        assert_eq!(w.mix, Mix::SILENT);
+        w.tick(&Input::NONE);
+        let step = MIX_CHANGE_PER_SECOND * TICK_SECONDS;
+        assert!((w.mix.engine_idle - step).abs() < 1e-6, "fades, no jump");
+        for _ in 0..60 {
+            w.tick(&Input::NONE);
+        }
+        assert_eq!(w.mix, Mix::target(&w.player, &w.weather));
+        assert!(w.mix.engine_idle > 0.0 && w.mix.engine_power > 0.0);
+
+        w.planes[0].pos = w.player.pos;
+        w.tick(&Input::NONE);
+        assert!(w.mix.engine_idle > 0.0, "fades out, no jump");
+        for _ in 0..30 {
+            w.tick(&Input::NONE);
+        }
+        assert_eq!((w.mix.engine_idle, w.mix.engine_power), (0.0, 0.0));
+    }
+
+    #[test]
+    fn thunderstorms_reach_the_world_events_and_the_rain_mix() {
+        let mut w = World::with_seed(
+            Bounds {
+                width: 800.0,
+                height: 400.0,
+            },
+            1,
+        );
+        let (mut lightning, mut thunder, mut loudest_rain) = (0, 0, 0.0_f32);
+        for _ in 0..5 * 3600 {
+            w.tick(&Input::NONE);
+            for e in w.events() {
+                match e {
+                    Event::Lightning { .. } => lightning += 1,
+                    Event::Thunder { .. } => thunder += 1,
+                    Event::Crash => panic!("nothing to crash into"),
+                }
+            }
+            loudest_rain = loudest_rain.max(w.mix.rain);
+        }
+        assert!(lightning > 0 && thunder > 0, "{lightning} {thunder}");
+        assert!(loudest_rain >= RAIN_VOLUME * STORM_RAIN);
     }
 
     #[test]
@@ -256,15 +507,25 @@ mod tests {
 
     #[test]
     fn simulation_is_deterministic() {
-        let mut a = world();
-        let mut b = world();
-        for w in [&mut a, &mut b] {
+        let bounds = Bounds {
+            width: 100.0,
+            height: 50.0,
+        };
+        let mut a = World::with_seed(bounds, 4);
+        let mut b = World::with_seed(bounds, 4);
+        let mut logs = [Vec::new(), Vec::new()];
+        for (w, log) in [&mut a, &mut b].into_iter().zip(&mut logs) {
             w.spawn_plane("m", Vec2::new(5.0, 5.0), Vec2::new(37.0, 91.0));
-            for i in 0..1000 {
+            for i in 0..10_000 {
                 w.tick(&Input::new(((i % 7) as f32 - 3.0) / 3.0));
+                log.extend_from_slice(w.events());
             }
         }
         assert_eq!(a, b);
+        assert_eq!(logs[0], logs[1]);
+        // The run is long enough to cover crashes and a thunderstorm.
+        assert!(logs[0].contains(&Event::Crash));
+        assert!(logs[0].iter().any(|e| matches!(e, Event::Thunder { .. })));
     }
 
     #[test]

@@ -17,7 +17,7 @@ tmpdir=$(mktemp -d)
 trap 'rm -rf "$tmpdir"' EXIT
 
 # Console messages that are known and harmless (from the vendored JS bundle).
-known='register_plugin is not defined|is present in JS bundle, but is not used|GL Driver Message|favicon'
+known='register_plugin is not defined|AudioContext was not allowed to start|is present in JS bundle, but is not used|GL Driver Message|favicon'
 
 chrome="${CHROME:-}"
 if [ -z "$chrome" ]; then

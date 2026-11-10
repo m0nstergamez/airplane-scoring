@@ -1,0 +1,7 @@
+# quad-snd 0.2.8 (macroquad's "audio" feature) declares its JS imports
+# (audio_init, audio_play_buffer, ...) without
+# #[link(wasm_import_module = "env")], which current wasm-ld rejects as
+# undefined symbols. This turns them into imports from "env", where
+# web/mq_js_bundle.js provides them. Remove once quad-snd is fixed.
+[target.wasm32-unknown-unknown]
+rustflags = ["-C", "link-arg=--import-undefined"]

@@ -29,6 +29,31 @@ short **meaning**.
 | Hindernis | obstacle | — | Coming soon |
 | Punkte | points | — | Coming soon |
 
+## Weather and sound
+
+| Deutsch | English | In code | Meaning |
+|---|---|---|---|
+| Wetter | weather | `Weather` | Rain, wind and thunderstorms; changes while you fly |
+| Regen | rain | `Weather::rain` | From 0 (dry) to 1 (downpour) |
+| Wind | wind | `Weather::wind` | From 0 to 1; grows with the rain |
+| Böe | gust | `GUST_WIND` | A short burst of extra wind |
+| Gewitter | thunderstorm | `STORM_RAIN` | Rain heavy enough for lightning |
+| Blitz | lightning | `Event::Lightning` | Lights up the sky |
+| Donner | thunder | `Event::Thunder` | Heard after the lightning; later and quieter from far away |
+| Zusammenstoss | crash | `Event::Crash`, `CRASH_SECONDS` | The player's plane touches another plane and is out of control for a moment |
+| Ton | sound | `crates/game/src/audio.rs` | Everything you hear. «Ton ein/aus» = sound on/off |
+| Tondatei | sound file | `web/sounds/*.wav` | One recorded or computed sound |
+| Lautstärke | volume | `Mix` | How loud a sound plays, 0 to 1 |
+| Mischung | mix | `Mix` | The volumes of all looping sounds at one moment |
+| Schleife | loop | `looped: true` | A sound that repeats without a gap (engine, wind, rain) |
+| Motor | engine | `engine_idle`, `engine_power` | The plane's engine sound |
+| Leerlauf | idle | `engine_idle` | Engine at low power (diving) |
+| Vollgas | full power | `engine_power` | Engine at high power (climbing) |
+| stummschalten | mute | `sound_js.rs` | Switch all sound off |
+| Lautsprecher-Knopf | speaker button | `#mute` | Button at the top right for sound on/off |
+| Ereignis | event | `Event` | Something that happened in one tick |
+| Startwert | seed | `World::with_seed` | The number that decides the random weather |
+
 ## Phone and screen
 
 | Deutsch | English | In code | Meaning |
@@ -38,6 +63,7 @@ short **meaning**.
 | Hochformat | portrait | `orientation: portrait` | Phone held upright |
 | quer drehen | turn sideways | — | Rotate the phone into landscape |
 | Ausrichtungssperre | rotation lock | — | iPhone setting; Android: «Automatisch drehen» / "Auto-rotate" |
+| Lautlos-Modus | silent mode | — | iPhone switch on the side; also mutes the game |
 | Bewegung & Ausrichtung | Motion & Orientation | `DeviceMotionEvent` | iPhone permission needed for tilting |
 | Home-Bildschirm | home screen | `manifest.webmanifest` | iPhone: «Zum Home-Bildschirm» / "Add to Home Screen" |
 | Startbildschirm | home screen | `manifest.webmanifest` | Android: «Zum Startbildschirm hinzufügen» / "Add to Home screen" |

@@ -41,7 +41,9 @@
     }
 
     /* Tap to fly: phones only. The tap is the user gesture iOS needs before
-       it grants motion sensors (and later, sound). Desktop starts directly. */
+       it grants motion sensors, and the one every browser needs before a
+       page may play sound (mq_js_bundle.js resumes audio on the first
+       touch, click or key). Desktop starts directly, silent until then. */
     #start {
       display: none; position: fixed; inset: 0; z-index: 9;
       background: rgba(20, 24, 31, 0.82); color: #fff;
@@ -55,10 +57,29 @@
       border: 0; border-radius: 999px; padding: 14px 40px;
     }
     #start small { font-weight: 400; opacity: 0.75; max-width: 30em; }
+
+    /* Sound on/off, top right, clear of the notch. Big enough for a thumb. */
+    #mute {
+      position: fixed; z-index: 8;
+      top: calc(8px + env(safe-area-inset-top)); right: calc(8px + env(safe-area-inset-right));
+      width: 44px; height: 44px; padding: 10px; border: 0; border-radius: 50%;
+      background: rgba(255, 255, 255, 0.1); color: #fff;
+    }
+    #mute svg { width: 100%; height: 100%; display: block; }
+    #mute .off, #mute[aria-pressed="true"] .on { display: none; }
+    #mute[aria-pressed="true"] .off { display: inline; }
+    #mute[aria-pressed="true"] { color: #9aa4b2; }
   </style>
 </head>
 <body>
   <canvas id="glcanvas" tabindex="1"></canvas>
+  <button id="mute" type="button" aria-label="Mute sound" aria-pressed="false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5z" fill="currentColor"/>
+      <path class="on" d="M15.5 9a4.2 4.2 0 0 1 0 6M18 6.5a7.8 7.8 0 0 1 0 11"/>
+      <path class="off" d="M16 9.5l5 5M21 9.5l-5 5"/>
+    </svg>
+  </button>
   <div id="rotate" role="alert">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
       <rect x="7" y="2" width="10" height="20" rx="2"/><line x1="11" y1="18.5" x2="13" y2="18.5"/>
@@ -92,6 +113,37 @@
         importObject.env.tilt_gx = () => tilt.gx;
         importObject.env.tilt_gy = () => tilt.gy;
         importObject.env.tilt_epoch = () => tilt.epoch;
+      },
+    });
+
+    // Sound plugin: the page owns "sound on/off" (button top right, or the
+    // M key via the Rust side) and remembers it. The Rust side
+    // (crates/game/src/sound_js.rs) asks every frame.
+    const MUTE_KEY = "airplane-scoring.muted";
+    const mute = document.getElementById("mute");
+    let muted = false;
+    try { muted = localStorage.getItem(MUTE_KEY) === "1"; } catch (_) { /* private mode: not remembered */ }
+    const showMuted = () => {
+      mute.setAttribute("aria-pressed", String(muted));
+      mute.setAttribute("aria-label", muted ? "Unmute sound" : "Mute sound");
+    };
+    const toggleMute = () => {
+      muted = !muted;
+      try { localStorage.setItem(MUTE_KEY, muted ? "1" : "0"); } catch (_) { /* see above */ }
+      showMuted();
+    };
+    showMuted();
+    mute.addEventListener("click", () => {
+      toggleMute();
+      document.getElementById("glcanvas").focus(); // keys keep steering
+    });
+
+    miniquad_add_plugin({
+      name: "sound",
+      version: 1, // must match sound_crate_version() in sound_js.rs
+      register_plugin: (importObject) => {
+        importObject.env.sound_muted = () => (muted ? 1 : 0);
+        importObject.env.sound_toggle_mute = toggleMute;
       },
     });
 

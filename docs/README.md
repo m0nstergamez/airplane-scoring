@@ -28,6 +28,36 @@ that isn't code here. Keep entries short and dated.
   (wasm-ld needs that, same as miniquad's own imports).
 - Priority: finger > pressed keys > tilt.
 
+- Sound: macroquad feature `audio` (quad-snd 0.2.8). API in 0.4.16 is
+  load / play once / loop / stop / set volume only: no pitch, pan or fade.
+  So the engine is two loops cross-faded by core (`Mix`), and fades are
+  core moving volumes a little per tick (`MIX_CHANGE_PER_SECOND`).
+- Core decides sound, game plays it: `World.mix` (loop volumes) and
+  `World::events()` (Crash, Lightning, Thunder; valid for one tick).
+- Weather is seeded (`World::with_seed`, SplitMix64 in core `rng.rs`); the
+  game seeds it from the clock. Starts dry for 10 s, then rain spells of
+  20–40 s; rain >= 0.6 is a thunderstorm. Thunder is scheduled by core
+  0.3–3 s after its lightning, by distance.
+- Crash = player newly touches another plane: 1.5 s falling without
+  controls. Edge-triggered, so recovering inside the other plane does not
+  crash again.
+- Sound files are synthesised by `scripts/make-sounds.py` (stdlib only,
+  deterministic), committed as mono 16-bit 22050 Hz WAV in `web/sounds/`
+  (about 600 KB). WAV because native quad-snd decodes only WAV/OGG and
+  older iOS Safari cannot decode OGG. Loaded at runtime in a coroutine, not
+  `include_bytes!`, so the wasm stays small (+25 KB for the audio code).
+- quad-snd 0.2.8 lacks `#[link(wasm_import_module = "env")]` on its JS
+  imports; `.cargo/config.toml` passes `--import-undefined` to wasm-ld.
+- Browsers start audio suspended. `mq_js_bundle.js` resumes it on the
+  first touchstart/touchend/mousedown/keydown; loops started before that
+  begin playing then. Chrome logs "AudioContext was not allowed to start"
+  until then (filtered in `scripts/shot.sh`).
+- Mute: the page owns it (button `#mute`, localStorage
+  `airplane-scoring.muted`, plugin "sound"); key M goes through Rust to
+  the same toggle. iOS silent mode mutes Web Audio; nothing we can do.
+- Not verified by ear: the sounds were checked as spectrograms and by
+  recording Web Audio calls in headless Chrome, never listened to.
+
 ## Concepts
 
 ### Tilt: from sensor to steering

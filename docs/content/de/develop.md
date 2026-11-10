@@ -11,6 +11,8 @@ im Browser als WebAssembly. Gezeichnet wird mit der Engine
 - [Git](https://git-scm.com/)
 - Python 3 (für den lokalen Webserver)
 - Google Chrome (für automatische Screenshots; optional)
+- Nur Linux: die ALSA-Ton-Header für `cargo run` (auf Ubuntu:
+  `sudo apt install libasound2-dev`)
 
 ## Einrichten
 
@@ -28,6 +30,7 @@ rustup target add wasm32-unknown-unknown
 | Im Browser spielen | `scripts/dev.sh`, dann <http://localhost:8080> öffnen |
 | Alle Prüfungen laufen lassen | `scripts/check.sh` |
 | Schnelle Prüfungen | `scripts/check.sh --fast` |
+| Tondateien neu erzeugen | `scripts/make-sounds.py` |
 
 `scripts/dev.sh` läuft weiter: Jedes Mal, wenn du eine Datei speicherst,
 wird das Spiel neu gebaut und die Seite im Browser lädt sich von selbst neu:
@@ -43,9 +46,9 @@ flowchart LR
 
 | Ordner | Was drin ist |
 |---|---|
-| `crates/core` | Die **Regeln** des Spiels: Bewegung, Steuerung, Kippen. Keine Grafik. Alles hier hat Tests. |
-| `crates/game` | Zeichnet das Spiel und liest Tasten, Finger und Sensoren. Keine Regeln. |
-| `web` | Die Webseite, die das Spiel lädt. |
+| `crates/core` | Die **Regeln** des Spiels: Bewegung, Steuerung, Kippen, Wetter, Zusammenstösse, Lautstärken. Keine Grafik, keine Tondateien. Alles hier hat Tests. |
+| `crates/game` | Zeichnet das Spiel, spielt die Töne ab und liest Tasten, Finger und Sensoren. Keine Regeln. |
+| `web` | Die Webseite, die das Spiel lädt, und die Tondateien in `web/sounds`. |
 | `scripts` | Hilfsbefehle (bauen, starten, prüfen). |
 | `docs` | Notizen und diese Anleitung. |
 
@@ -90,6 +93,43 @@ Ein langsames Handy macht mehrere Ticks pro Bild, ein schnelles manchmal
 keinen. Weil jeder Tick gleich ist, verhält sich das Spiel überall gleich –
 und ein Test kann es genau nachspielen.
 
+### Ton
+
+Beim Ton gilt dieselbe Aufteilung. `core` entscheidet, **was** du hörst
+und **wie laut**; `game` spielt nur Dateien ab:
+
+```mermaid
+flowchart LR
+    subgraph core["crates/core: Regeln und Tests"]
+        W["World::tick"]
+        M["Mischung: je eine Lautstärke für<br/>Motor Leerlauf, Motor Vollgas, Wind, Regen"]
+        E["Ereignisse:<br/>Crash, Lightning, Thunder"]
+    end
+    subgraph game["crates/game: spielt ab"]
+        L["Schleifen laufen immer,<br/>Lautstärke bei jedem Bild setzen"]
+        O["Pro Ereignis einen Ton<br/>einmal abspielen"]
+    end
+    F["web/sounds/*.wav"]
+    W --> M --> L
+    W --> E --> O
+    F --> L
+    F --> O
+```
+
+- **Schleifen** (Motor, Wind, Regen) hören nie auf. Bei jedem Tick
+  berechnet `core` eine Mischung (`Mix`) mit ihren Lautstärken; diese
+  ändern sich pro Tick nur wenig, damit nichts knackt.
+- **Der Motor** besteht aus zwei Schleifen. macroquad 0.4.16 kann die
+  Tonhöhe nicht ändern, darum blendet Steigen vom Leerlauf zum Vollgas über.
+- **Einzelne Töne** (Donner, Zusammenstoss) sind Ereignisse eines Ticks.
+  Der Donner ist ein eigenes Ereignis, weil er später kommt als sein Blitz.
+- **Das Wetter ist zufällig, aber wiederholbar:** `World::with_seed`
+  bekommt einen Startwert; derselbe Startwert ergibt denselben Regen und
+  dieselben Blitze, darum können Tests es nachspielen.
+- **Die Tondateien erzeugt ein Skript**, sie sind nicht aufgenommen:
+  `scripts/make-sounds.py` berechnet sie aus Rauschen und Impulsen. Skript
+  ändern, laufen lassen, die neuen `.wav`-Dateien committen.
+
 ### Zuerst der Test
 
 Neue Regeln entstehen in drei Schritten:
@@ -122,6 +162,11 @@ Weitere Zahlen zum Ausprobieren:
 | `TILT_FULL_DEG` | `crates/core/src/tilt.rs` | wie weit du das Handy für volle Geschwindigkeit drehst |
 | `TILT_DEAD_ZONE_DEG` | `crates/core/src/tilt.rs` | kleine Drehungen, die ignoriert werden |
 | `TILT_SMOOTHING` | `crates/core/src/tilt.rs` | weicheres (kleiner) oder direkteres (grösser) Kippen |
+| `CRASH_SECONDS` | `crates/core/src/lib.rs` | wie lange sich ein Flugzeug nach einem Zusammenstoss nicht steuern lässt |
+| `RAIN_SECONDS` | `crates/core/src/weather.rs` | kürzester und längster Regen |
+| `STORM_RAIN` | `crates/core/src/weather.rs` | wie stark der Regen für Blitze sein muss (0 bis 1) |
+| `STRIKE_GAP_SECONDS` | `crates/core/src/weather.rs` | Zeit zwischen zwei Blitzen |
+| `ENGINE_VOLUME` | `crates/core/src/sound.rs` | wie laut der Motor ist (0 bis 1) |
 
 ## Änderung teilen
 
