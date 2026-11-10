@@ -2,6 +2,8 @@
 
 Fly with your plane through obstacles and survive.
 
+**Play:** https://m0nstergamez.github.io/airplane-scoring/ (phone in landscape; "Add to Home Screen" for full screen)
+
 Rust 2D game: pure-logic core with `cargo test`, macroquad renderer,
 wasm build, pinned engine version, Claude Code-friendly loop.
 
@@ -25,5 +27,10 @@ when bumping the macroquad version (see `AGENT.md`).
 
 Port 8080 taken? `PORT=9000 scripts/dev.sh`.
 The screenshot needs Google Chrome (or set `CHROME=/path/to/chrome`).
+
+## Publishing
+Every push to `main` runs `.github/workflows/pages.yml`: tests, clippy, wasm
+build, then deploys `web/` to GitHub Pages. Pull requests run the same checks
+without deploying.
 
 See `AGENT.md` for the working agreement with Claude Code.
