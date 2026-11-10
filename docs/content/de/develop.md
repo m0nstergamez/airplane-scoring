@@ -13,6 +13,8 @@ im Browser als WebAssembly. Gezeichnet wird mit der Engine
 - Google Chrome (für automatische Screenshots; optional)
 - Nur Linux: die ALSA-Ton-Header für `cargo run` (auf Ubuntu:
   `sudo apt install libasound2-dev`)
+- Nur für Level-Hintergründe: `rsvg-convert` und ImageMagick (macOS:
+  `brew install librsvg imagemagick`)
 
 ## Einrichten
 
@@ -31,6 +33,7 @@ rustup target add wasm32-unknown-unknown
 | Alle Prüfungen laufen lassen | `scripts/check.sh` |
 | Schnelle Prüfungen | `scripts/check.sh --fast` |
 | Tondateien neu erzeugen | `scripts/make-sounds.py` |
+| Level-Hintergründe neu erzeugen | `scripts/make-backgrounds.sh` |
 
 `scripts/dev.sh` läuft weiter: Jedes Mal, wenn du eine Datei speicherst,
 wird das Spiel neu gebaut und die Seite im Browser lädt sich von selbst neu:
@@ -46,9 +49,10 @@ flowchart LR
 
 | Ordner | Was drin ist |
 |---|---|
-| `crates/core` | Die **Regeln** des Spiels: Bewegung, Steuerung, Kippen, Wetter, Zusammenstösse, Lautstärken. Keine Grafik, keine Tondateien. Alles hier hat Tests. |
+| `crates/core` | Die **Regeln** des Spiels: Bewegung, Steuerung, Kippen, Wetter, Zusammenstösse, Lautstärken, Scrollen. Keine Grafik, keine Tondateien. Alles hier hat Tests. |
 | `crates/game` | Zeichnet das Spiel, spielt die Töne ab und liest Tasten, Finger und Sensoren. Keine Regeln. |
-| `web` | Die Webseite, die das Spiel lädt, und die Tondateien in `web/sounds`. |
+| `web` | Die Webseite, die das Spiel lädt, die Tondateien in `web/sounds` und die Level-Hintergründe in `web/levels`. |
+| `art` | Zeichnungen, aus denen das Spiel gemacht ist: ein Ordner pro Level in `art/levels`. |
 | `scripts` | Hilfsbefehle (bauen, starten, prüfen). |
 | `docs` | Notizen und diese Anleitung. |
 
@@ -130,6 +134,70 @@ flowchart LR
   `scripts/make-sounds.py` berechnet sie aus Rauschen und Impulsen. Skript
   ändern, laufen lassen, die neuen `.wav`-Dateien committen.
 
+### Level-Hintergründe
+
+Jedes Level hat eine Landschaft hinter dem Flugzeug. Sie beginnt als Foto
+und endet als Bild, das das Spiel beim Scrollen immer wieder nebeneinander
+zeichnet:
+
+```mermaid
+flowchart LR
+    P["Foto<br/>art/levels/level1/photo.jpg<br/>(bleibt auf deinem Computer)"] --> S["Zeichnung<br/>art/levels/level1/background.svg"]
+    S --> M["scripts/make-backgrounds.sh"] --> G["Bild<br/>web/levels/level1.png"]
+    G --> D["Spiel: Kopien nebeneinander,<br/>gleiten nach links"]
+```
+
+Jedes Level hat einen eigenen Ordner mit denselben Dateinamen:
+
+```text
+art/levels/
+  level1/
+    photo.jpg         das Foto (wird nicht committet)
+    background.svg    die Zeichnung (wird committet)
+  level2/
+  level3/
+```
+
+Ein neuer Level-Hintergrund in fünf Schritten:
+
+1. Lege den Ordner an, zum Beispiel `art/levels/level2/`.
+2. Leg dein Foto als `photo.jpg` hinein. Fotografiere quer und ohne
+   Personen. Das Foto wird nie committet: Das Repository ist öffentlich,
+   und Handyfotos enthalten den Ort, an dem sie gemacht wurden.
+3. Zeichne `background.svg` nach dem Foto, oder bitte Claude Code: «Mach
+   `art/levels/level2/background.svg` aus `photo.jpg`, wie bei Level 1.»
+   Nimm eine Kopie von `art/levels/level1/background.svg` als Start: Ihre
+   Kommentare erklären die Regeln unten.
+4. Starte `scripts/make-backgrounds.sh level2`. Es erzeugt
+   `web/levels/level2.png` und prüft die Naht.
+5. Schau dir das Bild an, dann committe das SVG und das PNG.
+
+Das SVG muss ein paar Regeln einhalten, weil der rechte Rand einer Kopie
+den linken Rand der nächsten berührt:
+
+- **Grösse:** `viewBox="0 0 1600 740"`, ungefähr die Form eines quer
+  gehaltenen Handys. Das Spiel skaliert es auf die Bildschirmhöhe.
+- **Flache Farben, ruhig und etwas blass**, damit das Flugzeug und die
+  weisse Schrift gut sichtbar sind.
+- **Was über die ganze Breite geht** (Himmel, Wasser, Strasse, Wiese),
+  ändert sich nur von oben nach unten, nie von links nach rechts.
+- **Alles andere wird dreimal gezeichnet** (bei x = −1600, 0 und +1600).
+  Eine Wolke, die rechts hinausragt, kommt links wieder herein.
+- **Eine Gruppe pro Ebene** (Himmel, Hügel, Wasser, Ufer, Strasse, Wiese,
+  Zaun). Später können die Ebenen verschieden schnell scrollen.
+
+Passen die Ränder nicht zusammen, bricht `make-backgrounds.sh` mit «seam
+too visible» ab. Das Spiel selbst weiss nur, wie weit sich die Landschaft
+bewegt hat, `background_x` in `crates/core/src/scenery.rs`, und zeichnet so
+viele Kopien, wie der Bildschirm braucht:
+
+```mermaid
+flowchart LR
+    T["Ticks bisher"] --> D["scroll_distance:<br/>Ticks × SCROLL_SPEED"]
+    D --> X["background_x:<br/>wo Kopie 1 beginnt (0 bis −Breite)"]
+    X --> C["Kopien nebeneinander zeichnen,<br/>bis der Bildschirm voll ist"]
+```
+
 ### Zuerst der Test
 
 Neue Regeln entstehen in drei Schritten:
@@ -167,6 +235,7 @@ Weitere Zahlen zum Ausprobieren:
 | `STORM_RAIN` | `crates/core/src/weather.rs` | wie stark der Regen für Blitze sein muss (0 bis 1) |
 | `STRIKE_GAP_SECONDS` | `crates/core/src/weather.rs` | Zeit zwischen zwei Blitzen |
 | `ENGINE_VOLUME` | `crates/core/src/sound.rs` | wie laut der Motor ist (0 bis 1) |
+| `SCROLL_SPEED` | `crates/core/src/scenery.rs` | wie schnell die Landschaft vorbeizieht (Pixel pro Sekunde) |
 
 ## Änderung teilen
 

@@ -1,0 +1,147 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+     viewBox="0 0 1600 740" width="1600" height="740">
+  <!--
+    Level 1: coastal road by a lagoon, hills behind.
+    Traced from our own photo; people and cars left out.
+
+    The game repeats this image side by side while it scrolls, so the left
+    and right edges must match. How that is done here:
+      * The plain fills that span the whole width (sky, water, road,
+        grass) are drawn once, at the bottom of the file. They only change
+        from top to bottom, never from left to right.
+      * Everything else lives in the "-art" groups below and is drawn three
+        times (x = -1600, 0, +1600). A cloud or bush that sticks out over
+        one edge comes back in at the other edge.
+      * Never put two things that overlap at the edge (like the sun glow
+        and the clouds) in the same "-art" group: the next copy would paint
+        its glow over the previous copy's clouds. Give each its own group.
+    scripts/make-backgrounds.sh renders this file and checks the seam.
+  -->
+  <defs>
+    <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8f969c"/>
+      <stop offset="0.55" stop-color="#c9c6b6"/>
+      <stop offset="1" stop-color="#ecdcae"/>
+    </linearGradient>
+    <radialGradient id="sunGlow" cx="300" cy="380" r="620" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#f6e2a4" stop-opacity="0.85"/>
+      <stop offset="1" stop-color="#f6e2a4" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="waterGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#c4c8c4"/>
+      <stop offset="1" stop-color="#a9b2b0"/>
+    </linearGradient>
+    <linearGradient id="grassGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#7f8a4c"/>
+      <stop offset="1" stop-color="#5b6236"/>
+    </linearGradient>
+
+    <!-- ===== layers, back to front ===== -->
+
+    <g id="glow-art">
+      <rect x="-320" width="1240" height="740" fill="url(#sunGlow)"/>
+    </g>
+
+    <g id="sky-art">
+      <!-- dark cloud bands -->
+      <g fill="#7d858c" opacity="0.55">
+        <path d="M0 0 H1600 V40 C1400 64 1150 22 900 40 C700 56 450 20 250 50 C130 66 60 46 0 40 Z"/>
+        <path d="M-160 200 C-60 150 80 120 260 130 C330 135 360 150 380 160 C480 185 560 200 660 180 C580 230 260 240 -60 222 C-110 218 -140 210 -160 200 Z"/>
+        <path d="M720 120 C870 70 1070 90 1200 130 C1320 160 1450 140 1560 120 C1500 190 1300 220 1120 200 C970 180 840 190 720 120 Z"/>
+      </g>
+      <!-- pale thin clouds -->
+      <g fill="#a3a8a8" opacity="0.5">
+        <path d="M150 280 C300 250 520 260 640 290 C500 310 300 310 150 280 Z"/>
+        <path d="M920 250 C1070 220 1320 230 1500 260 C1350 285 1120 285 920 250 Z"/>
+      </g>
+    </g>
+
+    <g id="hills-art">
+      <!-- far blue-grey ridge: one bump, both ends at y = 440 -->
+      <path d="M700 470 C760 440 860 420 960 404 C1040 392 1100 380 1170 386 C1240 372 1300 374 1360 386 C1420 380 1480 384 1540 396 C1600 404 1660 420 1720 470 Z" fill="#7d8790"/>
+      <!-- big green hill with villages -->
+      <path d="M-120 470 C-80 430 -20 400 60 372 C110 356 160 350 210 354 C260 360 290 380 340 378 C410 372 470 368 550 380 C650 395 770 420 880 444 L960 470 Z" fill="#46553a"/>
+      <path d="M-100 470 C50 430 300 410 560 418 C720 424 860 440 940 470 Z" fill="#3c4a33"/>
+      <g fill="#d6d2c4" opacity="0.8">
+        <rect x="300" y="395" width="14" height="7"/><rect x="330" y="402" width="10" height="6"/>
+        <rect x="420" y="410" width="18" height="8"/><rect x="455" y="404" width="9" height="6"/>
+        <rect x="500" y="420" width="22" height="9"/><rect x="560" y="430" width="12" height="7"/>
+        <rect x="90" y="440" width="12" height="6"/><rect x="200" y="436" width="16" height="7"/>
+        <rect x="760" y="448" width="14" height="6"/><rect x="1150" y="440" width="10" height="5"/>
+        <rect x="1240" y="436" width="12" height="6"/><rect x="1380" y="440" width="10" height="5"/>
+      </g>
+    </g>
+
+    <g id="water-art">
+    </g>
+
+    <g id="shore-art">
+      <!-- sand spit (left) and green marsh with yellow broom (right) -->
+      <path d="M-60 506 C0 494 200 486 450 486 C650 486 780 492 860 506 Z" fill="#9a9067"/>
+      <path d="M700 506 C780 490 1000 482 1250 482 C1450 482 1560 490 1640 506 Z" fill="#8fa34a"/>
+      <path d="M1080 506 C1150 494 1300 490 1420 492 C1500 494 1550 500 1580 506 Z" fill="#b2b545" opacity="0.7"/>
+      <!-- palm -->
+      <g transform="translate(1180 496)">
+        <path d="M0 0 C2 -20 4 -36 2 -50" stroke="#4a4232" stroke-width="5" fill="none"/>
+        <g fill="#3d5230">
+          <path d="M2 -50 C-20 -64 -44 -60 -58 -46 C-38 -54 -18 -52 2 -50 Z"/>
+          <path d="M2 -50 C22 -66 48 -62 60 -46 C40 -54 20 -52 2 -50 Z"/>
+          <path d="M2 -50 C-10 -74 -4 -86 8 -92 C4 -78 6 -64 2 -50 Z"/>
+          <path d="M2 -50 C-26 -50 -40 -36 -42 -24 C-28 -38 -14 -46 2 -50 Z"/>
+          <path d="M2 -50 C30 -50 42 -34 44 -22 C30 -38 16 -46 2 -50 Z"/>
+        </g>
+      </g>
+    </g>
+
+    <g id="road-art">
+      <!-- centre dashes: 48 px period, so 1600 / 48 is not whole; the
+           pattern restarts at x = 0 and the last dash ends before 1600 -->
+      <path d="M8 518 H1592" stroke="#f2efe6" stroke-width="2" stroke-dasharray="26 24" fill="none"/>
+      <!-- rocks on the far verge -->
+      <g fill="#b9b0a0">
+        <ellipse cx="80" cy="506" rx="26" ry="7"/><ellipse cx="190" cy="505" rx="20" ry="6"/>
+        <ellipse cx="330" cy="506" rx="24" ry="7"/><ellipse cx="470" cy="505" rx="18" ry="5"/>
+        <ellipse cx="610" cy="506" rx="22" ry="6"/>
+      </g>
+    </g>
+
+    <g id="grass-art">
+      <!-- tufts -->
+      <g fill="#a39a62" opacity="0.7">
+        <path d="M120 600 l10 -40 l6 38 l8 -30 l4 34 Z"/>
+        <path d="M420 640 l12 -46 l6 44 l10 -36 l4 40 Z"/>
+        <path d="M760 590 l9 -34 l5 32 l8 -26 l4 30 Z"/>
+        <path d="M1040 660 l12 -50 l6 48 l10 -40 l4 44 Z"/>
+        <path d="M1340 610 l10 -40 l6 38 l8 -30 l4 34 Z"/>
+      </g>
+      <!-- bushes; the right one sticks out over the edge on purpose -->
+      <g fill="#4a5a32" opacity="0.8">
+        <ellipse cx="260" cy="690" rx="110" ry="30"/>
+        <ellipse cx="900" cy="700" rx="140" ry="34"/>
+        <ellipse cx="1560" cy="680" rx="120" ry="28"/>
+      </g>
+      <!-- white flowers -->
+      <g fill="#e8e3cf" opacity="0.6">
+        <circle cx="560" cy="712" r="3"/><circle cx="575" cy="706" r="2.5"/><circle cx="590" cy="716" r="3"/>
+        <circle cx="1210" cy="720" r="3"/><circle cx="1225" cy="712" r="2.5"/><circle cx="1240" cy="722" r="3"/>
+      </g>
+    </g>
+
+    <g id="fence-art">
+      <!-- wooden slat fence on the near side of the road, x = 0..420 -->
+      <rect x="0" y="544" width="420" height="3" fill="#6e5c45"/>
+      <path d="M2 556 V534 M11 556 V534 M20 556 V534 M29 556 V534 M38 556 V534 M47 556 V534 M56 556 V534 M65 556 V534 M74 556 V534 M83 556 V534 M92 556 V534 M101 556 V534 M110 556 V534 M119 556 V534 M128 556 V534 M137 556 V534 M146 556 V534 M155 556 V534 M164 556 V534 M173 556 V534 M182 556 V534 M191 556 V534 M200 556 V534 M209 556 V534 M218 556 V534 M227 556 V534 M236 556 V534 M245 556 V534 M254 556 V534 M263 556 V534 M272 556 V534 M281 556 V534 M290 556 V534 M299 556 V534 M308 556 V534 M317 556 V534 M326 556 V534 M335 556 V534 M344 556 V534 M353 556 V534 M362 556 V534 M371 556 V534 M380 556 V534 M389 556 V534 M398 556 V534 M407 556 V534 M416 556 V534"
+            stroke="#7a6851" stroke-width="3"/>
+    </g>
+  </defs>
+
+  <!-- Each layer: its full-width fill once, then its "-art" three times. -->
+  <g id="sky"><rect width="1600" height="740" fill="url(#skyGrad)"/><use xlink:href="#glow-art" x="-1600"/><use xlink:href="#glow-art"/><use xlink:href="#glow-art" x="1600"/>
+    <use xlink:href="#sky-art" x="-1600"/><use xlink:href="#sky-art"/><use xlink:href="#sky-art" x="1600"/></g>
+  <g id="hills"><use xlink:href="#hills-art" x="-1600"/><use xlink:href="#hills-art"/><use xlink:href="#hills-art" x="1600"/></g>
+  <g id="water"><rect y="462" width="1600" height="34" fill="url(#waterGrad)"/><rect y="469" width="1600" height="2" fill="#dfe0da" opacity="0.6"/><use xlink:href="#water-art" x="-1600"/><use xlink:href="#water-art"/><use xlink:href="#water-art" x="1600"/></g>
+  <g id="shore"><use xlink:href="#shore-art" x="-1600"/><use xlink:href="#shore-art"/><use xlink:href="#shore-art" x="1600"/></g>
+  <g id="road"><rect y="504" width="1600" height="28" fill="#d6d1c6"/><use xlink:href="#road-art" x="-1600"/><use xlink:href="#road-art"/><use xlink:href="#road-art" x="1600"/></g>
+  <g id="grass"><rect y="532" width="1600" height="208" fill="url(#grassGrad)"/><use xlink:href="#grass-art" x="-1600"/><use xlink:href="#grass-art"/><use xlink:href="#grass-art" x="1600"/></g>
+  <g id="fence"><use xlink:href="#fence-art" x="-1600"/><use xlink:href="#fence-art"/><use xlink:href="#fence-art" x="1600"/></g>
+</svg>

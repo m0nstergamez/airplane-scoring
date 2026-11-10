@@ -7,10 +7,12 @@ pub const TICK_SECONDS: f32 = 1.0 / 60.0;
 
 mod input;
 mod rng;
+mod scenery;
 mod sound;
 mod tilt;
 mod weather;
 pub use input::{pick_steer, steer_from_keys, steer_toward, Input, TOUCH_EASE_DISTANCE};
+pub use scenery::{background_x, scroll_distance, SCROLL_SPEED};
 pub use sound::{
     Mix, CRASH_VOLUME, DIVE_WIND, ENGINE_VOLUME, MIX_CHANGE_PER_SECOND, RAIN_VOLUME, WIND_VOLUME,
 };

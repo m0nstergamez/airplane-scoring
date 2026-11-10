@@ -65,6 +65,9 @@ Maustaste gedrückt.
 
 ## Wetter und Zusammenstösse
 
+Du fliegst einer Küste entlang: Hinter deinem Flugzeug zieht die
+Landschaft vorbei. Bei Regen wird sie dunkler.
+
 Das Wetter ändert sich, während du fliegst. Am Anfang ist es trocken.
 Nach einer Weile setzt Regen ein, wird stärker und lässt wieder nach.
 Starker Regen ist ein **Gewitter**: Blitze erhellen den Himmel, und der

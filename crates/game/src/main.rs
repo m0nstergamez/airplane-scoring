@@ -2,12 +2,13 @@
 //! This file should only: read input, call `World::tick`, draw state.
 
 use airplane_scoring_core::{
-    pick_steer, steer_from_keys, steer_toward, Bounds, Event, Input, Tilt, Vec2, World,
-    PLANE_RADIUS, TICK_SECONDS,
+    background_x, pick_steer, scroll_distance, steer_from_keys, steer_toward, Bounds, Event, Input,
+    Tilt, Vec2, World, PLANE_RADIUS, TICK_SECONDS,
 };
 use macroquad::prelude::*;
 
 mod audio;
+mod scenery;
 mod sound_js;
 mod tilt_js;
 
@@ -23,10 +24,12 @@ fn window_conf() -> Conf {
 
 #[macroquad::main(window_conf)]
 async fn main() {
-    // Native: find `sounds/` where the web page does, next to index.html.
+    // Native: find `sounds/` and `levels/` where the web page does, next
+    // to index.html.
     #[cfg(not(target_arch = "wasm32"))]
     set_pc_assets_folder("web");
     let mut audio = audio::Audio::start();
+    let mut scenery = scenery::Scenery::start();
 
     // The seed decides the weather; the clock makes every flight different.
     let seed = (macroquad::miniquad::date::now() * 1000.0) as u64;
@@ -87,14 +90,27 @@ async fn main() {
         }
         audio.update(world.mix, sound_js::muted());
 
-        // Rain clouds grey the sky.
+        // The landscape scrolls past; until its image has loaded, a plain sky.
         let rain = world.weather.rain;
-        clear_background(Color::new(
-            0.078 + 0.06 * rain,
-            0.094 + 0.06 * rain,
-            0.125 + 0.06 * rain,
-            1.0,
-        ));
+        let x = background_x(scroll_distance(world.ticks), scenery.tile_width());
+        if scenery.draw(x) {
+            // Rain clouds darken the landscape.
+            draw_rectangle(
+                0.0,
+                0.0,
+                screen_width(),
+                screen_height(),
+                Color::new(0.16, 0.18, 0.22, 0.45 * rain),
+            );
+        } else {
+            // Rain clouds grey the sky.
+            clear_background(Color::new(
+                0.078 + 0.06 * rain,
+                0.094 + 0.06 * rain,
+                0.125 + 0.06 * rain,
+                1.0,
+            ));
+        }
 
         for m in &world.planes {
             draw_circle(m.pos.x, m.pos.y, PLANE_RADIUS, LIME);
@@ -130,15 +146,15 @@ async fn main() {
         let text = world.greeting();
         let size = 48.0;
         let dims = measure_text(&text, None, size as u16, 1.0);
-        draw_text(
+        draw_text_on_landscape(
             &text,
             (screen_width() - dims.width) / 2.0,
             64.0,
             size,
             WHITE,
         );
-        draw_text(
-            format!(
+        draw_text_on_landscape(
+            &format!(
                 "{}  |  ticks: {}",
                 if gravity.is_some() {
                     "tilt or drag to fly"
@@ -150,11 +166,23 @@ async fn main() {
             12.0,
             screen_height() - 12.0,
             20.0,
-            GRAY,
+            Color::from_rgba(235, 235, 225, 255),
         );
 
         next_frame().await
     }
+}
+
+/// Text with a dark shadow, so it stays readable on light sky and on grass.
+fn draw_text_on_landscape(text: &str, x: f32, y: f32, size: f32, colour: Color) {
+    draw_text(
+        text,
+        x + 2.0,
+        y + 2.0,
+        size,
+        Color::new(0.0, 0.0, 0.0, 0.55),
+    );
+    draw_text(text, x, y, size, colour);
 }
 
 /// Height of the first finger on screen, or of the mouse while held.

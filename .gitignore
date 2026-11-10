@@ -2,3 +2,6 @@
 web/*.wasm
 .DS_Store
 .playwright-mcp/
+
+# Level photos stay local: public repo, and phone photos carry GPS.
+art/levels/*/photo.*

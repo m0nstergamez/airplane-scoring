@@ -54,6 +54,20 @@ short **meaning**.
 | Ereignis | event | `Event` | Something that happened in one tick |
 | Startwert | seed | `World::with_seed` | The number that decides the random weather |
 
+## Pictures and levels
+
+| Deutsch | English | In code | Meaning |
+|---|---|---|---|
+| Level | level | `art/levels/levelN` | One part of the game with its own landscape. «das Level», plural «die Levels» |
+| Hintergrund | background | `crates/game/src/scenery.rs` | The landscape behind the plane |
+| Landschaft | landscape | `Scenery` | What the background shows |
+| Vorlage (Foto) | photo (to trace) | `art/levels/levelN/photo.jpg` | The photo a background is drawn from; never committed |
+| Zeichnung | drawing | `background.svg` | The SVG drawn from the photo; the file you edit |
+| scrollen | scroll | `SCROLL_SPEED` | The landscape slides past the plane |
+| Kopie | copy | `background_x` | The background drawn once more beside itself |
+| Naht | seam | `make-backgrounds.sh` | Where one copy touches the next; must not be visible |
+| Ebene | layer | `<g id="sky">` | One group in the SVG (sky, hills, …); can later scroll at its own speed |
+
 ## Phone and screen
 
 | Deutsch | English | In code | Meaning |
