@@ -4,7 +4,8 @@
 //! The files load in the background, so the game starts right away and
 //! simply stays silent until they are there (or if they are missing).
 //! Browsers only let a page make sound after the first tap, click or key
-//! press; the JS glue (`mq_js_bundle.js`) resumes audio on that gesture.
+//! press; `web/index.html` resumes audio on that gesture (the JS glue's
+//! own unlock misses iPhones; see docs/README.md).
 
 use airplane_scoring_core::{Event, Mix, CRASH_VOLUME};
 use macroquad::audio::{load_sound, play_sound, set_sound_volume, PlaySoundParams, Sound};
