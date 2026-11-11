@@ -153,6 +153,16 @@ that isn't code here. Keep entries short and dated.
   level 1 is on screen; at 0 there is no storm and pending thunder is
   dropped. Spells keep their timing underneath, so level 1 gets its
   weather back. Reason: rain does not fit the sunset mood.
+- Screenshots ran far too short (fix from 2026-11-11, merged today): `scripts/shot.sh out.png 5000` showed
+  about 17 ticks whatever the time, because Chrome's
+  `--virtual-time-budget` barely produces animation frames, so the game
+  loop hardly ran. `scripts/cdp_shot.py` now drives headless Chrome over
+  the DevTools protocol (stdlib only, tiny WebSocket client): load the
+  page, wait real time, capture. 8000 ms now gives about 410 ticks. Plain
+  `--timeout` instead gave a black canvas.
+- `scripts/serve.sh` skips `socket.getfqdn()` in `HTTPServer.server_bind`:
+  with Homebrew's Python 3.14 that reverse lookup of 127.0.0.1 took 35 s
+  on a Mac, so every shot and `scripts/dev.sh` start waited for it.
 
 ## Concepts
 
