@@ -180,6 +180,12 @@ flowchart LR
   Wetter), bewegt sie und prüft den Zusammenstoss; eine Möwe, die ruft,
   schickt ein Ereignis `GullCall`. So gehört jeder Ruf, den du hörst, zu
   einer Möwe, die du siehst.
+- **Highscores** (`crates/core/src/highscore.rs`): core hat die Regeln
+  (`Highscores::add`: der beste zuerst, die besten `HIGHSCORE_COUNT`,
+  Gleichstand ist kein Rekord, ein Rekord schickt `Event::NewHighscore`).
+  Das Page-Plugin speichert die Zahlen im lokalen Speicher des Browsers
+  (`airplane-scoring.highscores`); `page_js.rs` lädt und speichert sie
+  nur. Nichts verlässt das Gerät.
 - **Leben** zählt auch core: Ein Zusammenstoss kostet eines
   (`World.lives`), ein Flugzeug, das sich erholt, ist `SAFE_SECONDS` lang
   geschützt (`Player::is_safe`), und ist das letzte weg, fällt das
@@ -317,6 +323,7 @@ Landschaft:
 | `CRASH_SECONDS` | `crates/core/src/lib.rs` | wie lange sich ein Flugzeug nach einem Zusammenstoss nicht steuern lässt |
 | `LIVES` | `crates/core/src/lib.rs` | Leben am Anfang eines Flugs |
 | `SCORE_PER_SECOND` | `crates/core/src/lib.rs` | wie viele Punkte jede Sekunde Flug wert ist |
+| `HIGHSCORE_COUNT` | `crates/core/src/highscore.rs` | wie viele beste Scores gespeichert werden |
 | `SAFE_SECONDS` | `crates/core/src/lib.rs` | wie lange das Flugzeug nach einem Zusammenstoss blinkt und geschützt ist |
 | `RAIN_SECONDS` | `crates/core/src/weather.rs` | kürzester und längster Regen |
 | `STORM_RAIN` | `crates/core/src/weather.rs` | wie stark der Regen für Blitze sein muss (0 bis 1) |

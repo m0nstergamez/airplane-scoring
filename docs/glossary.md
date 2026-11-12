@@ -30,6 +30,7 @@ short **meaning**.
 | Leben | life, lives | `World.lives`, `LIVES` | Crashes you can afford; shown as small planes at the top right |
 | geschützt (blinken) | safe (blinking) | `Player::is_safe`, `SAFE_SECONDS` | After a crash the plane blinks and cannot lose another life |
 | Game over | game over | `Event::GameOver`, `World::is_over` | The last life is gone; the flight ends. On-screen label, stays English |
+| Highscore | highscore | `Highscores`, `Event::NewHighscore` | The best scores on this device (top 5); a new best one is a new highscore. On-screen labels «Best», «Highscores», «New highscore!» stay English |
 | Punkte, Score | points, score | `World::score`, `SCORE_PER_SECOND` | 2 per second flown; shown at the top centre and at game over. On-screen label «Score» stays English |
 
 ## Weather and sound

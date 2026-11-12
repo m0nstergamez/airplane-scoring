@@ -3,9 +3,9 @@
 
 use airplane_scoring_core::{
     background_x, pick_steer, scroll_distance, start_level, steer_from_keys, Balloon, Bounds,
-    Clock, Event, Gull, Hut, Input, Pad, Tilt, World, BALLOON_RADIUS, BASKET_BELOW, HUT_EAVES,
-    HUT_INSET, LIVES, PAD_HEIGHT, PAD_WIDTH, PLANE_COCKPIT, PLANE_FUSELAGE, PLANE_NOSE,
-    PLANE_RADIUS, PLANE_TAIL, PLANE_WING, TICK_SECONDS,
+    Clock, Event, Gull, Highscores, Hut, Input, Pad, Tilt, World, BALLOON_RADIUS, BASKET_BELOW,
+    HIGHSCORE_COUNT, HUT_EAVES, HUT_INSET, LIVES, PAD_HEIGHT, PAD_WIDTH, PLANE_COCKPIT,
+    PLANE_FUSELAGE, PLANE_NOSE, PLANE_RADIUS, PLANE_TAIL, PLANE_WING, TICK_SECONDS,
 };
 use macroquad::prelude::*;
 
@@ -35,6 +35,9 @@ async fn main() {
     let mut scenery = scenery::Scenery::start();
 
     let mut world = new_world();
+    // The best scores on this device; where the last flight landed in them.
+    let mut highscores = Highscores::from_scores(page_js::load_highscores(HIGHSCORE_COUNT));
+    let mut result: Option<FlightResult> = None;
 
     let mut clock = Clock::default();
     let mut tilt = Tilt::default();
@@ -66,6 +69,7 @@ async fn main() {
         if world.can_restart() && restart_pressed() {
             world = new_world();
             crash_flash = 0.0;
+            result = None;
         }
 
         // Fixed ticks; the game stands still until "Tap to fly".
@@ -79,6 +83,19 @@ async fn main() {
                 audio.play(event);
                 if event == Event::Crash {
                     crash_flash = 1.0;
+                }
+                if event == Event::GameOver {
+                    // Core ranks the score; the page keeps the list.
+                    let mut fanfare = Vec::new();
+                    let place = highscores.add(world.score(), &mut fanfare);
+                    page_js::save_highscores(HIGHSCORE_COUNT, highscores.list());
+                    for e in &fanfare {
+                        audio.play(*e);
+                    }
+                    result = Some(FlightResult {
+                        place,
+                        record: !fanfare.is_empty(),
+                    });
                 }
             }
         }
@@ -192,9 +209,9 @@ async fn main() {
 
         draw_lives(&world);
         if world.is_over() {
-            draw_game_over(&world); // shows the score itself
+            draw_game_over(&world, &highscores, result); // shows the score itself
         } else {
-            draw_score(&world);
+            draw_score(&world, highscores.best());
         }
 
         next_frame().await
@@ -225,8 +242,17 @@ fn restart_pressed() -> bool {
 }
 
 /// The score, top centre, all game long.
-fn draw_score(world: &World) {
+fn draw_score(world: &World, best: u64) {
     let scale = world.bounds.scale();
+    // The best score so far, small under the score.
+    if best > 0 {
+        let text = format!("Best {}", best.max(world.score()));
+        let size = 22.0 * scale;
+        let dims = measure_text(&text, None, size as u16, 1.0);
+        let colour = Color::from_rgba(255, 220, 90, 230);
+        let x = (screen_width() - dims.width) / 2.0;
+        draw_text_on_landscape(&text, x, 64.0 * scale, size, colour);
+    }
     let text = format!("Score {}", world.score());
     let size = 40.0 * scale;
     let dims = measure_text(&text, None, size as u16, 1.0);
@@ -279,33 +305,61 @@ fn draw_lives(world: &World) {
     }
 }
 
-/// "Game over", the final score, and how to fly again.
-fn draw_game_over(world: &World) {
+/// Where a finished flight landed in the highscores.
+#[derive(Clone, Copy)]
+struct FlightResult {
+    /// Its place in the list (0 = best), if it made it.
+    place: Option<usize>,
+    /// Better than every earlier flight.
+    record: bool,
+}
+
+/// "Game over", the final score, the best scores on this device (this
+/// flight highlighted), and how to fly again.
+fn draw_game_over(world: &World, highscores: &Highscores, result: Option<FlightResult>) {
     let (w, h) = (screen_width(), screen_height());
-    draw_rectangle(0.0, 0.0, w, h, Color::new(0.08, 0.09, 0.12, 0.6));
+    draw_rectangle(0.0, 0.0, w, h, Color::new(0.08, 0.09, 0.12, 0.65));
     let s = world.bounds.scale();
     let centred = |text: &str, y: f32, size: f32, colour: Color| {
         let size = size * s;
         let dims = measure_text(text, None, size as u16, 1.0);
         draw_text_on_landscape(text, (w - dims.width) / 2.0, y, size, colour);
     };
-    centred(
-        "Game over",
-        h * 0.4,
-        80.0,
-        Color::from_rgba(255, 220, 90, 255),
-    );
-    centred(
-        &format!("Score {}", world.score()),
-        h * 0.4 + 52.0 * s,
-        32.0,
-        WHITE,
-    );
+    let gold = Color::from_rgba(255, 220, 90, 255);
+    let mut y = h * 0.2;
+    centred("Game over", y, 64.0, gold);
+    y += 40.0 * s;
+    centred(&format!("Score {}", world.score()), y, 30.0, WHITE);
+    if result.is_some_and(|r| r.record) {
+        y += 30.0 * s;
+        // Blinks, to celebrate.
+        let on = ((get_time() * 3.0) as u64).is_multiple_of(2);
+        let colour = if on {
+            gold
+        } else {
+            Color::from_rgba(255, 150, 60, 255)
+        };
+        centred("New highscore!", y, 28.0, colour);
+    }
+    // The best scores, this flight highlighted.
+    y += 34.0 * s;
+    centred("Highscores", y, 22.0, Color::from_rgba(200, 210, 225, 255));
+    for (i, score) in highscores.list().iter().enumerate() {
+        y += 22.0 * s;
+        let mine = result.and_then(|r| r.place) == Some(i);
+        let colour = if mine {
+            gold
+        } else {
+            Color::from_rgba(235, 235, 225, 255)
+        };
+        let text = format!("{}.  {}{}", i + 1, score, if mine { "  <" } else { "" });
+        centred(&text, y, 22.0, colour);
+    }
     if world.can_restart() {
         centred(
             "Tap or click to fly again",
-            h * 0.4 + 100.0 * s,
-            28.0,
+            h - 24.0 * s,
+            26.0,
             Color::from_rgba(160, 200, 255, 255),
         );
     }

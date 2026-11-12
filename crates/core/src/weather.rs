@@ -292,7 +292,8 @@ mod tests {
                 Event::NewLevel { .. }
                 | Event::GullCall
                 | Event::BalloonBurner
-                | Event::GameOver => {
+                | Event::GameOver
+                | Event::NewHighscore => {
                     panic!("not weather")
                 }
             }

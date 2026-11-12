@@ -292,6 +292,17 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
 - Hilfetext unten links entfernt («drag or arrow keys to fly | ticks:
   …»): Er war zum Testen gedacht und lag über den grossen Hütten. Die
   Startanzeige und die Anleitung erklären die Steuerung.
+- Highscore: Die Fragen zur Gestaltung blieben unbeantwortet, darum
+  wurden die empfohlenen Einstellungen gebaut: nur auf dem Gerät
+  gespeichert (Page-Plugin, localStorage-Schlüssel
+  `airplane-scoring.highscores`, Plugin-Version 2), die besten 5
+  (`HIGHSCORE_COUNT`), «Best» unter dem Score im Flug, die Liste bei
+  «Game over» mit diesem Flug markiert, «New highscore!» und eine
+  erzeugte Fanfare (`new-highscore.wav`) bei einem Rekord. Regeln in core
+  (`highscore.rs`): Nullen zählen nicht, Gleichstand ist kein Rekord. Die
+  native Version hält die Liste nur im Speicher. Geprüft mit einem
+  Screenshot («Game over» mit lokal auf ein Leben gesetztem Wert, nicht
+  committet).
 
 ## Konzepte
 
