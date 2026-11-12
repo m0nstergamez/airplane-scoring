@@ -195,6 +195,13 @@ def main():
             raise RuntimeError("page did not finish loading within 20 s")
         # Real time from here on: the game loop runs at the browser's frame rate.
         dt.pump_until(time.monotonic() + int(ms) / 1000.0)
+        # Optional: run some JS first (e.g. click the menu button), then let
+        # the page react for SHOT_AFTER_MS (default 400 ms).
+        js = os.environ.get("SHOT_EVAL")
+        if js:
+            dt.call("Runtime.evaluate", expression=js)
+            after = int(os.environ.get("SHOT_AFTER_MS", "400"))
+            dt.pump_until(time.monotonic() + after / 1000.0)
         shot = dt.call("Page.captureScreenshot", format="png")
         with open(out, "wb") as f:
             f.write(base64.b64decode(shot["data"]))

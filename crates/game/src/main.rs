@@ -4,7 +4,7 @@
 use airplane_scoring_core::Vec2 as Vec2Core;
 use airplane_scoring_core::{
     background_x, pick_steer, pick_throttle, start_level, steer_from_keys, Airport, Balloon,
-    Bounds, Clock, Event, Gull, Highscores, Hut, Input, Pad, Tilt, Tower, Warning, World,
+    Bounds, Clock, Event, Gull, Highscores, Hut, Input, Mix, Pad, Tilt, Tower, Warning, World,
     AIRSPEED_RANGE, BALLOON_RADIUS, BASKET_BELOW, HIGHSCORE_COUNT, HUT_EAVES, HUT_INSET, LIVES,
     OVERSPEED_AT, PAD_HEIGHT, PAD_WIDTH, PLANE_COCKPIT, PLANE_FUSELAGE, PLANE_NOSE, PLANE_RADIUS,
     PLANE_TAIL, PLANE_WING, RUNWAY_HEIGHT, RUNWAY_LENGTH, STALL_AT, TICK_SECONDS, WHEELS_BELOW,
@@ -40,6 +40,7 @@ async fn main() {
     // The best scores on this device; where the last flight landed in them.
     let mut highscores = Highscores::from_scores(page_js::load_highscores(HIGHSCORE_COUNT));
     let mut result: Option<FlightResult> = None;
+    let mut flight = page_js::new_flight();
 
     let mut clock = Clock::default();
     let mut tilt = Tilt::default();
@@ -70,6 +71,15 @@ async fn main() {
         let gravity = tilt_js::sample();
         if is_key_pressed(KeyCode::M) {
             sound_js::toggle_mute();
+        }
+
+        // The menu's "Menu" button went back to the start screen: get a
+        // fresh flight ready for the next "Tap to fly".
+        if page_js::new_flight() != flight {
+            flight = page_js::new_flight();
+            world = new_world();
+            crash_flash = 0.0;
+            result = None;
         }
 
         // Game over: a tap, click or Enter starts a new flight.
@@ -108,7 +118,13 @@ async fn main() {
                 }
             }
         }
-        audio.update(world.mix, sound_js::muted());
+        // Paused (menu open, counting down) or not started: silence.
+        let mix = if page_js::started() {
+            world.mix
+        } else {
+            Mix::SILENT
+        };
+        audio.update(mix, sound_js::muted(), sound_js::music_on());
 
         // The landscape scrolls past; at the end of a level the next one
         // fades in over it. Until an image has loaded, a plain sky that
@@ -306,8 +322,9 @@ fn draw_airspeed(world: &World) {
     let s = world.bounds.scale();
     let (bar_w, bar_h) = (150.0 * s, 8.0 * s);
     // Top left, under the warning lamp (the bottom is runway and huts).
-    let left = (w * 0.06).max(16.0);
-    let top = 62.0 * s;
+    // Right of the menu button (44 px, top left).
+    let left = (w * 0.06).max(16.0) + 52.0;
+    let top = 30.0 * s;
     let (lo, hi) = AIRSPEED_RANGE;
     let at = |v: f32| left + (v - lo) / (hi - lo) * bar_w;
     let zone = |from: f32, to: f32, colour: Color| {
@@ -361,7 +378,8 @@ fn draw_warning(world: &World) {
     draw_rectangle(0.0, 0.0, edge, h, glow);
     draw_rectangle(w - edge, 0.0, edge, h, glow);
     // The warning lamp, top left, and the word in the middle.
-    let lamp = vec2((w * 0.06).max(16.0) + 12.0 * s, 30.0 * s);
+    // Under the menu button (44 px, top left), left of the speed gauge.
+    let lamp = vec2((w * 0.06).max(16.0) + 12.0 * s, 70.0 * s);
     draw_circle(lamp.x, lamp.y, 11.0 * s, Color::new(0.1, 0.1, 0.1, 0.7));
     let dim = Color::new(colour.r * 0.4, colour.g * 0.4, colour.b * 0.4, 1.0);
     draw_circle(lamp.x, lamp.y, 8.0 * s, if blink { colour } else { dim });

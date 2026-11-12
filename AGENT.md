@@ -50,6 +50,8 @@ Visual checks:
   time, via `scripts/cdp_shot.py`) first.
   `SIZE=844,390` = phone in landscape (the main target). Known console noise from the vendored
   JS bundle is filtered in the script; add new noise there, not errors.
+  `SHOT_EVAL='js'` runs JS before the capture (e.g. click the menu
+  button), `SHOT_AFTER_MS` waits after it (default 400).
 - For interaction (key presses, waiting for a state), use a browser tool
   against `scripts/dev.sh` (http://localhost:8080); it live-reloads on rebuild.
 - The game runs on real time, so screenshots are approximate. Assert exact

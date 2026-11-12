@@ -86,6 +86,24 @@ Maustaste gedrückt.
 | → oder D | schneller (Gas) |
 | ← oder A | langsamer (bremsen) |
 | M | Ton ein oder aus |
+| Esc oder P | Pause (Menü) |
+
+## Menü (Pause)
+
+Oben links ist der **Menü-Knopf** mit drei Strichen (am Computer auch
+**Esc** oder **P**). Er hält das Spiel an und zeigt das Menü über dem
+Spiel, das unscharf dahinter zu sehen ist:
+
+- **Continue:** zurück ins Spiel. Ein Countdown zählt 3, 2, 1; erst bei 0
+  geht es weiter, damit du bereit bist.
+- **Calibrate** (nur auf dem Handy): Wie du das Handy jetzt hältst, gilt
+  ab sofort als «gerade», fürs Steuern und fürs Gas.
+- **Options:** Musik (die Melodien) und Geräusche (alles andere)
+  einzeln ein- oder ausschalten. **Back** führt zurück.
+- **Menu:** zurück zur Startseite; mit «Tap to fly» beginnt ein neuer
+  Flug.
+
+Wechselst du die App oder den Tab, hält das Spiel von selbst an.
 
 ## Wetter und Zusammenstösse
 
@@ -233,7 +251,8 @@ Handy ist das der Tipp auf «Tap to fly», am Computer der erste Klick
 oder Tastendruck.
 
 Um den Ton aus- oder einzuschalten, tippe oben rechts auf den
-**Lautsprecher-Knopf** oder drücke **M**. Das Spiel merkt sich deine Wahl.
+**Lautsprecher-Knopf** oder drücke **M**. Musik und Geräusche einzeln
+schaltest du im Menü unter **Options**. Das Spiel merkt sich deine Wahl.
 
 ## Aufs Handy installieren
 
@@ -271,9 +290,10 @@ App im Vollbild.
 
 ### Das Flugzeug fliegt von selbst nach oben oder unten
 
-Du hast das Handy beim Start anders gehalten. Dreh das Handy einmal
-andersherum (quer) und zurück oder lade die Seite neu: Deine jetzige
-Haltung gilt dann wieder als «gerade».
+Du hast das Handy beim Start anders gehalten. Öffne das Menü (oben
+links) und tippe auf **Calibrate**, oder dreh das Handy einmal
+andersherum (quer) und zurück: Deine jetzige Haltung gilt dann wieder
+als «gerade».
 
 ### Das Spiel zeigt «Turn your phone sideways»
 

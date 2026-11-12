@@ -83,6 +83,23 @@ On a computer, hold down the mouse button instead.
 | → or D | faster (gas) |
 | ← or A | slower (brake) |
 | M | sound on or off |
+| Esc or P | pause (menu) |
+
+## Menu (pause)
+
+At the top left is the **menu button** with three lines (on a computer
+also **Esc** or **P**). It pauses the game and shows the menu over it,
+with the game blurred behind:
+
+- **Continue:** back to the game. A countdown counts 3, 2, 1; the game
+  goes on only at 0, so you are ready.
+- **Calibrate** (phone only): the way you hold the phone now counts as
+  "level" from now on, for steering and for gas.
+- **Options:** switch music (the tunes) and sounds (everything else) on
+  or off separately. **Back** goes back.
+- **Menu:** back to the start page; "Tap to fly" starts a new flight.
+
+Switching to another app or tab pauses the game by itself.
 
 ## Weather and crashes
 
@@ -222,7 +239,8 @@ that is the tap on "Tap to fly"; on a computer the first click or key
 press.
 
 To switch the sound off or on, tap the **speaker button** at the top
-right or press **M**. The game remembers your choice.
+right or press **M**. Switch music and sounds separately in the menu
+under **Options**. The game remembers your choice.
 
 ## Install on your phone
 
@@ -259,9 +277,10 @@ Add the game to your home screen. It then opens full screen like an app.
 
 ### The plane drifts by itself
 
-You held the phone at a different angle when you started. Turn the
-phone the other way round (landscape) and back, or reload the page:
-your current position then becomes "level" again.
+You held the phone at a different angle when you started. Open the menu
+(top left) and tap **Calibrate**, or turn the phone the other way round
+(landscape) and back: your current position then becomes "level"
+again.
 
 ### The game shows "Turn your phone sideways"
 

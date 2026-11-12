@@ -86,6 +86,8 @@ pub struct Audio {
     loading: Option<Coroutine<Option<Sounds>>>,
     sounds: Option<Sounds>,
     muted: bool,
+    /// The "Music" switch: the tunes (new level, highscore fanfare).
+    music: bool,
 }
 
 impl Audio {
@@ -95,11 +97,15 @@ impl Audio {
             loading: Some(start_coroutine(Sounds::load())),
             sounds: None,
             muted: false,
+            music: true,
         }
     }
 
     /// Call once per frame with the current volumes.
-    pub fn update(&mut self, mix: Mix, muted: bool) {
+    /// `muted`: the "Sounds" switch is off; `music`: the "Music"
+    /// switch is on.
+    pub fn update(&mut self, mix: Mix, muted: bool, music: bool) {
+        self.music = music;
         if self.loading.as_ref().is_some_and(Coroutine::is_done) {
             self.sounds = self.loading.take().and_then(|l| l.retrieve()).flatten();
             if let Some(s) = &self.sounds {
@@ -139,7 +145,9 @@ impl Audio {
     /// Call for every event of every tick.
     pub fn play(&self, event: Event) {
         let Some(s) = &self.sounds else { return };
-        if self.muted {
+        // The tunes follow the "Music" switch, everything else "Sounds".
+        let tune = matches!(event, Event::NewLevel { .. } | Event::NewHighscore);
+        if (tune && !self.music) || (!tune && self.muted) {
             return;
         }
         let (sound, volume) = match event {

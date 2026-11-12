@@ -396,6 +396,22 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
   oben links gerückt, weg von der Startbahn. Ebenfalls gewünscht: Das
   Flugzeug wird nahe am Boden etwas grösser (`PLANE_NEAR_SIZE` 1.5 →
   1.8).
+- Pausenmenü, gewünscht «wie ein typisches Game-Menü»: ein Menü-Knopf
+  (drei Striche) oben links, auch Esc / P, hält das Spiel an
+  (`page_started` ist beim Pausieren falsch; die Uhr steht) und zeigt ein
+  Menü über den ganzen Bildschirm mit dem Spiel unscharf dahinter
+  (`backdrop-filter`): Continue (Countdown 3-2-1, bei 0 geht es weiter),
+  Calibrate (Handys: kalibriert Kippen und Neigen neu), Options
+  (Schalter Music und Sounds, Back), Menu (zurück zur Startseite;
+  `page_new_flight` lässt das Spiel einen neuen Flug vorbereiten). Den
+  Tab zu verlassen pausiert auch. Hintergrundmusik gibt es noch keine,
+  darum schaltet «Music» die Melodien (Level-Melodie, Highscore-Fanfare)
+  und «Sounds» alles andere; Lautsprecher-Knopf und M schalten beides.
+  Während der Pause ist es still. Warnlicht und SPEED-Anzeige sind für
+  den Knopf verschoben. `scripts/cdp_shot.py` kann vor der Aufnahme JS
+  ausführen (`SHOT_EVAL`), damit wurden Menü, Optionen und Countdown auf
+  Screenshots geprüft. Die Startseite selbst ist noch die alte; die
+  Spielerin bzw. der Spieler beschreibt eine neue.
 
 ## Konzepte
 

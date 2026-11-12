@@ -361,6 +361,21 @@ that isn't code here. Keep entries short and dated.
   The SPEED gauge moved to the top left, off the runway. Also asked
   for: the plane grows a bit more near the ground (`PLANE_NEAR_SIZE` 1.5
   → 1.8).
+- Pause menu, asked for "like a typical game menu": a menu button (three
+  lines) top left, also Esc / P, pauses the game (`page_started` is false
+  while paused; the clock stops) and shows a full-screen menu with the
+  game blurred behind (`backdrop-filter`): Continue (3-2-1 countdown, the
+  game goes on at 0), Calibrate (phones: recalibrates tilt and lean),
+  Options (Music and Sounds switches, Back), Menu (back to the start
+  page; `page_new_flight` makes the game set up a fresh flight). Leaving
+  the tab pauses too. There is no background music yet, so "Music"
+  switches the tunes (level tune, highscore fanfare) and "Sounds"
+  everything else; the speaker button and M switch both. Sound is
+  silent while paused. The warning lamp and SPEED gauge moved to make
+  room for the button. `scripts/cdp_shot.py` can run JS before the
+  capture (`SHOT_EVAL`), used to check the menu, options and countdown
+  in screenshots. The start page itself is still the old one; the user
+  will describe a new one.
 
 ## Concepts
 
