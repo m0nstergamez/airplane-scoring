@@ -443,6 +443,27 @@
     })();
   </script>
   <!-- macroquad/miniquad JS glue. Vendored by scripts/vendor-js.sh; pinned to the engine version. -->
+  <script>
+    // iOS suspends a page's sound when you switch apps or lock the phone,
+    // and only a tap may wake it again. The vendored JS bundle wakes it
+    // only on the very first tap, so after a switch the game stayed
+    // silent. Keep track of the audio contexts it makes (before it loads)
+    // and wake them on every tap, click or key.
+    (() => {
+      const Base = window.AudioContext || window.webkitAudioContext;
+      if (!Base) return;
+      const contexts = [];
+      class Tracked extends Base {
+        constructor(...args) { super(...args); contexts.push(this); }
+      }
+      window.AudioContext = Tracked;
+      if (window.webkitAudioContext) window.webkitAudioContext = Tracked;
+      const wake = () => {
+        for (const c of contexts) if (c.state !== "running" && c.state !== "closed") c.resume().catch(() => {});
+      };
+      for (const type of ["touchend", "click", "keydown"]) document.addEventListener(type, wake, true);
+    })();
+  </script>
   <script src="mq_js_bundle.js"></script>
   <script>
     // Tilt plugin: keeps the latest gravity sample for the Rust side
@@ -607,6 +628,24 @@
     const showStart = (panel) => {
       for (const p of start.querySelectorAll(".panel")) p.classList.toggle("shown", p.dataset.panel === panel);
     };
+    // While flying, the screen stays on: steering by tilt touches nothing,
+    // so a phone would lock itself mid-flight. (Screen Wake Lock: iOS
+    // 16.4+, Chrome on Android; elsewhere the phone's own setting holds.)
+    // The browser drops the lock when the page is hidden; it is asked for
+    // again when the page comes back.
+    let wakeLock = null;
+    const keepAwake = async () => {
+      if (!flying || wakeLock || !navigator.wakeLock) return;
+      try {
+        wakeLock = await navigator.wakeLock.request("screen");
+        wakeLock.addEventListener("release", () => { wakeLock = null; });
+      } catch (_) { /* not allowed now (hidden page, low battery): fine */ }
+    };
+    const letSleep = () => {
+      if (wakeLock) wakeLock.release().catch(() => {});
+      wakeLock = null;
+    };
+    document.addEventListener("visibilitychange", () => { if (!document.hidden) keepAwake(); });
     const fly = async (level = 1) => {
       if (start.classList.contains("gone")) return;
       chosenLevel = level;
@@ -618,6 +657,7 @@
       }
       recalibrate(); // neutral = how the player holds the phone right now
       flying = true; // the game's clock starts now
+      keepAwake();
       document.body.classList.add("flying");
       document.getElementById("glcanvas").focus();
     };
@@ -710,6 +750,7 @@
       menu.classList.remove("open");
       paused = false;
       flying = false; // the clock stops until "Tap to fly"
+      letSleep();
       newFlight += 1; // the game sets up a fresh flight
       document.body.classList.remove("flying");
       showStart("home");
