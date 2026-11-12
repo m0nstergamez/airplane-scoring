@@ -444,6 +444,38 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
   `World::with_takeoff` stellt das Flugzeug jetzt sofort auf die
   Startbahn, damit es während des Countdowns nicht in der Luft hängt
   (auf einem Screenshot gesehen).
+- Levels enden mit einer Landung, gewünscht: keine Anzeige und kein
+  Überblenden mehr. Nach `LEVEL_SECONDS` Flug (`level_ticks`, pro Level
+  gezählt) durchläuft die Welt `Landing`: `Approach` (von rechts kommt
+  eine Landebahn, `Event::GearDown`, der Autopilot steuert einen flachen
+  Gleitpfad, sodass die Räder die Bahn `TOUCHDOWN_INTO` nach ihrem Anfang
+  treffen; Eingaben zählen nicht), `Rollout` (Bremsen bis zum Stillstand
+  über `BRAKE_SECONDS`, das Rumpeln klingt aus, `Event::LevelComplete`
+  spielt die Melodie), `Complete` («Level N complete» mit Score; ein
+  Tipp oder `COMPLETE_SECONDS` führt weiter) und `Countdown` (sofort die
+  nächste Landschaft, ihre Nummer und 3-2-1, das Flugzeug auf seiner
+  Startbahn). Score und Welt stehen bei Complete und Countdown still.
+  `CLEAR_SECONDS` vor der Landung kommen keine neuen Hindernisse.
+  `World::levels` folgt jetzt `completed`, nicht den Ticks. Geprüft mit
+  Screenshots von Anflug, Aufsetzen, Complete und dem Countdown am
+  Strand, mit lokal auf 12 gesetztem `LEVEL_SECONDS` (nicht committet).
+- Hauptmenü und Level-Karte, gewünscht: Die Startseite ist jetzt ein
+  Spielmenü über der Landschaft von Level 1 mit dem Flugzeug
+  (`web/plane.svg`, gezeichnet aus den `PLANE_*`-Punkten von core) und
+  dem Titel «AIRPLANE SCORING»: Tap/Click to fly, Levels, Options
+  (dieselben Schalter Music/Sounds wie im Pausenmenü), QR-Code in einer
+  Ecke, Tasten am Computer. Levels zeigt runde Bilder jeder Landschaft
+  auf einem gestrichelten Weg; Level 2 ist gesperrt, bis Level 1
+  gelandet ist (`page_level_complete`, gespeichert als
+  `airplane-scoring.unlocked`; das Sperren war mein Vorschlag, wie in
+  typischen Spielen). Ein gewähltes Level startet dort von seinem
+  Flughafen (`page_level`/`page_new_flight`; jedes Level startet jetzt,
+  auch mit `?level=2`). «Level complete» geht nicht mehr von selbst
+  weiter: Knöpfe Next level (oder Enter) und Menu (`page_show_menu`).
+  Page-Plugin Version 4. Geprüft mit Screenshots (Hauptmenü, Levels,
+  Options in 844×390 und 1440×900; Complete mit lokal auf 12 gesetztem
+  `LEVEL_SECONDS`, nicht committet); ein erster Versuch war auf niedrigen
+  Bildschirmen zu eng, darum gibt es dort ein kompaktes Layout.
 
 ## Konzepte
 

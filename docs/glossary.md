@@ -67,6 +67,9 @@ short **meaning**.
 | Heissluftballon | hot-air balloon | `Balloon`, `BalloonWay` | Level 1's obstacle: drifts left while taking off from a launch pad, landing on one, coming at the plane's height, or sinking past; the four ways take turns; envelope and basket both count |
 | Startrampe | launch pad | `Pad` | Flat deck in the grass where balloons take off and land; an obstacle |
 | Menü, Pause | menu, pause | `#menu`, `page_started` | The pause menu (button top left, Esc, P): Continue, Restart, Calibrate, Options, Menu. Labels stay English |
+| Hauptmenü | main menu | `#start` | The start page: title, plane, Tap to fly, Levels, Options |
+| Level-Karte | level map | `#start .map` | Round pictures of each level's landscape on a dashed path |
+| freischalten | unlock | `airplane-scoring.unlocked` | Landing a level opens the next one on the map |
 | Countdown | countdown | `#countdown` | 3, 2, 1 before the game goes on after the pause |
 | Musik / Geräusche | music / sounds | `sound_music_on`, `sound_muted` | The two switches in Options: the tunes, and everything else |
 | Flughafen | airport | `Airport`, `World::with_takeoff` | Where every flight starts: runway, control tower, windsock |
@@ -77,7 +80,9 @@ short **meaning**.
 | Strandturm | lifeguard tower | `Tower`, `Towers` | Wooden lifeguard tower in the beach's sand (level 2), near the front or back by the water; an obstacle |
 | Parallaxe | parallax | `Tower::size` | Things further away slide past more slowly |
 | Möwe | gull | `Gull`, `gull-call.wav` | Sea bird at the beach: an obstacle; many call when they appear |
-| Melodie | tune | `Event::NewLevel`, `new-level.wav` | Short rising tune when a new level begins |
+| Melodie | tune | `Event::LevelComplete`, `new-level.wav` | Short rising tune when a level is landed and complete |
+| Landung | landing | `Landing`, `World::landing` | How a level ends: approach on autopilot, touchdown, rollout, "Level complete" |
+| Landebahn | runway (landing) | `Airport` | The runway a level ends on; the same kind as the takeoff runway |
 | Startwert | seed | `World::with_seed` | The number that decides the random weather |
 
 ## Pictures and levels
@@ -98,7 +103,7 @@ short **meaning**.
 | Kopie | copy | `background_x` | The background drawn once more beside itself |
 | Naht | seam | `make-backgrounds.sh` | Where one copy touches the next; must not be visible |
 | Levelwechsel | level change | `level_view`, `LEVEL_SECONDS` | Every minute the next level begins; after the last one, level 1 again |
-| einblenden | fade in | `LEVEL_FADE_SECONDS`, `LevelView::fade` | The next landscape appears slowly over the old one |
+| einblenden | fade in | `LevelView::fade` | No longer used between levels: the landing ends one, the next begins at once |
 | Ebene | layer | `<g id="sky">` | One group in the SVG (sky, hills, …); can later scroll at its own speed |
 
 ## Phone and screen

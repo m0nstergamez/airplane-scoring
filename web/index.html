@@ -40,52 +40,111 @@
       #rotate { display: flex; }
     }
 
-    /* Start screen. Phones: "Tap to fly"; the tap is the user gesture iOS
-       needs before it grants motion sensors. Computers: "Click to fly",
-       the controls, and a QR code to play on a phone. Either way the tap,
-       click or key is the gesture every browser needs before a page may
-       play sound (the audio unlock script below resumes audio on it). */
+    /* Main menu (the start page): the level 1 landscape with the game's
+       plane, the title, and buttons for flying, the levels and the
+       options. Phones: "Tap to fly"; that tap is the user gesture iOS
+       needs before it grants motion sensors (and every browser needs
+       before it plays sound). Computers: "Click to fly" and the keys. A
+       small QR code opens the game on a phone. */
     #start {
-      display: flex; position: fixed; inset: 0; z-index: 9;
-      background: rgba(20, 24, 31, 0.82); color: #fff;
-      font: 600 18px/1.4 system-ui, sans-serif; text-align: center;
-      align-items: center; justify-content: center; gap: 56px;
-      padding: 24px; box-sizing: border-box;
+      display: flex; flex-direction: column; align-items: center; position: fixed; inset: 0; z-index: 9;
+      background:
+        linear-gradient(to bottom, rgba(10, 14, 22, 0.6), rgba(10, 14, 22, 0.1) 45%, rgba(10, 14, 22, 0.55)),
+        url(levels/level1.png) center / cover, #14181f;
+      color: #fff; font: 600 18px/1.4 system-ui, sans-serif; text-align: center;
+      gap: 14px; padding: 22px 24px; box-sizing: border-box;
     }
     #start.gone { display: none; }
-    #start .intro { display: flex; flex-direction: column; align-items: center; gap: 14px; }
-    #start button {
-      font: 700 22px system-ui, sans-serif; color: #fff; background: #1f6feb;
-      border: 0; border-radius: 999px; padding: 14px 40px; cursor: pointer;
+    #start .title {
+      margin: 0; font: 900 64px/1 system-ui, sans-serif; letter-spacing: 0.08em;
+      text-shadow: 0 4px 14px rgba(0, 0, 0, 0.55);
     }
-    #start small { font-weight: 400; opacity: 0.75; max-width: 30em; }
-    #start .keys { margin: 4px 0 0; padding: 0; list-style: none; font-weight: 400; line-height: 2; }
+    #start .hero {
+      position: absolute; left: 7%; top: 44%; width: 260px; transform: rotate(-8deg);
+      filter: drop-shadow(0 8px 10px rgba(0, 0, 0, 0.35)); pointer-events: none;
+    }
+    /* The buttons sit in the middle of the screen, under the title. */
+    #start .panel {
+      display: none; flex-direction: column; align-items: stretch; gap: 14px; min-width: 300px; z-index: 1;
+      margin: auto 0;
+    }
+    #start .panel.shown { display: flex; }
+    #start .panel h2 { margin: 0; font-size: 26px; text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5); }
+    #start button {
+      font: 700 25px system-ui, sans-serif; color: #fff; background: rgba(20, 24, 31, 0.55);
+      border: 1px solid rgba(255, 255, 255, 0.35); border-radius: 999px; padding: 15px 48px; cursor: pointer;
+    }
+    #start button.primary { background: #1f6feb; border-color: #1f6feb; }
+    #start button.toggle[aria-pressed="false"] { color: #9aa4b2; }
+    /* The level map: round pictures of each landscape on a dashed path. */
+    #start .map { display: flex; align-items: center; justify-content: center; padding: 6px 0; }
+    #start .map .stop { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+    #start .node {
+      width: 118px; height: 118px; padding: 0; border-radius: 50%; position: relative; font-size: 0;
+      border: 4px solid #fff; background: center / cover #333; box-shadow: 0 6px 16px rgba(0, 0, 0, 0.45);
+    }
+    #start .node[data-level="1"] { background-image: url(levels/level1.png); }
+    #start .node[data-level="2"] { background-image: url(levels/level2.png); }
+    #start .node .lock { display: none; font-size: 34px; }
+    #start .node.locked { filter: grayscale(1) brightness(0.55); cursor: default; }
+    #start .node.locked .lock { display: block; }
+    #start .map .name { font-size: 16px; text-shadow: 0 2px 6px rgba(0, 0, 0, 0.6); }
+    #start .path { width: 120px; margin-bottom: 30px; border-top: 5px dashed rgba(255, 255, 255, 0.85); }
+    #start small { font-weight: 400; opacity: 0.85; max-width: 30em; text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6); }
+    #start .keys {
+      position: absolute; left: 20px; bottom: 14px; margin: 0; padding: 10px 14px; list-style: none;
+      font-weight: 400; font-size: 15px; line-height: 1.9; text-align: left;
+      background: rgba(20, 24, 31, 0.55); border-radius: 12px;
+    }
     #start kbd {
       display: inline-block; min-width: 1.4em; padding: 0 6px; margin: 0 1px;
       border: 1px solid rgba(255, 255, 255, 0.35); border-bottom-width: 3px; border-radius: 6px;
-      font: 600 15px/1.5 system-ui, sans-serif;
+      font: 600 14px/1.5 system-ui, sans-serif;
     }
-    #start figure { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 12px; }
     /* QR on a white card with a quiet zone, so cameras find it. */
+    #start figure {
+      position: absolute; right: 20px; bottom: 14px; margin: 0;
+      display: flex; flex-direction: column; align-items: center; gap: 6px;
+    }
     #start figure img {
-      width: 164px; height: 164px; padding: 14px; background: #fff; border-radius: 12px;
+      width: 120px; height: 120px; padding: 10px; background: #fff; border-radius: 12px;
       image-rendering: pixelated;
     }
-    #start figcaption { font-weight: 400; font-size: 16px; }
-    #start .url { display: block; opacity: 0.7; font-size: 14px; }
-    /* Phone or computer: show only the matching texts. Both show the QR
-       code: on a computer to open the game on your phone, on a phone so
-       friends can scan it. Phones in landscape are low, so it is smaller. */
+    #start figcaption { font-weight: 400; font-size: 14px; text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7); }
+    #start .url { display: block; opacity: 0.8; font-size: 12px; }
+    /* Low windows (a small laptop window, any phone in landscape): more
+       compact, and the key list gives way. */
+    @media (max-height: 560px) {
+      #start { gap: 8px; padding-top: 10px; }
+      #start .title { font-size: 40px; }
+      #start .hero { width: 150px; left: 3%; top: 50%; }
+      #start .panel { gap: 10px; min-width: 250px; }
+      #start .panel h2 { font-size: 20px; }
+      #start button { font-size: 20px; padding: 10px 34px; }
+      #start .node { width: 84px; height: 84px; border-width: 3px; }
+      #start .path { width: 70px; margin-bottom: 26px; }
+      #start .keys { display: none; }
+      #start figure img { width: 72px; height: 72px; padding: 6px; }
+      #start figcaption { font-size: 11px; }
+      #start .url { display: none; }
+    }
+    /* Phone or computer: show only the matching texts. */
     #start .phone { display: none; }
     @media (pointer: coarse) {
-      #start { gap: 32px; padding: 12px calc(16px + env(safe-area-inset-right)) 12px calc(16px + env(safe-area-inset-left)); }
+      #start { gap: 8px; padding: 10px calc(16px + env(safe-area-inset-right)) 8px calc(16px + env(safe-area-inset-left)); }
       #start .phone { display: block; }
       #start .computer { display: none; }
-      #start .intro small { max-width: 20em; }
-      #start figure { gap: 8px; }
-      #start figure img { width: 112px; height: 112px; padding: 10px; }
-      #start figcaption { font-size: 14px; }
-      #start .url { font-size: 12px; }
+      #start .title { font-size: 38px; }
+      #start .hero { width: 150px; left: calc(16px + env(safe-area-inset-left)); top: 46%; }
+      #start .panel { gap: 10px; min-width: 250px; }
+      #start .panel h2 { font-size: 20px; }
+      #start button { font-size: 20px; padding: 10px 34px; }
+      #start .node { width: 80px; height: 80px; border-width: 3px; }
+      #start .path { width: 70px; margin-bottom: 26px; }
+      #start small { max-width: 22em; font-size: 13px; }
+      #start figure img { width: 64px; height: 64px; padding: 6px; }
+      #start figcaption { font-size: 11px; }
+      #start .url { display: none; }
     }
 
     /* Sound on/off, top right, clear of the notch. Big enough for a thumb. */
@@ -186,20 +245,44 @@
     <div>Turn your phone sideways<br>to fly</div>
   </div>
   <div id="start">
-    <div class="intro">
-      <button type="button"><span class="phone">Tap to fly</span><span class="computer">Click to fly</span></button>
-      <small class="phone">Hold your phone like a steering wheel and turn it to climb or dive.<br>Tip it forward for speed, back to slow down. Or drag your finger.</small>
-      <ul class="keys computer">
-        <li><kbd>&uarr;</kbd><kbd>&darr;</kbd> or <kbd>W</kbd><kbd>S</kbd> climb and dive</li>
-        <li><kbd>&larr;</kbd><kbd>&rarr;</kbd> or <kbd>A</kbd><kbd>D</kbd> slower and faster</li>
-        <li>Hold the mouse button: fly to the pointer</li>
-        <li><kbd>M</kbd> sound on or off</li>
-      </ul>
-      <small class="computer">Start with a click or <kbd>Enter</kbd></small>
+    <h1 class="title">AIRPLANE SCORING</h1>
+    <img class="hero" src="plane.svg" alt="">
+    <div class="panel shown" data-panel="home">
+      <button type="button" class="primary" data-start="1"><span class="phone">Tap to fly</span><span class="computer">Click to fly</span></button>
+      <button type="button" data-go="levels">Levels</button>
+      <button type="button" data-go="options">Options</button>
+      <small class="phone">Hold your phone like a steering wheel to climb or dive; tip it forward for speed. Or drag your finger.</small>
     </div>
+    <div class="panel" data-panel="levels">
+      <h2>Levels</h2>
+      <div class="map">
+        <div class="stop">
+          <button type="button" class="node" data-level="1" aria-label="Level 1: Coast"><span class="lock">&#128274;</span></button>
+          <span class="name">1 Coast</span>
+        </div>
+        <div class="path" aria-hidden="true"></div>
+        <div class="stop">
+          <button type="button" class="node" data-level="2" aria-label="Level 2: Beach"><span class="lock">&#128274;</span></button>
+          <span class="name">2 Beach</span>
+        </div>
+      </div>
+      <button type="button" data-go="home">Back</button>
+    </div>
+    <div class="panel" data-panel="options">
+      <h2>Options</h2>
+      <button type="button" class="toggle" data-action="music" aria-pressed="true">Music: on</button>
+      <button type="button" class="toggle" data-action="sounds" aria-pressed="true">Sounds: on</button>
+      <button type="button" data-go="home">Back</button>
+    </div>
+    <ul class="keys computer">
+      <li><kbd>&uarr;</kbd><kbd>&darr;</kbd> or <kbd>W</kbd><kbd>S</kbd> climb and dive</li>
+      <li><kbd>&larr;</kbd><kbd>&rarr;</kbd> or <kbd>A</kbd><kbd>D</kbd> slower and faster</li>
+      <li>Hold the mouse button: fly to the pointer</li>
+      <li><kbd>M</kbd> sound, <kbd>Esc</kbd> pause, <kbd>Enter</kbd> fly</li>
+    </ul>
     <figure>
       <img src="qr.svg" alt="QR code for m0nstergamez.github.io/airplane-scoring">
-      <figcaption><span class="computer">Fly on your phone:<br>scan with the camera</span><span class="phone">Friends scan this<br>to fly too</span><span class="url">m0nstergamez.github.io/airplane-scoring</span></figcaption>
+      <figcaption><span class="computer">Fly on your phone:<br>scan with the camera</span><span class="phone">Friends scan this</span><span class="url">m0nstergamez.github.io/airplane-scoring</span></figcaption>
     </figure>
   </div>
   <script>
@@ -280,9 +363,10 @@
       mute.setAttribute("aria-pressed", String(allOff));
       mute.setAttribute("aria-label", allOff ? "Unmute sound" : "Mute sound");
       for (const kind of ["music", "sounds"]) {
-        const b = document.querySelector(`#menu [data-action="${kind}"]`);
-        b.setAttribute("aria-pressed", String(sound[kind]));
-        b.textContent = `${kind === "music" ? "Music" : "Sounds"}: ${sound[kind] ? "on" : "off"}`;
+        for (const b of document.querySelectorAll(`[data-action="${kind}"]`)) {
+          b.setAttribute("aria-pressed", String(sound[kind]));
+          b.textContent = `${kind === "music" ? "Music" : "Sounds"}: ${sound[kind] ? "on" : "off"}`;
+        }
       }
     };
     const setSound = (next) => {
@@ -320,6 +404,20 @@
     let flying = params.has("play");
     let paused = false; // the menu is open or counting down
     let newFlight = 0; // bumped by "Menu": the game starts a fresh flight
+    let chosenLevel = requestedLevel; // the level the next flight starts in
+    // The level map: level 1 is open; landing a level opens the next.
+    const LEVELS = 2;
+    const UNLOCK_KEY = "airplane-scoring.unlocked";
+    let unlocked = 1;
+    try { unlocked = Math.min(LEVELS, Math.max(1, parseInt(localStorage.getItem(UNLOCK_KEY), 10) || 1)); } catch (_) { /* private mode */ }
+    const renderMap = () => {
+      for (const node of document.querySelectorAll("#start .node")) {
+        const locked = Number(node.dataset.level) > unlocked;
+        node.classList.toggle("locked", locked);
+        node.disabled = locked;
+      }
+    };
+    renderMap();
     const HIGHSCORE_KEY = "airplane-scoring.highscores";
     let highscores = [];
     try {
@@ -328,11 +426,17 @@
     } catch (_) { /* nothing stored, or private mode */ }
     miniquad_add_plugin({
       name: "page",
-      version: 3, // must match page_crate_version() in page_js.rs
+      version: 4, // must match page_crate_version() in page_js.rs
       register_plugin: (importObject) => {
         importObject.env.page_started = () => (flying && !paused ? 1 : 0);
         importObject.env.page_new_flight = () => newFlight;
-        importObject.env.page_level = () => requestedLevel;
+        importObject.env.page_level = () => chosenLevel;
+        importObject.env.page_show_menu = () => toStart();
+        importObject.env.page_level_complete = (level) => {
+          unlocked = Math.min(LEVELS, Math.max(unlocked, level + 1));
+          try { localStorage.setItem(UNLOCK_KEY, String(unlocked)); } catch (_) { /* private mode */ }
+          renderMap();
+        };
         // Highscores: just numbers, kept in this browser only (core
         // decides which scores count and their order).
         importObject.env.page_highscore = (i) => highscores[i] || 0;
@@ -349,8 +453,13 @@
     // would show it). "?play" skips the start screen (scripts/shot.sh).
     const start = document.getElementById("start");
     const isPhone = matchMedia("(pointer: coarse)").matches;
-    const fly = async () => {
+    const showStart = (panel) => {
+      for (const p of start.querySelectorAll(".panel")) p.classList.toggle("shown", p.dataset.panel === panel);
+    };
+    const fly = async (level = 1) => {
       if (start.classList.contains("gone")) return;
+      chosenLevel = level;
+      newFlight += 1; // the game sets up this flight (in the chosen level)
       start.classList.add("gone");
       const ask = isPhone && window.DeviceMotionEvent && DeviceMotionEvent.requestPermission;
       if (ask) {
@@ -361,10 +470,18 @@
       document.body.classList.add("flying");
       document.getElementById("glcanvas").focus();
     };
-    start.querySelector("button").addEventListener("click", fly);
+    start.addEventListener("click", (e) => {
+      const b = e.target.closest("button");
+      if (!b || b.disabled) return;
+      if (b.dataset.start) fly(1);
+      else if (b.dataset.level) fly(Number(b.dataset.level));
+      else if (b.dataset.go) showStart(b.dataset.go);
+      else if (b.dataset.action === "music") setSound({ ...sound, music: !sound.music });
+      else if (b.dataset.action === "sounds") setSound({ ...sound, sounds: !sound.sounds });
+    });
     addEventListener("keydown", (e) => {
       const waiting = !start.classList.contains("gone");
-      if (waiting && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); fly(); }
+      if (waiting && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); fly(1); }
     });
     if (new URLSearchParams(location.search).has("play")) {
       start.classList.add("gone");
@@ -409,6 +526,7 @@
       flying = false; // the clock stops until "Tap to fly"
       newFlight += 1; // the game sets up a fresh flight
       document.body.classList.remove("flying");
+      showStart("home");
       start.classList.remove("gone");
     };
     document.getElementById("menu-button").addEventListener("click", openMenu);

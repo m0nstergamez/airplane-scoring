@@ -135,6 +135,20 @@ impl Mix {
         }
     }
 
+    /// Rolling out after touchdown, `roll` 1 (just landed) .. 0 (stopped):
+    /// the wheels rumble and die down, the engine idles down, the wind
+    /// goes with the speed.
+    pub fn rollout(self, roll: f32) -> Mix {
+        let roll = roll.clamp(0.0, 1.0);
+        Mix {
+            engine_idle: ENGINE_VOLUME * (0.3 + 0.5 * roll),
+            engine_power: 0.0,
+            wind: self.wind * roll,
+            rumble: RUMBLE_VOLUME * roll,
+            ..self
+        }
+    }
+
     /// The takeoff roll's sound, `roll` 0 (standing) .. 1 (lifting off).
     /// The engine loops step aside: the spool-up is its own sound
     /// (`Event::Takeoff`, a whine rising in pitch, which the loops cannot

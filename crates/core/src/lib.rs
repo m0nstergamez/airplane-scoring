@@ -21,8 +21,9 @@ mod tilt;
 mod towers;
 mod weather;
 pub use airport::{
-    Airport, CLIMB_OUT_SECONDS, CLIMB_OUT_STEER, GEAR_DELAY_SECONDS, GEAR_RETRACT_SECONDS,
-    ROLL_SECONDS, RUNWAY_GROUND, RUNWAY_HEIGHT, RUNWAY_LENGTH, WHEELS_BELOW,
+    Airport, APPROACH_DISTANCE, BRAKE_SECONDS, CLEAR_SECONDS, CLIMB_OUT_SECONDS, CLIMB_OUT_STEER,
+    COUNTDOWN_SECONDS, GEAR_DELAY_SECONDS, GEAR_RETRACT_SECONDS, ROLL_SECONDS, RUNWAY_GROUND,
+    RUNWAY_HEIGHT, RUNWAY_LENGTH, TOUCHDOWN_INTO, WHEELS_BELOW,
 };
 pub use balloons::{
     Balloon, BalloonWay, Balloons, Pad, BALLOON_COLOURS, BALLOON_GAP_SECONDS, BALLOON_HIGH,
@@ -197,8 +198,13 @@ pub enum Event {
     Lightning { distance: f32 },
     /// Thunder from an earlier strike arrives. `volume` is 0..1.
     Thunder { volume: f32 },
-    /// A new level begins (also when the game starts over with level 1).
+    /// A new level begins (after the last one's landing; also when the
+    /// game starts over with level 1).
     NewLevel { level: u32 },
+    /// The plane has landed and stopped: `level` is done (its tune).
+    LevelComplete { level: u32 },
+    /// The landing gear comes down for the approach (its whir and clunk).
+    GearDown,
     /// A gull calls as it appears.
     GullCall,
     /// A hot-air balloon's burner roars as it appears.
@@ -221,6 +227,11 @@ pub enum Event {
     PullUp,
 }
 
+/// Whole ticks in `seconds` (rounded, so 3 s is exactly 180 ticks).
+fn seconds_to_ticks(seconds: f32) -> u32 {
+    (seconds / TICK_SECONDS).round() as u32
+}
+
 /// A cockpit warning on screen.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Warning {
@@ -228,6 +239,17 @@ pub enum Warning {
     Overspeed { seconds_left: f32 },
     /// Too slow: the plane sags.
     PullUp,
+}
+
+/// How a level ends: the approach to the landing runway (the autopilot
+/// flies), the rollout after touchdown, "Level complete", and the
+/// countdown into the next level. Each counts its own ticks.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Landing {
+    Approach(u32),
+    Rollout(u32),
+    Complete(u32),
+    Countdown(u32),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -404,6 +426,15 @@ pub struct World {
     pub ticks: u64,
     /// The level the flight started in (1 ..= `LEVEL_COUNT`).
     pub start_level: u32,
+    /// How many levels have been landed (completed) on this flight.
+    completed: u32,
+    /// Ticks flown in the level now (it ends with a landing after
+    /// [`LEVEL_SECONDS`]).
+    level_ticks: u64,
+    /// The landing at the end of a level, while it goes on.
+    pub landing: Option<Landing>,
+    /// A tap asked to go on from "Level complete" now.
+    go_on: bool,
     /// Lives left, [`LIVES`] at the start.
     pub lives: u32,
     /// Where the plane blew up when the last life went; `None` before.
@@ -448,6 +479,10 @@ impl World {
             mix: Mix::SILENT,
             ticks: 0,
             start_level: 1,
+            completed: 0,
+            level_ticks: 0,
+            landing: None,
+            go_on: false,
             lives: LIVES,
             explosion: None,
             distance: 0.0,
@@ -460,9 +495,53 @@ impl World {
         }
     }
 
-    /// Which level is on screen now, and how far the next has faded in.
+    /// Which level is on screen now. A level ends with a landing and the
+    /// next starts with a takeoff, so nothing fades over and no banner
+    /// shows ("Level complete" and the countdown say it instead).
     pub fn levels(&self) -> LevelView {
-        level_view(self.ticks, self.start_level)
+        let start = start_level(self.start_level as i32);
+        let level = (start - 1 + self.completed) % LEVEL_COUNT + 1;
+        LevelView {
+            level,
+            next: level % LEVEL_COUNT + 1,
+            fade: 0.0,
+            banner: 0.0,
+        }
+    }
+
+    /// "Level N complete" is showing: the level just done.
+    pub fn level_complete(&self) -> Option<u32> {
+        match self.landing {
+            // (The next level begins only after it.)
+            Some(Landing::Complete(_)) => Some(self.levels().level),
+            _ => None,
+        }
+    }
+
+    /// The countdown into the next level: 3, 2, 1 (seconds left).
+    pub fn countdown(&self) -> Option<u32> {
+        match self.landing {
+            Some(Landing::Countdown(t)) => {
+                let left = COUNTDOWN_SECONDS - t as f32 * TICK_SECONDS;
+                Some(left.ceil().max(1.0) as u32)
+            }
+            _ => None,
+        }
+    }
+
+    /// A tap at "Level complete": go on to the next level now.
+    pub fn go_on(&mut self) {
+        if matches!(self.landing, Some(Landing::Complete(_))) {
+            self.go_on = true;
+        }
+    }
+
+    /// Is the autopilot flying (approach and rollout)?
+    pub fn autopilot(&self) -> bool {
+        matches!(
+            self.landing,
+            Some(Landing::Approach(_) | Landing::Rollout(_))
+        )
     }
 
     /// Is the flight over? True once the last life is gone and the plane
@@ -509,7 +588,7 @@ impl World {
     }
 
     /// Start this flight on the airport's runway (the game does this for
-    /// every new flight; a flight that starts in level 2 ignores it).
+    /// every new flight, in whatever level it starts).
     pub fn with_takeoff(mut self) -> Self {
         self.airport = Some(Airport::at_start(self.bounds));
         self.takeoff = Some(0);
@@ -521,9 +600,13 @@ impl World {
     /// While the plane rolls down the runway, the landscape speeds up from
     /// standing still: 0..1 over [`ROLL_SECONDS`]; 1 otherwise.
     fn rolling(&self) -> f32 {
-        match self.takeoff {
-            Some(t) => (t as f32 * TICK_SECONDS / ROLL_SECONDS).min(1.0),
-            None => 1.0,
+        match (self.takeoff, self.landing) {
+            (_, Some(Landing::Rollout(t))) => {
+                (1.0 - t as f32 * TICK_SECONDS / BRAKE_SECONDS).max(0.0)
+            }
+            (_, Some(Landing::Complete(_) | Landing::Countdown(_))) => 0.0,
+            (Some(t), _) => (t as f32 * TICK_SECONDS / ROLL_SECONDS).min(1.0),
+            (None, _) => 1.0,
         }
     }
 
@@ -533,9 +616,22 @@ impl World {
             .is_some_and(|t| (t as f32 * TICK_SECONDS) < ROLL_SECONDS)
     }
 
+    /// Rolling out after touchdown (braking on the landing runway).
+    pub fn rolling_out(&self) -> bool {
+        matches!(self.landing, Some(Landing::Rollout(_)))
+    }
+
     /// The landing gear: 1 = down (on the runway and just after lift-off),
     /// folding up to 0 over [`GEAR_RETRACT_SECONDS`].
     pub fn gear(&self) -> f32 {
+        match self.landing {
+            // Coming down for the approach.
+            Some(Landing::Approach(t)) => {
+                return (t as f32 * TICK_SECONDS / GEAR_RETRACT_SECONDS).min(1.0)
+            }
+            Some(_) => return 1.0,
+            None => {}
+        }
         let Some(t) = self.takeoff else { return 0.0 };
         let since = t as f32 * TICK_SECONDS - ROLL_SECONDS - GEAR_DELAY_SECONDS;
         (1.0 - since / GEAR_RETRACT_SECONDS).clamp(0.0, 1.0)
@@ -673,16 +769,50 @@ impl World {
         // The takeoff: only for a flight that starts in level 1. The plane
         // stands on the runway, rolls, lifts off and climbs out on its own;
         // the controls count only after that.
-        if self.takeoff == Some(0) && self.start_level != 1 {
-            self.takeoff = None;
-            self.airport = None;
-            self.player.pos.y = height / 2.0; // starts in the air instead
+        // The level's end: "complete", then the countdown; nothing moves.
+        match self.landing {
+            Some(Landing::Complete(t)) => {
+                // Waits for the player: "Next level" (or "Menu" in the game).
+                if self.go_on {
+                    self.next_level();
+                } else {
+                    self.landing = Some(Landing::Complete(t + 1));
+                }
+                self.quiet_down();
+                return;
+            }
+            Some(Landing::Countdown(t)) => {
+                let done = t + 1 >= seconds_to_ticks(COUNTDOWN_SECONDS);
+                self.landing = (!done).then_some(Landing::Countdown(t + 1));
+                self.quiet_down();
+                return;
+            }
+            _ => {}
         }
+        // Time's up in this level: the landing runway comes in and the
+        // autopilot takes over (gear down).
+        let level_over = self.level_ticks as f32 * TICK_SECONDS >= LEVEL_SECONDS;
+        if level_over
+            && self.landing.is_none()
+            && self.takeoff.is_none()
+            && self.explosion.is_none()
+            && !self.is_over()
+            && !self.player.is_crashed()
+        {
+            self.landing = Some(Landing::Approach(0));
+            self.airport = Some(Airport {
+                x: width + APPROACH_DISTANCE * scale,
+            });
+            self.events.push(Event::GearDown);
+        }
+
         let takeoff = self.takeoff;
-        let input = &match takeoff {
-            Some(t) if (t as f32 * TICK_SECONDS) < ROLL_SECONDS => Input::NONE,
-            Some(_) => Input::new(CLIMB_OUT_STEER),
-            None => *input,
+        let autopilot = self.autopilot_steer();
+        let input = &match (takeoff, autopilot) {
+            (_, Some(steer)) => Input::new(steer),
+            (Some(t), _) if (t as f32 * TICK_SECONDS) < ROLL_SECONDS => Input::NONE,
+            (Some(_), _) => Input::new(CLIMB_OUT_STEER),
+            (None, None) => *input,
         };
         if takeoff == Some(0) {
             self.events.push(Event::Takeoff);
@@ -782,8 +912,37 @@ impl World {
         if hit_ground && self.player.is_stalling() && self.explosion.is_none() {
             self.break_apart();
         }
+        // Landing: touch down once over the runway and down at it, then
+        // roll out (braking) and stop: the level is done.
+        match self.landing {
+            Some(Landing::Approach(t)) => {
+                let over = self
+                    .airport
+                    .is_some_and(|a| a.x + TOUCHDOWN_INTO * scale <= self.player.pos.x);
+                if over && self.player.pos.y >= self.runway_y() - 2.0 * scale {
+                    self.landing = Some(Landing::Rollout(0));
+                } else {
+                    self.landing = Some(Landing::Approach(t + 1));
+                }
+            }
+            Some(Landing::Rollout(t)) => {
+                if t + 1 >= seconds_to_ticks(BRAKE_SECONDS) {
+                    let level = self.levels().level;
+                    self.landing = Some(Landing::Complete(0));
+                    self.events.push(Event::LevelComplete { level });
+                } else {
+                    self.landing = Some(Landing::Rollout(t + 1));
+                }
+            }
+            _ => {}
+        }
         // Standing and rolling on the runway: wheels on the tarmac, level.
-        if takeoff.is_some_and(|t| (t as f32 * TICK_SECONDS) < ROLL_SECONDS) {
+        let on_ground = takeoff.is_some_and(|t| (t as f32 * TICK_SECONDS) < ROLL_SECONDS)
+            || matches!(
+                self.landing,
+                Some(Landing::Rollout(_) | Landing::Complete(_))
+            );
+        if on_ground {
             let y = self.runway_y();
             let player = &mut self.player;
             (player.pos.y, player.vel_y, player.pitch) = (y, 0.0, 0.0);
@@ -817,7 +976,10 @@ impl World {
         let runway_in = self
             .airport
             .is_some_and(|a| a.x + RUNWAY_LENGTH * scale > width - 40.0 * scale);
-        let coast = levels.level == 1 && levels.fade == 0.0 && !runway_in;
+        // Nor in the last seconds before a landing, nor during it.
+        let clearing = self.landing.is_some()
+            || self.level_ticks as f32 * TICK_SECONDS >= LEVEL_SECONDS - CLEAR_SECONDS;
+        let coast = levels.level == 1 && !runway_in && !clearing;
         let plane_y = self.player.pos.y;
         let pads: Vec<f32> = self.balloons.pads.iter().map(|p| p.x).collect();
         self.huts.tick(self.bounds, coast, &pads);
@@ -826,7 +988,7 @@ impl World {
         self.balloons.set_speed(speed);
         let events = &mut self.events;
         (self.balloons).tick(self.bounds, coast, plane_y, &huts, events);
-        let beach = levels.level == BEACH_LEVEL && levels.fade == 0.0;
+        let beach = levels.level == BEACH_LEVEL && !runway_in && !clearing;
         self.gulls.tick(self.bounds, beach, &mut self.events);
         self.towers.tick(self.bounds, beach);
         // Faster than at the start: everything slides past by the extra
@@ -899,14 +1061,67 @@ impl World {
         if self.on_runway() {
             target = target.takeoff(self.rolling());
         }
+        // Rolling out after touchdown: rumble dying down, engine idling.
+        if self.rolling_out() {
+            target = target.rollout(self.rolling());
+        }
         let step = MIX_CHANGE_PER_SECOND * TICK_SECONDS;
         self.mix = self.mix.approach(target, step);
-        let level = self.levels().level;
         self.ticks += 1;
-        let now = self.levels().level;
-        if now != level {
-            self.events.push(Event::NewLevel { level: now });
+        self.level_ticks += 1;
+    }
+
+    /// The autopilot's steering on the approach and rollout: down a gentle
+    /// slope so the wheels meet the runway at the touchdown point, then
+    /// stay on it. `None` when the player flies.
+    fn autopilot_steer(&self) -> Option<f32> {
+        if !self.autopilot() {
+            return None;
         }
+        let scale = self.bounds.scale();
+        let a = self.airport?;
+        let target = self.runway_y();
+        let ahead = a.x + TOUCHDOWN_INTO * scale - self.player.pos.x;
+        let ground = (SCROLL_SPEED * scale * self.speed()).max(1.0);
+        let wanted_vel = if ahead > 0.0 {
+            (target - self.player.pos.y) / (ahead / ground).max(0.4)
+        } else {
+            (target - self.player.pos.y) * 4.0
+        };
+        // Lead for the plane's smooth response (like the finger).
+        let steer = wanted_vel / (PLAYER_CLIMB_SPEED * scale);
+        Some(steer.clamp(-0.6, 0.6))
+    }
+
+    /// The level is done: switch to the next level's landscape, set the
+    /// plane on its runway for the takeoff, clear everything away, and
+    /// start the countdown.
+    fn next_level(&mut self) {
+        self.completed += 1;
+        self.level_ticks = 0;
+        self.go_on = false;
+        self.landing = Some(Landing::Countdown(0));
+        self.balloons.list.clear();
+        self.balloons.pads.clear();
+        self.huts.list.clear();
+        self.gulls.list.clear();
+        self.towers.list.clear();
+        self.player.airspeed = 1.0;
+        self.player.vel_y = 0.0;
+        self.player.pitch = 0.0;
+        self.player.safe_ticks = 0;
+        self.airport = Some(Airport::at_start(self.bounds));
+        self.takeoff = Some(0);
+        self.player.pos.y = self.runway_y();
+        let level = self.levels().level;
+        self.events.push(Event::NewLevel { level });
+    }
+
+    /// While the world waits ("complete", countdown): the sound settles to
+    /// a quiet idle.
+    fn quiet_down(&mut self) {
+        let step = MIX_CHANGE_PER_SECOND * TICK_SECONDS;
+        self.mix = self.mix.approach(Mix::SILENT, step);
     }
 }
 
@@ -1272,7 +1487,7 @@ mod tests {
     }
 
     #[test]
-    fn the_airport_slides_away_and_a_flight_in_level_2_starts_in_the_air() {
+    fn the_airport_slides_away_and_a_flight_in_level_2_takes_off_too() {
         let mut w = World::new(PHONE).with_takeoff();
         let x = w.airport.unwrap().x;
         for _ in 0..60 * 6 {
@@ -1288,8 +1503,11 @@ mod tests {
         let mut beach = World::new(PHONE).with_takeoff();
         beach.start_level = BEACH_LEVEL;
         beach.tick(&Input::new(-1.0));
-        assert!(beach.airport.is_none() && !beach.taking_off());
-        assert!(beach.player.vel_y < 0.0, "flies at once");
+        assert!(
+            beach.airport.is_some() && beach.on_runway(),
+            "from the beach's runway"
+        );
+        assert_eq!(beach.levels().level, BEACH_LEVEL);
     }
 
     #[test]
@@ -1625,6 +1843,7 @@ mod tests {
     fn new_levels(w: &mut World, seconds: f32) -> Vec<(u64, u32)> {
         let mut seen = Vec::new();
         for _ in 0..(seconds / TICK_SECONDS).round() as u64 {
+            w.go_on(); // "Next level" whenever a level is complete
             w.tick(&Input::NONE);
             for e in w.events() {
                 if let Event::NewLevel { level } = *e {
@@ -1636,13 +1855,94 @@ mod tests {
     }
 
     #[test]
-    fn each_new_level_is_one_event_when_it_begins() {
-        let mut w = world();
-        w.lives = u32::MAX; // gulls must not end the flight
-        let level_ticks = (LEVEL_SECONDS / TICK_SECONDS).round() as u64;
-        let seen = new_levels(&mut w, 2.5 * LEVEL_SECONDS);
-        // Not at the start, then level 2, then level 1 again.
-        assert_eq!(seen, [(level_ticks, 2), (2 * level_ticks, 1)]);
+    fn each_level_ends_with_a_landing_then_the_next_begins() {
+        let mut w = World::with_seed(PHONE, 1);
+        w.lives = u32::MAX; // nothing must end the flight
+        let mut seen = Vec::new();
+        for _ in 0..(3.5 * LEVEL_SECONDS / TICK_SECONDS) as u32 {
+            w.go_on();
+            w.tick(&Input::NONE);
+            for e in w.events() {
+                match *e {
+                    Event::NewLevel { level } => seen.push(("new", level)),
+                    Event::LevelComplete { level } => seen.push(("done", level)),
+                    _ => {}
+                }
+            }
+        }
+        // Level 1 landed, level 2 begins; landed, level 1 again.
+        assert_eq!(
+            &seen[..4],
+            [("done", 1), ("new", 2), ("done", 2), ("new", 1)]
+        );
+    }
+
+    /// Fly (and land, and take off) until `level` has begun and its
+    /// countdown is over.
+    fn to_level(w: &mut World, level: u32) {
+        for _ in 0..(3.0 * LEVEL_SECONDS / TICK_SECONDS) as u32 {
+            if w.levels().level == level && w.landing.is_none() {
+                return;
+            }
+            w.go_on();
+            w.tick(&Input::NONE);
+        }
+        panic!("never reached level {level}");
+    }
+
+    #[test]
+    fn the_landing_goes_from_approach_to_touchdown_to_complete() {
+        let mut w = World::with_seed(PHONE, 2);
+        w.lives = u32::MAX;
+        let mut events = Vec::new();
+        while w.landing.is_none() {
+            w.tick(&Input::new(-1.0)); // even flying high, the autopilot comes
+            events.extend_from_slice(w.events());
+        }
+        assert!(events.contains(&Event::GearDown));
+        assert!(w.airport.is_some(), "the landing runway comes in");
+        assert!(w.autopilot());
+        // The autopilot flies; the player's steering does not count.
+        let mut touched = false;
+        let mut done = false;
+        for _ in 0..(30.0 / TICK_SECONDS) as u32 {
+            w.tick(&Input::new(-1.0));
+            touched |= w.rolling_out();
+            if w.events()
+                .iter()
+                .any(|e| matches!(e, Event::LevelComplete { level: 1 }))
+            {
+                done = true;
+                break;
+            }
+        }
+        assert!(
+            touched && done,
+            "touched {touched} done {done} y {} runway {} airport {:?} landing {:?}",
+            w.player.pos.y,
+            w.runway_y(),
+            w.airport,
+            w.landing
+        );
+        assert_eq!(w.lives, u32::MAX, "no crash on the way down");
+        assert_eq!(w.level_complete(), Some(1));
+        assert_eq!(w.speed(), 0.0, "standing still");
+        let score = w.score();
+        // "Level complete" waits for the player (Next level or Menu).
+        for _ in 0..60 * 30 {
+            w.tick(&Input::NONE);
+        }
+        assert_eq!(w.level_complete(), Some(1), "still waiting");
+        assert_eq!(w.score(), score, "the score stands still");
+        w.go_on();
+        w.tick(&Input::NONE);
+        assert_eq!(w.levels().level, BEACH_LEVEL);
+        assert_eq!(w.countdown(), Some(3));
+        for _ in 0..seconds_to_ticks(COUNTDOWN_SECONDS) {
+            w.tick(&Input::NONE);
+        }
+        assert_eq!(w.countdown(), None);
+        assert!(w.taking_off() && w.on_runway(), "takes off at the beach");
     }
 
     #[test]
@@ -1656,12 +1956,13 @@ mod tests {
     }
 
     #[test]
-    fn the_beach_fades_into_the_mix_with_level_2() {
-        let mut w = world();
-        w.lives = u32::MAX; // balloons must not end the flight
-        new_levels(&mut w, LEVEL_SECONDS - LEVEL_FADE_SECONDS);
+    fn the_waves_come_with_the_beach() {
+        let mut w = World::with_seed(PHONE, 1);
+        w.lives = u32::MAX;
+        new_levels(&mut w, LEVEL_SECONDS - 1.0);
         assert_eq!(w.mix.beach, 0.0);
-        new_levels(&mut w, LEVEL_FADE_SECONDS + 1.0);
+        to_level(&mut w, BEACH_LEVEL);
+        new_levels(&mut w, 1.0);
         assert!((w.mix.beach - BEACH_VOLUME).abs() < 1e-6, "{}", w.mix.beach);
     }
 
@@ -1727,17 +2028,15 @@ mod tests {
         let mut w = World::with_seed(PHONE, 3);
         w.lives = u32::MAX;
         let mut burners = 0;
-        for _ in 0..((LEVEL_SECONDS - LEVEL_FADE_SECONDS) / TICK_SECONDS) as u32 {
+        for _ in 0..((LEVEL_SECONDS - CLEAR_SECONDS) / TICK_SECONDS) as u32 {
             w.tick(&Input::NONE);
             burners += (w.events().iter())
                 .filter(|e| **e == Event::BalloonBurner)
                 .count();
         }
         assert!(burners >= 5, "{burners} in level 1");
-        // Past the fade into the beach and its banner: no new balloons, and
-        // the last ones have drifted away.
-        new_levels(&mut w, LEVEL_FADE_SECONDS + 12.0);
-        assert_eq!(w.levels().level, BEACH_LEVEL);
+        // Landed and off to the beach: no balloons there.
+        to_level(&mut w, BEACH_LEVEL);
         assert!(w.balloons.list.is_empty());
         for _ in 0..(40.0 / TICK_SECONDS) as u32 {
             w.tick(&Input::NONE);
@@ -1814,8 +2113,7 @@ mod tests {
     fn no_huts_or_pads_at_the_beach() {
         let mut w = World::with_seed(PHONE, 3);
         w.lives = u32::MAX;
-        new_levels(&mut w, LEVEL_SECONDS + 15.0);
-        assert_eq!(w.levels().level, BEACH_LEVEL);
+        to_level(&mut w, BEACH_LEVEL);
         for _ in 0..(40.0 / TICK_SECONDS) as u32 {
             w.tick(&Input::NONE);
             assert!(w.huts.list.is_empty() && w.balloons.pads.is_empty());
@@ -1829,8 +2127,9 @@ mod tests {
         new_levels(&mut w, LEVEL_SECONDS - 0.1);
         assert!(w.towers.list.is_empty(), "none in level 1");
         // At the beach, skimming the sand: a tower comes and is a crash.
+        let mut w = World::with_seed(PHONE, 5);
+        w.lives = u32::MAX;
         w.start_level = BEACH_LEVEL;
-        w.ticks = 0;
         let mut crashes = 0;
         for _ in 0..(25.0 / TICK_SECONDS) as u32 {
             w.gulls.list.clear(); // only the towers here
@@ -1870,7 +2169,11 @@ mod tests {
                         Event::NewHighscore => panic!("not from the world"),
                         Event::Explosion => panic!("lives cannot run out"),
                         Event::Overspeed | Event::PullUp => panic!("no throttle given"),
-                        Event::Takeoff | Event::GearUp => panic!("no airport here"),
+                        // 5 minutes: several levels, each landed and taken off.
+                        Event::Takeoff
+                        | Event::GearUp
+                        | Event::GearDown
+                        | Event::LevelComplete { .. } => {}
                     }
                 }
             }
@@ -2144,6 +2447,7 @@ mod tests {
             w.spawn_plane("m", Vec2::new(5.0, 5.0), Vec2::new(37.0, 91.0));
             w.lives = u32::MAX; // long enough for both levels
             for i in 0..10_000 {
+                w.go_on();
                 w.tick(&Input::new(((i % 7) as f32 - 3.0) / 3.0));
                 log.extend_from_slice(w.events());
             }

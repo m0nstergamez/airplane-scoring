@@ -82,6 +82,16 @@ async fn main() {
             result = None;
         }
 
+        // "Level complete": a tap, click or Enter goes on to the next level.
+        // "Level complete": the buttons Next level and Menu (Enter: next).
+        if world.level_complete().is_some() {
+            match pressed_level_end_button(&world) {
+                Some(LevelEndChoice::Next) => world.go_on(),
+                Some(LevelEndChoice::Menu) => page_js::show_menu(),
+                None => {}
+            }
+        }
+
         // Game over: a tap, click or Enter starts a new flight.
         if world.can_restart() && restart_pressed() {
             world = new_world();
@@ -102,6 +112,9 @@ async fn main() {
                 audio.play(event);
                 if event == Event::Crash || event == Event::Explosion {
                     crash_flash = 1.0;
+                }
+                if let Event::LevelComplete { level } = event {
+                    page_js::level_complete(level); // unlocks the next level
                 }
                 if event == Event::GameOver {
                     // Core ranks the score; the page keeps the list.
@@ -282,6 +295,7 @@ async fn main() {
         } else {
             draw_score(&world, highscores.best());
         }
+        draw_level_end(&world);
 
         next_frame().await
     }
@@ -309,6 +323,104 @@ fn restart_pressed() -> bool {
         || touches().iter().any(|t| t.phase == TouchPhase::Started)
         || is_key_pressed(KeyCode::Enter)
         || is_key_pressed(KeyCode::Space)
+}
+
+/// What the player chose at "Level complete".
+#[derive(Clone, Copy, PartialEq)]
+enum LevelEndChoice {
+    Next,
+    Menu,
+}
+
+/// The two buttons under "Level complete": where they are and what they do.
+fn level_end_buttons(world: &World) -> [(Rect, &'static str, LevelEndChoice); 2] {
+    let (w, h) = (screen_width(), screen_height());
+    let s = world.bounds.scale();
+    let (bw, bh, gap) = (170.0 * s, 44.0 * s, 20.0 * s);
+    let y = h * 0.36 + 72.0 * s;
+    let left = (w - 2.0 * bw - gap) / 2.0;
+    [
+        (
+            Rect::new(left, y, bw, bh),
+            "Next level",
+            LevelEndChoice::Next,
+        ),
+        (
+            Rect::new(left + bw + gap, y, bw, bh),
+            "Menu",
+            LevelEndChoice::Menu,
+        ),
+    ]
+}
+
+/// A tap or click on one of the level-end buttons this frame (or Enter
+/// for the next level).
+fn pressed_level_end_button(world: &World) -> Option<LevelEndChoice> {
+    if is_key_pressed(KeyCode::Enter) || is_key_pressed(KeyCode::Space) {
+        return Some(LevelEndChoice::Next);
+    }
+    let dpi = macroquad::miniquad::window::dpi_scale();
+    let touch = touches()
+        .into_iter()
+        .find(|t| t.phase == TouchPhase::Started)
+        .map(|t| t.position / dpi);
+    let click = is_mouse_button_pressed(MouseButton::Left).then(|| Vec2::from(mouse_position()));
+    let at = touch.or(click)?;
+    level_end_buttons(world)
+        .into_iter()
+        .find(|(rect, _, _)| rect.contains(at))
+        .map(|(_, _, choice)| choice)
+}
+
+/// The end of a level: "Level N complete" with the score after the
+/// landing, then the next level's number and a 3, 2, 1 countdown.
+fn draw_level_end(world: &World) {
+    let (w, h) = (screen_width(), screen_height());
+    let s = world.bounds.scale();
+    let centred = |text: &str, y: f32, size: f32, colour: Color| {
+        let size = size * s;
+        let dims = measure_text(text, None, size as u16, 1.0);
+        draw_text_on_landscape(text, (w - dims.width) / 2.0, y, size, colour);
+    };
+    let gold = Color::from_rgba(255, 220, 90, 255);
+    if let Some(level) = world.level_complete() {
+        draw_rectangle(0.0, 0.0, w, h, Color::new(0.08, 0.09, 0.12, 0.45));
+        centred(&format!("Level {level} complete"), h * 0.36, 56.0, gold);
+        centred(
+            &format!("Score {}", world.score()),
+            h * 0.36 + 44.0 * s,
+            30.0,
+            WHITE,
+        );
+        for (rect, label, choice) in level_end_buttons(world) {
+            let fill = match choice {
+                LevelEndChoice::Next => Color::from_rgba(31, 111, 235, 255),
+                LevelEndChoice::Menu => Color::new(0.08, 0.09, 0.12, 0.75),
+            };
+            draw_rectangle(rect.x, rect.y, rect.w, rect.h, fill);
+            draw_rectangle_lines(
+                rect.x,
+                rect.y,
+                rect.w,
+                rect.h,
+                1.5 * s,
+                Color::new(1.0, 1.0, 1.0, 0.4),
+            );
+            let size = 24.0 * s;
+            let dims = measure_text(label, None, size as u16, 1.0);
+            let x = rect.x + (rect.w - dims.width) / 2.0;
+            let y = rect.y + (rect.h + dims.offset_y) / 2.0;
+            draw_text(label, x, y, size, WHITE);
+        }
+    } else if let Some(n) = world.countdown() {
+        centred(
+            &format!("Level {}", world.levels().level),
+            h * 0.3,
+            44.0,
+            WHITE,
+        );
+        centred(&n.to_string(), h * 0.3 + 110.0 * s, 120.0, gold);
+    }
 }
 
 /// The airspeed you set with the throttle, top left: a bar with the
