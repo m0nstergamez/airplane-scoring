@@ -66,6 +66,8 @@ short **meaning**.
 | Wellen | waves | `beach.wav` | Sea sound at the beach (level 2) |
 | Heissluftballon | hot-air balloon | `Balloon`, `BalloonWay` | Level 1's obstacle: drifts left while taking off from a launch pad, landing on one, coming at the plane's height, or sinking past; the four ways take turns; envelope and basket both count |
 | Startrampe | launch pad | `Pad` | Flat deck in the grass where balloons take off and land; an obstacle |
+| Flughafen | airport | `Airport`, `World::with_takeoff` | Where every flight starts: runway, control tower, windsock |
+| Startbahn | runway | `RUNWAY_LENGTH`, `ROLL_SECONDS` | The plane rolls on it and lifts off; nothing else stands on it |
 | Hütte | hut | `Hut`, `Huts` | Big wooden hut in level 1's foreground, at the bottom of the screen; an obstacle |
 | Brenner | burner | `Event::BalloonBurner`, `balloon-burner.wav` | The roar of a balloon's gas flame, heard as it appears |
 | Strandturm | lifeguard tower | `Tower`, `Towers` | Wooden lifeguard tower in the beach's sand (level 2), near the front or back by the water; an obstacle |

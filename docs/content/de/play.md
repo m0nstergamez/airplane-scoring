@@ -18,6 +18,11 @@ Der Flug beginnt erst mit diesem Tipp oder Klick. Bis dahin wartet das
 Spiel, egal wie lange die Startanzeige offen ist. So startest du immer am
 Anfang von Level 1.
 
+Jeder Flug beginnt auf einem **Flughafen**: Dein Flugzeug steht vorne
+auf der Startbahn, beim Kontrollturm und dem Windsack. Es rollt los,
+die Landschaft zieht immer schneller vorbei, es hebt ab und steigt von
+selbst weg. Dann übernimmst du die Steuerung.
+
 ## Steuerung
 
 Das Flugzeug reagiert weich: Es nimmt Fahrt nach oben oder unten
@@ -105,7 +110,7 @@ nicht steuern. Danach fliegst du wieder.
 ## Tempo, Overspeed und Pull up
 
 Neben dem Tempo, das mit deinem Score langsam steigt, stellst du selbst
-ein, wie schnell du fliegst. Unten links zeigt die Anzeige «SPEED» dein
+ein, wie schnell du fliegst. Oben links zeigt die Anzeige «SPEED» dein
 Tempo: gelb ist zu langsam, grün ist gut, rot ist zu schnell. Gibst du
 kein Gas und bremst nicht, kommst du langsam zurück aufs normale Tempo.
 

@@ -165,7 +165,7 @@ flowchart LR
   oben am kleinsten (`OBJECT_SIZE`) und wächst über die ganze Höhe
   gleichmässig bis zur vollen Grösse eines Ballons auf der Startrampe.
   Das Flugzeug folgt `Bounds::plane_depth(y)`: oben gleich klein, nahe am
-  Boden bis `PLANE_NEAR_SIZE` (1.5) gross. Zeichnen und Zusammenstösse
+  Boden bis `PLANE_NEAR_SIZE` (1.8) gross. Zeichnen und Zusammenstösse
   nutzen denselben Faktor, darum ist ein tief fliegendes Flugzeug
   grösser und leichter zu treffen.
 - **Zusammenstösse nutzen die gezeichneten Formen**
@@ -339,6 +339,7 @@ Landschaft:
 | `AIRSPEED_RANGE` | `crates/core/src/lib.rs` | langsamste und schnellste einstellbare Geschwindigkeit (1 = normal) |
 | `OVERSPEED_AT` | `crates/core/src/lib.rs` | Geschwindigkeit, ab der «Overspeed» warnt; nach `OVERSPEED_SECONDS` bricht es auseinander |
 | `STALL_AT` | `crates/core/src/lib.rs` | Geschwindigkeit, unter der «Pull up» warnt und das Flugzeug absackt (bis `STALL_SINK`) |
+| `ROLL_SECONDS` | `crates/core/src/airport.rs` | wie lange das Flugzeug auf der Startbahn rollt, bevor es abhebt |
 | `SHAKE_PX` | `crates/core/src/lib.rs` | wie weit der Bildschirm bei der Explosion wackelt (`World::shake`) |
 | `HIGHSCORE_COUNT` | `crates/core/src/highscore.rs` | wie viele beste Scores gespeichert werden |
 | `SAFE_SECONDS` | `crates/core/src/lib.rs` | wie lange das Flugzeug nach einem Zusammenstoss blinkt und geschützt ist |

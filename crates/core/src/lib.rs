@@ -5,6 +5,7 @@
 /// and calls `tick` zero or more times per frame.
 pub const TICK_SECONDS: f32 = 1.0 / 60.0;
 
+mod airport;
 mod balloons;
 mod clock;
 mod gulls;
@@ -19,6 +20,10 @@ mod sound;
 mod tilt;
 mod towers;
 mod weather;
+pub use airport::{
+    Airport, CLIMB_OUT_SECONDS, CLIMB_OUT_STEER, ROLL_SECONDS, RUNWAY_GROUND, RUNWAY_HEIGHT,
+    RUNWAY_LENGTH, WHEELS_BELOW,
+};
 pub use balloons::{
     Balloon, BalloonWay, Balloons, Pad, BALLOON_COLOURS, BALLOON_GAP_SECONDS, BALLOON_HIGH,
     BALLOON_RADIUS, BALLOON_RISE, BASKET_BELOW, BASKET_HALF, BASKET_RADIUS, FIRST_BALLOON_SECONDS,
@@ -76,7 +81,7 @@ pub const OBJECT_SIZE: f32 = 0.41;
 
 /// How big the plane gets near the ground, compared with its first
 /// design (balloons get to 1 there). See [`Bounds::plane_depth`].
-pub const PLANE_NEAR_SIZE: f32 = 1.5;
+pub const PLANE_NEAR_SIZE: f32 = 1.8;
 
 /// The airspeed you set with the throttle, as a factor on the game's
 /// speed: 1 = cruising, the lowest and the highest you can go.
@@ -401,6 +406,11 @@ pub struct World {
     /// How far the landscape has slid past, in px at phone size (it
     /// speeds up with the score, see [`World::speed`]).
     pub distance: f64,
+    /// The airport the flight starts from, while it is on screen.
+    pub airport: Option<Airport>,
+    /// Ticks since the takeoff began, while it lasts; `None` once the
+    /// player flies (or for a flight that starts in the air).
+    takeoff: Option<u32>,
     /// Ticks spent in overspeed / stalling in a row (0 = not now).
     overspeed_ticks: u32,
     stall_ticks: u32,
@@ -436,6 +446,8 @@ impl World {
             lives: LIVES,
             explosion: None,
             distance: 0.0,
+            airport: None,
+            takeoff: None,
             overspeed_ticks: 0,
             stall_ticks: 0,
             over_ticks: 0,
@@ -488,7 +500,43 @@ impl World {
     /// airspeed you set with the throttle.
     pub fn speed(&self) -> f32 {
         let score = (1.0 + SPEED_PER_POINT * self.score() as f32).min(MAX_SPEED);
-        score * self.player.airspeed
+        score * self.player.airspeed * self.rolling()
+    }
+
+    /// Start this flight on the airport's runway (the game does this for
+    /// every new flight; a flight that starts in level 2 ignores it).
+    pub fn with_takeoff(mut self) -> Self {
+        self.airport = Some(Airport::at_start(self.bounds));
+        self.takeoff = Some(0);
+        self
+    }
+
+    /// While the plane rolls down the runway, the landscape speeds up from
+    /// standing still: 0..1 over [`ROLL_SECONDS`]; 1 otherwise.
+    fn rolling(&self) -> f32 {
+        match self.takeoff {
+            Some(t) => (t as f32 * TICK_SECONDS / ROLL_SECONDS).min(1.0),
+            None => 1.0,
+        }
+    }
+
+    /// Is the plane still on the runway (not yet lifted off)?
+    pub fn on_runway(&self) -> bool {
+        self.takeoff
+            .is_some_and(|t| (t as f32 * TICK_SECONDS) < ROLL_SECONDS)
+    }
+
+    /// Is the takeoff still going (rolling or climbing out on its own)?
+    pub fn taking_off(&self) -> bool {
+        self.takeoff.is_some()
+    }
+
+    /// Where the plane's centre is while it stands on the runway.
+    fn runway_y(&self) -> f32 {
+        let y = Airport::runway_top(self.bounds);
+        // Its size there follows the depth at that height (close enough
+        // at the bottom of the screen, where it is full size).
+        y - WHEELS_BELOW * self.bounds.plane_depth(y)
     }
 
     /// Is a warning voice speaking now? `ticks`: how long that warning has
@@ -607,6 +655,24 @@ impl World {
         let scale = self.bounds.scale();
         self.events.clear();
 
+        // The takeoff: only for a flight that starts in level 1. The plane
+        // stands on the runway, rolls, lifts off and climbs out on its own;
+        // the controls count only after that.
+        if self.takeoff == Some(0) && self.start_level != 1 {
+            self.takeoff = None;
+            self.airport = None;
+        }
+        let takeoff = self.takeoff;
+        let input = &match takeoff {
+            Some(t) if (t as f32 * TICK_SECONDS) < ROLL_SECONDS => Input::NONE,
+            Some(_) => Input::new(CLIMB_OUT_STEER),
+            None => *input,
+        };
+        if let Some(t) = takeoff {
+            let done = (ROLL_SECONDS + CLIMB_OUT_SECONDS) / TICK_SECONDS;
+            self.takeoff = (((t + 1) as f32) < done).then_some(t + 1);
+        }
+
         // Game over: everything stands still and the sound fades out.
         if self.is_over() {
             self.over_ticks += 1;
@@ -693,6 +759,12 @@ impl World {
         if hit_ground && self.player.is_stalling() && self.explosion.is_none() {
             self.break_apart();
         }
+        // Standing and rolling on the runway: wheels on the tarmac, level.
+        if takeoff.is_some_and(|t| (t as f32 * TICK_SECONDS) < ROLL_SECONDS) {
+            let y = self.runway_y();
+            let player = &mut self.player;
+            (player.pos.y, player.vel_y, player.pitch) = (y, 0.0, 0.0);
+        }
         for m in &mut self.planes {
             m.pos.x += m.vel.x * TICK_SECONDS;
             m.pos.y += m.vel.y * TICK_SECONDS;
@@ -717,7 +789,12 @@ impl World {
         // Balloons rise only while level 1 is fully on screen, gulls fly
         // only while the beach is.
         let levels = self.levels();
-        let coast = levels.level == 1 && levels.fade == 0.0;
+        // Nothing new comes in while the airport's runway still reaches the
+        // right edge: no hut or launch pad on the runway.
+        let runway_in = self
+            .airport
+            .is_some_and(|a| a.x + RUNWAY_LENGTH * scale > width - 40.0 * scale);
+        let coast = levels.level == 1 && levels.fade == 0.0 && !runway_in;
         let plane_y = self.player.pos.y;
         let pads: Vec<f32> = self.balloons.pads.iter().map(|p| p.x).collect();
         self.huts.tick(self.bounds, coast, &pads);
@@ -730,10 +807,16 @@ impl World {
         self.gulls.tick(self.bounds, beach, &mut self.events);
         self.towers.tick(self.bounds, beach);
         // Faster than at the start: everything slides past by the extra
-        // too (far towers less, as they move slower).
+        // too (far towers less, as they move slower); slower while rolling.
         self.distance += (SCROLL_SPEED * speed * TICK_SECONDS) as f64;
+        if let Some(a) = &mut self.airport {
+            a.x -= SCROLL_SPEED * scale * speed * TICK_SECONDS;
+        }
+        if self.airport.is_some_and(|a| a.gone(self.bounds)) {
+            self.airport = None;
+        }
         let extra = (speed - 1.0) * SCROLL_SPEED * scale * TICK_SECONDS;
-        if extra > 0.0 {
+        if extra != 0.0 {
             self.huts.list.iter_mut().for_each(|h| h.x -= extra);
             self.balloons.pads.iter_mut().for_each(|p| p.x -= extra);
             self.balloons.list.iter_mut().for_each(|b| b.pos.x -= extra);
@@ -1031,6 +1114,88 @@ mod tests {
             w.tick(&Input::NONE);
         }
         assert_eq!(w.explosion_progress(), Some(1.0));
+    }
+
+    #[test]
+    fn the_flight_starts_on_the_runway_rolls_and_lifts_off() {
+        let mut w = World::new(PHONE).with_takeoff();
+        assert!(w.airport.is_some() && w.taking_off());
+        w.tick(&Input::new(-1.0)); // the controls do not count yet
+        assert!(w.on_runway());
+        let on_runway = w.player.pos.y;
+        assert!(
+            on_runway > 0.8 * PHONE.height,
+            "down on the runway: {on_runway}"
+        );
+        // The landscape starts from standing and speeds up while rolling.
+        let first = w.speed();
+        assert!(first < 0.05, "{first}");
+        let roll = (ROLL_SECONDS / TICK_SECONDS) as u32;
+        for _ in 0..roll / 2 {
+            w.tick(&Input::new(1.0));
+        }
+        assert!(w.speed() > 0.4 && w.speed() < 0.6, "{}", w.speed());
+        assert_eq!(w.player.pos.y, on_runway, "still rolling");
+        assert_eq!(w.player.pitch, 0.0);
+        // Lift-off: it climbs away on its own, nose up.
+        for _ in 0..roll / 2 + 30 {
+            w.tick(&Input::new(1.0));
+        }
+        assert!(!w.on_runway() && w.taking_off());
+        assert!(w.player.pos.y < on_runway - 3.0, "airborne");
+        assert!(w.player.pitch < 0.0, "nose up");
+        // Then the player has the controls.
+        for _ in 0..(CLIMB_OUT_SECONDS / TICK_SECONDS) as u32 {
+            w.tick(&Input::NONE);
+        }
+        assert!(!w.taking_off());
+        let y = w.player.pos.y;
+        for _ in 0..30 {
+            w.tick(&Input::new(1.0));
+        }
+        assert!(w.player.pos.y > y, "steers now");
+        assert_eq!(w.lives, LIVES, "no crash on the way");
+    }
+
+    #[test]
+    fn nothing_stands_on_the_runway() {
+        for seed in 0..6 {
+            let mut w = World::with_seed(PHONE, seed).with_takeoff();
+            w.lives = u32::MAX;
+            for _ in 0..60 * 20 {
+                w.tick(&Input::NONE);
+                let Some(a) = w.airport else { break };
+                let (l, r) = (a.x, a.x + RUNWAY_LENGTH);
+                for h in &w.huts.list {
+                    let (hl, _, hr, _) = h.rect(PHONE);
+                    assert!(hr < l || hl > r, "hut on the runway, seed {seed}");
+                }
+                for p in &w.balloons.pads {
+                    assert!(p.x + PAD_WIDTH / 2.0 < l || p.x - PAD_WIDTH / 2.0 > r);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn the_airport_slides_away_and_a_flight_in_level_2_starts_in_the_air() {
+        let mut w = World::new(PHONE).with_takeoff();
+        let x = w.airport.unwrap().x;
+        for _ in 0..60 * 6 {
+            w.tick(&Input::NONE);
+        }
+        assert!(w.airport.is_none_or(|a| a.x < x - 100.0), "slides off");
+        for _ in 0..60 * 20 {
+            w.balloons.list.clear();
+            w.huts.list.clear();
+            w.tick(&Input::NONE);
+        }
+        assert!(w.airport.is_none(), "gone once off screen");
+        let mut beach = World::new(PHONE).with_takeoff();
+        beach.start_level = BEACH_LEVEL;
+        beach.tick(&Input::new(-1.0));
+        assert!(beach.airport.is_none() && !beach.taking_off());
+        assert!(beach.player.vel_y < 0.0, "flies at once");
     }
 
     #[test]

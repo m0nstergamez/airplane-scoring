@@ -381,6 +381,21 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
   normalen Tempo zum Boden zu sinken bleibt harmlos. Die Stimm-Dateien
   sind zur Laufzeit freiwillig: Ohne sie spielen alle anderen Töne
   (eine fehlende Datei hatte das ganze Spiel stumm gemacht).
+- Start vom Flughafen, gewünscht: Jeder neue Flug in Level 1 beginnt auf
+  einer Startbahn im Vordergrund (`airport.rs`: Startbahn mit
+  Pistenanfang und Mittellinie, Kontrollturm, Windsack). Das Flugzeug
+  steht mit ausgefahrenem Fahrwerk darauf; die Landschaft beschleunigt
+  über `ROLL_SECONDS` (2.5 s, `World::speed` mal das Rollen) aus dem
+  Stand, das Flugzeug hebt ab, steigt `CLIMB_OUT_SECONDS` lang von selbst
+  weg, dann steuert die Spielerin bzw. der Spieler. Freiwillig
+  (`World::with_takeoff`, das das Spiel aufruft), damit bestehende Tests
+  ein Flugzeug in der Luft behalten; ein Flug ab Level 2 lässt es aus.
+  Solange die Startbahn noch bis an den rechten Rand reicht, kommt
+  nichts Neues, damit keine Hütte und keine Rampe darauf steht (ein
+  erster Versuch zeigte eine Rampe darauf). Die Anzeige SPEED ist nach
+  oben links gerückt, weg von der Startbahn. Ebenfalls gewünscht: Das
+  Flugzeug wird nahe am Boden etwas grösser (`PLANE_NEAR_SIZE` 1.5 →
+  1.8).
 
 ## Konzepte
 

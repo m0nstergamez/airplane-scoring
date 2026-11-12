@@ -3,11 +3,11 @@
 
 use airplane_scoring_core::Vec2 as Vec2Core;
 use airplane_scoring_core::{
-    background_x, pick_steer, pick_throttle, start_level, steer_from_keys, Balloon, Bounds, Clock,
-    Event, Gull, Highscores, Hut, Input, Pad, Tilt, Tower, Warning, World, AIRSPEED_RANGE,
-    BALLOON_RADIUS, BASKET_BELOW, HIGHSCORE_COUNT, HUT_EAVES, HUT_INSET, LIVES, OVERSPEED_AT,
-    PAD_HEIGHT, PAD_WIDTH, PLANE_COCKPIT, PLANE_FUSELAGE, PLANE_NOSE, PLANE_RADIUS, PLANE_TAIL,
-    PLANE_WING, STALL_AT, TICK_SECONDS,
+    background_x, pick_steer, pick_throttle, start_level, steer_from_keys, Airport, Balloon,
+    Bounds, Clock, Event, Gull, Highscores, Hut, Input, Pad, Tilt, Tower, Warning, World,
+    AIRSPEED_RANGE, BALLOON_RADIUS, BASKET_BELOW, HIGHSCORE_COUNT, HUT_EAVES, HUT_INSET, LIVES,
+    OVERSPEED_AT, PAD_HEIGHT, PAD_WIDTH, PLANE_COCKPIT, PLANE_FUSELAGE, PLANE_NOSE, PLANE_RADIUS,
+    PLANE_TAIL, PLANE_WING, RUNWAY_HEIGHT, RUNWAY_LENGTH, STALL_AT, TICK_SECONDS, WHEELS_BELOW,
 };
 use macroquad::prelude::*;
 
@@ -175,6 +175,9 @@ async fn main() {
 
         // Launch pads and balloons, then the huts in the foreground in
         // front of them, then what flies.
+        if let Some(airport) = &world.airport {
+            draw_airport(airport, world.bounds, world.ticks);
+        }
         for pad in &world.balloons.pads {
             draw_pad(pad, world.bounds);
         }
@@ -216,6 +219,7 @@ async fn main() {
                     plane_size,
                     world.player.pitch, // nose up to climb, down to dive
                     world.player.is_crashed().then_some(world.ticks),
+                    world.taking_off(), // wheels out until it has climbed away
                 );
             }
         }
@@ -279,7 +283,8 @@ fn new_world() -> World {
         seed,
     );
     world.start_level = start_level(page_js::requested_level());
-    world
+    // Every flight starts from the airport (core skips it in level 2).
+    world.with_takeoff()
 }
 
 /// A new tap, click, Enter or Space this frame (not a finger still held).
@@ -290,18 +295,19 @@ fn restart_pressed() -> bool {
         || is_key_pressed(KeyCode::Space)
 }
 
-/// The airspeed you set with the throttle, bottom left: a bar with the
+/// The airspeed you set with the throttle, top left: a bar with the
 /// stall zone (amber), cruising (green) and overspeed (red), and a marker
 /// for the speed now.
 fn draw_airspeed(world: &World) {
     if world.is_over() {
         return;
     }
-    let (w, h) = (screen_width(), screen_height());
+    let w = screen_width();
     let s = world.bounds.scale();
     let (bar_w, bar_h) = (150.0 * s, 8.0 * s);
+    // Top left, under the warning lamp (the bottom is runway and huts).
     let left = (w * 0.06).max(16.0);
-    let top = h - 22.0 * s;
+    let top = 62.0 * s;
     let (lo, hi) = AIRSPEED_RANGE;
     let at = |v: f32| left + (v - lo) / (hi - lo) * bar_w;
     let zone = |from: f32, to: f32, colour: Color| {
@@ -646,6 +652,89 @@ fn draw_tower(tower: &Tower, bounds: Bounds) {
     draw_triangle(vec2(a.x, a.y), vec2(b.x, b.y), vec2(c.x, c.y), roof);
 }
 
+/// The airport the flight starts from: a control tower and a windsock by
+/// the start of the runway, and the runway itself, asphalt with threshold
+/// stripes and a dashed centre line. Positions from core's `Airport`.
+fn draw_airport(airport: &Airport, bounds: Bounds, ticks: u64) {
+    let s = bounds.scale();
+    let ground = Airport::ground(bounds);
+    let top = Airport::runway_top(bounds);
+    let (x, len, h) = (airport.x, RUNWAY_LENGTH * s, RUNWAY_HEIGHT * s);
+    // Control tower behind the runway's start: a column with a glass cab.
+    let tx = x - 30.0 * s;
+    let concrete = Color::from_rgba(214, 214, 206, 255);
+    draw_rectangle(
+        tx - 9.0 * s,
+        ground - 78.0 * s,
+        18.0 * s,
+        78.0 * s,
+        concrete,
+    );
+    draw_rectangle(
+        tx - 18.0 * s,
+        ground - 96.0 * s,
+        36.0 * s,
+        18.0 * s,
+        concrete,
+    );
+    draw_rectangle(
+        tx - 15.0 * s,
+        ground - 93.0 * s,
+        30.0 * s,
+        11.0 * s,
+        Color::from_rgba(70, 110, 140, 255),
+    );
+    draw_rectangle(
+        tx - 20.0 * s,
+        ground - 100.0 * s,
+        40.0 * s,
+        4.0 * s,
+        Color::from_rgba(150, 40, 36, 255),
+    );
+    // Windsock on a pole, fluttering a little.
+    let wx = x - 62.0 * s;
+    let pole_top = ground - 46.0 * s;
+    draw_line(
+        wx,
+        ground,
+        wx,
+        pole_top,
+        2.0 * s,
+        Color::from_rgba(90, 90, 90, 255),
+    );
+    let flutter = ((ticks as f32) * 0.25).sin() * 2.0 * s;
+    for (i, colour) in [
+        (0, Color::from_rgba(240, 120, 30, 255)),
+        (1, WHITE),
+        (2, Color::from_rgba(240, 120, 30, 255)),
+    ] {
+        let a = i as f32 * 8.0 * s;
+        let b = a + 8.0 * s;
+        let half = |d: f32| 5.0 * s * (1.0 - d / (26.0 * s));
+        draw_triangle(
+            vec2(wx - a, pole_top + 1.0 * s - half(a) + 5.0 * s),
+            vec2(
+                wx - b,
+                pole_top + 1.0 * s - half(b) + 5.0 * s + flutter * (i as f32) / 2.0,
+            ),
+            vec2(wx - a, pole_top + 1.0 * s + half(a) + 5.0 * s),
+            colour,
+        );
+    }
+    // The runway.
+    draw_rectangle(x, top, len, h, Color::from_rgba(64, 66, 70, 255));
+    draw_rectangle(x, top, len, 1.5 * s, Color::from_rgba(120, 122, 126, 255));
+    for i in 0..6 {
+        let bx = x + (6.0 + i as f32 * 7.0) * s;
+        draw_rectangle(bx, top + 2.0 * s, 4.0 * s, h - 4.0 * s, WHITE);
+    }
+    let mut dash = x + 70.0 * s;
+    while dash < x + len - 20.0 * s {
+        draw_rectangle(dash, top + h / 2.0 - 1.0 * s, 20.0 * s, 2.0 * s, WHITE);
+        dash += 40.0 * s;
+    }
+}
+
 /// A balloon launch pad: a flat wooden deck on the grass with a yellow
 /// ring where the basket stands.
 fn draw_pad(pad: &Pad, bounds: Bounds) {
@@ -858,7 +947,23 @@ fn draw_explosion(x: f32, y: f32, size: f32, t: f32) {
 
 /// Side view of a small plane flying right, centred on (x, y), at the
 /// screen's `scale`. `crashed`: the tick count while it is out of control.
-fn draw_player(x: f32, y: f32, scale: f32, pitch: f32, crashed: Option<u64>) {
+fn draw_player(x: f32, y: f32, scale: f32, pitch: f32, crashed: Option<u64>, gear: bool) {
+    if gear {
+        // Landing gear: a main and a nose strut with wheels, their bottoms
+        // `WHEELS_BELOW` under the centre (where core puts the runway).
+        let (sin, cos) = pitch.sin_cos();
+        let p = |dx: f32, dy: f32| {
+            let (dx, dy) = (dx * scale, dy * scale);
+            vec2(x + dx * cos - dy * sin, y + dx * sin + dy * cos)
+        };
+        let dark = Color::from_rgba(40, 42, 48, 255);
+        let wheel_r = 3.0;
+        for gx in [-6.0, 14.0] {
+            let (top, hub) = (p(gx, 4.0), p(gx, WHEELS_BELOW - wheel_r));
+            draw_line(top.x, top.y, hub.x, hub.y, 1.5 * scale, dark);
+            draw_circle(hub.x, hub.y, wheel_r * scale, dark);
+        }
+    }
     let mut body = WHITE_PLANE;
     let mut accent = BLUE_PLANE;
     if let Some(ticks) = crashed {
