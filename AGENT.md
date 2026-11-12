@@ -161,6 +161,7 @@ web/index.html        canvas page; loads mq_js_bundle.js + airplane-scoring.wasm
 web/sounds/           generated .wav files (engine, wind, rain, thunder, crash, beach, new level, gull call, balloon burner, highscore fanfare, explosion, overspeed and pull-up warnings and voices, runway rumble, takeoff spool-up, gear-up)
 web/levels/           rendered level backgrounds (PNG, from art/levels)
 web/qr.svg            QR code to the live game (scripts/make-qr.py)
+web/plane.svg         the plane for the main menu (core's PLANE_* points)
 art/levels/levelN/    background.svg (source) + local photo.* (gitignored)
 .cargo/config.toml    wasm linker flag needed by the audio feature
 scripts/              check.sh, check-docs.sh, check-mermaid.sh, shot.sh, cdp_shot.py, dev.sh, watch.sh, build-web.sh, serve.sh,

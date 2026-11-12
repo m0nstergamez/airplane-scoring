@@ -22,8 +22,8 @@ mod towers;
 mod weather;
 pub use airport::{
     Airport, APPROACH_DISTANCE, BRAKE_SECONDS, CLEAR_SECONDS, CLIMB_OUT_SECONDS, CLIMB_OUT_STEER,
-    COMPLETE_SECONDS, COUNTDOWN_SECONDS, GEAR_DELAY_SECONDS, GEAR_RETRACT_SECONDS, ROLL_SECONDS,
-    RUNWAY_GROUND, RUNWAY_HEIGHT, RUNWAY_LENGTH, TOUCHDOWN_INTO, WHEELS_BELOW,
+    COUNTDOWN_SECONDS, GEAR_DELAY_SECONDS, GEAR_RETRACT_SECONDS, ROLL_SECONDS, RUNWAY_GROUND,
+    RUNWAY_HEIGHT, RUNWAY_LENGTH, TOUCHDOWN_INTO, WHEELS_BELOW,
 };
 pub use balloons::{
     Balloon, BalloonWay, Balloons, Pad, BALLOON_COLOURS, BALLOON_GAP_SECONDS, BALLOON_HIGH,
@@ -588,7 +588,7 @@ impl World {
     }
 
     /// Start this flight on the airport's runway (the game does this for
-    /// every new flight; a flight that starts in level 2 ignores it).
+    /// every new flight, in whatever level it starts).
     pub fn with_takeoff(mut self) -> Self {
         self.airport = Some(Airport::at_start(self.bounds));
         self.takeoff = Some(0);
@@ -772,8 +772,8 @@ impl World {
         // The level's end: "complete", then the countdown; nothing moves.
         match self.landing {
             Some(Landing::Complete(t)) => {
-                let shown = t >= seconds_to_ticks(COMPLETE_SECONDS);
-                if shown || self.go_on {
+                // Waits for the player: "Next level" (or "Menu" in the game).
+                if self.go_on {
                     self.next_level();
                 } else {
                     self.landing = Some(Landing::Complete(t + 1));
@@ -806,11 +806,6 @@ impl World {
             self.events.push(Event::GearDown);
         }
 
-        if self.takeoff == Some(0) && self.start_level != 1 && self.ticks == 0 {
-            self.takeoff = None;
-            self.airport = None;
-            self.player.pos.y = height / 2.0; // starts in the air instead
-        }
         let takeoff = self.takeoff;
         let autopilot = self.autopilot_steer();
         let input = &match (takeoff, autopilot) {
@@ -1492,7 +1487,7 @@ mod tests {
     }
 
     #[test]
-    fn the_airport_slides_away_and_a_flight_in_level_2_starts_in_the_air() {
+    fn the_airport_slides_away_and_a_flight_in_level_2_takes_off_too() {
         let mut w = World::new(PHONE).with_takeoff();
         let x = w.airport.unwrap().x;
         for _ in 0..60 * 6 {
@@ -1508,8 +1503,11 @@ mod tests {
         let mut beach = World::new(PHONE).with_takeoff();
         beach.start_level = BEACH_LEVEL;
         beach.tick(&Input::new(-1.0));
-        assert!(beach.airport.is_none() && !beach.taking_off());
-        assert!(beach.player.vel_y < 0.0, "flies at once");
+        assert!(
+            beach.airport.is_some() && beach.on_runway(),
+            "from the beach's runway"
+        );
+        assert_eq!(beach.levels().level, BEACH_LEVEL);
     }
 
     #[test]
@@ -1845,6 +1843,7 @@ mod tests {
     fn new_levels(w: &mut World, seconds: f32) -> Vec<(u64, u32)> {
         let mut seen = Vec::new();
         for _ in 0..(seconds / TICK_SECONDS).round() as u64 {
+            w.go_on(); // "Next level" whenever a level is complete
             w.tick(&Input::NONE);
             for e in w.events() {
                 if let Event::NewLevel { level } = *e {
@@ -1861,6 +1860,7 @@ mod tests {
         w.lives = u32::MAX; // nothing must end the flight
         let mut seen = Vec::new();
         for _ in 0..(3.5 * LEVEL_SECONDS / TICK_SECONDS) as u32 {
+            w.go_on();
             w.tick(&Input::NONE);
             for e in w.events() {
                 match *e {
@@ -1884,6 +1884,7 @@ mod tests {
             if w.levels().level == level && w.landing.is_none() {
                 return;
             }
+            w.go_on();
             w.tick(&Input::NONE);
         }
         panic!("never reached level {level}");
@@ -1927,8 +1928,11 @@ mod tests {
         assert_eq!(w.level_complete(), Some(1));
         assert_eq!(w.speed(), 0.0, "standing still");
         let score = w.score();
-        // "Level complete" waits; a tap goes on to the countdown.
-        w.tick(&Input::NONE);
+        // "Level complete" waits for the player (Next level or Menu).
+        for _ in 0..60 * 30 {
+            w.tick(&Input::NONE);
+        }
+        assert_eq!(w.level_complete(), Some(1), "still waiting");
         assert_eq!(w.score(), score, "the score stands still");
         w.go_on();
         w.tick(&Input::NONE);
@@ -2443,6 +2447,7 @@ mod tests {
             w.spawn_plane("m", Vec2::new(5.0, 5.0), Vec2::new(37.0, 91.0));
             w.lives = u32::MAX; // long enough for both levels
             for i in 0..10_000 {
+                w.go_on();
                 w.tick(&Input::new(((i % 7) as f32 - 3.0) / 3.0));
                 log.extend_from_slice(w.events());
             }

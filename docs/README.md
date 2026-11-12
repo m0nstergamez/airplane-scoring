@@ -417,6 +417,22 @@ that isn't code here. Keep entries short and dated.
   `World::levels` now follows `completed`, not the ticks. Checked with
   screenshots of approach, touchdown, complete and the beach countdown,
   with `LEVEL_SECONDS` set to 12 locally (not committed).
+- Main menu and level map, asked for: the start page is now a game menu
+  over the level 1 landscape with the plane (`web/plane.svg`, drawn from
+  core's `PLANE_*` points) and the title "AIRPLANE SCORING": Tap/Click
+  to fly, Levels, Options (the same Music/Sounds switches as the pause
+  menu), QR code in a corner, keys on computers. Levels shows round
+  pictures of each landscape on a dashed path; level 2 is locked until
+  level 1 is landed (`page_level_complete`, stored as
+  `airplane-scoring.unlocked`; locking was my suggestion, as in typical
+  games). Picking a level starts there from its airport
+  (`page_level`/`page_new_flight`; every level now takes off, also with
+  `?level=2`). "Level complete" no longer goes on by itself: buttons Next
+  level (or Enter) and Menu (`page_show_menu`). Page plugin version 4.
+  Checked in screenshots (home, levels, options at 844×390 and
+  1440×900; complete with `LEVEL_SECONDS` 12 locally, not committed); a
+  first try was too crowded on a low screen, so low windows get a
+  compact layout.
 
 ## Concepts
 

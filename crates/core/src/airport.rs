@@ -27,9 +27,8 @@ pub const APPROACH_DISTANCE: f32 = 60.0;
 pub const TOUCHDOWN_INTO: f32 = 80.0;
 /// After touchdown it brakes to a stop over this long, in seconds.
 pub const BRAKE_SECONDS: f32 = 3.5;
-/// "Level complete" shows this long (a tap goes on sooner), then the
-/// next level counts down for [`COUNTDOWN_SECONDS`] before its takeoff.
-pub const COMPLETE_SECONDS: f32 = 4.0;
+/// After "Level complete" (which waits for the player), the next level
+/// counts down this long before its takeoff.
 pub const COUNTDOWN_SECONDS: f32 = 3.0;
 
 /// After lift-off the gear waits this long, then folds up over

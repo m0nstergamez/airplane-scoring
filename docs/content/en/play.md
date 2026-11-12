@@ -5,17 +5,23 @@
 1. Open <https://m0nstergamez.github.io/airplane-scoring/> on your phone.
 2. Turn your phone **sideways** (landscape). Held upright, the game asks
    you to turn it.
-3. Tap **"Tap to fly"**. On an iPhone, allow access to "Motion & Orientation"
-   when asked. Next to the button is a **QR code**: friends scan it with
-   their camera to fly too.
+3. In the **main menu** ("AIRPLANE SCORING", with the plane over the
+   coast), tap **"Tap to fly"**. On an iPhone, allow access to "Motion &
+   Orientation" when asked. At the bottom right is a **QR code**: friends
+   scan it with their camera to fly too.
 
-On a computer the start screen shows the keys and a **QR code**. Scan
-it with your phone's camera to open the game there. To fly on the
-computer, click **"Click to fly"** or press Enter.
+The main menu also has **Levels**: a map with a round picture of each
+landscape, joined by a dashed line. Tap a level to start there. Level 2
+is locked at first (grey with a padlock) and opens once you have
+completed level 1; the game remembers. Under **Options** you switch
+music and sounds.
+
+On a computer the main menu also shows the keys and a larger **QR
+code**. Scan it with your phone's camera to open the game there. To fly
+on the computer, click **"Click to fly"** or press Enter.
 
 The flight only begins with that tap or click. Until then the game waits,
-however long the start screen is open, so you always start at the
-beginning of level 1.
+however long the main menu is open.
 
 Every flight starts at an **airport**: your plane stands on the runway
 in the foreground, by the control tower and the windsock. It rolls, the
@@ -98,7 +104,8 @@ with the game blurred behind:
   "level" from now on, for steering and for gas.
 - **Options:** switch music (the tunes) and sounds (everything else) on
   or off separately. **Back** goes back.
-- **Menu:** back to the start page; "Tap to fly" starts a new flight.
+- **Menu:** back to the main menu; "Tap to fly" or the levels start a
+  new flight.
 
 Switching to another app or tab pauses the game by itself.
 
@@ -182,9 +189,10 @@ Each **level** has its own landscape: first the coast (level 1), then a
 beach at sunset (level 2). After about a minute of flying, a level ends
 with a **landing**: no new obstacles come, a runway appears, and the
 autopilot takes over. The gear comes down, the plane touches down,
-brakes and stops: "Level 1 complete" shows with your score. Tap (or
-wait a moment) and the next level begins: its landscape appears, it
-counts 3, 2, 1, and you take off from its runway. After the last level,
+brakes and stops: "Level 1 complete" shows with your score and two
+buttons. **Next level** (or Enter) starts the next level: its landscape
+appears, it counts 3, 2, 1, and you take off from its runway. **Menu**
+goes to the main menu. After the last level,
 level 1 starts again.
 
 On the coast, **hot-air balloons** float by now and then. They come

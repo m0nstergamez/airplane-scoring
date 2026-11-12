@@ -14,6 +14,8 @@ mod imp {
         fn page_started() -> i32;
         fn page_level() -> i32;
         fn page_new_flight() -> u32;
+        fn page_show_menu();
+        fn page_level_complete(level: u32);
         fn page_highscore(i: i32) -> f64;
         fn page_set_highscore(i: i32, score: f64);
     }
@@ -21,7 +23,19 @@ mod imp {
     /// miniquad checks this against the JS plugin's `version`.
     #[no_mangle]
     pub extern "C" fn page_crate_version() -> u32 {
-        3
+        4
+    }
+
+    /// Back to the main menu (the start page).
+    pub fn show_menu() {
+        // SAFETY: takes and returns nothing.
+        unsafe { page_show_menu() }
+    }
+
+    /// A level was landed: the page unlocks the next one on its map.
+    pub fn level_complete(level: u32) {
+        // SAFETY: plain value, no pointers.
+        unsafe { page_level_complete(level) }
     }
 
     /// Bumped by the menu's "Menu" button: set up a fresh flight (the
@@ -71,6 +85,10 @@ mod imp {
         0
     }
 
+    pub fn show_menu() {}
+
+    pub fn level_complete(_level: u32) {}
+
     // Native: highscores last until the window closes.
     static HIGHSCORES: std::sync::Mutex<Vec<u64>> = std::sync::Mutex::new(Vec::new());
 
@@ -85,4 +103,7 @@ mod imp {
     }
 }
 
-pub use imp::{load_highscores, new_flight, requested_level, save_highscores, started};
+pub use imp::{
+    level_complete, load_highscores, new_flight, requested_level, save_highscores, show_menu,
+    started,
+};

@@ -67,6 +67,9 @@ short **meaning**.
 | Heissluftballon | hot-air balloon | `Balloon`, `BalloonWay` | Level 1's obstacle: drifts left while taking off from a launch pad, landing on one, coming at the plane's height, or sinking past; the four ways take turns; envelope and basket both count |
 | Startrampe | launch pad | `Pad` | Flat deck in the grass where balloons take off and land; an obstacle |
 | Menü, Pause | menu, pause | `#menu`, `page_started` | The pause menu (button top left, Esc, P): Continue, Restart, Calibrate, Options, Menu. Labels stay English |
+| Hauptmenü | main menu | `#start` | The start page: title, plane, Tap to fly, Levels, Options |
+| Level-Karte | level map | `#start .map` | Round pictures of each level's landscape on a dashed path |
+| freischalten | unlock | `airplane-scoring.unlocked` | Landing a level opens the next one on the map |
 | Countdown | countdown | `#countdown` | 3, 2, 1 before the game goes on after the pause |
 | Musik / Geräusche | music / sounds | `sound_music_on`, `sound_muted` | The two switches in Options: the tunes, and everything else |
 | Flughafen | airport | `Airport`, `World::with_takeoff` | Where every flight starts: runway, control tower, windsock |

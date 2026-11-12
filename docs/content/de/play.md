@@ -5,18 +5,25 @@
 1. Öffne <https://m0nstergamez.github.io/airplane-scoring/> auf deinem Handy.
 2. Dreh dein Handy **quer**. Hältst du es aufrecht, bittet dich das Spiel,
    es zu drehen.
-3. Tippe auf **«Tap to fly»**. Auf dem iPhone erlaubst du den Zugriff auf
-   «Bewegung & Ausrichtung», wenn danach gefragt wird. Neben dem Knopf ist
-   ein **QR-Code**: Deine Freunde scannen ihn mit der Kamera und fliegen
-   auch.
+3. Im **Hauptmenü** («AIRPLANE SCORING», mit dem Flugzeug vor der Küste)
+   tippst du auf **«Tap to fly»**. Auf dem iPhone erlaubst du den Zugriff
+   auf «Bewegung & Ausrichtung», wenn danach gefragt wird. Unten rechts
+   ist ein **QR-Code**: Deine Freunde scannen ihn mit der Kamera und
+   fliegen auch.
 
-Am Computer zeigt die Startanzeige die Tasten und einen **QR-Code**.
-Scanne ihn mit der Kamera deines Handys, um das Spiel dort zu öffnen. Um
-am Computer zu fliegen, klicke auf **«Click to fly»** oder drücke Enter.
+Im Hauptmenü gibt es auch **Levels**: eine Karte mit einem runden Bild
+jeder Landschaft, verbunden mit einer gestrichelten Linie. Tippe auf ein
+Level, um dort zu starten. Level 2 ist zuerst gesperrt (grau mit
+Schloss) und wird frei, sobald du Level 1 geschafft hast; das Spiel
+merkt es sich. Unter **Options** schaltest du Musik und Geräusche.
+
+Am Computer zeigt das Hauptmenü auch die Tasten und einen grösseren
+**QR-Code**. Scanne ihn mit der Kamera deines Handys, um das Spiel dort
+zu öffnen. Um am Computer zu fliegen, klicke auf **«Click to fly»** oder
+drücke Enter.
 
 Der Flug beginnt erst mit diesem Tipp oder Klick. Bis dahin wartet das
-Spiel, egal wie lange die Startanzeige offen ist. So startest du immer am
-Anfang von Level 1.
+Spiel, egal wie lange das Hauptmenü offen ist.
 
 Jeder Flug beginnt auf einem **Flughafen**: Dein Flugzeug steht vorne
 auf der Startbahn, beim Kontrollturm und dem Windsack. Es rollt los,
@@ -101,8 +108,8 @@ Spiel, das unscharf dahinter zu sehen ist:
   ab sofort als «gerade», fürs Steuern und fürs Gas.
 - **Options:** Musik (die Melodien) und Geräusche (alles andere)
   einzeln ein- oder ausschalten. **Back** führt zurück.
-- **Menu:** zurück zur Startseite; mit «Tap to fly» beginnt ein neuer
-  Flug.
+- **Menu:** zurück ins Hauptmenü; mit «Tap to fly» oder über die Levels
+  beginnt ein neuer Flug.
 
 Wechselst du die App oder den Tab, hält das Spiel von selbst an.
 
@@ -194,9 +201,10 @@ dann einen Strand bei Sonnenuntergang (Level 2). Nach etwa einer Minute
 Flug endet ein Level mit einer **Landung**: Es kommen keine neuen
 Hindernisse mehr, eine Landebahn erscheint, und der Autopilot übernimmt.
 Das Fahrwerk fährt aus, das Flugzeug setzt auf, bremst und steht: «Level
-1 complete» erscheint mit deinem Score. Tippe (oder warte kurz), und das
-nächste Level beginnt: Seine Landschaft erscheint, es zählt 3, 2, 1, und
-du startest von seiner Startbahn. Nach dem letzten Level beginnt wieder
+1 complete» erscheint mit deinem Score und zwei Knöpfen. **Next level**
+(oder Enter) startet das nächste Level: Seine Landschaft erscheint, es
+zählt 3, 2, 1, und du startest von seiner Startbahn. **Menu** führt ins
+Hauptmenü. Nach dem letzten Level beginnt wieder
 Level 1.
 
 An der Küste fahren ab und zu **Heissluftballone**. Sie kommen langsam
