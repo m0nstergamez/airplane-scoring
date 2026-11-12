@@ -376,6 +376,33 @@ that isn't code here. Keep entries short and dated.
   capture (`SHOT_EVAL`), used to check the menu, options and countdown
   in screenshots. The start page itself is still the old one; the user
   will describe a new one.
+- Gentler takeoff, asked for: the plane rolls longer (`ROLL_SECONDS` 2.5
+  → 4 s) and climbs out less steeply (`CLIMB_OUT_STEER` -0.7 → -0.4, so
+  the nose tilts about 8° instead of 14°) and a little longer
+  (`CLIMB_OUT_SECONDS` 1.2 → 2 s) to gain height. A test checks the
+  climb-out stays under half the full tilt.
+- Takeoff sound, asked for. A first version only crossfaded the engine
+  loops and added a deep rumble below 200 Hz; the user heard no
+  difference (phone and laptop speakers barely play that low). Now the
+  roll starts `Event::Takeoff`, a one-shot `takeoff.wav`: the turbine's
+  whine rising in pitch from 450 to 1800 Hz (the power loop's pitch) over
+  the 4 s roll, with the exhaust roar swelling and brightening; the
+  engine loops step aside while it plays (`Mix::takeoff`) and take over
+  at lift-off. The runway rumble (`runway-rumble.wav`) got a brighter
+  tyre roar and clacks over the joints, louder (`RUMBLE_VOLUME` 0.8), and
+  stops at lift-off. Both files listened to locally.
+- Gear-up sound, asked for: 0.4 s after lift-off the gear folds up over
+  1 s (`World::gear` 1 → 0, drawn as shortening struts and shrinking
+  wheels) and `Event::GearUp` plays `gear-up.wav`: a hydraulic whir
+  rising a little, then a clunk as the wheels lock. Listened to locally;
+  the folding checked in screenshots.
+- Asked for after trying it: a Restart button in the pause menu (a new
+  flight from the airport after the 3-2-1 countdown; `page_new_flight`
+  again), a longer roll (`ROLL_SECONDS` 4 → 6 s, the spool-up sound made
+  6.8 s to match), and a bigger plane near the ground to fit the huts
+  (`PLANE_NEAR_SIZE` 1.8 → 2.4). `World::with_takeoff` now parks the
+  plane on the runway at once, so it does not hang mid-air during the
+  countdown (seen in a screenshot).
 
 ## Concepts
 

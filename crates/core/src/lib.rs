@@ -21,8 +21,8 @@ mod tilt;
 mod towers;
 mod weather;
 pub use airport::{
-    Airport, CLIMB_OUT_SECONDS, CLIMB_OUT_STEER, ROLL_SECONDS, RUNWAY_GROUND, RUNWAY_HEIGHT,
-    RUNWAY_LENGTH, WHEELS_BELOW,
+    Airport, CLIMB_OUT_SECONDS, CLIMB_OUT_STEER, GEAR_DELAY_SECONDS, GEAR_RETRACT_SECONDS,
+    ROLL_SECONDS, RUNWAY_GROUND, RUNWAY_HEIGHT, RUNWAY_LENGTH, WHEELS_BELOW,
 };
 pub use balloons::{
     Balloon, BalloonWay, Balloons, Pad, BALLOON_COLOURS, BALLOON_GAP_SECONDS, BALLOON_HIGH,
@@ -50,9 +50,9 @@ pub use scenery::{background_x, scroll_distance, SCROLL_SPEED};
 pub use shape::{any_overlap, Poly};
 pub use sound::{
     Mix, BALLOON_BURNER_VOLUME, BEACH_LEVEL, BEACH_VOLUME, CRASH_VOLUME, DIVE_WIND,
-    ENGINE_FAR_VOLUME, ENGINE_VOLUME, EXPLOSION_VOLUME, GULL_CALL_VOLUME, HIGHSCORE_VOLUME,
-    MIX_CHANGE_PER_SECOND, NEW_LEVEL_VOLUME, RAIN_VOLUME, VOICE_VOLUME, WARNING_VOLUME,
-    WIND_VOLUME,
+    ENGINE_FAR_VOLUME, ENGINE_VOLUME, EXPLOSION_VOLUME, GEAR_VOLUME, GULL_CALL_VOLUME,
+    HIGHSCORE_VOLUME, MIX_CHANGE_PER_SECOND, NEW_LEVEL_VOLUME, RAIN_VOLUME, RUMBLE_VOLUME,
+    TAKEOFF_VOLUME, VOICE_VOLUME, WARNING_VOLUME, WIND_VOLUME,
 };
 pub use tilt::{
     Tilt, LEAN_DEAD_ZONE_DEG, LEAN_FULL_DEG, TILT_DEAD_ZONE_DEG, TILT_FULL_DEG, TILT_MIN_GRAVITY,
@@ -81,7 +81,7 @@ pub const OBJECT_SIZE: f32 = 0.41;
 
 /// How big the plane gets near the ground, compared with its first
 /// design (balloons get to 1 there). See [`Bounds::plane_depth`].
-pub const PLANE_NEAR_SIZE: f32 = 1.8;
+pub const PLANE_NEAR_SIZE: f32 = 2.4;
 
 /// The airspeed you set with the throttle, as a factor on the game's
 /// speed: 1 = cruising, the lowest and the highest you can go.
@@ -210,6 +210,11 @@ pub enum Event {
     NewHighscore,
     /// The last life is gone: the plane explodes (instead of a crash).
     Explosion,
+    /// The takeoff roll begins: the engine's spool-up sound.
+    Takeoff,
+    /// The landing gear starts folding up after lift-off: its whir and
+    /// clunk.
+    GearUp,
     /// The plane got too fast: the "Overspeed" voice (also repeats).
     Overspeed,
     /// The plane got too slow: the "Pull up" voice (also repeats).
@@ -508,6 +513,8 @@ impl World {
     pub fn with_takeoff(mut self) -> Self {
         self.airport = Some(Airport::at_start(self.bounds));
         self.takeoff = Some(0);
+        // On the runway right away, also while a countdown still runs.
+        self.player.pos.y = self.runway_y();
         self
     }
 
@@ -524,6 +531,14 @@ impl World {
     pub fn on_runway(&self) -> bool {
         self.takeoff
             .is_some_and(|t| (t as f32 * TICK_SECONDS) < ROLL_SECONDS)
+    }
+
+    /// The landing gear: 1 = down (on the runway and just after lift-off),
+    /// folding up to 0 over [`GEAR_RETRACT_SECONDS`].
+    pub fn gear(&self) -> f32 {
+        let Some(t) = self.takeoff else { return 0.0 };
+        let since = t as f32 * TICK_SECONDS - ROLL_SECONDS - GEAR_DELAY_SECONDS;
+        (1.0 - since / GEAR_RETRACT_SECONDS).clamp(0.0, 1.0)
     }
 
     /// Is the takeoff still going (rolling or climbing out on its own)?
@@ -661,6 +676,7 @@ impl World {
         if self.takeoff == Some(0) && self.start_level != 1 {
             self.takeoff = None;
             self.airport = None;
+            self.player.pos.y = height / 2.0; // starts in the air instead
         }
         let takeoff = self.takeoff;
         let input = &match takeoff {
@@ -668,6 +684,13 @@ impl World {
             Some(_) => Input::new(CLIMB_OUT_STEER),
             None => *input,
         };
+        if takeoff == Some(0) {
+            self.events.push(Event::Takeoff);
+        }
+        let gear_up = ((ROLL_SECONDS + GEAR_DELAY_SECONDS) / TICK_SECONDS).round() as u32;
+        if takeoff == Some(gear_up) {
+            self.events.push(Event::GearUp);
+        }
         if let Some(t) = takeoff {
             let done = (ROLL_SECONDS + CLIMB_OUT_SECONDS) / TICK_SECONDS;
             self.takeoff = (((t + 1) as f32) < done).then_some(t + 1);
@@ -871,6 +894,10 @@ impl World {
         }
         if self.voice_speaking(self.overspeed_ticks) {
             target.overspeed *= VOICE_DUCK;
+        }
+        // Rolling down the runway: the engine spools up, the wheels rumble.
+        if self.on_runway() {
+            target = target.takeoff(self.rolling());
         }
         let step = MIX_CHANGE_PER_SECOND * TICK_SECONDS;
         self.mix = self.mix.approach(target, step);
@@ -1119,6 +1146,11 @@ mod tests {
     #[test]
     fn the_flight_starts_on_the_runway_rolls_and_lifts_off() {
         let mut w = World::new(PHONE).with_takeoff();
+        let parked = w.player.pos.y;
+        assert!(
+            parked > 0.8 * PHONE.height,
+            "on the runway before the first tick"
+        );
         assert!(w.airport.is_some() && w.taking_off());
         w.tick(&Input::new(-1.0)); // the controls do not count yet
         assert!(w.on_runway());
@@ -1144,6 +1176,14 @@ mod tests {
         assert!(!w.on_runway() && w.taking_off());
         assert!(w.player.pos.y < on_runway - 3.0, "airborne");
         assert!(w.player.pitch < 0.0, "nose up");
+        // A gentle climb-out, not a steep one.
+        let mut steepest = 0.0_f32;
+        let mut probe = w.clone();
+        while probe.taking_off() {
+            probe.tick(&Input::NONE);
+            steepest = steepest.min(probe.player.pitch);
+        }
+        assert!(steepest > -0.5 * MAX_PITCH_DEG.to_radians(), "{steepest}");
         // Then the player has the controls.
         for _ in 0..(CLIMB_OUT_SECONDS / TICK_SECONDS) as u32 {
             w.tick(&Input::NONE);
@@ -1175,6 +1215,60 @@ mod tests {
                 }
             }
         }
+    }
+
+    #[test]
+    fn the_gear_folds_up_after_lift_off_with_its_sound() {
+        let mut w = World::new(PHONE).with_takeoff();
+        let mut gear_ups = 0;
+        let mut last = 1.0;
+        let mut was_up_while_taking_off = false;
+        while w.taking_off() {
+            w.tick(&Input::NONE);
+            gear_ups += w.events().iter().filter(|e| **e == Event::GearUp).count();
+            if w.on_runway() {
+                assert_eq!(w.gear(), 1.0, "down on the runway");
+            }
+            assert!(w.gear() <= last, "only ever folds up");
+            last = w.gear();
+            was_up_while_taking_off |= w.taking_off() && w.gear() == 0.0;
+        }
+        assert_eq!(gear_ups, 1, "one whir and clunk");
+        assert!(was_up_while_taking_off, "up before the player takes over");
+        assert_eq!(w.gear(), 0.0);
+        assert_eq!(World::new(PHONE).gear(), 0.0, "in the air: up");
+    }
+
+    #[test]
+    fn the_takeoff_sounds_like_one() {
+        let mut w = World::new(PHONE).with_takeoff();
+        let roll = (ROLL_SECONDS / TICK_SECONDS) as u32;
+        w.tick(&Input::NONE);
+        assert_eq!(w.events(), [Event::Takeoff], "the spool-up starts");
+        for _ in 1..30 {
+            w.tick(&Input::NONE);
+            assert!(!w.events().contains(&Event::Takeoff), "only once");
+        }
+        let early_rumble = w.mix.rumble;
+        assert!(early_rumble > 0.0, "wheels on the runway");
+        assert_eq!(w.mix.engine_power, 0.0, "the spool-up sound carries it");
+        for _ in 30..roll - 5 {
+            w.tick(&Input::NONE);
+        }
+        assert!(w.mix.rumble > early_rumble, "faster, louder rumble");
+        for _ in 0..30 {
+            w.tick(&Input::NONE);
+        }
+        assert!(!w.on_runway());
+        assert!(
+            w.mix.rumble < early_rumble * 0.5,
+            "off the ground: it stops"
+        );
+        assert!(w.mix.engine_power > 0.0, "the engine loops take over");
+        for _ in 0..60 {
+            w.tick(&Input::NONE);
+        }
+        assert_eq!(w.mix.rumble, 0.0);
     }
 
     #[test]
@@ -1696,7 +1790,10 @@ mod tests {
         assert!(!touches(plane_over(1.5)), "a near miss is a miss");
         assert!(touches(plane_over(-1.5)), "a touch is a crash");
         // Flying low beside the hut, in the empty corner by the roof: free.
-        let corner = Player::at(Vec2::new(400.0 - 110.0 / 2.0 - 40.0, ridge + 20.0));
+        // (The nose tip 3 px short of the hut's left edge.)
+        let y = ridge + 20.0;
+        let nose = PLANE_NOSE[1].0 * PHONE.plane_depth(y);
+        let corner = Player::at(Vec2::new(400.0 - 110.0 / 2.0 - nose - 3.0, y));
         assert!(!touches(corner));
     }
 
@@ -1773,6 +1870,7 @@ mod tests {
                         Event::NewHighscore => panic!("not from the world"),
                         Event::Explosion => panic!("lives cannot run out"),
                         Event::Overspeed | Event::PullUp => panic!("no throttle given"),
+                        Event::Takeoff | Event::GearUp => panic!("no airport here"),
                     }
                 }
             }

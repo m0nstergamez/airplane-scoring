@@ -13,11 +13,15 @@ pub const RUNWAY_LENGTH: f32 = 900.0;
 pub const RUNWAY_HEIGHT: f32 = 12.0;
 /// How long the plane rolls before it lifts off, in seconds; the
 /// landscape speeds up from standing still over this time.
-pub const ROLL_SECONDS: f32 = 2.5;
+pub const ROLL_SECONDS: f32 = 6.0;
 /// How long it climbs away on its own after lifting off, in seconds.
-pub const CLIMB_OUT_SECONDS: f32 = 1.2;
+pub const CLIMB_OUT_SECONDS: f32 = 2.0;
 /// How hard it climbs out (a steer value, -1 = full climb).
-pub const CLIMB_OUT_STEER: f32 = -0.7;
+pub const CLIMB_OUT_STEER: f32 = -0.4;
+/// After lift-off the gear waits this long, then folds up over
+/// [`GEAR_RETRACT_SECONDS`] (with its whir and clunk, `Event::GearUp`).
+pub const GEAR_DELAY_SECONDS: f32 = 0.4;
+pub const GEAR_RETRACT_SECONDS: f32 = 1.0;
 /// How far below the plane's centre its wheels touch the runway, in px at
 /// size 1 (the drawn landing gear).
 pub const WHEELS_BELOW: f32 = 16.0;

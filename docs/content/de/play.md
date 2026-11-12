@@ -96,6 +96,7 @@ Spiel, das unscharf dahinter zu sehen ist:
 
 - **Continue:** zurück ins Spiel. Ein Countdown zählt 3, 2, 1; erst bei 0
   geht es weiter, damit du bereit bist.
+- **Restart:** ein neuer Flug vom Flughafen, nach demselben Countdown.
 - **Calibrate** (nur auf dem Handy): Wie du das Handy jetzt hältst, gilt
   ab sofort als «gerade», fürs Steuern und fürs Gas.
 - **Options:** Musik (die Melodien) und Geräusche (alles andere)
@@ -242,6 +243,8 @@ Beinen ist Luft, aber es ist sehr eng.
 | Möwe | Wenn eine Möwe auftaucht. Möwen von hinten rufen immer. |
 | Melodie | Wenn ein neues Level beginnt. |
 | Fanfare | Wenn du einen neuen Highscore erreichst. |
+| Start | Beim Rollen auf der Startbahn: Das Triebwerk dreht hoch, die Räder rumpeln, bis das Flugzeug abhebt. |
+| Fahrwerk | Kurz nach dem Abheben: Surren, während die Räder einfahren, dann ein «Klonk». |
 | Explosion | Wenn dein Flugzeug sein letztes Leben verliert. |
 | Overspeed | Solange du zu schnell fliegst: Klappern und die Stimme «Overspeed». |
 | Pull up | Solange du zu langsam fliegst: Heulton und die Stimme «Pull up». |

@@ -257,6 +257,84 @@ def explosion(seed, seconds):
     return [x * min(1.0, (seconds - i / RATE) / 0.3) for i, x in enumerate(out)]
 
 
+def runway_rumble(seed, seconds):
+    """Wheels rolling on a runway: the roar of the tyres (bright enough for
+    phone and laptop speakers), a deep rumble under it, and a clack over
+    each joint in the concrete, four a second. Loops."""
+    rng = random.Random(seed)
+
+    def make(m):
+        src = noise(rng, m)
+        both = src + src
+        deep = highpass(lowpass(lowpass(both, 180.0), 180.0), 35.0)
+        tyres = highpass(lowpass(both, 900.0), 300.0)
+        out = []
+        for i, (d, ty) in enumerate(zip(deep, tyres)):
+            t = (i / RATE) % 0.25
+            clack = math.exp(-t / 0.02) * (
+                math.sin(2 * math.pi * 90 * t) + 0.7 * math.sin(2 * math.pi * 320 * t)
+            )
+            out.append(3.0 * d + 1.6 * ty + 0.6 * clack)
+        return out
+
+    return looped(make, seconds)
+
+
+def gear_up(seed, seconds):
+    """The landing gear folding up: a hydraulic whir (a motor tone rising a
+    little, with a hiss) for about a second, then a solid clunk as the
+    wheels lock in their bays."""
+    rng = random.Random(seed)
+    n = int(seconds * RATE)
+    hiss = highpass(lowpass(noise(rng, n), 2500.0), 600.0)
+    knock = lowpass(noise(rng, n), 1200.0)
+    whir_end, out, phase = 0.95, [], 0.0
+    for i in range(n):
+        t = i / RATE
+        x = 0.0
+        if t < whir_end:
+            hz = 230.0 + 90.0 * (t / whir_end)
+            phase += 2 * math.pi * hz / RATE
+            env = min(1.0, t / 0.08) * min(1.0, (whir_end - t) / 0.05)
+            motor = math.sin(phase) + 0.5 * math.sin(2 * phase) + 0.3 * math.sin(3 * phase)
+            x += env * (0.45 * motor + 0.35 * hiss[i])
+        if t >= whir_end:
+            d = t - whir_end
+            x += math.exp(-d / 0.06) * (1.2 * math.sin(2 * math.pi * 75 * d) + 0.9 * knock[i])
+            x += 0.4 * math.exp(-d / 0.015) * math.sin(2 * math.pi * 1900 * d)  # metal
+        out.append(x)
+    return out
+
+
+def takeoff_spool(seed, roll_seconds, seconds):
+    """The engine spooling up for takeoff: the turbine's whine rising from
+    a low hum to full power (1800 Hz, like the power loop it hands over
+    to) over the roll, with the roar of the exhaust swelling and getting
+    brighter. A one-shot, so its pitch can rise (the loops cannot)."""
+    rng = random.Random(seed)
+    n = int(seconds * RATE)
+    src = noise(rng, n)
+    out, phase, phase2, y1, y2 = [], 0.0, 0.0, 0.0, 0.0
+    for i in range(n):
+        t = i / RATE
+        spool = 1.0 - math.exp(-3.0 * min(t, roll_seconds) / roll_seconds)  # fast, then settling
+        spool /= 1.0 - math.exp(-3.0)
+        hz = 450.0 + (1800.0 - 450.0) * spool
+        phase += 2 * math.pi * hz / RATE
+        phase2 += 2 * math.pi * (hz + 3.0) / RATE
+        whine = 0.35 * math.sin(phase) + 0.25 * math.sin(phase2) + 0.08 * math.sin(2 * phase)
+        # Exhaust roar: noise through a low-pass that opens with the spool.
+        cut = 300.0 + 1000.0 * spool
+        a = 1.0 - math.exp(-2.0 * math.pi * cut / RATE)
+        y1 += a * (src[i] - y1)
+        y2 += a * (y1 - y2)
+        roar = 2.2 * y2 * (0.3 + 0.7 * spool)
+        loud = 0.35 + 0.65 * spool
+        fade = min(1.0, t / 0.3) * min(1.0, (seconds - t) / 0.6)
+        out.append(fade * loud * (whine + roar))
+    return out
+
+
 def overspeed_alarm(seconds):
     """Overspeed warning: the cockpit "clacker", a hard, fast clicking
     (about 10 clicks a second) that does not stop. Loops seamlessly: whole
@@ -373,6 +451,9 @@ if __name__ == "__main__":
     write("balloon-burner.wav", burner(8, 1.1), 0.8)
     write("new-highscore.wav", fanfare(1.8), 0.8)
     write("explosion.wav", explosion(9, 2.5), 0.95)
+    write("runway-rumble.wav", runway_rumble(10, 2.0), 0.85)
+    write("takeoff.wav", takeoff_spool(11, 6.0, 6.8), 0.9)  # ROLL_SECONDS + 0.8
+    write("gear-up.wav", gear_up(12, 1.4), 0.85)
     write("warning-overspeed.wav", overspeed_alarm(1.0), 0.7)
     write("warning-stall.wav", stall_alarm(1.0), 0.7)
     write("voice-overspeed.wav", voice("Overspeed!"), 0.98)

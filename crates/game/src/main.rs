@@ -235,7 +235,7 @@ async fn main() {
                     plane_size,
                     world.player.pitch, // nose up to climb, down to dive
                     world.player.is_crashed().then_some(world.ticks),
-                    world.taking_off(), // wheels out until it has climbed away
+                    world.gear(), // wheels out, folding up after lift-off
                 );
             }
         }
@@ -965,8 +965,8 @@ fn draw_explosion(x: f32, y: f32, size: f32, t: f32) {
 
 /// Side view of a small plane flying right, centred on (x, y), at the
 /// screen's `scale`. `crashed`: the tick count while it is out of control.
-fn draw_player(x: f32, y: f32, scale: f32, pitch: f32, crashed: Option<u64>, gear: bool) {
-    if gear {
+fn draw_player(x: f32, y: f32, scale: f32, pitch: f32, crashed: Option<u64>, gear: f32) {
+    if gear > 0.02 {
         // Landing gear: a main and a nose strut with wheels, their bottoms
         // `WHEELS_BELOW` under the centre (where core puts the runway).
         let (sin, cos) = pitch.sin_cos();
@@ -975,9 +975,11 @@ fn draw_player(x: f32, y: f32, scale: f32, pitch: f32, crashed: Option<u64>, gea
             vec2(x + dx * cos - dy * sin, y + dx * sin + dy * cos)
         };
         let dark = Color::from_rgba(40, 42, 48, 255);
-        let wheel_r = 3.0;
+        // Folding up: the struts get shorter and the wheels smaller.
+        let wheel_r = 3.0 * gear.max(0.5);
+        let reach = 4.0 + (WHEELS_BELOW - 3.0 - 4.0) * gear;
         for gx in [-6.0, 14.0] {
-            let (top, hub) = (p(gx, 4.0), p(gx, WHEELS_BELOW - wheel_r));
+            let (top, hub) = (p(gx, 4.0), p(gx, reach));
             draw_line(top.x, top.y, hub.x, hub.y, 1.5 * scale, dark);
             draw_circle(hub.x, hub.y, wheel_r * scale, dark);
         }

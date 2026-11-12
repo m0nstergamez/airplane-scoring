@@ -31,6 +31,12 @@ pub const NEW_LEVEL_VOLUME: f32 = 0.8;
 pub const GULL_CALL_VOLUME: f32 = 0.25;
 /// Volume of a hot-air balloon's burner as it appears: clear, not loud.
 pub const BALLOON_BURNER_VOLUME: f32 = 0.35;
+/// Loudest the runway rumble gets (just before lift-off).
+pub const RUMBLE_VOLUME: f32 = 0.8;
+/// Volume of the landing gear folding up.
+pub const GEAR_VOLUME: f32 = 0.8;
+/// Volume of the takeoff spool-up.
+pub const TAKEOFF_VOLUME: f32 = 0.9;
 /// Volume of the overspeed and stall warning tones.
 pub const WARNING_VOLUME: f32 = 0.45;
 /// Volume of the warning voices ("Overspeed", "Pull up").
@@ -60,6 +66,8 @@ pub struct Mix {
     pub overspeed: f32,
     /// The stall warning tone (a whooping horn) while too slow.
     pub stall: f32,
+    /// The wheels rumbling on the runway while the plane rolls.
+    pub rumble: f32,
 }
 
 impl Mix {
@@ -71,6 +79,7 @@ impl Mix {
         beach: 0.0,
         overspeed: 0.0,
         stall: 0.0,
+        rumble: 0.0,
     };
 
     /// The volumes that fit the current state of the plane, the weather
@@ -103,6 +112,7 @@ impl Mix {
             } else {
                 0.0
             },
+            rumble: 0.0, // only on the runway, see `Mix::takeoff`
             stall: if player.is_stalling() {
                 WARNING_VOLUME
             } else {
@@ -121,6 +131,23 @@ impl Mix {
             beach: approach(self.beach, target.beach, step),
             overspeed: approach(self.overspeed, target.overspeed, step),
             stall: approach(self.stall, target.stall, step),
+            rumble: approach(self.rumble, target.rumble, step),
+        }
+    }
+
+    /// The takeoff roll's sound, `roll` 0 (standing) .. 1 (lifting off).
+    /// The engine loops step aside: the spool-up is its own sound
+    /// (`Event::Takeoff`, a whine rising in pitch, which the loops cannot
+    /// do). The wheels rumble louder the faster they roll, and the wind
+    /// comes with the speed.
+    pub fn takeoff(self, roll: f32) -> Mix {
+        let roll = roll.clamp(0.0, 1.0);
+        Mix {
+            engine_idle: 0.0,
+            engine_power: 0.0,
+            wind: self.wind * roll,
+            rumble: RUMBLE_VOLUME * (0.3 + 0.7 * roll),
+            ..self
         }
     }
 }
@@ -242,6 +269,7 @@ mod tests {
             beach: 0.3,
             overspeed: 0.0,
             stall: 0.0,
+            rumble: 0.0,
         };
         let m = Mix::SILENT.approach(target, 0.1);
         assert_eq!(
@@ -254,6 +282,7 @@ mod tests {
                 beach: 0.1,
                 overspeed: 0.0,
                 stall: 0.0,
+                rumble: 0.0,
             }
         );
         let mut m = m;

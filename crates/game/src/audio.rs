@@ -8,8 +8,8 @@
 //! own unlock misses iPhones; see docs/README.md).
 
 use airplane_scoring_core::{
-    Event, Mix, BALLOON_BURNER_VOLUME, CRASH_VOLUME, EXPLOSION_VOLUME, GULL_CALL_VOLUME,
-    HIGHSCORE_VOLUME, NEW_LEVEL_VOLUME, VOICE_VOLUME,
+    Event, Mix, BALLOON_BURNER_VOLUME, CRASH_VOLUME, EXPLOSION_VOLUME, GEAR_VOLUME,
+    GULL_CALL_VOLUME, HIGHSCORE_VOLUME, NEW_LEVEL_VOLUME, TAKEOFF_VOLUME, VOICE_VOLUME,
 };
 use macroquad::audio::{load_sound, play_sound, set_sound_volume, PlaySoundParams, Sound};
 use macroquad::experimental::coroutines::{start_coroutine, Coroutine};
@@ -30,6 +30,9 @@ struct Sounds {
     explosion: Sound,
     overspeed_alarm: Sound,
     stall_alarm: Sound,
+    rumble: Sound,
+    takeoff: Sound,
+    gear: Sound,
     /// The warning voices are optional: without their files (made with
     /// espeak-ng), the game still has every other sound.
     overspeed_voice: Option<Sound>,
@@ -64,12 +67,15 @@ impl Sounds {
             explosion: file("explosion").await?,
             overspeed_alarm: file("warning-overspeed").await?,
             stall_alarm: file("warning-stall").await?,
+            rumble: file("runway-rumble").await?,
+            takeoff: file("takeoff").await?,
+            gear: file("gear-up").await?,
             overspeed_voice: file("voice-overspeed").await,
             pull_up_voice: file("voice-pull-up").await,
         })
     }
 
-    fn loops(&self, mix: Mix) -> [(&Sound, f32); 7] {
+    fn loops(&self, mix: Mix) -> [(&Sound, f32); 8] {
         [
             (&self.engine_idle, mix.engine_idle),
             (&self.engine_power, mix.engine_power),
@@ -78,6 +84,7 @@ impl Sounds {
             (&self.beach, mix.beach),
             (&self.overspeed_alarm, mix.overspeed),
             (&self.stall_alarm, mix.stall),
+            (&self.rumble, mix.rumble),
         ]
     }
 }
@@ -135,6 +142,8 @@ impl Audio {
             set_sound_volume(&s.burner, 0.0);
             set_sound_volume(&s.fanfare, 0.0);
             set_sound_volume(&s.explosion, 0.0);
+            set_sound_volume(&s.takeoff, 0.0);
+            set_sound_volume(&s.gear, 0.0);
             for voice in [&s.overspeed_voice, &s.pull_up_voice].into_iter().flatten() {
                 set_sound_volume(voice, 0.0);
             }
@@ -159,6 +168,8 @@ impl Audio {
             Event::Lightning { .. } => return, // seen, not heard
             Event::NewHighscore => (&s.fanfare, HIGHSCORE_VOLUME),
             Event::Explosion => (&s.explosion, EXPLOSION_VOLUME),
+            Event::Takeoff => (&s.takeoff, TAKEOFF_VOLUME),
+            Event::GearUp => (&s.gear, GEAR_VOLUME),
             Event::Overspeed => match &s.overspeed_voice {
                 Some(voice) => (voice, VOICE_VOLUME),
                 None => return,

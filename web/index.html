@@ -166,6 +166,7 @@
       <h2>Paused</h2>
       <button type="button" class="primary" data-action="continue">Continue</button>
       <button type="button" class="phone-only" data-action="calibrate">Calibrate</button>
+      <button type="button" data-action="restart">Restart</button>
       <button type="button" data-action="options">Options</button>
       <button type="button" data-action="home">Menu</button>
       <div class="hint" id="menu-hint"></div>
@@ -387,8 +388,9 @@
       show("main");
       menu.classList.add("open");
     };
-    const closeMenu = () => {
+    const closeMenu = (fresh = false) => {
       menu.classList.remove("open");
+      if (fresh) newFlight += 1; // Restart: a new flight from the airport
       let n = 3;
       countdown.textContent = n;
       countdown.classList.add("on");
@@ -413,6 +415,7 @@
     menu.addEventListener("click", (e) => {
       const action = e.target.closest("button")?.dataset.action;
       if (action === "continue") closeMenu();
+      else if (action === "restart") closeMenu(true); // counts 3, 2, 1 too
       else if (action === "calibrate") {
         recalibrate(); // the way the phone is held now counts as level
         hint.textContent = "Calibrated: this is level now";

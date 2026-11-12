@@ -165,7 +165,7 @@ flowchart LR
   oben am kleinsten (`OBJECT_SIZE`) und wächst über die ganze Höhe
   gleichmässig bis zur vollen Grösse eines Ballons auf der Startrampe.
   Das Flugzeug folgt `Bounds::plane_depth(y)`: oben gleich klein, nahe am
-  Boden bis `PLANE_NEAR_SIZE` (1.8) gross. Zeichnen und Zusammenstösse
+  Boden bis `PLANE_NEAR_SIZE` (2.4) gross. Zeichnen und Zusammenstösse
   nutzen denselben Faktor, darum ist ein tief fliegendes Flugzeug
   grösser und leichter zu treffen.
 - **Zusammenstösse nutzen die gezeichneten Formen**

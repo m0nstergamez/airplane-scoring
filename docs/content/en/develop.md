@@ -161,7 +161,7 @@ flowchart LR
   smallest (`OBJECT_SIZE`) at the top of the screen and grows steadily
   all the way down to full size at a balloon standing on a pad. The
   plane follows `Bounds::plane_depth(y)`: as small at the top, growing to
-  `PLANE_NEAR_SIZE` (1.8) near the ground. Drawing and crashes use the
+  `PLANE_NEAR_SIZE` (2.4) near the ground. Drawing and crashes use the
   same factor, so a plane flying low is bigger and easier to hit.
 - **Crashes use the drawn shapes** (`crates/core/src/shape.rs`): the
   plane (`Player::shape`: fuselage, nose, wing, tail, cockpit) and each
