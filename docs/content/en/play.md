@@ -33,7 +33,10 @@ however long the main menu is open.
 Every flight starts at an **airport**: your plane stands on the runway
 in the foreground, by the control tower and the windsock. It rolls, the
 landscape starts moving faster and faster, it lifts off and climbs away
-on its own. Then you have the controls.
+on its own. Then you have the controls. While the autopilot flies (the
+takeoff, and the landing at the end of a level) no obstacles come, and
+nothing can hit the plane: you could not dodge. While you fly, the
+phone's screen stays on, even if you only steer by tilting.
 
 ## Controls
 
@@ -291,6 +294,8 @@ Add the game to your home screen. It then opens full screen like an app.
   mutes the game. Switch it to ring.
 - Turn up the volume with the buttons on the side of the phone.
 - Computer: click into the game once. Sound only starts after that.
+- Back from another app or the lock screen: tap the screen once. The
+  iPhone only lets the sound start again after a tap.
 
 ### The plane drifts by itself
 

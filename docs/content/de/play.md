@@ -35,7 +35,11 @@ Spiel, egal wie lange das Hauptmenü offen ist.
 Jeder Flug beginnt auf einem **Flughafen**: Dein Flugzeug steht vorne
 auf der Startbahn, beim Kontrollturm und dem Windsack. Es rollt los,
 die Landschaft zieht immer schneller vorbei, es hebt ab und steigt von
-selbst weg. Dann übernimmst du die Steuerung.
+selbst weg. Dann übernimmst du die Steuerung. Solange der Autopilot
+fliegt (beim Start und bei der Landung am Ende eines Levels), kommen
+keine Hindernisse, und nichts kann das Flugzeug treffen: Du könntest ja
+nicht ausweichen. Während du fliegst, bleibt der Bildschirm des Handys
+an, auch wenn du nur durch Kippen steuerst.
 
 ## Steuerung
 
@@ -307,6 +311,9 @@ App im Vollbild.
   schaltet auch das Spiel stumm. Stell ihn auf Klingeln.
 - Mach den Ton mit den Tasten an der Seite des Handys lauter.
 - Computer: Klicke einmal ins Spiel. Der Ton startet erst danach.
+- Zurück aus einer anderen App oder vom Sperrbildschirm: Tippe einmal auf
+  den Bildschirm. Das iPhone lässt den Ton erst nach einem Tipp wieder
+  starten.
 
 ### Das Flugzeug fliegt von selbst nach oben oder unten
 

@@ -585,6 +585,25 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
   mit automatischen Rändern zentriert) scrollen, statt etwas
   abzuschneiden. Geprüft bei 667×280, 667×320, 844×300, 844×390 (Handy)
   und 1440×900.
+- Fehlersuche auf dem Handy, gewünscht. Gefunden und behoben:
+  - Vom Benutzer gefunden: Beim Start in Level 2 kamen Möwen schon
+    während des automatischen Starts, und das Flugzeug flog hinein.
+    Solange der Autopilot fliegt (`World::hands_off`: Start, Anflug,
+    Ausrollen), entstehen keine Hindernisse, und nichts, was noch da
+    ist, kann das Flugzeug treffen. Tests: kein Hindernis beim Start in
+    beiden Levels; eine Möwe am Flugzeug im Anflug kostet kein Leben.
+  - Wer nur durch Kippen steuert, berührt nichts, darum sperrte sich das
+    Handy mitten im Flug. Die Seite hält beim Fliegen einen Screen Wake
+    Lock (iOS 16.4+, Chrome auf Android), fragt bei der Rückkehr neu
+    und gibt ihn im Hauptmenü frei.
+  - iOS hält den Ton einer Seite bei App-Wechsel oder Sperre an, und
+    das JS-Bundle weckte ihn nur beim ersten Tipp, also blieb das Spiel
+    stumm. Ein kleines Skript vor dem Bundle merkt sich seine
+    AudioContexts und weckt sie bei jedem Tipp, Klick oder Tastendruck.
+  - Auf Screenshots im Handyformat geprüft und in Ordnung: die Anzeigen
+    im Flug, «Level complete» mit seinen Knöpfen bei 667×320 und
+    844×390; der Pausen-Knopf hält Abstand zur Kerbe. Wake Lock und Ton
+    auf einem echten iPhone sind hier nicht getestet.
 
 ## Konzepte
 

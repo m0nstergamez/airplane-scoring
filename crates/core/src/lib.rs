@@ -985,8 +985,10 @@ impl World {
         let runway_in = self
             .airport
             .is_some_and(|a| a.x + RUNWAY_LENGTH * scale > width - 40.0 * scale);
-        // Nor in the last seconds before a landing, nor during it.
+        // Nor in the last seconds before a landing, nor during it, nor
+        // while the autopilot takes off (the player cannot dodge then).
         let clearing = self.landing.is_some()
+            || self.hands_off()
             || self.level_ticks as f32 * TICK_SECONDS >= LEVEL_SECONDS - CLEAR_SECONDS;
         let coast = levels.level == 1 && !runway_in && !clearing;
         let plane_y = self.player.pos.y;
@@ -1028,7 +1030,10 @@ impl World {
         let hits = |them: &[Poly]| any_overlap(&me, them);
         // Gulls the plane flies into are knocked down (a falling one is
         // no obstacle any more).
-        let struck: Vec<usize> = if self.explosion.is_none() {
+        // While the autopilot flies, the player cannot dodge: nothing
+        // still around can hit the plane then.
+        let open = self.explosion.is_none() && !self.hands_off();
+        let struck: Vec<usize> = if open {
             (self.gulls.list.iter().enumerate())
                 .filter(|(_, g)| !g.is_down() && hits(&g.shape(bounds.depth(g.pos.y))))
                 .map(|(i, _)| i)
@@ -1037,7 +1042,7 @@ impl World {
             Vec::new()
         };
         // Balloons too: one the plane flies into explodes and falls.
-        let burst: Vec<usize> = if self.explosion.is_none() {
+        let burst: Vec<usize> = if open {
             (self.balloons.list.iter().enumerate())
                 .filter(|(_, b)| !b.is_burst() && hits(&b.shape(b.size(bounds))))
                 .map(|(i, _)| i)
@@ -1054,7 +1059,8 @@ impl World {
             || (self.huts.list.iter()).any(|h| hits(&h.shape(bounds)))
             || (self.towers.list.iter()).any(|t| hits(&t.shape(bounds)));
         let player = &mut self.player;
-        if touching && !player.touching && !player.is_crashed() && !player.is_safe() {
+        let hit = touching && !player.touching && open;
+        if hit && !player.is_crashed() && !player.is_safe() {
             player.crash_ticks = CRASH_TICKS;
             self.lives = self.lives.saturating_sub(1);
             player.steer = 0.0;
@@ -1977,46 +1983,10 @@ mod tests {
             w.balloons.list.clear();
             w.balloons.pads.clear();
             w.huts.list.clear();
+            w.gulls.list.clear();
+            w.towers.list.clear();
             w.tick(&Input::with_throttle(0.0, gas));
         }
-    }
-
-    #[test]
-    fn the_last_life_lost_on_the_approach_is_game_over_not_level_complete() {
-        let mut w = World::with_seed(PHONE, 3);
-        until_approach(&mut w, 0.0);
-        // A gull from behind, still around: it hits on the way down.
-        w.lives = 1;
-        w.player.crash_ticks = 0;
-        w.player.safe_ticks = 0;
-        let mut ahead = w.clone();
-        ahead.tick(&Input::NONE);
-        let at = ahead.player.pos;
-        let mut gulls = Gulls::new(1);
-        while gulls.list.is_empty() {
-            gulls.tick(PHONE, true, &mut Vec::new());
-        }
-        let mut gull = gulls.list[0].clone();
-        gull.pos = at;
-        gull.vel = Vec2::new(0.0, 0.0);
-        gull.place_at(at);
-        w.gulls.list = vec![gull];
-        w.tick(&Input::NONE);
-        assert!(w.explosion.is_some(), "the last life: it explodes");
-        let mut events = Vec::new();
-        for _ in 0..(30.0 / TICK_SECONDS) as u32 {
-            w.tick(&Input::NONE);
-            events.extend_from_slice(w.events());
-        }
-        assert!(w.is_over(), "game over");
-        assert!(events.contains(&Event::GameOver));
-        assert!(
-            !events
-                .iter()
-                .any(|e| matches!(e, Event::LevelComplete { .. })),
-            "no level complete after the plane blew up"
-        );
-        assert_eq!(w.level_complete(), None);
     }
 
     #[test]
@@ -2040,6 +2010,46 @@ mod tests {
             }
             assert!(done, "hit {late} s into the approach: never landed");
         }
+    }
+
+    #[test]
+    fn no_obstacles_come_while_the_autopilot_takes_off() {
+        for level in [1, BEACH_LEVEL] {
+            let mut w = World::with_seed(PHONE, 7);
+            w.start_level = level;
+            let mut w = w.with_takeoff();
+            while w.taking_off() {
+                assert!(
+                    w.gulls.list.is_empty()
+                        && w.towers.list.is_empty()
+                        && w.balloons.list.is_empty()
+                        && w.huts.list.is_empty(),
+                    "level {level}: an obstacle during the takeoff"
+                );
+                w.tick(&Input::NONE);
+            }
+            assert_eq!(w.lives, LIVES, "level {level}: no crash on the way up");
+        }
+    }
+
+    #[test]
+    fn a_gull_still_around_cannot_hit_the_plane_while_the_autopilot_flies() {
+        let mut w = World::with_seed(PHONE, 3);
+        w.start_level = BEACH_LEVEL;
+        until_approach(&mut w, 0.0);
+        let mut ahead = w.clone();
+        ahead.tick(&Input::NONE);
+        let at = ahead.player.pos;
+        let mut gulls = Gulls::new(1);
+        while gulls.list.is_empty() {
+            gulls.tick(PHONE, true, &mut Vec::new());
+        }
+        let mut gull = gulls.list[0].clone();
+        gull.place_at(at);
+        w.gulls.list = vec![gull];
+        w.tick(&Input::NONE);
+        assert_eq!(w.lives, LIVES, "the autopilot cannot dodge: no life lost");
+        assert!(!w.player.is_crashed());
     }
 
     #[test]

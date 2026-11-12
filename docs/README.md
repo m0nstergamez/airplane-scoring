@@ -531,6 +531,25 @@ that isn't code here. Keep entries short and dated.
   the start screen and the pause menu (centred by auto margins now)
   scroll instead of cutting anything off. Checked at 667×280, 667×320,
   844×300, 844×390 (phone) and 1440×900.
+- Phone bug hunt, asked for. Found and fixed:
+  - Found by the user: starting in level 2, gulls came during the
+    autopilot's takeoff and the plane flew into them. While the
+    autopilot flies (`World::hands_off`: takeoff, approach, rollout) no
+    obstacles spawn, and nothing still around can hit the plane. Tests:
+    no obstacle during either level's takeoff; a gull at the plane on
+    the approach costs no life.
+  - Steering only by tilt touches nothing, so the phone locked itself
+    mid-flight. The page holds a Screen Wake Lock while flying (iOS
+    16.4+, Chrome on Android), asks again when it comes back, and lets
+    go in the main menu.
+  - iOS suspends a page's sound on an app switch or lock and the
+    vendored JS bundle woke it only on the first tap, so the game went
+    silent. A small script before the bundle tracks its AudioContexts
+    and resumes them on every tap, click or key.
+  - Checked and fine on phone-sized screenshots: the flight HUD, "Level
+    complete" and its buttons at 667×320 and 844×390; the pause button
+    keeps clear of the notch. Wake lock and sound on a real iPhone are
+    not tested here.
 
 ## Concepts
 
