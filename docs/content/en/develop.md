@@ -161,7 +161,7 @@ flowchart LR
   smallest (`OBJECT_SIZE`) at the top of the screen and grows steadily
   all the way down to full size at a balloon standing on a pad. The
   plane follows `Bounds::plane_depth(y)`: as small at the top, growing to
-  `PLANE_NEAR_SIZE` (1.5) near the ground. Drawing and crashes use the
+  `PLANE_NEAR_SIZE` (1.8) near the ground. Drawing and crashes use the
   same factor, so a plane flying low is bigger and easier to hit.
 - **Crashes use the drawn shapes** (`crates/core/src/shape.rs`): the
   plane (`Player::shape`: fuselage, nose, wing, tail, cockpit) and each
@@ -329,6 +329,7 @@ keeps its size relative to the landscape:
 | `AIRSPEED_RANGE` | `crates/core/src/lib.rs` | slowest and fastest airspeed you can set (1 = cruising) |
 | `OVERSPEED_AT` | `crates/core/src/lib.rs` | airspeed above which "Overspeed" warns; after `OVERSPEED_SECONDS` it breaks apart |
 | `STALL_AT` | `crates/core/src/lib.rs` | airspeed below which "Pull up" warns and the plane sags (up to `STALL_SINK`) |
+| `ROLL_SECONDS` | `crates/core/src/airport.rs` | how long the plane rolls down the runway before it lifts off |
 | `SHAKE_PX` | `crates/core/src/lib.rs` | how far the screen shakes at the explosion (`World::shake`) |
 | `HIGHSCORE_COUNT` | `crates/core/src/highscore.rs` | how many best scores are kept |
 | `SAFE_SECONDS` | `crates/core/src/lib.rs` | how long the plane blinks and cannot crash after a crash |

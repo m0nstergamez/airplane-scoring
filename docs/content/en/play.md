@@ -17,6 +17,11 @@ The flight only begins with that tap or click. Until then the game waits,
 however long the start screen is open, so you always start at the
 beginning of level 1.
 
+Every flight starts at an **airport**: your plane stands on the runway
+in the foreground, by the control tower and the windsock. It rolls, the
+landscape starts moving faster and faster, it lifts off and climbs away
+on its own. Then you have the controls.
+
 ## Controls
 
 The plane responds smoothly: it picks up a climb or dive gradually and
@@ -99,7 +104,7 @@ and ignores the controls for a moment (1.5 seconds). Then you fly again.
 ## Speed, overspeed and pull up
 
 Besides the speed that slowly rises with your score, you set how fast
-you fly yourself. At the bottom left, the "SPEED" gauge shows it: amber
+you fly yourself. At the top left, the "SPEED" gauge shows it: amber
 is too slow, green is fine, red is too fast. With no gas and no brake
 you slowly return to normal speed.
 

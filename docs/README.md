@@ -348,6 +348,19 @@ that isn't code here. Keep entries short and dated.
   the ground at normal speed stays harmless. The voice files are
   optional at runtime: without them every other sound still plays (a
   missing file had silenced the whole game).
+- Takeoff from an airport, asked for: every new flight in level 1 starts
+  on a runway in the foreground (`airport.rs`: runway with threshold
+  stripes and centre line, control tower, windsock). The plane stands on
+  it with its gear out; the landscape speeds up from standing over
+  `ROLL_SECONDS` (2.5 s, `World::speed` times the roll), the plane lifts
+  off, climbs out on its own for `CLIMB_OUT_SECONDS`, then the player
+  steers. Opt-in (`World::with_takeoff`, which the game calls), so
+  existing tests keep a plane in the air; a flight starting in level 2
+  skips it. Nothing new spawns while the runway still reaches the right
+  edge, so no hut or pad stands on it (a first try showed a pad on it).
+  The SPEED gauge moved to the top left, off the runway. Also asked
+  for: the plane grows a bit more near the ground (`PLANE_NEAR_SIZE` 1.5
+  → 1.8).
 
 ## Concepts
 
