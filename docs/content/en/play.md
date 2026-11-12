@@ -13,8 +13,9 @@
 The main menu also has **Levels**: a map with a round picture of each
 landscape, joined by a dashed line. Tap a level to start there. Level 2
 is locked at first (grey with a padlock) and opens once you have
-completed level 1; the game remembers. Under **Options** you switch
-music and sounds.
+completed level 1; the game remembers. **How to play** gives a short
+guide (goal, steering, speed, pause); under **Options** you switch music
+and sounds.
 
 On a computer the main menu also shows the keys and a larger **QR
 code**. Scan it with your phone's camera to open the game there. To fly
@@ -151,7 +152,7 @@ With every point the game gets a tiny bit **faster**: the landscape
 and everything in it come by quicker (after a minute about 12 %, at
 most 50 % faster).
 
-You have **3 lives**. At the top right, next to the speaker button, one
+You have **3 lives**, and every new level starts with all 3 again. At the top right, next to the speaker button, one
 small plane per life shows how many you have left. Each crash costs a life: its plane turns grey and
 blinks for a moment.
 
