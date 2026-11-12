@@ -156,7 +156,7 @@ art/levels/
   level3/
 ```
 
-A new level background in five steps:
+A new level in six steps:
 
 1. Make the folder, for example `art/levels/level2/`.
 2. Put your photo in it as `photo.jpg`. Take a photo held sideways,
@@ -168,7 +168,9 @@ A new level background in five steps:
    explain the rules below.
 4. Run `scripts/make-backgrounds.sh level2`. It makes
    `web/levels/level2.png` and checks the seam.
-5. Look at the picture, then commit the SVG and the PNG.
+5. Raise `LEVEL_COUNT` in `crates/core/src/level.rs` by one, so the game
+   shows the new level.
+6. Look at the picture, then commit the SVG and the PNG.
 
 The SVG has to follow a few rules, because the right edge of one copy
 touches the left edge of the next:
@@ -194,6 +196,20 @@ flowchart LR
     T["Ticks so far"] --> D["scroll_distance:<br/>ticks × SCROLL_SPEED"]
     D --> X["background_x:<br/>where copy 1 starts (0 to −width)"]
     X --> C["Draw copies side by side<br/>until the screen is full"]
+```
+
+Which level shows is decided by `level_view` in
+`crates/core/src/level.rs`, again only from the ticks: every
+`LEVEL_SECONDS` the next level begins. During the last
+`LEVEL_FADE_SECONDS` of a level, the next picture is drawn over the old
+one, a little more opaque every tick, so there is no jump. To start
+directly in a level, add `?level=2` to the address
+(`LEVEL=2 scripts/shot.sh` for a screenshot).
+
+```mermaid
+flowchart LR
+    T["Ticks so far"] --> V["level_view"]
+    V --> L1["0–57 s: level 1"] --> F["57–60 s: level 2<br/>fades in"] --> L2["60 s: level 2,<br/>banner Level 2"] --> R["120 s: level 1 again"]
 ```
 
 ### Test first
@@ -234,6 +250,8 @@ More numbers you can try:
 | `STRIKE_GAP_SECONDS` | `crates/core/src/weather.rs` | time between two lightning strikes |
 | `ENGINE_VOLUME` | `crates/core/src/sound.rs` | how loud the engine is (0 to 1) |
 | `SCROLL_SPEED` | `crates/core/src/scenery.rs` | how fast the landscape slides past (pixels per second) |
+| `LEVEL_SECONDS` | `crates/core/src/level.rs` | how long one level lasts (seconds) |
+| `LEVEL_FADE_SECONDS` | `crates/core/src/level.rs` | how long the next landscape takes to fade in |
 
 ## Share your change
 

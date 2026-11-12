@@ -78,6 +78,14 @@ the lightning, the later and quieter the thunder.
 If you touch the other plane, you **crash**: your plane smokes, falls
 and ignores the controls for a moment (1.5 seconds). Then you fly again.
 
+## Levels
+
+Every minute you reach a new **level** with a new landscape: first the
+coast (level 1), then a beach at sunset (level 2). Near the end of a
+level the next landscape slowly appears over the old one, and "Level 2"
+shows in the middle of the screen. After the last level, level 1 starts
+again.
+
 ## Sound
 
 | You hear | When |

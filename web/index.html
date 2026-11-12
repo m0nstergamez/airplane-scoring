@@ -216,6 +216,18 @@
       },
     });
 
+    // Level plugin: "?level=2" starts the flight in level 2 (testing,
+    // screenshots). The Rust side (crates/game/src/level_js.rs) asks once;
+    // core turns anything invalid into level 1.
+    const requestedLevel = parseInt(new URLSearchParams(location.search).get("level"), 10) || 1;
+    miniquad_add_plugin({
+      name: "level",
+      version: 1, // must match level_crate_version() in level_js.rs
+      register_plugin: (importObject) => {
+        importObject.env.level_requested = () => requestedLevel;
+      },
+    });
+
     // Start screen. iOS only hands out motion data after a permission
     // prompt triggered by a tap; Android needs no prompt (HTTPS only, both).
     // Computers have no tilt, so they skip the prompt (Safari on a Mac

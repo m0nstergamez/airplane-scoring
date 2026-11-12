@@ -81,6 +81,14 @@ Berührst du das andere Flugzeug, gibt es einen **Zusammenstoss**: Dein
 Flugzeug raucht, fällt und lässt sich einen Moment lang (1,5 Sekunden)
 nicht steuern. Danach fliegst du wieder.
 
+## Levels
+
+Jede Minute erreichst du ein neues **Level** mit einer neuen Landschaft:
+zuerst die Küste (Level 1), dann einen Strand bei Sonnenuntergang
+(Level 2). Gegen Ende eines Levels erscheint die nächste Landschaft
+langsam über der alten, und in der Mitte des Bildschirms steht «Level 2».
+Nach dem letzten Level beginnt wieder Level 1.
+
 ## Ton
 
 | Du hörst | Wann |

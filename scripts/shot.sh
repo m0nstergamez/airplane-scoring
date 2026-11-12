@@ -9,6 +9,7 @@
 # Env: CHROME=/path/to/chrome   SIZE=800,450   SKIP_BUILD=1
 #      START=1   show the start screen ("Click to fly"); by default the page
 #                gets "?play" and skips it, so the shot shows the game
+#      LEVEL=2   start the flight in level 2 ("&level=2")
 set -euo pipefail
 cd "$(dirname "$0")/.."
 out="${1:-target/shots/latest.png}"
@@ -40,7 +41,8 @@ trap 'kill $server 2>/dev/null; rm -rf "$tmpdir"' EXIT
 for _ in $(seq 50); do curl -sf "http://127.0.0.1:$port/" >/dev/null && break; sleep 0.1; done
 
 page="?play"
-[ -z "${START:-}" ] || page=""
+[ -z "${START:-}" ] || page="?"
+[ -z "${LEVEL:-}" ] || page="$page&level=$LEVEL"
 
 "$chrome" --headless=new --use-angle=swiftshader --enable-unsafe-swiftshader \
   --window-size="$size" --hide-scrollbars --user-data-dir="$tmpdir/profile" \

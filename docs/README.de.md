@@ -111,6 +111,19 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
 - Die Projektnotizen gibt es jetzt auch auf Deutsch (`docs/README.de.md`),
   parallel geführt wie die Anleitung; `scripts/check-docs.sh` vergleicht den Aufbau.
 
+## 2026-11-12
+
+- Levelwechsel: Alle `LEVEL_SECONDS` (60 s) beginnt das nächste Level,
+  nach dem letzten wieder Level 1 (core `level.rs`, `level_view`). Die
+  nächste Landschaft wird in den letzten `LEVEL_FADE_SECONDS` (3 s)
+  eingeblendet, und «Level N» steht 2.5 s lang da. Gewählt statt Punkten
+  (gibt es noch nicht) und statt eines Menüs (stört am Handy); kommen
+  Punkte, ändert sich nur der Auslöser. Aus den Ticks und dem Start-Level
+  abgeleitet, also kein neuer Zustand in `World`. Alle Level-Bilder laden
+  beim Start. `?level=2` (Plugin "level", `LEVEL=2 scripts/shot.sh`)
+  startet in Level 2. Headless Chrome lässt das Spiel kaum laufen, darum
+  wurde die Überblendung lokal mit 1 s langen Levels geprüft.
+
 ## Konzepte
 
 ### Kippen: vom Sensor zur Steuerung

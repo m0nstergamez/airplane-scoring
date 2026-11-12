@@ -110,6 +110,19 @@ that isn't code here. Keep entries short and dated.
 - The project notes now exist in German too (`docs/README.de.md`),
   kept in sync like the manual; `scripts/check-docs.sh` compares the structure.
 
+## 2026-11-12
+
+- Level change: every `LEVEL_SECONDS` (60 s) the next level begins,
+  after the last one level 1 again (core `level.rs`, `level_view`). The
+  next landscape fades in over the last `LEVEL_FADE_SECONDS` (3 s) and
+  "Level N" shows for 2.5 s. Picked over points (none yet) and a menu
+  (in the way on a phone); when points come, only the trigger changes.
+  Derived from ticks and the start level, so no new state in `World`.
+  All level images load at the start. `?level=2` (plugin "level",
+  `LEVEL=2 scripts/shot.sh`) starts in level 2. Headless Chrome barely
+  advances the game, so the fade was checked with levels shortened
+  locally to 1 s.
+
 ## Concepts
 
 ### Tilt: from sensor to steering

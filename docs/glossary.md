@@ -66,6 +66,8 @@ short **meaning**.
 | scrollen | scroll | `SCROLL_SPEED` | The landscape slides past the plane |
 | Kopie | copy | `background_x` | The background drawn once more beside itself |
 | Naht | seam | `make-backgrounds.sh` | Where one copy touches the next; must not be visible |
+| Levelwechsel | level change | `level_view`, `LEVEL_SECONDS` | Every minute the next level begins; after the last one, level 1 again |
+| einblenden | fade in | `LEVEL_FADE_SECONDS`, `LevelView::fade` | The next landscape appears slowly over the old one |
 | Ebene | layer | `<g id="sky">` | One group in the SVG (sky, hills, …); can later scroll at its own speed |
 
 ## Phone and screen

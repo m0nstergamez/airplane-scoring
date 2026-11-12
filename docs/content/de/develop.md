@@ -158,7 +158,7 @@ art/levels/
   level3/
 ```
 
-Ein neuer Level-Hintergrund in fünf Schritten:
+Ein neues Level in sechs Schritten:
 
 1. Lege den Ordner an, zum Beispiel `art/levels/level2/`.
 2. Leg dein Foto als `photo.jpg` hinein. Fotografiere quer und ohne
@@ -170,7 +170,9 @@ Ein neuer Level-Hintergrund in fünf Schritten:
    Kommentare erklären die Regeln unten.
 4. Starte `scripts/make-backgrounds.sh level2`. Es erzeugt
    `web/levels/level2.png` und prüft die Naht.
-5. Schau dir das Bild an, dann committe das SVG und das PNG.
+5. Erhöhe `LEVEL_COUNT` in `crates/core/src/level.rs` um eins, damit das
+   Spiel das neue Level zeigt.
+6. Schau dir das Bild an, dann committe das SVG und das PNG.
 
 Das SVG muss ein paar Regeln einhalten, weil der rechte Rand einer Kopie
 den linken Rand der nächsten berührt:
@@ -196,6 +198,20 @@ flowchart LR
     T["Ticks bisher"] --> D["scroll_distance:<br/>Ticks × SCROLL_SPEED"]
     D --> X["background_x:<br/>wo Kopie 1 beginnt (0 bis −Breite)"]
     X --> C["Kopien nebeneinander zeichnen,<br/>bis der Bildschirm voll ist"]
+```
+
+Welches Level zu sehen ist, entscheidet `level_view` in
+`crates/core/src/level.rs`, wieder nur aus den Ticks: Alle
+`LEVEL_SECONDS` beginnt das nächste Level. In den letzten
+`LEVEL_FADE_SECONDS` eines Levels wird das nächste Bild über das alte
+gezeichnet, mit jedem Tick etwas deckender, also ohne Sprung. Um direkt
+in einem Level zu starten, häng `?level=2` an die Adresse
+(`LEVEL=2 scripts/shot.sh` für einen Screenshot).
+
+```mermaid
+flowchart LR
+    T["Ticks bisher"] --> V["level_view"]
+    V --> L1["0–57 s: Level 1"] --> F["57–60 s: Level 2<br/>wird eingeblendet"] --> L2["60 s: Level 2,<br/>Anzeige «Level 2»"] --> R["120 s: wieder Level 1"]
 ```
 
 ### Zuerst der Test
@@ -236,6 +252,8 @@ Weitere Zahlen zum Ausprobieren:
 | `STRIKE_GAP_SECONDS` | `crates/core/src/weather.rs` | Zeit zwischen zwei Blitzen |
 | `ENGINE_VOLUME` | `crates/core/src/sound.rs` | wie laut der Motor ist (0 bis 1) |
 | `SCROLL_SPEED` | `crates/core/src/scenery.rs` | wie schnell die Landschaft vorbeizieht (Pixel pro Sekunde) |
+| `LEVEL_SECONDS` | `crates/core/src/level.rs` | wie lange ein Level dauert (Sekunden) |
+| `LEVEL_FADE_SECONDS` | `crates/core/src/level.rs` | wie lange die nächste Landschaft zum Einblenden braucht |
 
 ## Änderung teilen
 
