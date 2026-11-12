@@ -96,6 +96,15 @@ that isn't code here. Keep entries short and dated.
 - German: the game's start screen is «Startanzeige», because
   «Startbildschirm» already means Android's home screen.
 
+## 2026-11-11
+
+- Level 2 background: sandy beach at sunset, calm bay, dark headlands
+  left and right, far islands between (`art/levels/level2/`, traced from
+  our own photo, rendered to `web/levels/level2.png`). Same size and
+  layer rules as level 1. Not used by the game yet: there is still no way
+  to pick or reach a level, so it only waits in `web/levels/`. Checked in
+  the game by drawing it in place of level 1 locally.
+
 ## Concepts
 
 ### Tilt: from sensor to steering
