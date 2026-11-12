@@ -155,21 +155,23 @@ impl Audio {
     pub fn play(&self, event: Event) {
         let Some(s) = &self.sounds else { return };
         // The tunes follow the "Music" switch, everything else "Sounds".
-        let tune = matches!(event, Event::NewLevel { .. } | Event::NewHighscore);
+        let tune = matches!(event, Event::LevelComplete { .. } | Event::NewHighscore);
         if (tune && !self.music) || (!tune && self.muted) {
             return;
         }
         let (sound, volume) = match event {
             Event::Crash => (&s.crash, CRASH_VOLUME),
             Event::Thunder { volume } => (&s.thunder, volume),
-            Event::NewLevel { .. } => (&s.new_level, NEW_LEVEL_VOLUME),
+            // The tune celebrates the landing; the next level just begins.
+            Event::LevelComplete { .. } => (&s.new_level, NEW_LEVEL_VOLUME),
+            Event::NewLevel { .. } => return,
             Event::GullCall => (&s.gull_call, GULL_CALL_VOLUME),
             Event::BalloonBurner => (&s.burner, BALLOON_BURNER_VOLUME),
             Event::Lightning { .. } => return, // seen, not heard
             Event::NewHighscore => (&s.fanfare, HIGHSCORE_VOLUME),
             Event::Explosion => (&s.explosion, EXPLOSION_VOLUME),
             Event::Takeoff => (&s.takeoff, TAKEOFF_VOLUME),
-            Event::GearUp => (&s.gear, GEAR_VOLUME),
+            Event::GearUp | Event::GearDown => (&s.gear, GEAR_VOLUME),
             Event::Overspeed => match &s.overspeed_voice {
                 Some(voice) => (voice, VOICE_VOLUME),
                 None => return,

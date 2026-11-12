@@ -444,6 +444,21 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
   `World::with_takeoff` stellt das Flugzeug jetzt sofort auf die
   Startbahn, damit es während des Countdowns nicht in der Luft hängt
   (auf einem Screenshot gesehen).
+- Levels enden mit einer Landung, gewünscht: keine Anzeige und kein
+  Überblenden mehr. Nach `LEVEL_SECONDS` Flug (`level_ticks`, pro Level
+  gezählt) durchläuft die Welt `Landing`: `Approach` (von rechts kommt
+  eine Landebahn, `Event::GearDown`, der Autopilot steuert einen flachen
+  Gleitpfad, sodass die Räder die Bahn `TOUCHDOWN_INTO` nach ihrem Anfang
+  treffen; Eingaben zählen nicht), `Rollout` (Bremsen bis zum Stillstand
+  über `BRAKE_SECONDS`, das Rumpeln klingt aus, `Event::LevelComplete`
+  spielt die Melodie), `Complete` («Level N complete» mit Score; ein
+  Tipp oder `COMPLETE_SECONDS` führt weiter) und `Countdown` (sofort die
+  nächste Landschaft, ihre Nummer und 3-2-1, das Flugzeug auf seiner
+  Startbahn). Score und Welt stehen bei Complete und Countdown still.
+  `CLEAR_SECONDS` vor der Landung kommen keine neuen Hindernisse.
+  `World::levels` folgt jetzt `completed`, nicht den Ticks. Geprüft mit
+  Screenshots von Anflug, Aufsetzen, Complete und dem Countdown am
+  Strand, mit lokal auf 12 gesetztem `LEVEL_SECONDS` (nicht committet).
 
 ## Konzepte
 

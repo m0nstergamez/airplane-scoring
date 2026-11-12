@@ -268,18 +268,18 @@ flowchart LR
     X --> C["Draw copies side by side<br/>until the screen is full"]
 ```
 
-Which level shows is decided by `level_view` in
-`crates/core/src/level.rs`, again only from the ticks: every
-`LEVEL_SECONDS` the next level begins. During the last
-`LEVEL_FADE_SECONDS` of a level, the next picture is drawn over the old
-one, a little more opaque every tick, so there is no jump. To start
-directly in a level, add `?level=2` to the address
-(`LEVEL=2 scripts/shot.sh` for a screenshot).
+A level ends with a landing (`World::landing`, `Landing` in
+`crates/core/src/lib.rs`): after `LEVEL_SECONDS` of flying the landing
+runway comes in, the autopilot flies the approach and touches down, the
+plane brakes to a stop, "Level N complete" shows (a tap goes on), the
+next level's landscape takes over at once and counts down, and the
+plane takes off from its runway. `CLEAR_SECONDS` before the landing no
+new obstacles come. To start directly in a level, add `?level=2` to the
+address (`LEVEL=2 scripts/shot.sh` for a screenshot).
 
 ```mermaid
 flowchart LR
-    T["Ticks so far"] --> V["level_view"]
-    V --> L1["0–57 s: level 1"] --> F["57–60 s: level 2<br/>fades in"] --> L2["60 s: level 2,<br/>banner Level 2"] --> R["120 s: level 1 again"]
+    T["Takeoff"] --> F["Flying,<br/>LEVEL_SECONDS"] --> A["Approach:<br/>autopilot, gear down"] --> R["Touchdown,<br/>rollout"] --> C["Level complete"] --> N["Next level:<br/>countdown 3-2-1"] --> T
 ```
 
 ### Test first
@@ -348,7 +348,8 @@ keeps its size relative to the landscape:
 | `HUT_HEIGHT` | `crates/core/src/huts.rs` | lowest and highest hut (pixels) |
 | `SCROLL_SPEED` | `crates/core/src/scenery.rs` | how fast the landscape slides past (pixels per second) |
 | `LEVEL_SECONDS` | `crates/core/src/level.rs` | how long one level lasts (seconds) |
-| `LEVEL_FADE_SECONDS` | `crates/core/src/level.rs` | how long the next landscape takes to fade in |
+| `CLEAR_SECONDS` | `crates/core/src/airport.rs` | how long before a landing no new obstacles come |
+| `BRAKE_SECONDS` | `crates/core/src/airport.rs` | how long the plane brakes to a stop after touchdown |
 
 ## Share your change
 

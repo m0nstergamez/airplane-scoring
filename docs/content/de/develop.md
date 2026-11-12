@@ -277,18 +277,19 @@ flowchart LR
     X --> C["Kopien nebeneinander zeichnen,<br/>bis der Bildschirm voll ist"]
 ```
 
-Welches Level zu sehen ist, entscheidet `level_view` in
-`crates/core/src/level.rs`, wieder nur aus den Ticks: Alle
-`LEVEL_SECONDS` beginnt das nächste Level. In den letzten
-`LEVEL_FADE_SECONDS` eines Levels wird das nächste Bild über das alte
-gezeichnet, mit jedem Tick etwas deckender, also ohne Sprung. Um direkt
-in einem Level zu starten, häng `?level=2` an die Adresse
+Ein Level endet mit einer Landung (`World::landing`, `Landing` in
+`crates/core/src/lib.rs`): Nach `LEVEL_SECONDS` Flug kommt die
+Landebahn, der Autopilot fliegt den Anflug und setzt auf, das Flugzeug
+bremst bis zum Stillstand, «Level N complete» erscheint (ein Tipp führt
+weiter), die Landschaft des nächsten Levels übernimmt sofort und zählt
+herunter, und das Flugzeug startet von seiner Startbahn.
+`CLEAR_SECONDS` vor der Landung kommen keine neuen Hindernisse. Um
+direkt in einem Level zu starten, häng `?level=2` an die Adresse
 (`LEVEL=2 scripts/shot.sh` für einen Screenshot).
 
 ```mermaid
 flowchart LR
-    T["Ticks bisher"] --> V["level_view"]
-    V --> L1["0–57 s: Level 1"] --> F["57–60 s: Level 2<br/>wird eingeblendet"] --> L2["60 s: Level 2,<br/>Anzeige «Level 2»"] --> R["120 s: wieder Level 1"]
+    T["Start"] --> F["Fliegen,<br/>LEVEL_SECONDS"] --> A["Anflug:<br/>Autopilot, Fahrwerk aus"] --> R["Aufsetzen,<br/>Ausrollen"] --> C["Level complete"] --> N["Nächstes Level:<br/>Countdown 3-2-1"] --> T
 ```
 
 ### Zuerst der Test
@@ -358,7 +359,8 @@ Landschaft:
 | `HUT_HEIGHT` | `crates/core/src/huts.rs` | niedrigste und höchste Hütte (Pixel) |
 | `SCROLL_SPEED` | `crates/core/src/scenery.rs` | wie schnell die Landschaft vorbeizieht (Pixel pro Sekunde) |
 | `LEVEL_SECONDS` | `crates/core/src/level.rs` | wie lange ein Level dauert (Sekunden) |
-| `LEVEL_FADE_SECONDS` | `crates/core/src/level.rs` | wie lange die nächste Landschaft zum Einblenden braucht |
+| `CLEAR_SECONDS` | `crates/core/src/airport.rs` | wie lange vor einer Landung keine neuen Hindernisse kommen |
+| `BRAKE_SECONDS` | `crates/core/src/airport.rs` | wie lange das Flugzeug nach dem Aufsetzen bis zum Stillstand bremst |
 
 ## Änderung teilen
 

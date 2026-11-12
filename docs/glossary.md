@@ -77,7 +77,9 @@ short **meaning**.
 | Strandturm | lifeguard tower | `Tower`, `Towers` | Wooden lifeguard tower in the beach's sand (level 2), near the front or back by the water; an obstacle |
 | Parallaxe | parallax | `Tower::size` | Things further away slide past more slowly |
 | Möwe | gull | `Gull`, `gull-call.wav` | Sea bird at the beach: an obstacle; many call when they appear |
-| Melodie | tune | `Event::NewLevel`, `new-level.wav` | Short rising tune when a new level begins |
+| Melodie | tune | `Event::LevelComplete`, `new-level.wav` | Short rising tune when a level is landed and complete |
+| Landung | landing | `Landing`, `World::landing` | How a level ends: approach on autopilot, touchdown, rollout, "Level complete" |
+| Landebahn | runway (landing) | `Airport` | The runway a level ends on; the same kind as the takeoff runway |
 | Startwert | seed | `World::with_seed` | The number that decides the random weather |
 
 ## Pictures and levels
@@ -98,7 +100,7 @@ short **meaning**.
 | Kopie | copy | `background_x` | The background drawn once more beside itself |
 | Naht | seam | `make-backgrounds.sh` | Where one copy touches the next; must not be visible |
 | Levelwechsel | level change | `level_view`, `LEVEL_SECONDS` | Every minute the next level begins; after the last one, level 1 again |
-| einblenden | fade in | `LEVEL_FADE_SECONDS`, `LevelView::fade` | The next landscape appears slowly over the old one |
+| einblenden | fade in | `LevelView::fade` | No longer used between levels: the landing ends one, the next begins at once |
 | Ebene | layer | `<g id="sky">` | One group in the SVG (sky, hills, …); can later scroll at its own speed |
 
 ## Phone and screen

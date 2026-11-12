@@ -18,6 +18,20 @@ pub const ROLL_SECONDS: f32 = 6.0;
 pub const CLIMB_OUT_SECONDS: f32 = 2.0;
 /// How hard it climbs out (a steer value, -1 = full climb).
 pub const CLIMB_OUT_STEER: f32 = -0.4;
+/// A level ends with a landing: this long before it, no new obstacles
+/// come, so the sky is clear for the approach.
+pub const CLEAR_SECONDS: f32 = 8.0;
+/// The landing runway comes in this far beyond the right edge, in px.
+pub const APPROACH_DISTANCE: f32 = 60.0;
+/// The plane touches down this far down the runway, in px.
+pub const TOUCHDOWN_INTO: f32 = 80.0;
+/// After touchdown it brakes to a stop over this long, in seconds.
+pub const BRAKE_SECONDS: f32 = 3.5;
+/// "Level complete" shows this long (a tap goes on sooner), then the
+/// next level counts down for [`COUNTDOWN_SECONDS`] before its takeoff.
+pub const COMPLETE_SECONDS: f32 = 4.0;
+pub const COUNTDOWN_SECONDS: f32 = 3.0;
+
 /// After lift-off the gear waits this long, then folds up over
 /// [`GEAR_RETRACT_SECONDS`] (with its whir and clunk, `Event::GearUp`).
 pub const GEAR_DELAY_SECONDS: f32 = 0.4;

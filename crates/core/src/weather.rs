@@ -297,6 +297,8 @@ mod tests {
                 | Event::Explosion
                 | Event::Takeoff
                 | Event::GearUp
+                | Event::GearDown
+                | Event::LevelComplete { .. }
                 | Event::Overspeed
                 | Event::PullUp => {
                     panic!("not weather")

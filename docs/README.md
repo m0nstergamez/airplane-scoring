@@ -403,6 +403,20 @@ that isn't code here. Keep entries short and dated.
   (`PLANE_NEAR_SIZE` 1.8 → 2.4). `World::with_takeoff` now parks the
   plane on the runway at once, so it does not hang mid-air during the
   countdown (seen in a screenshot).
+- Levels end with a landing, asked for: no banner and no fade any more.
+  After `LEVEL_SECONDS` of flying (`level_ticks`, counted per level) the
+  world goes through `Landing`: `Approach` (a runway comes in from the
+  right, `Event::GearDown`, the autopilot steers a gentle slope so the
+  wheels meet the runway `TOUCHDOWN_INTO` down it, player input ignored),
+  `Rollout` (braking to a stop over `BRAKE_SECONDS`, rumble dying down,
+  `Event::LevelComplete` plays the tune), `Complete` ("Level N complete"
+  with the score; a tap or `COMPLETE_SECONDS` goes on) and `Countdown`
+  (the next landscape at once, its number and 3-2-1, the plane on its
+  runway). The score and the world stand still at Complete and
+  Countdown. `CLEAR_SECONDS` before the landing no new obstacles come.
+  `World::levels` now follows `completed`, not the ticks. Checked with
+  screenshots of approach, touchdown, complete and the beach countdown,
+  with `LEVEL_SECONDS` set to 12 locally (not committed).
 
 ## Concepts
 

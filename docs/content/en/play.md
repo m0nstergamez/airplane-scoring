@@ -178,11 +178,14 @@ data clears it.
 
 ## Levels
 
-Every minute you reach a new **level** with a new landscape: first the
-coast (level 1), then a beach at sunset (level 2). Near the end of a
-level the next landscape slowly appears over the old one, and "Level 2"
-shows in the middle of the screen. After the last level, level 1 starts
-again.
+Each **level** has its own landscape: first the coast (level 1), then a
+beach at sunset (level 2). After about a minute of flying, a level ends
+with a **landing**: no new obstacles come, a runway appears, and the
+autopilot takes over. The gear comes down, the plane touches down,
+brakes and stops: "Level 1 complete" shows with your score. Tap (or
+wait a moment) and the next level begins: its landscape appears, it
+counts 3, 2, 1, and you take off from its runway. After the last level,
+level 1 starts again.
 
 On the coast, **hot-air balloons** float by now and then. They come
 slowly from the right and take turns in four ways: one stands on a
@@ -229,7 +232,7 @@ legs is open air, but it is very tight.
 | Burner | When a hot-air balloon appears or takes off (level 1). |
 | Waves | At the beach (level 2). They fade in and out with the landscape. |
 | Gull | When a gull appears. Gulls from behind always call. |
-| Tune | When a new level begins. |
+| Tune | When you have landed and a level is complete. |
 | Fanfare | When you set a new highscore. |
 | Takeoff | Rolling down the runway: the engine spools up and the wheels rumble until the plane lifts off. |
 | Gear | Just after lift-off: a whir while the wheels fold up, then a clunk. |

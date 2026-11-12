@@ -82,6 +82,11 @@ async fn main() {
             result = None;
         }
 
+        // "Level complete": a tap, click or Enter goes on to the next level.
+        if world.level_complete().is_some() && restart_pressed() {
+            world.go_on();
+        }
+
         // Game over: a tap, click or Enter starts a new flight.
         if world.can_restart() && restart_pressed() {
             world = new_world();
@@ -282,6 +287,7 @@ async fn main() {
         } else {
             draw_score(&world, highscores.best());
         }
+        draw_level_end(&world);
 
         next_frame().await
     }
@@ -309,6 +315,39 @@ fn restart_pressed() -> bool {
         || touches().iter().any(|t| t.phase == TouchPhase::Started)
         || is_key_pressed(KeyCode::Enter)
         || is_key_pressed(KeyCode::Space)
+}
+
+/// The end of a level: "Level N complete" with the score after the
+/// landing, then the next level's number and a 3, 2, 1 countdown.
+fn draw_level_end(world: &World) {
+    let (w, h) = (screen_width(), screen_height());
+    let s = world.bounds.scale();
+    let centred = |text: &str, y: f32, size: f32, colour: Color| {
+        let size = size * s;
+        let dims = measure_text(text, None, size as u16, 1.0);
+        draw_text_on_landscape(text, (w - dims.width) / 2.0, y, size, colour);
+    };
+    let gold = Color::from_rgba(255, 220, 90, 255);
+    if let Some(level) = world.level_complete() {
+        draw_rectangle(0.0, 0.0, w, h, Color::new(0.08, 0.09, 0.12, 0.45));
+        centred(&format!("Level {level} complete"), h * 0.36, 56.0, gold);
+        centred(
+            &format!("Score {}", world.score()),
+            h * 0.36 + 44.0 * s,
+            30.0,
+            WHITE,
+        );
+        let hint = Color::from_rgba(160, 200, 255, 255);
+        centred("Tap or click to go on", h * 0.36 + 84.0 * s, 24.0, hint);
+    } else if let Some(n) = world.countdown() {
+        centred(
+            &format!("Level {}", world.levels().level),
+            h * 0.3,
+            44.0,
+            WHITE,
+        );
+        centred(&n.to_string(), h * 0.3 + 110.0 * s, 120.0, gold);
+    }
 }
 
 /// The airspeed you set with the throttle, top left: a bar with the

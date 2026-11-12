@@ -189,11 +189,15 @@ Websitedaten des Browsers, ist sie weg.
 
 ## Levels
 
-Jede Minute erreichst du ein neues **Level** mit einer neuen Landschaft:
-zuerst die Küste (Level 1), dann einen Strand bei Sonnenuntergang
-(Level 2). Gegen Ende eines Levels erscheint die nächste Landschaft
-langsam über der alten, und in der Mitte des Bildschirms steht «Level 2».
-Nach dem letzten Level beginnt wieder Level 1.
+Jedes **Level** hat seine eigene Landschaft: zuerst die Küste (Level 1),
+dann einen Strand bei Sonnenuntergang (Level 2). Nach etwa einer Minute
+Flug endet ein Level mit einer **Landung**: Es kommen keine neuen
+Hindernisse mehr, eine Landebahn erscheint, und der Autopilot übernimmt.
+Das Fahrwerk fährt aus, das Flugzeug setzt auf, bremst und steht: «Level
+1 complete» erscheint mit deinem Score. Tippe (oder warte kurz), und das
+nächste Level beginnt: Seine Landschaft erscheint, es zählt 3, 2, 1, und
+du startest von seiner Startbahn. Nach dem letzten Level beginnt wieder
+Level 1.
 
 An der Küste fahren ab und zu **Heissluftballone**. Sie kommen langsam
 von rechts und wechseln sich auf vier Arten ab: Einer steht auf einer
@@ -241,7 +245,7 @@ Beinen ist Luft, aber es ist sehr eng.
 | Brenner | Wenn ein Heissluftballon auftaucht oder abhebt (Level 1). |
 | Wellen | Am Strand (Level 2). Sie werden mit der Landschaft ein- und ausgeblendet. |
 | Möwe | Wenn eine Möwe auftaucht. Möwen von hinten rufen immer. |
-| Melodie | Wenn ein neues Level beginnt. |
+| Melodie | Wenn du gelandet bist und ein Level geschafft ist. |
 | Fanfare | Wenn du einen neuen Highscore erreichst. |
 | Start | Beim Rollen auf der Startbahn: Das Triebwerk dreht hoch, die Räder rumpeln, bis das Flugzeug abhebt. |
 | Fahrwerk | Kurz nach dem Abheben: Surren, während die Räder einfahren, dann ein «Klonk». |
