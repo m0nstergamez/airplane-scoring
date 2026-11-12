@@ -560,6 +560,31 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
     dort landet trotzdem). Beides funktionierte schon. Im Browser
     geprüft: die Tastatur bis zur Level-Karte und die Bestzeiten-Tabelle
     bei 844×390 und 1440×900.
+- Gewünscht (auf einem iPhone gesehen): Das Hauptmenü war im
+  Querformat mit Safaris Leisten unten abgeschnitten, und der Knopf
+  Levels soll zurückkommen (er zeigt, wie weit man ist). Levels ist
+  zurück; Bildschirme bis 420 px Höhe bekommen ein kompaktes Menü
+  (kleinerer Titel, flachere Knöpfe), und die Hinweis-Box fürs Handy ist
+  kürzer und bleibt von den Knöpfen weg. `scripts/shot.sh` hat jetzt
+  `PHONE=1` (Touch-Bildschirm nachgeahmt); geprüft: Start, Levels, How
+  to play und Options bei 667×320, 844×340 und 844×390.
+- Gewünscht: Der Knopf Levels zeigt nur, wie weit man ist. Ein Tipp
+  auf ein Level startet dort nichts; ein Hinweis sagt «schon geschafft»,
+  «noch nicht geschafft» oder «gesperrt: zuerst Level N-1 schaffen». In
+  der Levelwahl («Tap to fly») sagt ein gesperrtes Level dasselbe.
+  Geschaffte Levels bekommen ein grünes Häkchen; die Seite speichert sie
+  jetzt als `airplane-scoring.completed` (einmal aus dem alten
+  `airplane-scoring.unlocked` übernommen). Auf Screenshots geprüft bei
+  667×320, 844×390 (Handy) und 1440×900.
+- Auf einem iPhone gefunden: In How to play lag Back unter dem
+  Bildschirmrand, und man kam nicht mehr heraus. Die Karte war in vh
+  bemessen, und iOS Safari zählt vh ohne seine Leisten, also wurde sie
+  höher als der Bildschirm. Jetzt nimmt die Karte nur den Platz zwischen
+  Titel und Back, und ihr Text scrollt darin; Bildschirme unter 300 px
+  Höhe bekommen ein kleineres Menü, und Startseite und Pausenmenü (jetzt
+  mit automatischen Rändern zentriert) scrollen, statt etwas
+  abzuschneiden. Geprüft bei 667×280, 667×320, 844×300, 844×390 (Handy)
+  und 1440×900.
 
 ## Konzepte
 
