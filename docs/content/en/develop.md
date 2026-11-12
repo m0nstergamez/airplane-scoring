@@ -141,6 +141,13 @@ flowchart LR
   decides when and where they appear (seeded, like the weather), moves
   them and checks the crash; a gull that calls sends a `GullCall` event,
   so every call you hear belongs to a gull you see.
+- **Lives** are counted in core too: a crash costs one (`World.lives`),
+  a recovering plane is safe for `SAFE_SECONDS` (`Player::is_safe`), and
+  when the last one is gone the plane falls, `Event::GameOver` fires and
+  `World::tick` stands still (`World::is_over`). The game crate only draws
+  it and, once `World::can_restart` says so, starts a new `World` on a tap.
+  The score (`World::score`) follows from the ticks flown, so it stops
+  with them at game over.
 - **Weather is random but repeatable:** `World::with_seed` takes a seed;
   the same seed gives the same rain and the same lightning, so tests can
   replay it.
@@ -260,6 +267,9 @@ More numbers you can try:
 | `TILT_DEAD_ZONE_DEG` | `crates/core/src/tilt.rs` | small turns that are ignored |
 | `TILT_SMOOTHING` | `crates/core/src/tilt.rs` | smoother (lower) or more direct (higher) tilting |
 | `CRASH_SECONDS` | `crates/core/src/lib.rs` | how long a crashed plane is out of control |
+| `LIVES` | `crates/core/src/lib.rs` | lives at the start of a flight |
+| `SCORE_PER_SECOND` | `crates/core/src/lib.rs` | how many points each second of flight is worth |
+| `SAFE_SECONDS` | `crates/core/src/lib.rs` | how long the plane blinks and cannot crash after a crash |
 | `RAIN_SECONDS` | `crates/core/src/weather.rs` | shortest and longest rain |
 | `STORM_RAIN` | `crates/core/src/weather.rs` | how heavy rain must be for lightning (0 to 1) |
 | `STRIKE_GAP_SECONDS` | `crates/core/src/weather.rs` | time between two lightning strikes |

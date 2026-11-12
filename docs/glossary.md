@@ -27,7 +27,10 @@ short **meaning**.
 | Taste | key | `steer_from_keys` | Keyboard key (↑/W, ↓/S) |
 | Spielerin / Spieler (kurz: Spieler:in) | player | — | Person playing. In running text «Spielerin oder Spieler», in short labels «Spieler:in» |
 | Hindernis | obstacle | `Gulls` | Something you must not fly into; touching it is a crash. So far: gulls in level 2 |
-| Punkte | points | — | Coming soon |
+| Leben | life, lives | `World.lives`, `LIVES` | Crashes you can afford; shown as small planes at the top right |
+| geschützt (blinken) | safe (blinking) | `Player::is_safe`, `SAFE_SECONDS` | After a crash the plane blinks and cannot lose another life |
+| Game over | game over | `Event::GameOver`, `World::is_over` | The last life is gone; the flight ends. On-screen label, stays English |
+| Punkte, Score | points, score | `World::score`, `SCORE_PER_SECOND` | 2 per second flown; shown at the top centre and at game over. On-screen label «Score» stays English |
 
 ## Weather and sound
 
@@ -40,7 +43,7 @@ short **meaning**.
 | Gewitter | thunderstorm | `STORM_RAIN` | Rain heavy enough for lightning |
 | Blitz | lightning | `Event::Lightning` | Lights up the sky |
 | Donner | thunder | `Event::Thunder` | Heard after the lightning; later and quieter from far away |
-| Zusammenstoss | crash | `Event::Crash`, `CRASH_SECONDS` | The player's plane touches another plane and is out of control for a moment |
+| Zusammenstoss | crash | `Event::Crash`, `CRASH_SECONDS` | The player's plane touches an obstacle, loses a life and is out of control for a moment |
 | Ton | sound | `crates/game/src/audio.rs` | Everything you hear. «Ton ein/aus» = sound on/off |
 | Tondatei | sound file | `web/sounds/*.wav` | One recorded or computed sound |
 | Lautstärke | volume | `Mix` | How loud a sound plays, 0 to 1 |

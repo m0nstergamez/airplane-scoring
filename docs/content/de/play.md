@@ -86,6 +86,26 @@ Berührst du eine Möwe (Level 2), gibt es einen **Zusammenstoss**: Dein
 Flugzeug raucht, fällt und lässt sich einen Moment lang (1,5 Sekunden)
 nicht steuern. Danach fliegst du wieder.
 
+## Punkte und Leben
+
+Oben in der Mitte steht dein **Score** (deine Punkte). Er steigt jede
+Sekunde um 2, solange du fliegst: Je länger du durchhältst, desto mehr
+Punkte hast du.
+
+Du hast **3 Leben**. Oben rechts, neben dem Lautsprecher-Knopf, zeigt pro
+Leben ein kleines Flugzeug, wie viele du noch hast. Jeder Zusammenstoss kostet ein Leben: Sein Flugzeug
+wird grau und blinkt kurz.
+
+Fliegst du nach einem Zusammenstoss wieder, **blinkt** dein Flugzeug
+2 Sekunden lang. Solange es blinkt, bist du geschützt: Eine Möwe kostet
+dann kein Leben. So verlierst du nicht zwei Leben an derselben
+Möwengruppe.
+
+Beim letzten Leben fällt dein Flugzeug, dann steht **«Game over»** auf dem
+Bildschirm, zusammen mit deinem Score. Nach einem
+kurzen Moment erscheint «Tap or click to fly again»: Tippe, klicke oder
+drücke Enter, und ein neuer Flug beginnt bei Level 1 mit 3 Leben.
+
 ## Levels
 
 Jede Minute erreichst du ein neues **Level** mit einer neuen Landschaft:

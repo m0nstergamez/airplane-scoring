@@ -121,6 +121,7 @@ impl Audio {
             Event::NewLevel { .. } => (&s.new_level, NEW_LEVEL_VOLUME),
             Event::GullCall => (&s.gull_call, GULL_CALL_VOLUME),
             Event::Lightning { .. } => return, // seen, not heard
+            Event::GameOver => return,         // the crash was the sound
         };
         play_sound(
             sound,

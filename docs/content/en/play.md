@@ -83,6 +83,24 @@ the lightning, the later and quieter the thunder.
 If you touch a gull (level 2), you **crash**: your plane smokes, falls
 and ignores the controls for a moment (1.5 seconds). Then you fly again.
 
+## Score and lives
+
+At the top centre is your **score** (your points). It goes up by 2 every
+second while you fly: the longer you last, the more points you have.
+
+You have **3 lives**. At the top right, next to the speaker button, one
+small plane per life shows how many you have left. Each crash costs a life: its plane turns grey and
+blinks for a moment.
+
+When you fly again after a crash, your plane **blinks** for 2 seconds.
+While it blinks you are safe: a gull costs no life then. So you do not
+lose two lives to the same flock of gulls.
+
+With the last life your plane falls, then **"Game over"** shows on the
+screen, together with your score. After a short
+moment "Tap or click to fly again" appears: tap, click or press Enter,
+and a new flight starts in level 1 with 3 lives.
+
 ## Levels
 
 Every minute you reach a new **level** with a new landscape: first the

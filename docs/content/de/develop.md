@@ -143,6 +143,14 @@ flowchart LR
   Wetter), bewegt sie und prüft den Zusammenstoss; eine Möwe, die ruft,
   schickt ein Ereignis `GullCall`. So gehört jeder Ruf, den du hörst, zu
   einer Möwe, die du siehst.
+- **Leben** zählt auch core: Ein Zusammenstoss kostet eines
+  (`World.lives`), ein Flugzeug, das sich erholt, ist `SAFE_SECONDS` lang
+  geschützt (`Player::is_safe`), und ist das letzte weg, fällt das
+  Flugzeug, `Event::GameOver` kommt, und `World::tick` steht still
+  (`World::is_over`). Das game-Crate zeichnet das nur und startet, sobald
+  `World::can_restart` es erlaubt, bei einem Tipp eine neue `World`.
+  Der Score (`World::score`) ergibt sich aus den geflogenen Ticks, darum
+  bleibt er bei «Game over» mit ihnen stehen.
 - **Das Wetter ist zufällig, aber wiederholbar:** `World::with_seed`
   bekommt einen Startwert; derselbe Startwert ergibt denselben Regen und
   dieselben Blitze, darum können Tests es nachspielen.
@@ -263,6 +271,9 @@ Weitere Zahlen zum Ausprobieren:
 | `TILT_DEAD_ZONE_DEG` | `crates/core/src/tilt.rs` | kleine Drehungen, die ignoriert werden |
 | `TILT_SMOOTHING` | `crates/core/src/tilt.rs` | weicheres (kleiner) oder direkteres (grösser) Kippen |
 | `CRASH_SECONDS` | `crates/core/src/lib.rs` | wie lange sich ein Flugzeug nach einem Zusammenstoss nicht steuern lässt |
+| `LIVES` | `crates/core/src/lib.rs` | Leben am Anfang eines Flugs |
+| `SCORE_PER_SECOND` | `crates/core/src/lib.rs` | wie viele Punkte jede Sekunde Flug wert ist |
+| `SAFE_SECONDS` | `crates/core/src/lib.rs` | wie lange das Flugzeug nach einem Zusammenstoss blinkt und geschützt ist |
 | `RAIN_SECONDS` | `crates/core/src/weather.rs` | kürzester und längster Regen |
 | `STORM_RAIN` | `crates/core/src/weather.rs` | wie stark der Regen für Blitze sein muss (0 bis 1) |
 | `STRIKE_GAP_SECONDS` | `crates/core/src/weather.rs` | Zeit zwischen zwei Blitzen |

@@ -163,6 +163,22 @@ that isn't code here. Keep entries short and dated.
 - `scripts/serve.sh` skips `socket.getfqdn()` in `HTTPServer.server_bind`:
   with Homebrew's Python 3.14 that reverse lookup of 127.0.0.1 took 35 s
   on a Mac, so every shot and `scripts/dev.sh` start waited for it.
+- Lives (asked for now that obstacles exist): 3 per flight (`LIVES`),
+  shown as small planes at the top right, left of the speaker button. A crash costs one; after
+  recovering the plane blinks and is safe for 2 s (`SAFE_SECONDS`), so one
+  flock of gulls costs one life. The last crash lets the plane fall, then
+  `Event::GameOver`; the world stands still, the sound fades out, and
+  "Game over" shows the score. After 1 s (`RESTART_WAIT_SECONDS`, so
+  a finger still steering does not skip it) a tap, click or Enter starts a
+  new world. All choices (3 lives, small planes, restart on tap, safe
+  time) were asked for that way. Checked in screenshots; the game-over one with
+  `LIVES` set to 1 locally (not committed).
+- Score: 2 points per second flown (`SCORE_PER_SECOND`), computed from
+  the ticks (`World::score`), so it stops at game over. Shown at the top
+  centre all game long and as the result at game over (it replaced the
+  flight time there). Ready for the highscore, which comes next.
+- Lifeguard towers in level 1 were built and dropped unmerged (PR #17):
+  towers every 2–4.5 s in a row felt illogical.
 
 ## Concepts
 

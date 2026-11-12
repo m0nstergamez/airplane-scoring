@@ -171,6 +171,24 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
   `HTTPServer.server_bind`: Mit Homebrews Python 3.14 dauerte diese
   Rückwärtsabfrage von 127.0.0.1 auf einem Mac 35 s, und jeder Screenshot
   und jeder Start von `scripts/dev.sh` wartete darauf.
+- Leben (gewünscht, jetzt wo es Hindernisse gibt): 3 pro Flug (`LIVES`),
+  oben rechts als kleine Flugzeuge, links vom Lautsprecher-Knopf. Ein Zusammenstoss kostet eines; nach
+  dem Erholen blinkt das Flugzeug und ist 2 s geschützt (`SAFE_SECONDS`),
+  so kostet eine Möwengruppe nur ein Leben. Beim letzten Zusammenstoss
+  fällt das Flugzeug, dann kommt `Event::GameOver`; die Welt steht still,
+  der Ton wird ausgeblendet, und «Game over» zeigt den Score. Nach 1 s
+  (`RESTART_WAIT_SECONDS`, damit ein Finger, der noch steuert, es nicht
+  überspringt) startet ein Tipp, Klick oder Enter eine neue Welt. Alle
+  Entscheide (3 Leben, kleine Flugzeuge, Neustart per Tipp, Schutzzeit)
+  wurden so gewünscht. Geprüft mit Screenshots; den
+  für «Game over» mit lokal auf 1 gesetztem `LIVES` (nicht committet).
+- Score: 2 Punkte pro geflogene Sekunde (`SCORE_PER_SECOND`), berechnet
+  aus den Ticks (`World::score`), darum bleibt er bei «Game over» stehen.
+  Oben in der Mitte das ganze Spiel lang zu sehen und bei «Game over» als
+  Ergebnis (dort ersetzt er die Flugzeit). Bereit für den Highscore, der
+  als Nächstes kommt.
+- Bademeistertürme in Level 1 wurden gebaut und ohne Merge verworfen
+  (PR #17): Alle 2–4.5 s ein Turm hintereinander wirkte unlogisch.
 
 ## Konzepte
 
