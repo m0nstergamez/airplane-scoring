@@ -17,6 +17,7 @@ mod scenery;
 mod shape;
 mod sound;
 mod tilt;
+mod towers;
 mod weather;
 pub use balloons::{
     Balloon, BalloonWay, Balloons, Pad, BALLOON_COLOURS, BALLOON_GAP_SECONDS, BALLOON_HIGH,
@@ -46,6 +47,10 @@ pub use sound::{
     NEW_LEVEL_VOLUME, RAIN_VOLUME, WIND_VOLUME,
 };
 pub use tilt::{Tilt, TILT_DEAD_ZONE_DEG, TILT_FULL_DEG, TILT_MIN_GRAVITY, TILT_SMOOTHING};
+pub use towers::{
+    Tower, TowerParts, Towers, FIRST_TOWER_SECONDS, TOWER_GAP_SECONDS, TOWER_GROUND, TOWER_HEIGHT,
+    TOWER_STYLES, TOWER_WIDTH,
+};
 pub use weather::{
     Weather, CALM_WIND, DRY_SECONDS, FIRST_DRY_SECONDS, FLASH_SECONDS, GUST_WIND,
     RAIN_CHANGE_PER_SECOND, RAIN_PEAK, RAIN_SECONDS, RAIN_WIND, STORM_RAIN, STRIKE_GAP_SECONDS,
@@ -280,8 +285,10 @@ pub struct World {
     /// The obstacles of level 1: balloons in the air, huts on the ground.
     pub balloons: Balloons,
     pub huts: Huts,
-    /// The obstacles at the beach.
+    /// The obstacles at the beach: gulls in the air, lifeguard towers in
+    /// the sand.
     pub gulls: Gulls,
+    pub towers: Towers,
     pub weather: Weather,
     /// Volumes of the looping sounds, eased toward what fits the world now.
     pub mix: Mix,
@@ -314,6 +321,7 @@ impl World {
             balloons: Balloons::new(seed),
             huts: Huts::new(seed),
             gulls: Gulls::new(seed),
+            towers: Towers::new(seed),
             weather: Weather::new(seed),
             mix: Mix::SILENT,
             ticks: 0,
@@ -450,6 +458,7 @@ impl World {
         (self.balloons).tick(self.bounds, coast, plane_y, &huts, events);
         let beach = levels.level == BEACH_LEVEL && levels.fade == 0.0;
         self.gulls.tick(self.bounds, beach, &mut self.events);
+        self.towers.tick(self.bounds, beach);
 
         // Crash: the plane as drawn newly overlaps another plane, a
         // balloon, a launch pad, a hut or a gull as drawn. It costs a
@@ -464,7 +473,8 @@ impl World {
             .any(|g| hits(&g.shape(bounds.depth(g.pos.y))))
             || (self.balloons.list.iter()).any(|b| hits(&b.shape(b.size(bounds))))
             || (self.balloons.pads.iter()).any(|p| hits(&p.shape(bounds)))
-            || (self.huts.list.iter()).any(|h| hits(&h.shape(bounds)));
+            || (self.huts.list.iter()).any(|h| hits(&h.shape(bounds)))
+            || (self.towers.list.iter()).any(|t| hits(&t.shape(bounds)));
         let player = &mut self.player;
         if touching && !player.touching && !player.is_crashed() && !player.is_safe() {
             player.crash_ticks = CRASH_TICKS;
@@ -1001,6 +1011,26 @@ mod tests {
             w.tick(&Input::NONE);
             assert!(w.huts.list.is_empty() && w.balloons.pads.is_empty());
         }
+    }
+
+    #[test]
+    fn lifeguard_towers_stand_only_at_the_beach_and_flying_low_hits_them() {
+        let mut w = World::with_seed(PHONE, 5);
+        w.lives = u32::MAX;
+        new_levels(&mut w, LEVEL_SECONDS - 0.1);
+        assert!(w.towers.list.is_empty(), "none in level 1");
+        // At the beach, skimming the sand: a tower comes and is a crash.
+        w.start_level = BEACH_LEVEL;
+        w.ticks = 0;
+        let mut crashes = 0;
+        for _ in 0..(25.0 / TICK_SECONDS) as u32 {
+            w.gulls.list.clear(); // only the towers here
+            w.tick(&Input::new(1.0));
+            if !w.towers.list.is_empty() {
+                crashes += w.events().iter().filter(|e| **e == Event::Crash).count();
+            }
+        }
+        assert!(crashes > 0);
     }
 
     #[test]

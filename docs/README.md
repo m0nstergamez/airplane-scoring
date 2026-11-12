@@ -279,6 +279,12 @@ that isn't code here. Keep entries short and dated.
   (`highscore.rs`): zeros do not count, a tie is no record. Native builds
   keep the list in memory only. Checked in a screenshot (game over with
   one life set locally, not committed).
+- Lifeguard towers at the beach (core `towers.rs`), asked for as "not
+  too many, not too tall": foreground like level 1's huts, one every
+  6–10 s (first after 4 s), 92–112 px tall, 46–56 px wide, 2 looks.
+  Unlike the dropped level 1 towers (tall, every 2–4.5 s), these are
+  rare and low. Exact crash shapes via `Tower::parts` (also used for
+  drawing): legs, ladder, platform, cabin, roof. Checked in screenshots.
 
 ## Concepts
 

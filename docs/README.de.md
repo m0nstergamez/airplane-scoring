@@ -303,6 +303,13 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
   native Version hält die Liste nur im Speicher. Geprüft mit einem
   Screenshot («Game over» mit lokal auf ein Leben gesetztem Wert, nicht
   committet).
+- Strandtürme am Strand (core `towers.rs`), gewünscht als «nicht zu
+  viele, nicht zu hoch»: im Vordergrund wie die Hütten in Level 1, alle
+  6–10 s einer (der erste nach 4 s), 92–112 px hoch, 46–56 px breit, 2
+  Arten. Anders als die verworfenen Türme in Level 1 (hoch, alle 2–4.5 s)
+  sind diese selten und niedrig. Genaue Trefferformen über
+  `Tower::parts` (auch zum Zeichnen): Beine, Leiter, Plattform, Kabine,
+  Dach. Geprüft mit Screenshots.
 
 ## Konzepte
 

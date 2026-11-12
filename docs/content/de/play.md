@@ -84,7 +84,8 @@ erhellen den Himmel, und der Donner folgt. Je weiter weg der Blitz,
 desto später und leiser der Donner.
 
 Berührst du einen Heissluftballon, eine Startrampe oder eine Hütte
-(Level 1) oder eine Möwe (Level 2), gibt es einen **Zusammenstoss**.
+(Level 1) oder eine Möwe oder einen Strandturm (Level 2), gibt es einen
+**Zusammenstoss**.
 Nur eine echte Berührung zählt: Ganz knapp vorbeifliegen oder durch die
 Lücke neben einem Dach ist erlaubt. Beim Zusammenstoss
 raucht dein Flugzeug, fällt und lässt sich einen Moment lang (1,5 Sekunden)
@@ -160,6 +161,11 @@ Am Strand fliegen **Möwen** herum: von vorne, von hinten und vom Sand
 aus nach oben. Flieg nicht in sie hinein. Viele rufen, wenn sie
 auftauchen; Möwen von hinten rufen immer, also hör gut hin.
 
+Ab und zu steht ganz vorne im Sand ein **Strandturm** der Bademeister:
+auf Holzbeinen, mit Leiter und kleiner Kabine. Die Türme sind nicht
+hoch; nur wenn du tief fliegst, musst du über sie steigen. Zwischen den
+Beinen ist Luft, aber es ist sehr eng.
+
 ## Ton
 
 | Du hörst | Wann |
@@ -168,7 +174,7 @@ auftauchen; Möwen von hinten rufen immer, also hör gut hin.
 | Wind | Immer. Lauter bei Regen, in Böen und wenn du sinkst. |
 | Regen | Solange es regnet (erst in späteren Levels). Je stärker der Regen, desto lauter. |
 | Donner | Einen Moment nach jedem Blitz (erst in späteren Levels). |
-| Zusammenstoss | Wenn du einen Ballon, eine Startrampe, eine Hütte oder eine Möwe berührst. |
+| Zusammenstoss | Wenn du einen Ballon, eine Startrampe, eine Hütte, eine Möwe oder einen Strandturm berührst. |
 | Brenner | Wenn ein Heissluftballon auftaucht oder abhebt (Level 1). |
 | Wellen | Am Strand (Level 2). Sie werden mit der Landschaft ein- und ausgeblendet. |
 | Möwe | Wenn eine Möwe auftaucht. Möwen von hinten rufen immer. |

@@ -169,6 +169,11 @@ flowchart LR
   `Gull::shape`) are a few convex polygons with the same points the
   game crate draws. Only a real overlap is a crash; a near miss, or the
   empty corner beside a roof, is not.
+- **Lifeguard towers** (`crates/core/src/towers.rs`) stand in the
+  beach's foreground sand, like the huts in level 1: rare (one every
+  6–10 s) and not tall (92–112 px). `Tower::parts` places legs, ladder,
+  platform, cabin and roof; crashes (`Tower::shape`) and drawing both use
+  it.
 - **Gulls** (`crates/core/src/gulls.rs`) are the beach's obstacles. Core
   decides when and where they appear (seeded, like the weather), moves
   them and checks the crash; a gull that calls sends a `GullCall` event,
@@ -322,6 +327,8 @@ keeps its size relative to the landscape:
 | `BEACH_VOLUME` | `crates/core/src/sound.rs` | how loud the waves and gulls are (0 to 1) |
 | `GULL_GAP_SECONDS` | `crates/core/src/gulls.rs` | shortest and longest time between two gulls |
 | `GULL_SPEED` | `crates/core/src/gulls.rs` | how fast gulls fly (pixels per second) |
+| `TOWER_GAP_SECONDS` | `crates/core/src/towers.rs` | shortest and longest time between two lifeguard towers |
+| `TOWER_HEIGHT` | `crates/core/src/towers.rs` | lowest and highest lifeguard tower (pixels) |
 | `BALLOON_GAP_SECONDS` | `crates/core/src/balloons.rs` | shortest and longest time between two balloons |
 | `BALLOON_RISE` | `crates/core/src/balloons.rs` | how fast balloons rise (pixels per second) |
 | `HUT_GAP_SECONDS` | `crates/core/src/huts.rs` | shortest and longest time between two huts |
