@@ -133,6 +133,13 @@ that isn't code here. Keep entries short and dated.
   `main.rs`) and the "hello plane" text (`World::greeting`, removed) are
   gone. So nothing can crash the player for now; the crash rules stay in
   core with their tests for the obstacles to come.
+- Level sounds: a short rising tune (C-E-G-C, `new-level.wav`) when a
+  new level begins (`Event::NewLevel` from `World::tick`; `World` now
+  keeps `start_level` and offers `levels()`), and a beach loop for
+  level 2 (waves and gulls, `beach.wav`, 8 s, 344 KB) whose volume is
+  `BEACH_VOLUME` times `LevelView::presence(BEACH_LEVEL)`, so it fades
+  with the landscape. Both made by `make-sounds.py`; checked as numbers
+  (seamless loop, two swells per loop) and listened to locally: good.
 
 ## Concepts
 

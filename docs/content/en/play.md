@@ -101,6 +101,8 @@ again.
 | Rain | While it rains. Louder the harder it rains. |
 | Thunder | A moment after each lightning. |
 | Crash | When you touch something (nothing to touch yet). |
+| Waves and gulls | At the beach (level 2). They fade in and out with the landscape. |
+| Tune | When a new level begins. |
 
 Browsers only allow sound after you have touched the page. On a phone
 that is the tap on "Tap to fly"; on a computer the first click or key

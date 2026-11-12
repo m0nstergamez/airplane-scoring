@@ -110,8 +110,8 @@ Sound follows the same split. `core` decides **what** you hear and
 flowchart LR
     subgraph core["crates/core: rules and tests"]
         W["World::tick"]
-        M["Mix: one volume each for<br/>engine idle, engine power, wind, rain"]
-        E["Events:<br/>Crash, Lightning, Thunder"]
+        M["Mix: one volume each for<br/>engine idle, engine power, wind, rain, beach"]
+        E["Events:<br/>Crash, Lightning, Thunder, NewLevel"]
     end
     subgraph game["crates/game: plays"]
         L["Loops play all the time,<br/>set their volume every frame"]
@@ -124,13 +124,17 @@ flowchart LR
     F --> O
 ```
 
-- **Loops** (engine, wind, rain) never stop. Each tick `core` computes a
+- **Loops** (engine, wind, rain, beach) never stop. Each tick `core` computes a
   `Mix` with their volumes; the volumes move a little per tick, so
   nothing clicks.
 - **The engine** is two loops. macroquad 0.4.16 cannot change the pitch
   of a sound, so climbing fades from the idle loop to the power loop.
-- **One-shot sounds** (thunder, crash) are events of one tick. Thunder is
-  its own event because it arrives later than its lightning.
+- **One-shot sounds** (thunder, crash, the tune for a new level) are
+  events of one tick. Thunder is its own event because it arrives later
+  than its lightning.
+- **Sounds of a level** follow its landscape: the beach loop's volume is
+  `BEACH_VOLUME` times how much of level 2 is on screen
+  (`LevelView::presence`), so the waves fade in with the beach.
 - **Weather is random but repeatable:** `World::with_seed` takes a seed;
   the same seed gives the same rain and the same lightning, so tests can
   replay it.
@@ -254,6 +258,7 @@ More numbers you can try:
 | `STORM_RAIN` | `crates/core/src/weather.rs` | how heavy rain must be for lightning (0 to 1) |
 | `STRIKE_GAP_SECONDS` | `crates/core/src/weather.rs` | time between two lightning strikes |
 | `ENGINE_VOLUME` | `crates/core/src/sound.rs` | how loud the engine is (0 to 1) |
+| `BEACH_VOLUME` | `crates/core/src/sound.rs` | how loud the waves and gulls are (0 to 1) |
 | `SCROLL_SPEED` | `crates/core/src/scenery.rs` | how fast the landscape slides past (pixels per second) |
 | `LEVEL_SECONDS` | `crates/core/src/level.rs` | how long one level lasts (seconds) |
 | `LEVEL_FADE_SECONDS` | `crates/core/src/level.rs` | how long the next landscape takes to fade in |

@@ -7,7 +7,7 @@
 //! press; `web/index.html` resumes audio on that gesture (the JS glue's
 //! own unlock misses iPhones; see docs/README.md).
 
-use airplane_scoring_core::{Event, Mix, CRASH_VOLUME};
+use airplane_scoring_core::{Event, Mix, CRASH_VOLUME, NEW_LEVEL_VOLUME};
 use macroquad::audio::{load_sound, play_sound, set_sound_volume, PlaySoundParams, Sound};
 use macroquad::experimental::coroutines::{start_coroutine, Coroutine};
 
@@ -17,8 +17,10 @@ struct Sounds {
     engine_power: Sound,
     wind: Sound,
     rain: Sound,
+    beach: Sound,
     thunder: Sound,
     crash: Sound,
+    new_level: Sound,
 }
 
 impl Sounds {
@@ -39,17 +41,20 @@ impl Sounds {
             engine_power: file("engine-power").await?,
             wind: file("wind").await?,
             rain: file("rain").await?,
+            beach: file("beach").await?,
             thunder: file("thunder").await?,
             crash: file("crash").await?,
+            new_level: file("new-level").await?,
         })
     }
 
-    fn loops(&self, mix: Mix) -> [(&Sound, f32); 4] {
+    fn loops(&self, mix: Mix) -> [(&Sound, f32); 5] {
         [
             (&self.engine_idle, mix.engine_idle),
             (&self.engine_power, mix.engine_power),
             (&self.wind, mix.wind),
             (&self.rain, mix.rain),
+            (&self.beach, mix.beach),
         ]
     }
 }
@@ -93,9 +98,10 @@ impl Audio {
             set_sound_volume(sound, volume);
         }
         if muted && !self.muted {
-            // Cut off a thunder or crash that is still ringing.
+            // Cut off a one-shot sound that is still ringing.
             set_sound_volume(&s.thunder, 0.0);
             set_sound_volume(&s.crash, 0.0);
+            set_sound_volume(&s.new_level, 0.0);
         }
         self.muted = muted;
     }
@@ -109,6 +115,7 @@ impl Audio {
         let (sound, volume) = match event {
             Event::Crash => (&s.crash, CRASH_VOLUME),
             Event::Thunder { volume } => (&s.thunder, volume),
+            Event::NewLevel { .. } => (&s.new_level, NEW_LEVEL_VOLUME),
             Event::Lightning { .. } => return, // seen, not heard
         };
         play_sound(

@@ -136,6 +136,14 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
   (`World::greeting`, entfernt) sind weg. Darum gibt es vorerst keinen
   Zusammenstoss; die Regeln dafür bleiben mit ihren Tests in core, für
   die kommenden Hindernisse.
+- Töne für Levels: eine kurze, aufsteigende Melodie (C-E-G-C,
+  `new-level.wav`), wenn ein neues Level beginnt (`Event::NewLevel` aus
+  `World::tick`; `World` merkt sich jetzt `start_level` und bietet
+  `levels()`), und eine Strand-Schleife für Level 2 (Wellen und Möwen,
+  `beach.wav`, 8 s, 344 KB), deren Lautstärke `BEACH_VOLUME` mal
+  `LevelView::presence(BEACH_LEVEL)` ist, also mit der Landschaft
+  ein- und ausblendet. Beide erzeugt `make-sounds.py`; als Zahlen geprüft
+  (nahtlose Schleife, zwei Wellen pro Schleife) und lokal angehört: gut.
 
 ## Konzepte
 

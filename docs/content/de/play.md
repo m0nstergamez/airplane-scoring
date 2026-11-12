@@ -103,6 +103,8 @@ Nach dem letzten Level beginnt wieder Level 1.
 | Regen | Solange es regnet. Je stärker der Regen, desto lauter. |
 | Donner | Einen Moment nach jedem Blitz. |
 | Zusammenstoss | Wenn du etwas berührst (noch gibt es nichts). |
+| Wellen und Möwen | Am Strand (Level 2). Sie werden mit der Landschaft ein- und ausgeblendet. |
+| Melodie | Wenn ein neues Level beginnt. |
 
 Browser erlauben Ton erst, nachdem du die Seite berührt hast. Auf dem
 Handy ist das der Tipp auf «Tap to fly», am Computer der erste Klick

@@ -281,6 +281,7 @@ mod tests {
                     heard += 1;
                 }
                 Event::Crash => panic!("weather cannot crash a plane"),
+                Event::NewLevel { .. } => panic!("weather does not change levels"),
             }
         }
         assert!(heard > 3, "only {heard} thunders");

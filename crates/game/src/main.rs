@@ -2,8 +2,8 @@
 //! This file should only: read input, call `World::tick`, draw state.
 
 use airplane_scoring_core::{
-    background_x, level_view, pick_steer, scroll_distance, start_level, steer_from_keys,
-    steer_toward, Bounds, Clock, Event, Input, Tilt, World, PLANE_RADIUS, TICK_SECONDS,
+    background_x, pick_steer, scroll_distance, start_level, steer_from_keys, steer_toward, Bounds,
+    Clock, Event, Input, Tilt, World, PLANE_RADIUS, TICK_SECONDS,
 };
 use macroquad::prelude::*;
 
@@ -31,7 +31,6 @@ async fn main() {
     set_pc_assets_folder("web");
     let mut audio = audio::Audio::start();
     let mut scenery = scenery::Scenery::start();
-    let first_level = start_level(page_js::requested_level());
 
     // The seed decides the weather; the clock makes every flight different.
     let seed = (macroquad::miniquad::date::now() * 1000.0) as u64;
@@ -42,6 +41,7 @@ async fn main() {
         },
         seed,
     );
+    world.start_level = start_level(page_js::requested_level());
 
     let mut clock = Clock::default();
     let mut tilt = Tilt::default();
@@ -96,7 +96,7 @@ async fn main() {
             1.0,
         ));
         scenery.update();
-        let levels = level_view(world.ticks, first_level);
+        let levels = world.levels();
         let distance = scroll_distance(world.ticks);
         let mut landscape = false;
         for (level, alpha) in [(levels.level, 1.0), (levels.next, levels.fade)] {

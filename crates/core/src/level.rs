@@ -40,6 +40,22 @@ pub struct LevelView {
     pub banner: f32,
 }
 
+impl LevelView {
+    /// How much of `level` is on screen: 1 = only it, 0 = not at all,
+    /// in between while it fades in or out. Sounds that belong to a level
+    /// (the beach) follow this, so they fade with the landscape.
+    pub fn presence(&self, level: u32) -> f32 {
+        let mut p = 0.0;
+        if self.level == level {
+            p += 1.0 - self.fade;
+        }
+        if self.next == level {
+            p += self.fade;
+        }
+        p
+    }
+}
+
 /// A start level as given from outside (for example `?level=2` in the
 /// URL), made valid: anything outside 1 ..= [`LEVEL_COUNT`] means level 1.
 pub fn start_level(requested: i32) -> u32 {
@@ -156,6 +172,20 @@ mod tests {
             assert_eq!(level_view(start + at(LEVEL_BANNER_SECONDS), 1).banner, 0.0);
         }
         assert_eq!(level_view(at(LEVEL_SECONDS / 2.0), 1).banner, 0.0);
+    }
+
+    #[test]
+    fn presence_follows_the_fade() {
+        let start = level_view(0, 1);
+        assert_eq!((start.presence(1), start.presence(2)), (1.0, 0.0));
+        let half = level_view(at(LEVEL_SECONDS - LEVEL_FADE_SECONDS / 2.0), 1);
+        assert!((half.presence(2) - 0.5).abs() < 0.01);
+        assert!((half.presence(1) + half.presence(2) - 1.0).abs() < 1e-6);
+        let two = level_view(at(LEVEL_SECONDS), 1);
+        assert_eq!((two.presence(1), two.presence(2)), (0.0, 1.0));
+        // Fading back to level 1 at the end of level 2.
+        let back = level_view(at(2.0 * LEVEL_SECONDS - LEVEL_FADE_SECONDS / 2.0), 1);
+        assert!((back.presence(2) - 0.5).abs() < 0.01);
     }
 
     #[test]

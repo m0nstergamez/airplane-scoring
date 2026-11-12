@@ -52,6 +52,9 @@ short **meaning**.
 | stummschalten | mute | `sound_js.rs` | Switch all sound off |
 | Lautsprecher-Knopf | speaker button | `#mute` | Button at the top right for sound on/off |
 | Ereignis | event | `Event` | Something that happened in one tick |
+| Wellen | waves | `beach.wav` | Sea sound at the beach (level 2), with gulls |
+| Möwe | gull | `beach.wav` | Sea bird calling at the beach |
+| Melodie | tune | `Event::NewLevel`, `new-level.wav` | Short rising tune when a new level begins |
 | Startwert | seed | `World::with_seed` | The number that decides the random weather |
 
 ## Pictures and levels
