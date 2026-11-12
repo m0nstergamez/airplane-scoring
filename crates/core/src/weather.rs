@@ -295,6 +295,8 @@ mod tests {
                 | Event::GameOver
                 | Event::NewHighscore
                 | Event::Explosion
+                | Event::Takeoff
+                | Event::GearUp
                 | Event::Overspeed
                 | Event::PullUp => {
                     panic!("not weather")

@@ -93,6 +93,7 @@ with the game blurred behind:
 
 - **Continue:** back to the game. A countdown counts 3, 2, 1; the game
   goes on only at 0, so you are ready.
+- **Restart:** a new flight from the airport, after the same countdown.
 - **Calibrate** (phone only): the way you hold the phone now counts as
   "level" from now on, for steering and for gas.
 - **Options:** switch music (the tunes) and sounds (everything else) on
@@ -230,6 +231,8 @@ legs is open air, but it is very tight.
 | Gull | When a gull appears. Gulls from behind always call. |
 | Tune | When a new level begins. |
 | Fanfare | When you set a new highscore. |
+| Takeoff | Rolling down the runway: the engine spools up and the wheels rumble until the plane lifts off. |
+| Gear | Just after lift-off: a whir while the wheels fold up, then a clunk. |
 | Explosion | When your plane loses its last life. |
 | Overspeed | While you fly too fast: clacking and the voice "Overspeed". |
 | Pull up | While you fly too slow: a whooping tone and the voice "Pull up". |

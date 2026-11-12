@@ -412,6 +412,38 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
   ausführen (`SHOT_EVAL`), damit wurden Menü, Optionen und Countdown auf
   Screenshots geprüft. Die Startseite selbst ist noch die alte; die
   Spielerin bzw. der Spieler beschreibt eine neue.
+- Sanfterer Start, gewünscht: Das Flugzeug rollt länger
+  (`ROLL_SECONDS` 2.5 → 4 s) und steigt weniger steil weg
+  (`CLIMB_OUT_STEER` -0.7 → -0.4, die Nase neigt sich etwa 8° statt
+  14°), dafür etwas länger (`CLIMB_OUT_SECONDS` 1.2 → 2 s), um Höhe zu
+  gewinnen. Ein Test prüft, dass das Wegsteigen unter der halben vollen
+  Neigung bleibt.
+- Startton, gewünscht. Eine erste Version blendete nur die
+  Triebwerk-Schleifen über und fügte ein tiefes Rumpeln unter 200 Hz
+  hinzu; zu hören war kein Unterschied (Handy- und Laptop-Lautsprecher
+  geben so Tiefes kaum wieder). Jetzt startet das Rollen
+  `Event::Takeoff`, einen einzelnen Ton `takeoff.wav`: Das Pfeifen der
+  Turbine steigt über die 4 s Rollen von 450 auf 1800 Hz (die Tonhöhe der
+  Vollgas-Schleife), das Rauschen schwillt an und wird heller; die
+  Triebwerk-Schleifen treten dabei zurück (`Mix::takeoff`) und übernehmen
+  beim Abheben. Das Rollgeräusch (`runway-rumble.wav`) hat helleres
+  Reifenrauschen und Klacken über die Fugen bekommen, ist lauter
+  (`RUMBLE_VOLUME` 0.8) und hört beim Abheben auf. Beide Dateien lokal
+  angehört.
+- Fahrwerk-Geräusch, gewünscht: 0.4 s nach dem Abheben fährt das
+  Fahrwerk in 1 s ein (`World::gear` 1 → 0, gezeichnet als kürzer
+  werdende Streben und kleiner werdende Räder), und `Event::GearUp`
+  spielt `gear-up.wav`: ein hydraulisches Surren, das leicht ansteigt,
+  dann ein Klonk, wenn die Räder einrasten. Lokal angehört; das
+  Einfahren auf Screenshots geprüft.
+- Nach dem Ausprobieren gewünscht: ein Knopf Restart im Pausenmenü (ein
+  neuer Flug vom Flughafen nach dem Countdown 3-2-1; wieder über
+  `page_new_flight`), längeres Rollen (`ROLL_SECONDS` 4 → 6 s, der
+  Startton passend 6.8 s lang) und ein grösseres Flugzeug nahe am Boden,
+  passend zu den Hütten (`PLANE_NEAR_SIZE` 1.8 → 2.4).
+  `World::with_takeoff` stellt das Flugzeug jetzt sofort auf die
+  Startbahn, damit es während des Countdowns nicht in der Luft hängt
+  (auf einem Screenshot gesehen).
 
 ## Konzepte
 
