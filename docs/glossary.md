@@ -66,6 +66,9 @@ short **meaning**.
 | Wellen | waves | `beach.wav` | Sea sound at the beach (level 2) |
 | Heissluftballon | hot-air balloon | `Balloon`, `BalloonWay` | Level 1's obstacle: drifts left while taking off from a launch pad, landing on one, coming at the plane's height, or sinking past; the four ways take turns; envelope and basket both count |
 | Startrampe | launch pad | `Pad` | Flat deck in the grass where balloons take off and land; an obstacle |
+| Menü, Pause | menu, pause | `#menu`, `page_started` | The pause menu (button top left, Esc, P): Continue, Calibrate, Options, Menu. Labels stay English |
+| Countdown | countdown | `#countdown` | 3, 2, 1 before the game goes on after the pause |
+| Musik / Geräusche | music / sounds | `sound_music_on`, `sound_muted` | The two switches in Options: the tunes, and everything else |
 | Flughafen | airport | `Airport`, `World::with_takeoff` | Where every flight starts: runway, control tower, windsock |
 | Startbahn | runway | `RUNWAY_LENGTH`, `ROLL_SECONDS` | The plane rolls on it and lifts off; nothing else stands on it |
 | Hütte | hut | `Hut`, `Huts` | Big wooden hut in level 1's foreground, at the bottom of the screen; an obstacle |

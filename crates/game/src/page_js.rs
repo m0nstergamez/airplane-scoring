@@ -13,6 +13,7 @@ mod imp {
     extern "C" {
         fn page_started() -> i32;
         fn page_level() -> i32;
+        fn page_new_flight() -> u32;
         fn page_highscore(i: i32) -> f64;
         fn page_set_highscore(i: i32, score: f64);
     }
@@ -20,7 +21,14 @@ mod imp {
     /// miniquad checks this against the JS plugin's `version`.
     #[no_mangle]
     pub extern "C" fn page_crate_version() -> u32 {
-        2
+        3
+    }
+
+    /// Bumped by the menu's "Menu" button: set up a fresh flight (the
+    /// start screen is showing again).
+    pub fn new_flight() -> u32 {
+        // SAFETY: plain getter provided by the page's plugin; no pointers.
+        unsafe { page_new_flight() }
     }
 
     pub fn load_highscores(count: usize) -> Vec<u64> {
@@ -59,6 +67,10 @@ mod imp {
         1
     }
 
+    pub fn new_flight() -> u32 {
+        0
+    }
+
     // Native: highscores last until the window closes.
     static HIGHSCORES: std::sync::Mutex<Vec<u64>> = std::sync::Mutex::new(Vec::new());
 
@@ -73,4 +85,4 @@ mod imp {
     }
 }
 
-pub use imp::{load_highscores, requested_level, save_highscores, started};
+pub use imp::{load_highscores, new_flight, requested_level, save_highscores, started};

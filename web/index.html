@@ -99,6 +99,52 @@
     #mute .off, #mute[aria-pressed="true"] .on { display: none; }
     #mute[aria-pressed="true"] .off { display: inline; }
     #mute[aria-pressed="true"] { color: #9aa4b2; }
+
+    /* Menu button, top left (three lines), like the speaker button. */
+    #menu-button {
+      position: fixed; z-index: 8;
+      top: calc(8px + env(safe-area-inset-top)); left: calc(8px + env(safe-area-inset-left));
+      width: 44px; height: 44px; padding: 11px; border: 0; border-radius: 50%;
+      background: rgba(255, 255, 255, 0.1); color: #fff; display: none;
+    }
+    #menu-button svg { width: 100%; height: 100%; display: block; }
+    body.flying #menu-button { display: block; }
+
+    /* The pause menu: over the whole game, which shows blurred behind it. */
+    #menu {
+      display: none; position: fixed; inset: 0; z-index: 9;
+      background: rgba(20, 24, 31, 0.45);
+      -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+      color: #fff; font: 600 18px/1.4 system-ui, sans-serif; text-align: center;
+      align-items: center; justify-content: center;
+    }
+    #menu.open { display: flex; }
+    #menu .panel { display: none; flex-direction: column; align-items: stretch; gap: 12px; min-width: 240px; }
+    #menu .panel.shown { display: flex; }
+    #menu h2 { margin: 0 0 6px; font-size: 28px; letter-spacing: 0.04em; }
+    #menu button {
+      font: 700 20px system-ui, sans-serif; color: #fff; background: rgba(255, 255, 255, 0.14);
+      border: 1px solid rgba(255, 255, 255, 0.25); border-radius: 999px; padding: 11px 32px; cursor: pointer;
+    }
+    #menu button.primary { background: #1f6feb; border-color: #1f6feb; }
+    #menu button.toggle[aria-pressed="false"] { color: #9aa4b2; }
+    #menu .hint { min-height: 1.4em; font-weight: 400; font-size: 15px; opacity: 0.85; }
+    #menu .computer-only { display: none; }
+    @media (pointer: fine) { #menu .phone-only { display: none; } }
+    @media (pointer: coarse) {
+      #menu { padding: 8px calc(16px + env(safe-area-inset-right)) 8px calc(16px + env(safe-area-inset-left)); }
+      #menu .panel { gap: 8px; }
+      #menu h2 { font-size: 22px; margin-bottom: 2px; }
+      #menu button { padding: 8px 28px; font-size: 18px; }
+    }
+
+    /* Countdown before the game goes on. */
+    #countdown {
+      display: none; position: fixed; inset: 0; z-index: 9; pointer-events: none;
+      align-items: center; justify-content: center;
+      color: #ffdc5a; font: 800 120px system-ui, sans-serif; text-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+    }
+    #countdown.on { display: flex; }
   </style>
 </head>
 <body>
@@ -110,6 +156,28 @@
       <path class="off" d="M16 9.5l5 5M21 9.5l-5 5"/>
     </svg>
   </button>
+  <button id="menu-button" type="button" aria-label="Menu (pause)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true">
+      <path d="M4 6.5h16M4 12h16M4 17.5h16"/>
+    </svg>
+  </button>
+  <div id="menu" role="dialog" aria-label="Paused">
+    <div class="panel shown" data-panel="main">
+      <h2>Paused</h2>
+      <button type="button" class="primary" data-action="continue">Continue</button>
+      <button type="button" class="phone-only" data-action="calibrate">Calibrate</button>
+      <button type="button" data-action="options">Options</button>
+      <button type="button" data-action="home">Menu</button>
+      <div class="hint" id="menu-hint"></div>
+    </div>
+    <div class="panel" data-panel="options">
+      <h2>Options</h2>
+      <button type="button" class="toggle" data-action="music" aria-pressed="true">Music: on</button>
+      <button type="button" class="toggle" data-action="sounds" aria-pressed="true">Sounds: on</button>
+      <button type="button" data-action="back">Back</button>
+    </div>
+  </div>
+  <div id="countdown" aria-live="assertive"></div>
   <div id="rotate" role="alert">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
       <rect x="7" y="2" width="10" height="20" rx="2"/><line x1="11" y1="18.5" x2="13" y2="18.5"/>
@@ -195,20 +263,38 @@
     // Sound plugin: the page owns "sound on/off" (button top right, or the
     // M key via the Rust side) and remembers it. The Rust side
     // (crates/game/src/sound_js.rs) asks every frame.
-    const MUTE_KEY = "airplane-scoring.muted";
+    // Two switches (Options in the menu): "Music" (the tunes) and
+    // "Sounds" (everything else). The speaker button and M switch both.
+    const MUTE_KEY = "airplane-scoring.muted"; // older single switch
+    const SOUND_KEY = "airplane-scoring.sound"; // {"music":bool,"sounds":bool}
     const mute = document.getElementById("mute");
-    let muted = false;
-    try { muted = localStorage.getItem(MUTE_KEY) === "1"; } catch (_) { /* private mode: not remembered */ }
-    const showMuted = () => {
-      mute.setAttribute("aria-pressed", String(muted));
-      mute.setAttribute("aria-label", muted ? "Unmute sound" : "Mute sound");
+    let sound = { music: true, sounds: true };
+    try {
+      const stored = JSON.parse(localStorage.getItem(SOUND_KEY) || "null");
+      if (stored) sound = { music: stored.music !== false, sounds: stored.sounds !== false };
+      else if (localStorage.getItem(MUTE_KEY) === "1") sound = { music: false, sounds: false };
+    } catch (_) { /* private mode: not remembered */ }
+    const showSound = () => {
+      const allOff = !sound.music && !sound.sounds;
+      mute.setAttribute("aria-pressed", String(allOff));
+      mute.setAttribute("aria-label", allOff ? "Unmute sound" : "Mute sound");
+      for (const kind of ["music", "sounds"]) {
+        const b = document.querySelector(`#menu [data-action="${kind}"]`);
+        b.setAttribute("aria-pressed", String(sound[kind]));
+        b.textContent = `${kind === "music" ? "Music" : "Sounds"}: ${sound[kind] ? "on" : "off"}`;
+      }
     };
+    const setSound = (next) => {
+      sound = next;
+      try { localStorage.setItem(SOUND_KEY, JSON.stringify(sound)); } catch (_) { /* see above */ }
+      showSound();
+    };
+    // The speaker button and M: all off, or (if anything is off) all on.
     const toggleMute = () => {
-      muted = !muted;
-      try { localStorage.setItem(MUTE_KEY, muted ? "1" : "0"); } catch (_) { /* see above */ }
-      showMuted();
+      const on = !(sound.music || sound.sounds);
+      setSound({ music: on, sounds: on });
     };
-    showMuted();
+    showSound();
     mute.addEventListener("click", () => {
       toggleMute();
       document.getElementById("glcanvas").focus(); // keys keep steering
@@ -216,9 +302,10 @@
 
     miniquad_add_plugin({
       name: "sound",
-      version: 1, // must match sound_crate_version() in sound_js.rs
+      version: 2, // must match sound_crate_version() in sound_js.rs
       register_plugin: (importObject) => {
-        importObject.env.sound_muted = () => (muted ? 1 : 0);
+        importObject.env.sound_muted = () => (sound.sounds ? 0 : 1);
+        importObject.env.sound_music_on = () => (sound.music ? 1 : 0);
         importObject.env.sound_toggle_mute = toggleMute;
       },
     });
@@ -230,6 +317,8 @@
     const params = new URLSearchParams(location.search);
     const requestedLevel = parseInt(params.get("level"), 10) || 1;
     let flying = params.has("play");
+    let paused = false; // the menu is open or counting down
+    let newFlight = 0; // bumped by "Menu": the game starts a fresh flight
     const HIGHSCORE_KEY = "airplane-scoring.highscores";
     let highscores = [];
     try {
@@ -238,9 +327,10 @@
     } catch (_) { /* nothing stored, or private mode */ }
     miniquad_add_plugin({
       name: "page",
-      version: 2, // must match page_crate_version() in page_js.rs
+      version: 3, // must match page_crate_version() in page_js.rs
       register_plugin: (importObject) => {
-        importObject.env.page_started = () => (flying ? 1 : 0);
+        importObject.env.page_started = () => (flying && !paused ? 1 : 0);
+        importObject.env.page_new_flight = () => newFlight;
         importObject.env.page_level = () => requestedLevel;
         // Highscores: just numbers, kept in this browser only (core
         // decides which scores count and their order).
@@ -267,6 +357,7 @@
       }
       recalibrate(); // neutral = how the player holds the phone right now
       flying = true; // the game's clock starts now
+      document.body.classList.add("flying");
       document.getElementById("glcanvas").focus();
     };
     start.querySelector("button").addEventListener("click", fly);
@@ -274,7 +365,69 @@
       const waiting = !start.classList.contains("gone");
       if (waiting && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); fly(); }
     });
-    if (new URLSearchParams(location.search).has("play")) start.classList.add("gone");
+    if (new URLSearchParams(location.search).has("play")) {
+      start.classList.add("gone");
+      document.body.classList.add("flying");
+    }
+
+    // Pause menu: the button top left (or Esc / P) pauses the game and
+    // shows the menu over it. Continue counts 3, 2, 1 before it goes on.
+    const menu = document.getElementById("menu");
+    const countdown = document.getElementById("countdown");
+    const hint = document.getElementById("menu-hint");
+    let counting = null;
+    const show = (panel) => {
+      for (const p of menu.querySelectorAll(".panel")) p.classList.toggle("shown", p.dataset.panel === panel);
+    };
+    const openMenu = () => {
+      if (!flying || menu.classList.contains("open")) return;
+      clearInterval(counting); counting = null; countdown.classList.remove("on");
+      paused = true;
+      hint.textContent = "";
+      show("main");
+      menu.classList.add("open");
+    };
+    const closeMenu = () => {
+      menu.classList.remove("open");
+      let n = 3;
+      countdown.textContent = n;
+      countdown.classList.add("on");
+      counting = setInterval(() => {
+        n -= 1;
+        if (n > 0) { countdown.textContent = n; return; }
+        clearInterval(counting); counting = null;
+        countdown.classList.remove("on");
+        paused = false; // the game goes on
+        document.getElementById("glcanvas").focus();
+      }, 1000);
+    };
+    const toStart = () => {
+      menu.classList.remove("open");
+      paused = false;
+      flying = false; // the clock stops until "Tap to fly"
+      newFlight += 1; // the game sets up a fresh flight
+      document.body.classList.remove("flying");
+      start.classList.remove("gone");
+    };
+    document.getElementById("menu-button").addEventListener("click", openMenu);
+    menu.addEventListener("click", (e) => {
+      const action = e.target.closest("button")?.dataset.action;
+      if (action === "continue") closeMenu();
+      else if (action === "calibrate") {
+        recalibrate(); // the way the phone is held now counts as level
+        hint.textContent = "Calibrated: this is level now";
+      } else if (action === "options") show("options");
+      else if (action === "back") show("main");
+      else if (action === "home") toStart();
+      else if (action === "music") setSound({ ...sound, music: !sound.music });
+      else if (action === "sounds") setSound({ ...sound, sounds: !sound.sounds });
+    });
+    addEventListener("keydown", (e) => {
+      if (e.key !== "Escape" && e.key !== "p" && e.key !== "P") return;
+      if (menu.classList.contains("open")) closeMenu(); else openMenu();
+    });
+    // Leaving the page (another app, another tab) pauses the game.
+    document.addEventListener("visibilitychange", () => { if (document.hidden) openMenu(); });
   </script>
   <script>load("airplane-scoring.wasm");</script>
   <script>
