@@ -289,7 +289,12 @@ mod tests {
                     heard += 1;
                 }
                 Event::Crash => panic!("weather cannot crash a plane"),
-                Event::NewLevel { .. } | Event::GullCall | Event::GameOver => panic!("not weather"),
+                Event::NewLevel { .. }
+                | Event::GullCall
+                | Event::BalloonBurner
+                | Event::GameOver => {
+                    panic!("not weather")
+                }
             }
         }
         assert!(heard > 3, "only {heard} thunders");

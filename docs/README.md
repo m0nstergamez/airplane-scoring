@@ -179,6 +179,25 @@ that isn't code here. Keep entries short and dated.
   flight time there). Ready for the highscore, which comes next.
 - Lifeguard towers in level 1 were built and dropped unmerged (PR #17):
   towers every 2–4.5 s in a row felt illogical.
+- Hot-air balloons (core `balloons.rs`): level 1's obstacles, chosen
+  after the lifeguard towers were dropped. The user plans about 50 levels
+  with level 1 the easiest, so balloons are big, slow and rare: one every
+  5–8 s (first after 2.5 s), coming in from the right in the lower half of
+  the sky, drifting left a little faster than the landscape and rising
+  8–25 px/s. The hit test covers the envelope (radius 30 px) and the
+  basket. A new burner sound (`balloon-burner.wav`, filtered noise with a
+  flutter) plays as each one appears. Own random stream. Checked in a
+  screenshot. Note for later: the gulls in level 2 (every 1.2–2.8 s) are
+  strict for the second-easiest level.
+- Balloons come three ways (`BalloonWay`), asked for after trying them:
+  40 % rise from the lower sky, 30 % come level at the plane's height when
+  they appear (head-on), 30 % sink from the upper sky to land. A balloon
+  at the plane is kept whole on screen.
+- No rain or thunderstorms in level 1 either: rain does not fit the
+  balloons. `RAINY_LEVELS` (core `level.rs`) lists the levels where it may
+  rain, empty for now; `LevelView::rain_room` caps the weather with it,
+  replacing the beach-only cap. The weather keeps running, ready for a
+  later level.
 
 ## Concepts
 

@@ -209,6 +209,23 @@ def gull_call(seconds):
     return out
 
 
+def burner(seed, seconds):
+    """Hot-air balloon burner: a soft roar of gas flame that swells in,
+    holds with a gentle flutter, and dies away."""
+    rng = random.Random(seed)
+    n = int(seconds * RATE)
+    src = noise(rng, n)
+    roar = highpass(lowpass(lowpass(src, 900.0), 900.0), 90.0)
+    hiss = lowpass(highpass(src, 2500.0), 6000.0)
+    out = []
+    for i in range(n):
+        t = i / RATE
+        env = min(1.0, t / 0.15) * min(1.0, (seconds - t) / 0.35)
+        flutter = 0.85 + 0.15 * math.sin(2 * math.pi * 11.0 * t)
+        out.append(env * flutter * (roar[i] + 0.25 * hiss[i]))
+    return out
+
+
 def new_level(seconds):
     """New level: a short rising tune (C, E, G, high C), bright and happy,
     the last note ringing out."""
@@ -234,3 +251,4 @@ if __name__ == "__main__":
     write("beach.wav", beach(7, 8.0), 0.8)
     write("gull-call.wav", gull_call(1.15), 0.8)
     write("new-level.wav", new_level(1.3), 0.8)
+    write("balloon-burner.wav", burner(8, 1.1), 0.8)

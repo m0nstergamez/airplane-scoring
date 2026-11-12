@@ -2,8 +2,9 @@
 //! This file should only: read input, call `World::tick`, draw state.
 
 use airplane_scoring_core::{
-    background_x, pick_steer, scroll_distance, start_level, steer_from_keys, steer_toward, Bounds,
-    Clock, Event, Gull, Input, Tilt, World, LIVES, PLANE_RADIUS, TICK_SECONDS,
+    background_x, pick_steer, scroll_distance, start_level, steer_from_keys, steer_toward, Balloon,
+    Bounds, Clock, Event, Gull, Input, Tilt, World, BALLOON_RADIUS, BASKET_BELOW, LIVES,
+    PLANE_RADIUS, TICK_SECONDS,
 };
 use macroquad::prelude::*;
 
@@ -117,6 +118,10 @@ async fn main() {
             draw_circle(m.pos.x, m.pos.y, PLANE_RADIUS, LIME);
             draw_circle(m.pos.x - 8.0, m.pos.y - 6.0, 4.0, BLACK);
             draw_circle(m.pos.x + 8.0, m.pos.y - 6.0, 4.0, BLACK);
+        }
+
+        for balloon in &world.balloons.list {
+            draw_balloon(balloon);
         }
 
         for gull in &world.gulls.list {
@@ -344,6 +349,78 @@ fn draw_rain(rain: f32, wind: f32, ticks: u64) {
         let len = 10.0 + 8.0 * b as f32;
         draw_line(x, y, x - len * slant, y + len, 1.5, colour);
     }
+}
+
+/// A hot-air balloon: a striped envelope tapering to the burner, ropes
+/// and a wicker basket. Sizes match core's `BALLOON_RADIUS`, `BASKET_BELOW`
+/// and `BASKET_RADIUS`.
+fn draw_balloon(balloon: &Balloon) {
+    let (x, y) = (balloon.pos.x, balloon.pos.y);
+    let r = BALLOON_RADIUS;
+    let (main, stripe) = match balloon.colour {
+        0 => (
+            Color::from_rgba(214, 64, 52, 255),
+            Color::from_rgba(250, 206, 72, 255),
+        ),
+        1 => (
+            Color::from_rgba(40, 104, 196, 255),
+            Color::from_rgba(244, 244, 236, 255),
+        ),
+        2 => (
+            Color::from_rgba(232, 128, 40, 255),
+            Color::from_rgba(122, 64, 150, 255),
+        ),
+        _ => (
+            Color::from_rgba(56, 150, 96, 255),
+            Color::from_rgba(246, 232, 190, 255),
+        ),
+    };
+    let basket_y = y + BASKET_BELOW;
+    let neck_y = y + r * 1.15;
+    // Ropes from the envelope's mouth to the basket.
+    let rope = Color::from_rgba(70, 56, 44, 255);
+    draw_line(x - 7.0, neck_y, x - 7.0, basket_y - 6.0, 1.5, rope);
+    draw_line(x + 7.0, neck_y, x + 7.0, basket_y - 6.0, 1.5, rope);
+    // Envelope: round top, tapering down to the mouth.
+    draw_triangle(
+        vec2(x - r * 0.93, y + r * 0.35),
+        vec2(x + r * 0.93, y + r * 0.35),
+        vec2(x, neck_y + 4.0),
+        main,
+    );
+    draw_ellipse(x, y, r, r * 1.05, 0.0, main);
+    // Stripes: narrower ellipses and the matching wedges below them.
+    for (w, colour) in [(0.62, stripe), (0.3, main)] {
+        draw_ellipse(x, y, r * w, r * 1.05, 0.0, colour);
+        draw_triangle(
+            vec2(x - r * w * 0.93, y + r * 0.35),
+            vec2(x + r * w * 0.93, y + r * 0.35),
+            vec2(x, neck_y + 4.0),
+            colour,
+        );
+    }
+    // Mouth, basket and its rim.
+    draw_rectangle(
+        x - 8.0,
+        neck_y,
+        16.0,
+        4.0,
+        Color::from_rgba(60, 50, 44, 255),
+    );
+    draw_rectangle(
+        x - 8.0,
+        basket_y - 6.0,
+        16.0,
+        13.0,
+        Color::from_rgba(150, 102, 56, 255),
+    );
+    draw_rectangle(
+        x - 9.0,
+        basket_y - 7.0,
+        18.0,
+        3.0,
+        Color::from_rgba(104, 68, 36, 255),
+    );
 }
 
 /// A gull seen from the side, centred on its position, facing where it

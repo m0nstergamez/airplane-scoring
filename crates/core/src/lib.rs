@@ -5,6 +5,7 @@
 /// and calls `tick` zero or more times per frame.
 pub const TICK_SECONDS: f32 = 1.0 / 60.0;
 
+mod balloons;
 mod clock;
 mod gulls;
 mod input;
@@ -14,6 +15,11 @@ mod scenery;
 mod sound;
 mod tilt;
 mod weather;
+pub use balloons::{
+    Balloon, BalloonWay, Balloons, BALLOON_AT_PLANE, BALLOON_COLOURS, BALLOON_GAP_SECONDS,
+    BALLOON_LANDING_HEIGHT, BALLOON_RADIUS, BALLOON_RISE, BALLOON_RISING, BALLOON_START_HEIGHT,
+    BASKET_BELOW, BASKET_RADIUS, FIRST_BALLOON_SECONDS,
+};
 pub use clock::{Clock, MAX_FRAME_SECONDS};
 pub use gulls::{
     Gull, GullStart, Gulls, FIRST_GULL_SECONDS, GULL_BOB, GULL_CALL_CHANCE, GULL_FROM_LEFT,
@@ -22,12 +28,12 @@ pub use gulls::{
 pub use input::{pick_steer, steer_from_keys, steer_toward, Input, TOUCH_EASE_DISTANCE};
 pub use level::{
     level_view, start_level, LevelView, LEVEL_BANNER_SECONDS, LEVEL_COUNT, LEVEL_FADE_SECONDS,
-    LEVEL_SECONDS,
+    LEVEL_SECONDS, RAINY_LEVELS,
 };
 pub use scenery::{background_x, scroll_distance, SCROLL_SPEED};
 pub use sound::{
-    Mix, BEACH_LEVEL, BEACH_VOLUME, CRASH_VOLUME, DIVE_WIND, ENGINE_VOLUME, GULL_CALL_VOLUME,
-    MIX_CHANGE_PER_SECOND, NEW_LEVEL_VOLUME, RAIN_VOLUME, WIND_VOLUME,
+    Mix, BALLOON_BURNER_VOLUME, BEACH_LEVEL, BEACH_VOLUME, CRASH_VOLUME, DIVE_WIND, ENGINE_VOLUME,
+    GULL_CALL_VOLUME, MIX_CHANGE_PER_SECOND, NEW_LEVEL_VOLUME, RAIN_VOLUME, WIND_VOLUME,
 };
 pub use tilt::{Tilt, TILT_DEAD_ZONE_DEG, TILT_FULL_DEG, TILT_MIN_GRAVITY, TILT_SMOOTHING};
 pub use weather::{
@@ -94,6 +100,8 @@ pub enum Event {
     NewLevel { level: u32 },
     /// A gull calls as it appears.
     GullCall,
+    /// A hot-air balloon's burner roars as it appears.
+    BalloonBurner,
     /// The last life is gone: the plane has fallen and the flight is over.
     GameOver,
 }
@@ -167,6 +175,8 @@ pub struct World {
     pub bounds: Bounds,
     pub player: Player,
     pub planes: Vec<Plane>,
+    /// The obstacles of level 1.
+    pub balloons: Balloons,
     /// The obstacles at the beach.
     pub gulls: Gulls,
     pub weather: Weather,
@@ -198,6 +208,7 @@ impl World {
             bounds,
             player,
             planes: Vec::new(),
+            balloons: Balloons::new(seed),
             gulls: Gulls::new(seed),
             weather: Weather::new(seed),
             mix: Mix::SILENT,
@@ -310,12 +321,17 @@ impl World {
             }
         }
 
-        // Gulls fly only while the beach is fully on screen.
+        // Balloons rise only while level 1 is fully on screen, gulls fly
+        // only while the beach is.
         let levels = self.levels();
+        let coast = levels.level == 1 && levels.fade == 0.0;
+        let plane_y = self.player.pos.y;
+        (self.balloons).tick(self.bounds, coast, plane_y, &mut self.events);
         let beach = levels.level == BEACH_LEVEL && levels.fade == 0.0;
         self.gulls.tick(self.bounds, beach, &mut self.events);
 
-        // Crash: the player's plane newly touches another plane or a gull.
+        // Crash: the player's plane newly touches another plane, a balloon
+        // or a gull.
         // It costs a life; a crashed or safe plane cannot crash.
         let player = &mut self.player;
         let near = |pos: Vec2, radius: f32| {
@@ -324,7 +340,8 @@ impl World {
             dx * dx + dy * dy < reach * reach
         };
         let touching = self.planes.iter().any(|m| near(m.pos, PLANE_RADIUS))
-            || self.gulls.list.iter().any(|g| near(g.pos, GULL_RADIUS));
+            || self.gulls.list.iter().any(|g| near(g.pos, GULL_RADIUS))
+            || (self.balloons.list.iter()).any(|b| b.touches(player.pos, PLAYER_HIT_RADIUS));
         if touching && !player.touching && !player.is_crashed() && !player.is_safe() {
             player.crash_ticks = CRASH_TICKS;
             self.lives = self.lives.saturating_sub(1);
@@ -333,9 +350,8 @@ impl World {
         }
         player.touching = touching;
 
-        // The beach is always dry: rain only where level 1 shows.
-        let max_rain = 1.0 - levels.presence(BEACH_LEVEL);
-        self.weather.tick(&mut self.events, max_rain);
+        // Rain (and storms) only where a rainy level shows; none yet.
+        self.weather.tick(&mut self.events, levels.rain_room());
         self.mix = self.mix.approach(
             Mix::target(&self.player, &self.weather, &self.levels()),
             MIX_CHANGE_PER_SECOND * TICK_SECONDS,
@@ -662,6 +678,7 @@ mod tests {
     #[test]
     fn the_beach_fades_into_the_mix_with_level_2() {
         let mut w = world();
+        w.lives = u32::MAX; // balloons must not end the flight
         new_levels(&mut w, LEVEL_SECONDS - LEVEL_FADE_SECONDS);
         assert_eq!(w.mix.beach, 0.0);
         new_levels(&mut w, LEVEL_FADE_SECONDS + 1.0);
@@ -673,25 +690,6 @@ mod tests {
         width: 844.0,
         height: 390.0,
     };
-
-    #[test]
-    fn the_beach_is_dry_and_has_no_thunderstorms() {
-        for seed in 0..8 {
-            let mut w = World::with_seed(PHONE, seed);
-            w.start_level = BEACH_LEVEL;
-            // Until level 1 starts to fade back in.
-            for _ in 0..((LEVEL_SECONDS - LEVEL_FADE_SECONDS) / TICK_SECONDS) as u32 {
-                w.tick(&Input::NONE);
-                assert_eq!(w.weather.rain, 0.0, "seed {seed}");
-                for e in w.events() {
-                    assert!(
-                        !matches!(e, Event::Lightning { .. } | Event::Thunder { .. }),
-                        "seed {seed}: {e:?}"
-                    );
-                }
-            }
-        }
-    }
 
     #[test]
     fn touching_a_gull_is_a_crash() {
@@ -728,6 +726,46 @@ mod tests {
     }
 
     #[test]
+    fn flying_into_a_balloon_is_a_crash() {
+        let mut w = World::with_seed(PHONE, 2);
+        while w.balloons.list.is_empty() {
+            w.tick(&Input::NONE);
+        }
+        // Park the plane right where the balloon will be next tick.
+        let mut ahead = w.clone();
+        ahead.tick(&Input::NONE);
+        let target = ahead.balloons.list[0].pos;
+        w.player.pos.y = target.y;
+        w.bounds.width = target.x / PLAYER_X_FRACTION; // the plane's x follows the width
+        w.tick(&Input::NONE);
+        assert!(w.events().contains(&Event::Crash));
+        assert_eq!(w.lives, LIVES - 1);
+    }
+
+    #[test]
+    fn balloons_rise_in_level_1_and_none_at_the_beach() {
+        let mut w = World::with_seed(PHONE, 3);
+        w.lives = u32::MAX;
+        let mut burners = 0;
+        for _ in 0..((LEVEL_SECONDS - LEVEL_FADE_SECONDS) / TICK_SECONDS) as u32 {
+            w.tick(&Input::NONE);
+            burners += (w.events().iter())
+                .filter(|e| **e == Event::BalloonBurner)
+                .count();
+        }
+        assert!(burners >= 5, "{burners} in level 1");
+        // Past the fade into the beach and its banner: no new balloons, and
+        // the last ones have drifted away.
+        new_levels(&mut w, LEVEL_FADE_SECONDS + 12.0);
+        assert_eq!(w.levels().level, BEACH_LEVEL);
+        assert!(w.balloons.list.is_empty());
+        for _ in 0..(40.0 / TICK_SECONDS) as u32 {
+            w.tick(&Input::NONE);
+            assert!(!w.events().contains(&Event::BalloonBurner));
+        }
+    }
+
+    #[test]
     fn no_gulls_in_level_1() {
         let mut w = world();
         new_levels(&mut w, LEVEL_SECONDS - 0.1);
@@ -735,31 +773,27 @@ mod tests {
     }
 
     #[test]
-    fn thunderstorms_reach_the_world_events_and_the_rain_mix() {
-        let mut w = World::with_seed(
-            Bounds {
-                width: 800.0,
-                height: 400.0,
-            },
-            1,
-        );
-        w.lives = u32::MAX; // keep flying through both levels
-        let (mut lightning, mut thunder, mut loudest_rain) = (0, 0, 0.0_f32);
-        for _ in 0..5 * 3600 {
-            w.tick(&Input::NONE);
-            for e in w.events() {
-                match e {
-                    Event::Lightning { .. } => lightning += 1,
-                    Event::Thunder { .. } => thunder += 1,
-                    // 5 minutes: both levels; at the beach gulls can hit the plane.
-                    Event::Crash | Event::NewLevel { .. } | Event::GullCall => {}
-                    Event::GameOver => panic!("lives cannot run out"),
+    fn no_rain_and_no_thunderstorms_in_any_level() {
+        for seed in 0..4 {
+            let mut w = World::with_seed(PHONE, seed);
+            w.lives = u32::MAX; // keep flying through both levels
+            for _ in 0..5 * 3600 {
+                w.tick(&Input::NONE);
+                assert_eq!((w.weather.rain, w.mix.rain), (0.0, 0.0), "seed {seed}");
+                for e in w.events() {
+                    match e {
+                        Event::Lightning { .. } | Event::Thunder { .. } => {
+                            panic!("seed {seed}: {e:?}")
+                        }
+                        Event::Crash
+                        | Event::NewLevel { .. }
+                        | Event::GullCall
+                        | Event::BalloonBurner => {}
+                        Event::GameOver => panic!("lives cannot run out"),
+                    }
                 }
             }
-            loudest_rain = loudest_rain.max(w.mix.rain);
         }
-        assert!(lightning > 0 && thunder > 0, "{lightning} {thunder}");
-        assert!(loudest_rain >= RAIN_VOLUME * STORM_RAIN);
     }
 
     #[test]
@@ -790,10 +824,12 @@ mod tests {
     fn player_cannot_leave_the_screen() {
         let mut w = world();
         for _ in 0..600 {
+            w.balloons.list.clear(); // only the edges here
             w.tick(&Input::new(-1.0));
         }
         assert_eq!(w.player.pos.y, PLAYER_HALF_HEIGHT);
         for _ in 0..600 {
+            w.balloons.list.clear();
             w.tick(&Input::new(1.0));
         }
         assert_eq!(w.player.pos.y, 50.0 - PLAYER_HALF_HEIGHT);
@@ -808,6 +844,7 @@ mod tests {
         let target = 330.0;
         let mut last = w.player.pos.y;
         for _ in 0..600 {
+            w.balloons.list.clear(); // only the steering here
             let steer = steer_toward(target, w.player.pos.y);
             w.tick(&Input::new(steer));
             let y = w.player.pos.y;
@@ -855,7 +892,7 @@ mod tests {
         let mut logs = [Vec::new(), Vec::new()];
         for (w, log) in [&mut a, &mut b].into_iter().zip(&mut logs) {
             w.spawn_plane("m", Vec2::new(5.0, 5.0), Vec2::new(37.0, 91.0));
-            w.lives = u32::MAX; // long enough for a thunderstorm
+            w.lives = u32::MAX; // long enough for both levels
             for i in 0..10_000 {
                 w.tick(&Input::new(((i % 7) as f32 - 3.0) / 3.0));
                 log.extend_from_slice(w.events());
@@ -863,9 +900,9 @@ mod tests {
         }
         assert_eq!(a, b);
         assert_eq!(logs[0], logs[1]);
-        // The run is long enough to cover crashes and a thunderstorm.
+        // The run is long enough to cover crashes and both levels.
         assert!(logs[0].contains(&Event::Crash));
-        assert!(logs[0].iter().any(|e| matches!(e, Event::Thunder { .. })));
+        assert!(logs[0].contains(&Event::NewLevel { level: 2 }));
     }
 
     #[test]

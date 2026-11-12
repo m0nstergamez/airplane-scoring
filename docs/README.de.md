@@ -189,6 +189,27 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
   als Nächstes kommt.
 - Bademeistertürme in Level 1 wurden gebaut und ohne Merge verworfen
   (PR #17): Alle 2–4.5 s ein Turm hintereinander wirkte unlogisch.
+- Heissluftballone (core `balloons.rs`): die Hindernisse von Level 1,
+  gewählt, nachdem die Bademeistertürme verworfen wurden. Geplant sind
+  etwa 50 Levels mit Level 1 als einfachstem, darum sind die Ballone
+  gross, langsam und selten: alle 5–8 s einer (der erste nach 2.5 s), von
+  rechts in der unteren Hälfte des Himmels, etwas schneller nach links als
+  die Landschaft, steigend mit 8–25 px/s. Getroffen wird man von der Hülle
+  (Radius 30 px) und vom Korb. Ein neuer Brenner-Ton
+  (`balloon-burner.wav`, gefiltertes Rauschen mit Flattern) spielt, wenn
+  einer auftaucht. Eigener Zufallsstrom. Geprüft mit einem Screenshot.
+  Für später: Die Möwen in Level 2 (alle 1.2–2.8 s) sind für das
+  zweitleichteste Level streng.
+- Ballone kommen auf drei Arten (`BalloonWay`), gewünscht nach dem
+  Ausprobieren: 40 % steigen aus dem unteren Himmel auf, 30 % kommen
+  waagrecht auf der Höhe, auf der das Flugzeug beim Auftauchen fliegt
+  (frontal), 30 % sinken aus dem oberen Himmel zum Landen. Ein Ballon auf
+  Flugzeughöhe bleibt ganz im Bild.
+- Auch in Level 1 kein Regen und kein Gewitter mehr: Regen passt nicht zu
+  den Ballonen. `RAINY_LEVELS` (core `level.rs`) listet die Levels, in
+  denen es regnen darf, im Moment leer; `LevelView::rain_room` begrenzt
+  das Wetter damit und ersetzt die Begrenzung nur für den Strand. Das
+  Wetter läuft weiter, bereit für ein späteres Level.
 
 ## Konzepte
 
