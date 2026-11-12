@@ -5,7 +5,7 @@
 #
 # Usage: scripts/shot.sh [out.png] [ms]
 #   out.png  default target/shots/latest.png
-#   ms       virtual time to let the game run before the shot (default 3000)
+#   ms       real time to let the game run after page load (default 3000)
 # Env: CHROME=/path/to/chrome   SIZE=800,450   SKIP_BUILD=1
 #      START=1   show the start screen ("Click to fly"); by default the page
 #                gets "?play" and skips it, so the shot shows the game
@@ -44,12 +44,12 @@ page="?play"
 [ -z "${START:-}" ] || page="?"
 [ -z "${LEVEL:-}" ] || page="$page&level=$LEVEL"
 
-"$chrome" --headless=new --use-angle=swiftshader --enable-unsafe-swiftshader \
-  --window-size="$size" --hide-scrollbars --user-data-dir="$tmpdir/profile" \
-  --virtual-time-budget="$ms" --enable-logging=stderr --v=0 \
-  --screenshot="$out" "http://127.0.0.1:$port/$page" 2>"$tmpdir/chrome.log" >/dev/null
+# Real time, driven over DevTools: --virtual-time-budget does not advance the
+# game loop (requestAnimationFrame), so shots always showed the first ~0.3 s.
+python3 scripts/cdp_shot.py "$chrome" "http://127.0.0.1:$port/$page" "$out" "$size" "$ms" \
+  "$tmpdir/profile" >"$tmpdir/console.log"
 
-console=$(grep 'CONSOLE' "$tmpdir/chrome.log" | sed 's/.*CONSOLE[^]]*\] "//; s/", source: .*//' | awk '!seen[$0]++' || true)
+console=$(awk '!seen[$0]++' "$tmpdir/console.log")
 unexpected=$(printf '%s\n' "$console" | grep -vE "$known" | grep -v '^$' || true)
 
 echo "screenshot: $out"

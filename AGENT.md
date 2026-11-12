@@ -46,7 +46,8 @@ A change is not done until `scripts/check.sh` passes.
 While iterating, `scripts/check.sh --fast` (steps 1–2) takes ~1 s.
 
 Visual checks:
-- `scripts/shot.sh out.png 5000` — custom path, let the game run 5 s first.
+- `scripts/shot.sh out.png 5000` — custom path, let the game run 5 s (real
+  time, via `scripts/cdp_shot.py`) first.
   `SIZE=844,390` = phone in landscape (the main target). Known console noise from the vendored
   JS bundle is filtered in the script; add new noise there, not errors.
 - For interaction (key presses, waiting for a state), use a browser tool
@@ -160,7 +161,7 @@ web/levels/           rendered level backgrounds (PNG, from art/levels)
 web/qr.svg            QR code to the live game (scripts/make-qr.py)
 art/levels/levelN/    background.svg (source) + local photo.* (gitignored)
 .cargo/config.toml    wasm linker flag needed by the audio feature
-scripts/              check.sh, check-docs.sh, check-mermaid.sh, shot.sh, dev.sh, watch.sh, build-web.sh, serve.sh,
+scripts/              check.sh, check-docs.sh, check-mermaid.sh, shot.sh, cdp_shot.py, dev.sh, watch.sh, build-web.sh, serve.sh,
                       docs.sh, vendor-js.sh, make-sounds.py, make-backgrounds.sh, make-qr.py
 docs/                 README.md + README.de.md = project notes (en/de);
                       docs/content/{de,en} = manual;

@@ -159,6 +159,18 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
   Level 1 zu sehen ist; bei 0 gibt es kein Gewitter, und Donner unterwegs
   fällt weg. Die Phasen laufen darunter weiter, also hat Level 1 sein
   Wetter wieder. Grund: Regen passt nicht zur Sonnenuntergangsstimmung.
+- Screenshots liefen viel zu kurz (Fix vom 2026-11-11, heute gemergt):
+  `scripts/shot.sh out.png 5000` zeigte immer etwa 17 Ticks, egal wie
+  lange, weil Chromes `--virtual-time-budget` kaum Animationsbilder
+  erzeugt und die Spielschleife darum fast nicht lief.
+  `scripts/cdp_shot.py` steuert Headless Chrome jetzt über das
+  DevTools-Protokoll (nur Standardbibliothek, kleiner WebSocket-Client):
+  Seite laden, echte Zeit warten, aufnehmen. 8000 ms ergeben jetzt etwa
+  410 Ticks. Ein einfaches `--timeout` gab stattdessen eine schwarze Fläche.
+- `scripts/serve.sh` überspringt `socket.getfqdn()` in
+  `HTTPServer.server_bind`: Mit Homebrews Python 3.14 dauerte diese
+  Rückwärtsabfrage von 127.0.0.1 auf einem Mac 35 s, und jeder Screenshot
+  und jeder Start von `scripts/dev.sh` wartete darauf.
 
 ## Konzepte
 

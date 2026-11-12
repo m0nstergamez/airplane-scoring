@@ -12,8 +12,16 @@ if [ ! -f airplane-scoring.wasm ]; then
 fi
 echo "Serving on http://localhost:$PORT  (Ctrl+C to stop)"
 exec python3 - "$PORT" <<'PY'
+import socketserver
 import sys
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
+
+class Server(ThreadingHTTPServer):
+    def server_bind(self):
+        # HTTPServer.server_bind calls socket.getfqdn(), a reverse DNS lookup
+        # that can stall for ~35 s on macOS (seen with Homebrew Python 3.14).
+        socketserver.TCPServer.server_bind(self)
+        self.server_name, self.server_port = self.server_address[:2]
 
 class NoCache(SimpleHTTPRequestHandler):
     def end_headers(self):
@@ -23,5 +31,5 @@ class NoCache(SimpleHTTPRequestHandler):
     def log_message(self, *args):
         pass  # keep the terminal quiet
 
-ThreadingHTTPServer(("127.0.0.1", int(sys.argv[1])), NoCache).serve_forever()
+Server(("127.0.0.1", int(sys.argv[1])), NoCache).serve_forever()
 PY
