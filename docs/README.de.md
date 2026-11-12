@@ -476,6 +476,25 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
   Options in 844×390 und 1440×900; Complete mit lokal auf 12 gesetztem
   `LEVEL_SECONDS`, nicht committet); ein erster Versuch war auf niedrigen
   Bildschirmen zu eng, darum gibt es dort ein kompaktes Layout.
+- Feinschliff am Hauptmenü, gewünscht: Der Titel sitzt tiefer, zur
+  Mitte hin (11 % der Höhe nach unten, 7 % auf niedrigen Bildschirmen).
+  Handys bekommen unten links eine Hinweis-Box (auf Englisch, wie aller
+  Text im Spiel): wie man steuert, und dass die Kalibrierung wichtig ist
+  (das Handy vor dem Tippen so halten, wie man fliegen will; Calibrate
+  im Pausenmenü, wenn das Flugzeug abdriftet). Eine erste Version unter
+  den Knöpfen machte es dort zu eng, darum ist sie in die Ecke gerückt.
+  Geprüft mit erzwungen sichtbaren Handy-Texten auf einem Screenshot.
+- Spielanleitung, gewünscht: Ein Knopf im Hauptmenü öffnet eine kurze
+  Anleitung auf Englisch (Ziel, Steuerung mit Handy oder Tasten,
+  Tempo-Warnungen, Pause), zweispaltig auf einer dunklen Karte, die auf
+  niedrigen Bildschirmen scrollt. Solange sie offen ist, treten
+  Flugzeug, QR-Code und Hinweise zur Seite, und der Titel rückt hoch
+  (CSS `:has`); ein erster Versuch schnitt Back im Handyformat ab.
+- Behoben: In einem Level verlorene Leben blieben im nächsten verloren
+  (beim Spielen gefunden). `next_level` füllt sie jetzt wieder auf
+  (`lives.max(LIVES)`, damit ein Test mit unbegrenzten Leben sie
+  behält), damit ist auch der Rauch weg. Ein Test verliert in Level 1 ein
+  Leben, landet und prüft, dass Level 2 mit allen 3 beginnt.
 
 ## Konzepte
 

@@ -68,6 +68,7 @@ short **meaning**.
 | Startrampe | launch pad | `Pad` | Flat deck in the grass where balloons take off and land; an obstacle |
 | Menü, Pause | menu, pause | `#menu`, `page_started` | The pause menu (button top left, Esc, P): Continue, Restart, Calibrate, Options, Menu. Labels stay English |
 | Hauptmenü | main menu | `#start` | The start page: title, plane, Tap to fly, Levels, Options |
+| Spielanleitung | how to play | `#start .howto` | The short guide in the main menu: goal, steering, speed, pause. On-screen text stays English |
 | Level-Karte | level map | `#start .map` | Round pictures of each level's landscape on a dashed path |
 | freischalten | unlock | `airplane-scoring.unlocked` | Landing a level opens the next one on the map |
 | Countdown | countdown | `#countdown` | 3, 2, 1 before the game goes on after the pause |

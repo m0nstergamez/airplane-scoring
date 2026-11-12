@@ -15,7 +15,9 @@ Im Hauptmenü gibt es auch **Levels**: eine Karte mit einem runden Bild
 jeder Landschaft, verbunden mit einer gestrichelten Linie. Tippe auf ein
 Level, um dort zu starten. Level 2 ist zuerst gesperrt (grau mit
 Schloss) und wird frei, sobald du Level 1 geschafft hast; das Spiel
-merkt es sich. Unter **Options** schaltest du Musik und Geräusche.
+merkt es sich. Unter **How to play** steht eine kurze Anleitung auf
+Englisch (Ziel, Steuerung, Tempo, Pause), unter **Options** schaltest du
+Musik und Geräusche.
 
 Am Computer zeigt das Hauptmenü auch die Tasten und einen grösseren
 **QR-Code**. Scanne ihn mit der Kamera deines Handys, um das Spiel dort
@@ -158,7 +160,7 @@ Punkte hast du. Mit jedem Punkt wird das Spiel ein ganz kleines bisschen
 **schneller**: Die Landschaft und alles darin kommen schneller daher
 (nach einer Minute etwa 12 %, höchstens 50 % schneller).
 
-Du hast **3 Leben**. Oben rechts, neben dem Lautsprecher-Knopf, zeigt pro
+Du hast **3 Leben**, und jedes neue Level beginnt wieder mit allen 3. Oben rechts, neben dem Lautsprecher-Knopf, zeigt pro
 Leben ein kleines Flugzeug, wie viele du noch hast. Jeder Zusammenstoss kostet ein Leben: Sein Flugzeug
 wird grau und blinkt kurz.
 

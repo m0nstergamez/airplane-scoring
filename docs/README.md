@@ -433,6 +433,22 @@ that isn't code here. Keep entries short and dated.
   1440×900; complete with `LEVEL_SECONDS` 12 locally, not committed); a
   first try was too crowded on a low screen, so low windows get a
   compact layout.
+- Main menu touches, asked for: the title sits lower, towards the middle
+  (11 % of the height down, 7 % on low screens). Phones get a tip box
+  at the bottom left (English, like all on-screen text): how to steer,
+  and that calibration matters (hold the phone the way you will fly
+  before the tap; Calibrate in the pause menu if the plane drifts). A
+  first version under the buttons crowded them, so it moved to the
+  corner. Checked with the phone texts forced on in a screenshot.
+- How to play, asked for: a button in the main menu opens a short guide
+  in English (goal, steering for phone or keys, speed warnings, pause),
+  two columns on a dark card that scrolls on low screens. While it is
+  open the plane, QR code and tips step aside and the title moves up
+  (CSS `:has`); a first try cut off Back on a phone-sized screen.
+- Fixed: lives lost in a level stayed lost in the next one (found while
+  playing). `next_level` now refills them (`lives.max(LIVES)`, so a test
+  with unlimited lives keeps them), which also clears the smoke. A test
+  loses a life in level 1, lands, and checks level 2 starts with all 3.
 
 ## Concepts
 

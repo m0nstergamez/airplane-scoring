@@ -1106,6 +1106,8 @@ impl World {
         self.huts.list.clear();
         self.gulls.list.clear();
         self.towers.list.clear();
+        // A fresh start in every level: all lives back (and so no smoke).
+        self.lives = self.lives.max(LIVES);
         self.player.airspeed = 1.0;
         self.player.vel_y = 0.0;
         self.player.pitch = 0.0;
@@ -1888,6 +1890,29 @@ mod tests {
             w.tick(&Input::NONE);
         }
         panic!("never reached level {level}");
+    }
+
+    #[test]
+    fn a_new_level_starts_with_all_lives_again() {
+        let mut w = world_with_plane_ahead(300.0);
+        crash(&mut w); // one life lost in level 1
+        assert_eq!(w.lives, LIVES - 1);
+        assert!(w.smoke() > 0.0);
+        w.planes.clear();
+        // Fly on to level 2 with nothing to hit on the way.
+        for _ in 0..(3.0 * LEVEL_SECONDS / TICK_SECONDS) as u32 {
+            if w.levels().level == BEACH_LEVEL && w.landing.is_none() {
+                break;
+            }
+            w.balloons.list.clear();
+            w.balloons.pads.clear();
+            w.huts.list.clear();
+            w.go_on();
+            w.tick(&Input::NONE);
+        }
+        assert_eq!(w.levels().level, BEACH_LEVEL);
+        assert_eq!(w.lives, LIVES, "full lives in level 2");
+        assert_eq!(w.smoke(), 0.0, "no smoke either");
     }
 
     #[test]
