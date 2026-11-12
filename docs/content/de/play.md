@@ -20,6 +20,10 @@ Anfang von Level 1.
 
 ## Steuerung
 
+Das Flugzeug reagiert weich: Es nimmt Fahrt nach oben oder unten
+allmählich auf und neigt dabei die Nase, beim Steigen nach oben, beim
+Sinken nach unten, je stärker du steuerst, desto mehr.
+
 Du kannst auf drei Arten steuern. Benutzt du mehrere gleichzeitig,
 gewinnt der Finger, dann die Tasten, dann das Kippen:
 
@@ -57,6 +61,11 @@ xychart-beta
 Zwischen −2° und +2° passiert nichts (so fliegt eine ruhige Hand
 geradeaus), danach wird die Steuerung gleichmässig stärker, und ab 25° ist sie voll.
 
+**Tempo:** Kippst du das Handy nach vorne (obere Kante von dir weg),
+gibst du Gas; kippst du es zu dir, bremst du. Auch hier gilt die
+Haltung beim Start als «gerade»; bis 5° passiert nichts, ab 25° ist es
+voll.
+
 ### Finger (Handy und Computer)
 
 Berühre den Bildschirm und halte den Finger drauf: Das Flugzeug fliegt
@@ -69,6 +78,8 @@ Maustaste gedrückt.
 |---|---|
 | ↑ oder W | steigen |
 | ↓ oder S | sinken |
+| → oder D | schneller (Gas) |
+| ← oder A | langsamer (bremsen) |
 | M | Ton ein oder aus |
 
 ## Wetter und Zusammenstösse
@@ -91,11 +102,30 @@ Lücke neben einem Dach ist erlaubt. Beim Zusammenstoss
 raucht dein Flugzeug, fällt und lässt sich einen Moment lang (1,5 Sekunden)
 nicht steuern. Danach fliegst du wieder.
 
+## Tempo, Overspeed und Pull up
+
+Neben dem Tempo, das mit deinem Score langsam steigt, stellst du selbst
+ein, wie schnell du fliegst. Unten links zeigt die Anzeige «SPEED» dein
+Tempo: gelb ist zu langsam, grün ist gut, rot ist zu schnell. Gibst du
+kein Gas und bremst nicht, kommst du langsam zurück aufs normale Tempo.
+
+- **Zu schnell:** «OVERSPEED» blinkt rot mit einem Countdown, ein
+  Warnton klappert, und eine Stimme sagt «Overspeed». Bremst du nicht
+  innerhalb von 3 Sekunden, bricht das Flugzeug auseinander: Es
+  explodiert, und alle Leben sind auf einmal weg.
+- **Zu langsam:** «PULL UP» blinkt gelb, ein Warnlicht leuchtet, ein
+  Heulton ertönt, und eine Stimme sagt «Pull up». Die Flügel tragen
+  nicht mehr richtig: Das Flugzeug sackt ab, je langsamer, desto mehr.
+  Gib Gas! Schlägst du so am Boden auf, explodiert das Flugzeug, und
+  alle Leben sind auf einmal weg.
+
 ## Punkte und Leben
 
 Oben in der Mitte steht dein **Score** (deine Punkte). Er steigt jede
 Sekunde um 2, solange du fliegst: Je länger du durchhältst, desto mehr
-Punkte hast du.
+Punkte hast du. Mit jedem Punkt wird das Spiel ein ganz kleines bisschen
+**schneller**: Die Landschaft und alles darin kommen schneller daher
+(nach einer Minute etwa 12 %, höchstens 50 % schneller).
 
 Du hast **3 Leben**. Oben rechts, neben dem Lautsprecher-Knopf, zeigt pro
 Leben ein kleines Flugzeug, wie viele du noch hast. Jeder Zusammenstoss kostet ein Leben: Sein Flugzeug
@@ -112,7 +142,8 @@ zweiten wird der Rauch dick und dunkel, und am Heck flackert eine kleine
 Flamme.
 
 Beim letzten Leben **explodiert** dein Flugzeug: ein Feuerball,
-herumfliegende Trümmer und eine Rauchwolke, mit einem lauten Knall.
+herumfliegende Trümmer und eine Rauchwolke, mit einem lauten Knall, und
+der Bildschirm **wackelt**.
 Dann steht **«Game over»** auf dem Bildschirm, zusammen mit deinem Score. Nach einem
 kurzen Moment erscheint «Tap or click to fly again»: Tippe, klicke oder
 drücke Enter, und ein neuer Flug beginnt bei Level 1 mit 3 Leben.
@@ -189,6 +220,8 @@ Beinen ist Luft, aber es ist sehr eng.
 | Melodie | Wenn ein neues Level beginnt. |
 | Fanfare | Wenn du einen neuen Highscore erreichst. |
 | Explosion | Wenn dein Flugzeug sein letztes Leben verliert. |
+| Overspeed | Solange du zu schnell fliegst: Klappern und die Stimme «Overspeed». |
+| Pull up | Solange du zu langsam fliegst: Heulton und die Stimme «Pull up». |
 
 Browser erlauben Ton erst, nachdem du die Seite berührt hast. Auf dem
 Handy ist das der Tipp auf «Tap to fly», am Computer der erste Klick

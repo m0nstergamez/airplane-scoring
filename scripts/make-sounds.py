@@ -6,7 +6,9 @@ so there is no licence to track. The output is deterministic: running
 this again gives the same files. Only needed when you change a sound;
 the .wav files are committed.
 
-Usage: scripts/make-sounds.py            (Python 3, standard library only)
+Usage: scripts/make-sounds.py            (Python 3, standard library only;
+                                          the warning voices also need a
+                                          Mac: they are spoken by "say")
 
 Format: mono, 16 bit, 22050 Hz WAV. WAV is the one format that every
 browser (Web Audio) and the native build (quad-snd) can both decode.
@@ -255,6 +257,67 @@ def explosion(seed, seconds):
     return [x * min(1.0, (seconds - i / RATE) / 0.3) for i, x in enumerate(out)]
 
 
+def overspeed_alarm(seconds):
+    """Overspeed warning: the cockpit "clacker", a hard, fast clicking
+    (about 10 clicks a second) that does not stop. Loops seamlessly: whole
+    clicks per loop."""
+    n = int(seconds * RATE)
+    per = RATE // 10
+    out = [0.0] * n
+    for start in range(0, n, per):
+        for j in range(min(400, n - start)):
+            t = j / RATE
+            # A metallic click: two high tones dying away fast.
+            out[start + j] = math.exp(-t / 0.006) * (
+                math.sin(2 * math.pi * 2300 * t) + 0.6 * math.sin(2 * math.pi * 3500 * t)
+            )
+    return out
+
+
+def stall_alarm(seconds):
+    """Pull-up warning: a "whoop": a tone sweeping up, then a short pause,
+    twice a second. Loops seamlessly."""
+    n = int(seconds * RATE)
+    out, phase = [], 0.0
+    for i in range(n):
+        t = (i / RATE) % 0.5
+        on = t < 0.35
+        hz = 500.0 + 900.0 * (t / 0.35) if on else 500.0
+        phase += 2 * math.pi * hz / RATE
+        env = min(1.0, t / 0.02) * min(1.0, (0.35 - t) / 0.03) if on else 0.0
+        out.append(env * (math.sin(phase) + 0.3 * math.sin(3 * phase)))
+    return out
+
+
+def voice(text):
+    """A warning voice, spoken by macOS's speech ("say", voice "Fred": a
+    classic robotic one, like a real cockpit). Apple licenses its voices
+    for personal use; this was chosen knowingly (see docs/README.md).
+    Needs a Mac to make the file; the game itself does not."""
+    import shutil
+    import subprocess
+    import tempfile
+
+    say, convert = shutil.which("say"), shutil.which("afconvert")
+    if say is None or convert is None:
+        raise SystemExit("The voices are made with macOS's say and afconvert (run on a Mac)")
+    with tempfile.TemporaryDirectory() as tmp:
+        spoken = pathlib.Path(tmp) / "voice.aiff"
+        raw = pathlib.Path(tmp) / "voice.wav"
+        subprocess.run([say, "-v", "Fred", "-r", "175", "-o", str(spoken), text], check=True)
+        subprocess.run(
+            [convert, "-f", "WAVE", "-d", f"LEI16@{RATE}", "-c", "1", str(spoken), str(raw)],
+            check=True,
+        )
+        with wave.open(str(raw), "rb") as f:
+            frames = f.readframes(f.getnframes())
+    xs = [v / 32768 for v in struct.unpack(f"<{len(frames) // 2}h", frames)]
+    # Make it carry over the warning tones: squeeze the loud and soft parts
+    # together (soft compression), so every syllable comes through.
+    top = max(abs(x) for x in xs) or 1.0
+    return [math.tanh(3.0 * x / top) for x in xs]
+
+
 def fanfare(seconds):
     """New highscore: a short brassy fanfare, "ta-ta-ta-taaa", ending on a
     bright chord that rings out. Brass-like: a few strong overtones and a
@@ -310,3 +373,7 @@ if __name__ == "__main__":
     write("balloon-burner.wav", burner(8, 1.1), 0.8)
     write("new-highscore.wav", fanfare(1.8), 0.8)
     write("explosion.wav", explosion(9, 2.5), 0.95)
+    write("warning-overspeed.wav", overspeed_alarm(1.0), 0.7)
+    write("warning-stall.wav", stall_alarm(1.0), 0.7)
+    write("voice-overspeed.wav", voice("Overspeed!"), 0.98)
+    write("voice-pull-up.wav", voice("Pull up!"), 0.98)

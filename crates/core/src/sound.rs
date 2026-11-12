@@ -31,6 +31,10 @@ pub const NEW_LEVEL_VOLUME: f32 = 0.8;
 pub const GULL_CALL_VOLUME: f32 = 0.25;
 /// Volume of a hot-air balloon's burner as it appears: clear, not loud.
 pub const BALLOON_BURNER_VOLUME: f32 = 0.35;
+/// Volume of the overspeed and stall warning tones.
+pub const WARNING_VOLUME: f32 = 0.45;
+/// Volume of the warning voices ("Overspeed", "Pull up").
+pub const VOICE_VOLUME: f32 = 1.0;
 /// Volume of the explosion when the last life goes.
 pub const EXPLOSION_VOLUME: f32 = 1.0;
 /// Volume of the fanfare for a new highscore.
@@ -52,6 +56,10 @@ pub struct Mix {
     pub rain: f32,
     /// Waves and gulls: only at the beach, fading with its landscape.
     pub beach: f32,
+    /// The overspeed warning tone (a fast clacker) while too fast.
+    pub overspeed: f32,
+    /// The stall warning tone (a whooping horn) while too slow.
+    pub stall: f32,
 }
 
 impl Mix {
@@ -61,6 +69,8 @@ impl Mix {
         wind: 0.0,
         rain: 0.0,
         beach: 0.0,
+        overspeed: 0.0,
+        stall: 0.0,
     };
 
     /// The volumes that fit the current state of the plane, the weather
@@ -71,7 +81,9 @@ impl Mix {
         // Throttle: 1 in a full climb, 0.5 flying level, 0 in a full dive.
         // The two engine loops cross-fade with it at constant loudness
         // (macroquad 0.4.16 cannot change a sound's pitch).
-        let throttle = 0.5 - 0.5 * player.steer;
+        // More airspeed sounds like more power too.
+        let gas = (player.airspeed - 1.0) * 0.8;
+        let throttle = (0.5 - 0.5 * player.steer + gas).clamp(0.0, 1.0);
         let angle = throttle * std::f32::consts::FRAC_PI_2;
         // A crashed plane's engine has cut out, and it falls like a dive.
         let (engine, dive) = if player.is_crashed() {
@@ -86,6 +98,16 @@ impl Mix {
             wind: WIND_VOLUME * (weather.wind + DIVE_WIND * dive).clamp(0.0, 1.0),
             rain: RAIN_VOLUME * weather.rain.clamp(0.0, 1.0),
             beach: BEACH_VOLUME * levels.presence(BEACH_LEVEL).clamp(0.0, 1.0),
+            overspeed: if player.is_overspeed() {
+                WARNING_VOLUME
+            } else {
+                0.0
+            },
+            stall: if player.is_stalling() {
+                WARNING_VOLUME
+            } else {
+                0.0
+            },
         }
     }
 
@@ -97,6 +119,8 @@ impl Mix {
             wind: approach(self.wind, target.wind, step),
             rain: approach(self.rain, target.rain, step),
             beach: approach(self.beach, target.beach, step),
+            overspeed: approach(self.overspeed, target.overspeed, step),
+            stall: approach(self.stall, target.stall, step),
         }
     }
 }
@@ -216,6 +240,8 @@ mod tests {
             wind: 0.05,
             rain: 1.0,
             beach: 0.3,
+            overspeed: 0.0,
+            stall: 0.0,
         };
         let m = Mix::SILENT.approach(target, 0.1);
         assert_eq!(
@@ -226,6 +252,8 @@ mod tests {
                 wind: 0.05,
                 rain: 0.1,
                 beach: 0.1,
+                overspeed: 0.0,
+                stall: 0.0,
             }
         );
         let mut m = m;

@@ -10,6 +10,12 @@
 //! - which way the phone was turned into landscape (180° apart),
 //! - iOS vs Android sign conventions (iOS negates the vector: also 180°),
 //! - how far the phone is tipped toward the player.
+//!
+//! Tipping the phone forward (top edge away from you) or back toward you
+//! is the throttle ([`Tilt::lean`]): forward = more speed, back = less.
+//! It uses how far gravity leans out of the screen plane, again relative
+//! to how the phone was held at the start. The page makes the sign of
+//! gravity's z the same on every phone (iOS reports it negated).
 
 /// Rotation (degrees) from neutral that is ignored, so a steady hand flies level.
 pub const TILT_DEAD_ZONE_DEG: f32 = 2.0;
@@ -20,12 +26,18 @@ pub const TILT_FULL_DEG: f32 = 25.0;
 pub const TILT_MIN_GRAVITY: f32 = 3.0;
 /// Per-sample low-pass factor (0..1). Lower = smoother but laggier.
 pub const TILT_SMOOTHING: f32 = 0.25;
+/// Tipping forward or back (degrees from how it was held) that is ignored.
+pub const LEAN_DEAD_ZONE_DEG: f32 = 5.0;
+/// Tipping forward or back (degrees) that gives full throttle or brake.
+pub const LEAN_FULL_DEG: f32 = 25.0;
 
 /// Tilt state: the neutral angle and the smoothed current angle (radians).
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub struct Tilt {
     neutral: Option<f32>,
     angle: f32,
+    lean_neutral: Option<f32>,
+    lean: f32,
 }
 
 impl Tilt {
@@ -33,6 +45,32 @@ impl Tilt {
     /// Call on start and whenever the screen orientation changes.
     pub fn recalibrate(&mut self) {
         self.neutral = None;
+        self.lean_neutral = None;
+    }
+
+    /// The throttle from tipping the phone: feed gravity x, y and z (z with
+    /// the sign the page makes the same everywhere: tipping forward makes
+    /// it grow). Returns -1 (tipped back, brake) .. 1 (tipped forward,
+    /// gas), or `None` when the sample is unusable.
+    pub fn lean(&mut self, gx: f32, gy: f32, gz: f32) -> Option<f32> {
+        if !(gx.is_finite() && gy.is_finite() && gz.is_finite()) {
+            return None;
+        }
+        let along = gx.hypot(gy);
+        if along.hypot(gz) < TILT_MIN_GRAVITY {
+            return None;
+        }
+        let raw = gz.atan2(along);
+        let Some(neutral) = self.lean_neutral else {
+            self.lean_neutral = Some(raw);
+            self.lean = raw;
+            return Some(0.0);
+        };
+        self.lean += (raw - self.lean) * TILT_SMOOTHING;
+        let off = (self.lean - neutral).to_degrees();
+        let strength = ((off.abs() - LEAN_DEAD_ZONE_DEG) / (LEAN_FULL_DEG - LEAN_DEAD_ZONE_DEG))
+            .clamp(0.0, 1.0);
+        Some(strength.copysign(off))
     }
 
     /// Feed one gravity sample (device x/y, any sign convention).
@@ -98,6 +136,53 @@ mod tests {
         let (gx, gy) = gravity(base_deg, 0.0);
         t.update(gx, gy);
         t
+    }
+
+    /// Gravity for a phone held in landscape whose screen faces up by
+    /// `base_deg` (0 = upright, facing you), then tipped `deg` degrees
+    /// forward (top edge away, so the screen faces up more).
+    fn leaning(base_deg: f32, deg: f32) -> (f32, f32, f32) {
+        let a = (base_deg + deg).to_radians();
+        // Upright, gravity lies along device x; facing up moves it into z.
+        (G * a.cos(), 0.0, G * a.sin())
+    }
+
+    fn settle_lean(t: &mut Tilt, (gx, gy, gz): (f32, f32, f32)) -> Option<f32> {
+        let mut s = None;
+        for _ in 0..200 {
+            s = t.lean(gx, gy, gz);
+        }
+        s
+    }
+
+    #[test]
+    fn tipping_forward_is_gas_and_back_is_brake() {
+        let mut t = Tilt::default();
+        let (gx, gy, gz) = leaning(40.0, 0.0);
+        assert_eq!(t.lean(gx, gy, gz), Some(0.0), "held as at the start: none");
+        assert_eq!(settle_lean(&mut t, leaning(40.0, 30.0)), Some(1.0));
+        assert_eq!(settle_lean(&mut t, leaning(40.0, -30.0)), Some(-1.0));
+        assert_eq!(
+            settle_lean(&mut t, leaning(40.0, 3.0)),
+            Some(0.0),
+            "dead zone"
+        );
+        let half = LEAN_DEAD_ZONE_DEG + (LEAN_FULL_DEG - LEAN_DEAD_ZONE_DEG) / 2.0;
+        let s = settle_lean(&mut t, leaning(40.0, half)).unwrap();
+        assert!((s - 0.5).abs() < 0.01, "{s}");
+    }
+
+    #[test]
+    fn leaning_does_not_steer_and_recalibrating_resets_it() {
+        let mut t = Tilt::default();
+        let (gx, gy, gz) = leaning(40.0, 0.0);
+        t.lean(gx, gy, gz);
+        settle_lean(&mut t, leaning(40.0, 30.0));
+        t.recalibrate();
+        let (gx, gy, gz) = leaning(40.0, 30.0);
+        assert_eq!(t.lean(gx, gy, gz), Some(0.0), "the new pose is neutral");
+        assert_eq!(t.lean(f32::NAN, 0.0, 0.0), None);
+        assert_eq!(t.lean(0.1, 0.1, 0.1), None, "free fall / no gravity");
     }
 
     #[test]

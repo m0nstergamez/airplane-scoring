@@ -316,6 +316,8 @@ keeps its size relative to the landscape:
 | `PLANE_NEAR_SIZE` | `crates/core/src/lib.rs` | how big the plane gets near the ground (1 = first design) |
 | `OBJECT_SIZE` | `crates/core/src/lib.rs` | how big the plane and obstacles are drawn and hit (1 = first design, now 0.41): the size up high; smaller leaves more room |
 | `PLAYER_CLIMB_SPEED` | `crates/core/src/lib.rs` | climb/dive speed (pixels per second) |
+| `CLIMB_RESPONSE` | `crates/core/src/lib.rs` | how quickly the plane takes up a climb or dive (smaller = smoother) |
+| `MAX_PITCH_DEG` | `crates/core/src/lib.rs` | how far the nose tilts at full climb or dive (degrees) |
 | `PLAYER_X_FRACTION` | `crates/core/src/lib.rs` | where the plane sits (0.2 = 20 % from the left) |
 | `TILT_FULL_DEG` | `crates/core/src/tilt.rs` | how far to turn the phone for full speed |
 | `TILT_DEAD_ZONE_DEG` | `crates/core/src/tilt.rs` | small turns that are ignored |
@@ -323,6 +325,11 @@ keeps its size relative to the landscape:
 | `CRASH_SECONDS` | `crates/core/src/lib.rs` | how long a crashed plane is out of control |
 | `LIVES` | `crates/core/src/lib.rs` | lives at the start of a flight |
 | `SCORE_PER_SECOND` | `crates/core/src/lib.rs` | how many points each second of flight is worth |
+| `SPEED_PER_POINT` | `crates/core/src/lib.rs` | how much faster the game gets per point (`World::speed`, at most `MAX_SPEED`) |
+| `AIRSPEED_RANGE` | `crates/core/src/lib.rs` | slowest and fastest airspeed you can set (1 = cruising) |
+| `OVERSPEED_AT` | `crates/core/src/lib.rs` | airspeed above which "Overspeed" warns; after `OVERSPEED_SECONDS` it breaks apart |
+| `STALL_AT` | `crates/core/src/lib.rs` | airspeed below which "Pull up" warns and the plane sags (up to `STALL_SINK`) |
+| `SHAKE_PX` | `crates/core/src/lib.rs` | how far the screen shakes at the explosion (`World::shake`) |
 | `HIGHSCORE_COUNT` | `crates/core/src/highscore.rs` | how many best scores are kept |
 | `SAFE_SECONDS` | `crates/core/src/lib.rs` | how long the plane blinks and cannot crash after a crash |
 | `RAIN_SECONDS` | `crates/core/src/weather.rs` | shortest and longest rain |

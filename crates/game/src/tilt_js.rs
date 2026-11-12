@@ -11,19 +11,21 @@ mod imp {
         fn tilt_has_sample() -> i32;
         fn tilt_gx() -> f32;
         fn tilt_gy() -> f32;
+        fn tilt_gz() -> f32;
         fn tilt_epoch() -> u32;
     }
 
     /// miniquad checks this against the JS plugin's `version`.
     #[no_mangle]
     pub extern "C" fn tilt_crate_version() -> u32 {
-        1
+        2
     }
 
-    /// Latest gravity in device x/y (m/s²), once the sensor has reported.
-    pub fn sample() -> Option<(f32, f32)> {
+    /// Latest gravity in device x/y/z (m/s²), once the sensor has
+    /// reported; z with the same sign on every phone (the page sees to it).
+    pub fn sample() -> Option<(f32, f32, f32)> {
         // SAFETY: plain getters provided by the page's tilt plugin; no pointers.
-        unsafe { (tilt_has_sample() != 0).then(|| (tilt_gx(), tilt_gy())) }
+        unsafe { (tilt_has_sample() != 0).then(|| (tilt_gx(), tilt_gy(), tilt_gz())) }
     }
 
     /// Bumped by the page on "tap to fly" and on orientation changes:
@@ -36,7 +38,7 @@ mod imp {
 
 #[cfg(not(target_arch = "wasm32"))]
 mod imp {
-    pub fn sample() -> Option<(f32, f32)> {
+    pub fn sample() -> Option<(f32, f32, f32)> {
         None
     }
 

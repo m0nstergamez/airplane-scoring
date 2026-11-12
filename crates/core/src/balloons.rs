@@ -219,6 +219,9 @@ pub struct Balloons {
     last: Option<BalloonWay>,
     next_ticks: u32,
     rng: Rng,
+    /// The game's speed (1 = normal), so landing balloons still touch
+    /// down in view when everything slides past faster.
+    speed: f32,
 }
 
 impl Balloons {
@@ -229,9 +232,17 @@ impl Balloons {
             bag: Vec::new(),
             last: None,
             next_ticks: ticks(FIRST_BALLOON_SECONDS),
+            speed: 1.0,
             // Its own stream, so balloons do not change the weather or gulls.
             rng: Rng::new(seed ^ 0xBA11_0075_0000_0004),
         }
+    }
+
+    /// How fast the game goes (see `World::speed`). The world moves the
+    /// balloons and pads along for the extra speed; this only plans new
+    /// landings so they still touch down in view.
+    pub fn set_speed(&mut self, speed: f32) {
+        self.speed = speed.max(0.1);
     }
 
     /// The way of the next balloon: a new round of all four, shuffled,
@@ -349,7 +360,7 @@ impl Balloons {
                 let start = r.range(BALLOON_HIGH.0, BALLOON_HIGH.1) * h;
                 let end = Balloon::standing_y(bounds);
                 let at = r.range(TOUCHDOWN_AT.0, TOUCHDOWN_AT.1) * bounds.width;
-                let seconds = (x - at) / ground_speed;
+                let seconds = (x - at) / (ground_speed * self.speed);
                 balloon.pos.y = start;
                 balloon.vel = Vec2::new(-ground_speed, (end - start).max(0.0) / seconds);
                 balloon.touchdown = Some(end);

@@ -133,6 +133,14 @@ pub struct Gulls {
 }
 
 impl Gulls {
+    /// Move every gull by `dx` px (the landscape sliding past faster).
+    pub fn shift(&mut self, dx: f32) {
+        for g in &mut self.list {
+            g.line.x += dx;
+            g.pos.x += dx;
+        }
+    }
+
     pub fn new(seed: u64) -> Self {
         Self {
             list: Vec::new(),

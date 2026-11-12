@@ -3,10 +3,11 @@
 
 use airplane_scoring_core::Vec2 as Vec2Core;
 use airplane_scoring_core::{
-    background_x, pick_steer, scroll_distance, start_level, steer_from_keys, Balloon, Bounds,
-    Clock, Event, Gull, Highscores, Hut, Input, Pad, Tilt, Tower, World, BALLOON_RADIUS,
-    BASKET_BELOW, HIGHSCORE_COUNT, HUT_EAVES, HUT_INSET, LIVES, PAD_HEIGHT, PAD_WIDTH,
-    PLANE_COCKPIT, PLANE_FUSELAGE, PLANE_NOSE, PLANE_RADIUS, PLANE_TAIL, PLANE_WING, TICK_SECONDS,
+    background_x, pick_steer, pick_throttle, start_level, steer_from_keys, Balloon, Bounds, Clock,
+    Event, Gull, Highscores, Hut, Input, Pad, Tilt, Tower, Warning, World, AIRSPEED_RANGE,
+    BALLOON_RADIUS, BASKET_BELOW, HIGHSCORE_COUNT, HUT_EAVES, HUT_INSET, LIVES, OVERSPEED_AT,
+    PAD_HEIGHT, PAD_WIDTH, PLANE_COCKPIT, PLANE_FUSELAGE, PLANE_NOSE, PLANE_RADIUS, PLANE_TAIL,
+    PLANE_WING, STALL_AT, TICK_SECONDS,
 };
 use macroquad::prelude::*;
 
@@ -57,6 +58,11 @@ async fn main() {
             is_key_down(KeyCode::Up) || is_key_down(KeyCode::W),
             is_key_down(KeyCode::Down) || is_key_down(KeyCode::S),
         );
+        // Throttle keys: left/A slower, right/D faster (same maths as up/down).
+        let gas = -steer_from_keys(
+            is_key_down(KeyCode::Right) || is_key_down(KeyCode::D),
+            is_key_down(KeyCode::Left) || is_key_down(KeyCode::A),
+        );
         if tilt_js::epoch() != tilt_epoch {
             tilt_epoch = tilt_js::epoch();
             tilt.recalibrate();
@@ -78,8 +84,10 @@ async fn main() {
             // Recomputed each step: steering toward a finger depends on where
             // the plane is now.
             let pointer = pointer_y.map(|y| world.steer_toward(y));
-            let tilted = gravity.and_then(|(gx, gy)| tilt.update(gx, gy));
-            world.tick(&Input::new(pick_steer(pointer, keys, tilted)));
+            let tilted = gravity.and_then(|(gx, gy, _)| tilt.update(gx, gy));
+            let leaned = gravity.and_then(|(gx, gy, gz)| tilt.lean(gx, gy, gz));
+            let steer = pick_steer(pointer, keys, tilted);
+            world.tick(&Input::with_throttle(steer, pick_throttle(gas, leaned)));
             for &event in world.events() {
                 audio.play(event);
                 if event == Event::Crash || event == Event::Explosion {
@@ -112,12 +120,32 @@ async fn main() {
             0.125 + 0.06 * rain,
             1.0,
         ));
+        // The explosion shakes the landscape and everything in it (not
+        // the score and lives): a camera moved by core's shake, zoomed in
+        // a little so no empty edge shows.
+        let shake = world.shake();
+        if shake.x != 0.0 || shake.y != 0.0 {
+            let (w, h) = (screen_width(), screen_height());
+            let zoom = 1.06;
+            let view = Rect::new(
+                (w - w / zoom) / 2.0 - shake.x,
+                (h - h / zoom) / 2.0 - shake.y,
+                w / zoom,
+                h / zoom,
+            );
+            // `from_display_rect` in macroquad 0.4.16 turns y upwards (the
+            // picture comes out upside down); flip it back to screen y.
+            let mut camera = Camera2D::from_display_rect(view);
+            camera.zoom.y = -camera.zoom.y;
+            set_camera(&camera);
+        }
         scenery.update();
         let levels = world.levels();
         // Core counts the distance at phone size; the picture is scaled to
         // the screen height, so the distance is too.
         let scale = world.bounds.scale();
-        let distance = scroll_distance(world.ticks) * scale as f64;
+        // (`World::distance` grows faster as the game speeds up.)
+        let distance = world.distance * scale as f64;
         // Sizes of what flies come from core's depth (`Bounds::depth`):
         // small up high, big down low, matching the hit boxes.
         let mut landscape = false;
@@ -186,13 +214,15 @@ async fn main() {
                     world.player.pos.x,
                     world.player.pos.y,
                     plane_size,
+                    world.player.pitch, // nose up to climb, down to dive
                     world.player.is_crashed().then_some(world.ticks),
                 );
             }
         }
         draw_rain(rain, world.weather.wind, world.ticks, scale);
 
-        // Lightning lights the whole sky; a crash flashes red.
+        set_default_camera(); // flashes and the score do not shake
+                              // Lightning lights the whole sky; a crash flashes red.
         let (w, h) = (screen_width(), screen_height());
         draw_rectangle(
             0.0,
@@ -224,6 +254,8 @@ async fn main() {
             );
         }
 
+        draw_airspeed(&world);
+        draw_warning(&world);
         draw_lives(&world);
         if world.is_over() {
             draw_game_over(&world, &highscores, result); // shows the score itself
@@ -256,6 +288,82 @@ fn restart_pressed() -> bool {
         || touches().iter().any(|t| t.phase == TouchPhase::Started)
         || is_key_pressed(KeyCode::Enter)
         || is_key_pressed(KeyCode::Space)
+}
+
+/// The airspeed you set with the throttle, bottom left: a bar with the
+/// stall zone (amber), cruising (green) and overspeed (red), and a marker
+/// for the speed now.
+fn draw_airspeed(world: &World) {
+    if world.is_over() {
+        return;
+    }
+    let (w, h) = (screen_width(), screen_height());
+    let s = world.bounds.scale();
+    let (bar_w, bar_h) = (150.0 * s, 8.0 * s);
+    let left = (w * 0.06).max(16.0);
+    let top = h - 22.0 * s;
+    let (lo, hi) = AIRSPEED_RANGE;
+    let at = |v: f32| left + (v - lo) / (hi - lo) * bar_w;
+    let zone = |from: f32, to: f32, colour: Color| {
+        draw_rectangle(at(from), top, at(to) - at(from), bar_h, colour);
+    };
+    zone(lo, STALL_AT, Color::from_rgba(240, 170, 40, 200));
+    zone(STALL_AT, OVERSPEED_AT, Color::from_rgba(70, 180, 90, 200));
+    zone(OVERSPEED_AT, hi, Color::from_rgba(220, 50, 40, 220));
+    draw_rectangle_lines(
+        left,
+        top,
+        bar_w,
+        bar_h,
+        1.5 * s,
+        Color::new(0.0, 0.0, 0.0, 0.5),
+    );
+    // The marker: a little white triangle above the bar.
+    let x = at(world.player.airspeed);
+    draw_triangle(
+        vec2(x, top - 1.0 * s),
+        vec2(x - 5.0 * s, top - 9.0 * s),
+        vec2(x + 5.0 * s, top - 9.0 * s),
+        WHITE,
+    );
+    let label = Color::from_rgba(235, 235, 225, 230);
+    draw_text_on_landscape("SPEED", left, top - 12.0 * s, 16.0 * s, label);
+}
+
+/// The cockpit warnings: a blinking word in the middle, a warning lamp
+/// and the screen's edge glowing. "OVERSPEED" counts down to the break-up.
+fn draw_warning(world: &World) {
+    let Some(warning) = world.warning() else {
+        return;
+    };
+    let (w, h) = (screen_width(), screen_height());
+    let s = world.bounds.scale();
+    let blink = ((get_time() * 4.0) as u64).is_multiple_of(2);
+    let (text, colour) = match warning {
+        Warning::Overspeed { seconds_left } => (
+            format!("OVERSPEED  {:.1}", seconds_left.max(0.0)),
+            Color::from_rgba(255, 60, 40, 255),
+        ),
+        Warning::PullUp => ("PULL UP".to_string(), Color::from_rgba(255, 180, 40, 255)),
+    };
+    // The screen's edge glows in the warning's colour.
+    let alpha = if blink { 0.45 } else { 0.15 };
+    let glow = Color::new(colour.r, colour.g, colour.b, alpha);
+    let edge = 6.0 * s;
+    draw_rectangle(0.0, 0.0, w, edge, glow);
+    draw_rectangle(0.0, h - edge, w, edge, glow);
+    draw_rectangle(0.0, 0.0, edge, h, glow);
+    draw_rectangle(w - edge, 0.0, edge, h, glow);
+    // The warning lamp, top left, and the word in the middle.
+    let lamp = vec2((w * 0.06).max(16.0) + 12.0 * s, 30.0 * s);
+    draw_circle(lamp.x, lamp.y, 11.0 * s, Color::new(0.1, 0.1, 0.1, 0.7));
+    let dim = Color::new(colour.r * 0.4, colour.g * 0.4, colour.b * 0.4, 1.0);
+    draw_circle(lamp.x, lamp.y, 8.0 * s, if blink { colour } else { dim });
+    if blink {
+        let size = 44.0 * s;
+        let dims = measure_text(&text, None, size as u16, 1.0);
+        draw_text_on_landscape(&text, (w - dims.width) / 2.0, h * 0.3, size, colour);
+    }
 }
 
 /// The score, top centre, all game long.
@@ -315,10 +423,11 @@ fn draw_lives(world: &World) {
             x + 2.0,
             y + 2.0,
             scale,
+            0.0,
             Color::new(0.0, 0.0, 0.0, 0.3),
             Color::new(0.0, 0.0, 0.0, 0.3),
         );
-        draw_plane(x, y, scale, body, accent);
+        draw_plane(x, y, scale, 0.0, body, accent);
     }
 }
 
@@ -749,7 +858,7 @@ fn draw_explosion(x: f32, y: f32, size: f32, t: f32) {
 
 /// Side view of a small plane flying right, centred on (x, y), at the
 /// screen's `scale`. `crashed`: the tick count while it is out of control.
-fn draw_player(x: f32, y: f32, scale: f32, crashed: Option<u64>) {
+fn draw_player(x: f32, y: f32, scale: f32, pitch: f32, crashed: Option<u64>) {
     let mut body = WHITE_PLANE;
     let mut accent = BLUE_PLANE;
     if let Some(ticks) = crashed {
@@ -766,14 +875,19 @@ fn draw_player(x: f32, y: f32, scale: f32, crashed: Option<u64>) {
             );
         }
     }
-    draw_plane(x, y, scale, body, accent);
+    draw_plane(x, y, scale, pitch, body, accent);
 }
 
 /// The plane's shape, flying right, centred on (x, y), `scale` times its
 /// size on a phone (the player's plane, and the lives top right).
-fn draw_plane(x: f32, y: f32, scale: f32, body: Color, accent: Color) {
-    // The same parts core uses for crashes (`Player::shape`).
-    let p = |(dx, dy): (f32, f32)| vec2(x + dx * scale, y + dy * scale);
+fn draw_plane(x: f32, y: f32, scale: f32, pitch: f32, body: Color, accent: Color) {
+    // The same parts core uses for crashes (`Player::shape`), turned by
+    // the pitch around the centre.
+    let (sin, cos) = pitch.sin_cos();
+    let p = |(dx, dy): (f32, f32)| {
+        let (dx, dy) = (dx * scale, dy * scale);
+        vec2(x + dx * cos - dy * sin, y + dx * sin + dy * cos)
+    };
     let [a, b, c, d] = PLANE_FUSELAGE.map(p);
     draw_triangle(a, b, c, body);
     draw_triangle(a, c, d, body);

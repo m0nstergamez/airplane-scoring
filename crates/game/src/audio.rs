@@ -9,7 +9,7 @@
 
 use airplane_scoring_core::{
     Event, Mix, BALLOON_BURNER_VOLUME, CRASH_VOLUME, EXPLOSION_VOLUME, GULL_CALL_VOLUME,
-    HIGHSCORE_VOLUME, NEW_LEVEL_VOLUME,
+    HIGHSCORE_VOLUME, NEW_LEVEL_VOLUME, VOICE_VOLUME,
 };
 use macroquad::audio::{load_sound, play_sound, set_sound_volume, PlaySoundParams, Sound};
 use macroquad::experimental::coroutines::{start_coroutine, Coroutine};
@@ -28,6 +28,12 @@ struct Sounds {
     burner: Sound,
     fanfare: Sound,
     explosion: Sound,
+    overspeed_alarm: Sound,
+    stall_alarm: Sound,
+    /// The warning voices are optional: without their files (made with
+    /// espeak-ng), the game still has every other sound.
+    overspeed_voice: Option<Sound>,
+    pull_up_voice: Option<Sound>,
 }
 
 impl Sounds {
@@ -56,16 +62,22 @@ impl Sounds {
             burner: file("balloon-burner").await?,
             fanfare: file("new-highscore").await?,
             explosion: file("explosion").await?,
+            overspeed_alarm: file("warning-overspeed").await?,
+            stall_alarm: file("warning-stall").await?,
+            overspeed_voice: file("voice-overspeed").await,
+            pull_up_voice: file("voice-pull-up").await,
         })
     }
 
-    fn loops(&self, mix: Mix) -> [(&Sound, f32); 5] {
+    fn loops(&self, mix: Mix) -> [(&Sound, f32); 7] {
         [
             (&self.engine_idle, mix.engine_idle),
             (&self.engine_power, mix.engine_power),
             (&self.wind, mix.wind),
             (&self.rain, mix.rain),
             (&self.beach, mix.beach),
+            (&self.overspeed_alarm, mix.overspeed),
+            (&self.stall_alarm, mix.stall),
         ]
     }
 }
@@ -117,6 +129,9 @@ impl Audio {
             set_sound_volume(&s.burner, 0.0);
             set_sound_volume(&s.fanfare, 0.0);
             set_sound_volume(&s.explosion, 0.0);
+            for voice in [&s.overspeed_voice, &s.pull_up_voice].into_iter().flatten() {
+                set_sound_volume(voice, 0.0);
+            }
         }
         self.muted = muted;
     }
@@ -136,6 +151,14 @@ impl Audio {
             Event::Lightning { .. } => return, // seen, not heard
             Event::NewHighscore => (&s.fanfare, HIGHSCORE_VOLUME),
             Event::Explosion => (&s.explosion, EXPLOSION_VOLUME),
+            Event::Overspeed => match &s.overspeed_voice {
+                Some(voice) => (voice, VOICE_VOLUME),
+                None => return,
+            },
+            Event::PullUp => match &s.pull_up_voice {
+                Some(voice) => (voice, VOICE_VOLUME),
+                None => return,
+            },
             Event::GameOver => return, // the crash was the sound
         };
         play_sound(

@@ -34,7 +34,9 @@ pub use huts::{
     Hut, Huts, FIRST_HUT_SECONDS, HUT_EAVES, HUT_GAP_SECONDS, HUT_GROUND, HUT_HEIGHT, HUT_INSET,
     HUT_STYLES, HUT_WIDTH,
 };
-pub use input::{pick_steer, steer_from_keys, steer_toward, Input, TOUCH_EASE_DISTANCE};
+pub use input::{
+    pick_steer, pick_throttle, steer_from_keys, steer_toward, Input, TOUCH_EASE_DISTANCE,
+};
 pub use level::{
     level_view, start_level, LevelView, LEVEL_BANNER_SECONDS, LEVEL_COUNT, LEVEL_FADE_SECONDS,
     LEVEL_SECONDS, RAINY_LEVELS,
@@ -44,9 +46,13 @@ pub use shape::{any_overlap, Poly};
 pub use sound::{
     Mix, BALLOON_BURNER_VOLUME, BEACH_LEVEL, BEACH_VOLUME, CRASH_VOLUME, DIVE_WIND,
     ENGINE_FAR_VOLUME, ENGINE_VOLUME, EXPLOSION_VOLUME, GULL_CALL_VOLUME, HIGHSCORE_VOLUME,
-    MIX_CHANGE_PER_SECOND, NEW_LEVEL_VOLUME, RAIN_VOLUME, WIND_VOLUME,
+    MIX_CHANGE_PER_SECOND, NEW_LEVEL_VOLUME, RAIN_VOLUME, VOICE_VOLUME, WARNING_VOLUME,
+    WIND_VOLUME,
 };
-pub use tilt::{Tilt, TILT_DEAD_ZONE_DEG, TILT_FULL_DEG, TILT_MIN_GRAVITY, TILT_SMOOTHING};
+pub use tilt::{
+    Tilt, LEAN_DEAD_ZONE_DEG, LEAN_FULL_DEG, TILT_DEAD_ZONE_DEG, TILT_FULL_DEG, TILT_MIN_GRAVITY,
+    TILT_SMOOTHING,
+};
 pub use towers::{
     Tower, TowerParts, Towers, FIRST_TOWER_SECONDS, TOWER_FAR_SIZE, TOWER_GAP_SECONDS,
     TOWER_GROUND, TOWER_HEIGHT, TOWER_STYLES, TOWER_WIDTH,
@@ -71,6 +77,42 @@ pub const OBJECT_SIZE: f32 = 0.41;
 /// How big the plane gets near the ground, compared with its first
 /// design (balloons get to 1 there). See [`Bounds::plane_depth`].
 pub const PLANE_NEAR_SIZE: f32 = 1.5;
+
+/// The airspeed you set with the throttle, as a factor on the game's
+/// speed: 1 = cruising, the lowest and the highest you can go.
+pub const AIRSPEED_RANGE: (f32, f32) = (0.5, 2.0);
+/// How fast full throttle changes the airspeed, per second.
+pub const AIRSPEED_CHANGE: f32 = 0.6;
+/// Without throttle the airspeed drifts back toward 1 this fast, per second.
+pub const AIRSPEED_RETURN: f32 = 0.15;
+/// Above this airspeed: "Overspeed" (warning tone and voice). Stay above
+/// it for [`OVERSPEED_SECONDS`] and the plane breaks apart: every life
+/// is gone at once.
+pub const OVERSPEED_AT: f32 = 1.5;
+pub const OVERSPEED_SECONDS: f32 = 3.0;
+/// Below this airspeed the wings lose lift: "Pull up" (warning light,
+/// tone and voice) and the plane sags, more the slower it is, up to
+/// [`STALL_SINK`] px per second at the slowest.
+pub const STALL_AT: f32 = 0.75;
+pub const STALL_SINK: f32 = 180.0;
+/// While a warning lasts, its voice repeats this often, in seconds.
+pub const WARNING_REPEAT_SECONDS: f32 = 1.5;
+/// How long a warning voice speaks, in seconds (the longer one,
+/// "Overspeed!", is about 1.1 s).
+pub const VOICE_SECONDS: f32 = 1.1;
+/// While the voice speaks, its warning tone plays this loud (share).
+pub const VOICE_DUCK: f32 = 0.2;
+
+/// How quickly the plane takes up a new climb or dive: its vertical speed
+/// closes this share of the gap per second (exponentially; full speed
+/// after about a quarter of a second). Smaller is smoother.
+pub const CLIMB_RESPONSE: f32 = 8.0;
+
+/// How far the plane tilts its nose at full climb or dive, in degrees.
+pub const MAX_PITCH_DEG: f32 = 20.0;
+
+/// How quickly the tilt follows, like [`CLIMB_RESPONSE`].
+pub const PITCH_RESPONSE: f32 = 10.0;
 
 /// Vertical speed of the player plane at full steer, in px per second.
 pub const PLAYER_CLIMB_SPEED: f32 = 300.0;
@@ -125,6 +167,17 @@ pub const SCORE_PER_SECOND: u64 = 2;
 /// life lost is an explosion instead.
 pub const DAMAGE_SMOKE: [f32; 3] = [0.0, 0.4, 1.0];
 
+/// How far the screen shakes at the moment of the explosion, in px (on a
+/// phone; it grows with the screen). It fades out over the explosion.
+pub const SHAKE_PX: f32 = 10.0;
+
+/// The game speeds up a little with every point: the landscape and
+/// everything in it slide past this much faster per point (0.1 %: after
+/// a minute, 120 points, about 12 % faster).
+pub const SPEED_PER_POINT: f32 = 0.001;
+/// It never gets faster than this (1 = the start).
+pub const MAX_SPEED: f32 = 1.5;
+
 /// "Game over" shows at least this long before a tap starts again, so a
 /// finger still steering does not skip it.
 pub const RESTART_WAIT_SECONDS: f32 = 1.0;
@@ -152,6 +205,19 @@ pub enum Event {
     NewHighscore,
     /// The last life is gone: the plane explodes (instead of a crash).
     Explosion,
+    /// The plane got too fast: the "Overspeed" voice (also repeats).
+    Overspeed,
+    /// The plane got too slow: the "Pull up" voice (also repeats).
+    PullUp,
+}
+
+/// A cockpit warning on screen.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum Warning {
+    /// Too fast; it breaks apart when `seconds_left` reaches 0.
+    Overspeed { seconds_left: f32 },
+    /// Too slow: the plane sags.
+    PullUp,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -180,6 +246,14 @@ pub struct Player {
     pub pos: Vec2,
     /// The steer value used in the last tick (0 while crashed).
     pub steer: f32,
+    /// Vertical speed, px per second (down is positive). It follows the
+    /// steering smoothly ([`CLIMB_RESPONSE`]).
+    pub vel_y: f32,
+    /// How the plane is tilted, radians: negative = nose up (climbing),
+    /// positive = nose down. Follows `vel_y` ([`MAX_PITCH_DEG`]).
+    pub pitch: f32,
+    /// Airspeed set with the throttle, 1 = cruising ([`AIRSPEED_RANGE`]).
+    pub airspeed: f32,
     /// Ticks left until a crashed plane flies again; 0 = flying.
     pub crash_ticks: u32,
     /// Ticks left of the safe time after a crash; 0 = can crash.
@@ -195,6 +269,9 @@ impl Player {
         Self {
             pos,
             steer: 0.0,
+            vel_y: 0.0,
+            pitch: 0.0,
+            airspeed: 1.0,
             crash_ticks: 0,
             safe_ticks: 0,
             touching: false,
@@ -210,9 +287,14 @@ impl Player {
     /// [`Bounds::plane_depth`]).
     pub fn shape(&self, bounds: Bounds) -> Vec<Poly> {
         let size = bounds.plane_depth(self.pos.y);
-        let at = |points: &[(f32, f32)]| Poly::at(self.pos, size, points);
+        let at = |points: &[(f32, f32)]| Poly::at_turned(self.pos, size, self.pitch, points);
         let ((cx, cy), r) = PLANE_COCKPIT;
-        let cockpit = Vec2::new(self.pos.x + cx * size, self.pos.y + cy * size);
+        let (sin, cos) = self.pitch.sin_cos();
+        let (cx, cy) = (cx * size, cy * size);
+        let cockpit = Vec2::new(
+            self.pos.x + cx * cos - cy * sin,
+            self.pos.y + cx * sin + cy * cos,
+        );
         vec![
             at(&PLANE_FUSELAGE),
             at(&PLANE_NOSE),
@@ -220,6 +302,16 @@ impl Player {
             at(&PLANE_TAIL),
             Poly::ellipse(cockpit, r * size, r * size),
         ]
+    }
+
+    /// Too fast: "Overspeed".
+    pub fn is_overspeed(&self) -> bool {
+        self.airspeed > OVERSPEED_AT && !self.is_crashed()
+    }
+
+    /// Too slow: "Pull up".
+    pub fn is_stalling(&self) -> bool {
+        self.airspeed < STALL_AT && !self.is_crashed()
     }
 
     /// Flying again after a crash, but cannot crash yet (it blinks).
@@ -306,6 +398,12 @@ pub struct World {
     pub lives: u32,
     /// Where the plane blew up when the last life went; `None` before.
     pub explosion: Option<Vec2>,
+    /// How far the landscape has slid past, in px at phone size (it
+    /// speeds up with the score, see [`World::speed`]).
+    pub distance: f64,
+    /// Ticks spent in overspeed / stalling in a row (0 = not now).
+    overspeed_ticks: u32,
+    stall_ticks: u32,
     /// Ticks since the game ended; 0 while flying.
     over_ticks: u32,
     events: Vec<Event>,
@@ -337,6 +435,9 @@ impl World {
             start_level: 1,
             lives: LIVES,
             explosion: None,
+            distance: 0.0,
+            overspeed_ticks: 0,
+            stall_ticks: 0,
             over_ticks: 0,
             events: Vec::new(),
         }
@@ -366,6 +467,96 @@ impl World {
         Some(1.0 - self.player.crash_ticks as f32 / CRASH_TICKS as f32)
     }
 
+    /// How far to shift the landscape and everything in it this tick, in
+    /// screen px: strongest at the explosion's bang, fading to nothing by
+    /// its end; (0, 0) otherwise. The direction jumps around with the
+    /// ticks, so it shakes, and follows from them, so it is repeatable.
+    pub fn shake(&self) -> Vec2 {
+        let Some(t) = self.explosion_progress() else {
+            return Vec2::new(0.0, 0.0);
+        };
+        let strength = SHAKE_PX * self.bounds.scale() * (1.0 - t).powi(2);
+        let k = self.ticks as f32;
+        Vec2::new(
+            strength * (k * 1.7).sin(),
+            strength * 0.7 * (k * 2.3 + 1.0).cos(),
+        )
+    }
+
+    /// How fast the game goes now: 1 at the start, a little faster with
+    /// every point ([`SPEED_PER_POINT`], at most [`MAX_SPEED`]), times the
+    /// airspeed you set with the throttle.
+    pub fn speed(&self) -> f32 {
+        let score = (1.0 + SPEED_PER_POINT * self.score() as f32).min(MAX_SPEED);
+        score * self.player.airspeed
+    }
+
+    /// Is a warning voice speaking now? `ticks`: how long that warning has
+    /// lasted (its voice starts at tick 1 and repeats).
+    fn voice_speaking(&self, ticks: u32) -> bool {
+        if ticks == 0 {
+            return false;
+        }
+        let repeat = (WARNING_REPEAT_SECONDS / TICK_SECONDS).round() as u32;
+        let spoken = (VOICE_SECONDS / TICK_SECONDS).round() as u32;
+        (ticks - 1) % repeat < spoken
+    }
+
+    /// The plane is destroyed at once: it explodes where it is, and every
+    /// life is gone (overspeed for too long, or stalling into the ground).
+    fn break_apart(&mut self) {
+        self.lives = 0;
+        self.player.crash_ticks = CRASH_TICKS;
+        self.player.steer = 0.0;
+        self.explosion = Some(self.player.pos);
+        self.events.push(Event::Explosion);
+    }
+
+    /// Count the time in overspeed and stalling, send their voices when
+    /// they start and every [`WARNING_REPEAT_SECONDS`], and break the plane
+    /// apart after [`OVERSPEED_SECONDS`] of overspeed.
+    fn warnings(&mut self) {
+        let repeat = (WARNING_REPEAT_SECONDS / TICK_SECONDS).round() as u32;
+        let flying = self.explosion.is_none() && !self.is_over();
+        let says = |ticks: u32| ticks >= 1 && (ticks - 1).is_multiple_of(repeat);
+        if flying && self.player.is_overspeed() {
+            self.overspeed_ticks += 1;
+            if says(self.overspeed_ticks) {
+                self.events.push(Event::Overspeed);
+            }
+            if self.overspeed_ticks as f32 * TICK_SECONDS >= OVERSPEED_SECONDS {
+                // Too fast for too long: it breaks apart.
+                self.break_apart();
+                self.overspeed_ticks = 0;
+            }
+        } else {
+            self.overspeed_ticks = 0;
+        }
+        if flying && self.player.is_stalling() {
+            self.stall_ticks += 1;
+            if says(self.stall_ticks) {
+                self.events.push(Event::PullUp);
+            }
+        } else {
+            self.stall_ticks = 0;
+        }
+    }
+
+    /// The warning to show now, if any.
+    pub fn warning(&self) -> Option<Warning> {
+        if self.explosion.is_some() {
+            None
+        } else if self.player.is_overspeed() {
+            let limit = (OVERSPEED_SECONDS / TICK_SECONDS).round() as u32;
+            let left = limit.saturating_sub(self.overspeed_ticks) as f32 * TICK_SECONDS;
+            Some(Warning::Overspeed { seconds_left: left })
+        } else if self.player.is_stalling() {
+            Some(Warning::PullUp)
+        } else {
+            None
+        }
+    }
+
     pub fn is_over(&self) -> bool {
         self.lives == 0 && !self.player.is_crashed()
     }
@@ -386,9 +577,12 @@ impl World {
     /// Steering toward a finger at `target_y` (screen px), from where the
     /// plane is now. Eases off within [`TOUCH_EASE_DISTANCE`], measured at
     /// [`DESIGN_HEIGHT`] like every other size.
+    /// The plane's momentum counts: it aims from where it will soon be,
+    /// so it settles on the finger without shooting past.
     pub fn steer_toward(&self, target_y: f32) -> f32 {
         let scale = self.bounds.scale();
-        steer_toward(target_y / scale, self.player.pos.y / scale)
+        let ahead = self.player.pos.y + self.player.vel_y / CLIMB_RESPONSE;
+        steer_toward(target_y / scale, ahead / scale)
     }
 
     /// What happened in the last tick. Read it after every `tick`:
@@ -424,7 +618,7 @@ impl World {
 
         // A crashed plane ignores the controls and falls until it recovers;
         // then it is safe for a while (with the last life gone, it is over).
-        let fall = if self.player.is_crashed() {
+        let wanted = if self.player.is_crashed() {
             self.player.crash_ticks -= 1;
             self.player.steer = 0.0;
             if self.player.crash_ticks == 0 {
@@ -440,6 +634,44 @@ impl World {
             self.player.steer = input.steer();
             input.steer() * PLAYER_CLIMB_SPEED * scale
         };
+        // Throttle: gas and brake change the airspeed; without, it drifts
+        // back to cruising. A crashed plane cannot be steered at all.
+        let throttle = if self.player.is_crashed() {
+            0.0
+        } else {
+            input.throttle()
+        };
+        let a = &mut self.player.airspeed;
+        if throttle != 0.0 {
+            *a += throttle * AIRSPEED_CHANGE * TICK_SECONDS;
+        } else {
+            let back = AIRSPEED_RETURN * TICK_SECONDS;
+            *a += (1.0 - *a).clamp(-back, back);
+        }
+        *a = a.clamp(AIRSPEED_RANGE.0, AIRSPEED_RANGE.1);
+        // Too slow: the wings lose lift and the plane sags.
+        let wanted = if self.player.is_stalling() {
+            let deep = (STALL_AT - self.player.airspeed) / (STALL_AT - AIRSPEED_RANGE.0);
+            wanted + STALL_SINK * scale * deep.clamp(0.0, 1.0)
+        } else {
+            wanted
+        };
+        self.warnings();
+        // A crashed plane drops at once; otherwise the vertical speed
+        // follows the steering smoothly, and the nose tilts with it.
+        let player = &mut self.player;
+        player.vel_y = if player.is_crashed() {
+            wanted
+        } else {
+            let ease = 1.0 - (-CLIMB_RESPONSE * TICK_SECONDS).exp();
+            player.vel_y + (wanted - player.vel_y) * ease
+        };
+        let full = (PLAYER_CLIMB_SPEED * scale).max(1e-3);
+        let max_pitch = MAX_PITCH_DEG.to_radians();
+        let tilt = (player.vel_y / full).clamp(-1.0, 1.0) * max_pitch;
+        let ease = 1.0 - (-PITCH_RESPONSE * TICK_SECONDS).exp();
+        player.pitch += (tilt - player.pitch) * ease;
+        let fall = player.vel_y;
         // The plane is small up high and big down low (depth), so it
         // reaches each edge with its size there.
         let top = PLAYER_HALF_HEIGHT * self.bounds.plane_depth(0.0);
@@ -451,7 +683,16 @@ impl World {
         } else {
             height / 2.0 // too small to fly in; never panic in clamp
         };
+        let hit_ground = y > p.y; // stopped by the bottom edge
+        let at_edge = p.y != y;
         p.x = width * PLAYER_X_FRACTION; // follow resizes / rotation
+        if at_edge {
+            self.player.vel_y = 0.0; // at the edge: no speed piles up
+        }
+        // Sagging without lift into the ground: it crashes and explodes.
+        if hit_ground && self.player.is_stalling() && self.explosion.is_none() {
+            self.break_apart();
+        }
         for m in &mut self.planes {
             m.pos.x += m.vel.x * TICK_SECONDS;
             m.pos.y += m.vel.y * TICK_SECONDS;
@@ -481,11 +722,26 @@ impl World {
         let pads: Vec<f32> = self.balloons.pads.iter().map(|p| p.x).collect();
         self.huts.tick(self.bounds, coast, &pads);
         let huts: Vec<f32> = self.huts.list.iter().map(|h| h.x).collect();
+        let speed = self.speed();
+        self.balloons.set_speed(speed);
         let events = &mut self.events;
         (self.balloons).tick(self.bounds, coast, plane_y, &huts, events);
         let beach = levels.level == BEACH_LEVEL && levels.fade == 0.0;
         self.gulls.tick(self.bounds, beach, &mut self.events);
         self.towers.tick(self.bounds, beach);
+        // Faster than at the start: everything slides past by the extra
+        // too (far towers less, as they move slower).
+        self.distance += (SCROLL_SPEED * speed * TICK_SECONDS) as f64;
+        let extra = (speed - 1.0) * SCROLL_SPEED * scale * TICK_SECONDS;
+        if extra > 0.0 {
+            self.huts.list.iter_mut().for_each(|h| h.x -= extra);
+            self.balloons.pads.iter_mut().for_each(|p| p.x -= extra);
+            self.balloons.list.iter_mut().for_each(|b| b.pos.x -= extra);
+            for t in &mut self.towers.list {
+                t.x -= extra * t.size(self.bounds) / scale;
+            }
+            self.gulls.shift(-extra);
+        }
 
         // Crash: the plane as drawn newly overlaps another plane, a
         // balloon, a launch pad, a hut or a gull as drawn. It costs a
@@ -519,15 +775,22 @@ impl World {
 
         // Rain (and storms) only where a rainy level shows; none yet.
         self.weather.tick(&mut self.events, levels.rain_room());
-        self.mix = self.mix.approach(
-            Mix::target(
-                &self.player,
-                &self.weather,
-                &self.levels(),
-                self.bounds.nearness(self.player.pos.y),
-            ),
-            MIX_CHANGE_PER_SECOND * TICK_SECONDS,
+        let mut target = Mix::target(
+            &self.player,
+            &self.weather,
+            &self.levels(),
+            self.bounds.nearness(self.player.pos.y),
         );
+        // While a warning voice speaks, its tone steps back so the words
+        // come through (like a real cockpit).
+        if self.voice_speaking(self.stall_ticks) {
+            target.stall *= VOICE_DUCK;
+        }
+        if self.voice_speaking(self.overspeed_ticks) {
+            target.overspeed *= VOICE_DUCK;
+        }
+        let step = MIX_CHANGE_PER_SECOND * TICK_SECONDS;
+        self.mix = self.mix.approach(target, step);
         let level = self.levels().level;
         self.ticks += 1;
         let now = self.levels().level;
@@ -768,6 +1031,231 @@ mod tests {
             w.tick(&Input::NONE);
         }
         assert_eq!(w.explosion_progress(), Some(1.0));
+    }
+
+    #[test]
+    fn the_game_speeds_up_a_little_with_every_point() {
+        let mut w = World::new(PHONE);
+        w.lives = u32::MAX;
+        assert_eq!(w.speed(), 1.0);
+        let step = |w: &mut World| {
+            let d = w.distance;
+            w.tick(&Input::NONE);
+            w.distance - d
+        };
+        let start = step(&mut w);
+        assert!((start - (SCROLL_SPEED * TICK_SECONDS) as f64).abs() < 1e-6);
+        // A minute later (120 points): 12 % faster, only a little.
+        w.ticks = 60 * 60; // one minute of ticks
+        assert_eq!(w.score(), 120);
+        assert!((w.speed() - 1.12).abs() < 1e-5, "{}", w.speed());
+        let later = step(&mut w);
+        assert!((later / start - w.speed() as f64).abs() < 0.01);
+        // It stops getting faster.
+        w.ticks = 3600 * 60; // an hour
+        assert_eq!(w.speed(), MAX_SPEED);
+    }
+
+    #[test]
+    fn faster_means_huts_and_gulls_come_by_faster_too() {
+        let moved = |ticks: u64| {
+            let mut w = World::new(PHONE);
+            w.lives = u32::MAX;
+            w.ticks = ticks;
+            w.huts.list.push(Hut {
+                x: 600.0,
+                width: 100.0,
+                height: 90.0,
+                style: 0,
+            });
+            w.tick(&Input::NONE);
+            600.0 - w.huts.list[0].x
+        };
+        let (slow, fast) = (moved(0), moved(60 * 60));
+        assert!((fast / slow - 1.12).abs() < 0.01, "{slow} {fast}");
+    }
+
+    /// Fly with a throttle (and level steering) for `seconds`, nothing to
+    /// hit; returns every event.
+    fn throttle(w: &mut World, gas: f32, seconds: f32) -> Vec<Event> {
+        let mut all = Vec::new();
+        for _ in 0..(seconds / TICK_SECONDS).round() as u32 {
+            w.balloons.list.clear();
+            w.huts.list.clear();
+            w.tick(&Input::with_throttle(0.0, gas));
+            all.extend_from_slice(w.events());
+        }
+        all
+    }
+
+    #[test]
+    fn gas_and_brake_change_the_airspeed_and_it_drifts_back() {
+        let mut w = open_sky();
+        assert_eq!(w.player.airspeed, 1.0);
+        throttle(&mut w, 1.0, 0.5);
+        assert!((w.player.airspeed - (1.0 + 0.5 * AIRSPEED_CHANGE)).abs() < 0.01);
+        assert!(
+            (w.speed() - w.player.airspeed).abs() < 0.01,
+            "the game goes faster"
+        );
+        throttle(&mut w, 0.0, 10.0);
+        assert!((w.player.airspeed - 1.0).abs() < 1e-4, "back to cruising");
+        throttle(&mut w, -1.0, 0.5);
+        assert!(w.player.airspeed < 1.0);
+        throttle(&mut w, 1.0, 2.5); // (before overspeed breaks it apart)
+        assert_eq!(
+            w.player.airspeed, AIRSPEED_RANGE.1,
+            "never faster than the top"
+        );
+    }
+
+    #[test]
+    fn overspeed_warns_counts_down_and_breaks_the_plane_apart() {
+        let mut w = open_sky();
+        w.lives = LIVES;
+        // Gas until overspeed: it says so once.
+        let to_limit = (OVERSPEED_AT - 1.0) / AIRSPEED_CHANGE;
+        let events = throttle(&mut w, 1.0, to_limit + 0.1);
+        assert_eq!(events.iter().filter(|e| **e == Event::Overspeed).count(), 1);
+        let Some(Warning::Overspeed { seconds_left }) = w.warning() else {
+            panic!("{:?}", w.warning())
+        };
+        assert!(seconds_left > OVERSPEED_SECONDS - 0.2 && seconds_left <= OVERSPEED_SECONDS);
+        assert!(w.mix.overspeed > 0.0, "the warning tone");
+        // Keep the gas on: the voice repeats, then it breaks apart.
+        let events = throttle(&mut w, 1.0, OVERSPEED_SECONDS + 0.1);
+        assert!(events.iter().filter(|e| **e == Event::Overspeed).count() >= 1);
+        assert!(events.contains(&Event::Explosion), "{events:?}");
+        assert_eq!(w.lives, 0, "every life gone at once");
+        assert!(w.explosion.is_some());
+        throttle(&mut w, 0.0, CRASH_SECONDS + 0.1);
+        assert!(w.is_over());
+    }
+
+    #[test]
+    fn braking_out_of_overspeed_in_time_saves_the_plane() {
+        let mut w = open_sky();
+        w.lives = LIVES;
+        throttle(&mut w, 1.0, (OVERSPEED_AT - 1.0) / AIRSPEED_CHANGE + 0.1);
+        assert!(matches!(w.warning(), Some(Warning::Overspeed { .. })));
+        let events = throttle(&mut w, -1.0, 1.0);
+        assert!(!events.contains(&Event::Explosion));
+        assert_eq!(w.warning(), None);
+        assert_eq!(w.lives, LIVES);
+        // Going over again starts the count from the beginning.
+        let events = throttle(&mut w, 1.0, 1.5);
+        assert!(events.contains(&Event::Overspeed));
+        let Some(Warning::Overspeed { seconds_left }) = w.warning() else {
+            panic!()
+        };
+        assert!(seconds_left > 1.5, "{seconds_left}");
+    }
+
+    #[test]
+    fn the_warning_tone_steps_back_while_the_voice_speaks() {
+        let mut w = open_sky();
+        let to_stall = (1.0 - STALL_AT) / AIRSPEED_CHANGE;
+        throttle(&mut w, -1.0, to_stall + 0.3); // the voice just started
+        assert!(w.mix.stall > 0.0);
+        assert!(
+            w.mix.stall <= WARNING_VOLUME * VOICE_DUCK + 1e-3,
+            "{}",
+            w.mix.stall
+        );
+        // After the words, the tone is back to full, before the next call.
+        let mut full = 0.0_f32;
+        for _ in 0..(WARNING_REPEAT_SECONDS / TICK_SECONDS) as u32 {
+            w.tick(&Input::with_throttle(-1.0, -1.0)); // pull up, keep braking
+            full = full.max(w.mix.stall);
+        }
+        assert!((full - WARNING_VOLUME).abs() < 1e-3, "{full}");
+    }
+
+    #[test]
+    fn stalling_into_the_ground_blows_the_plane_up() {
+        let mut w = open_sky();
+        w.lives = LIVES;
+        let mut events = Vec::new();
+        // Brake and keep braking: it sags all the way down.
+        for _ in 0..(6.0 / TICK_SECONDS) as u32 {
+            w.balloons.list.clear();
+            w.huts.list.clear();
+            w.tick(&Input::with_throttle(0.0, -1.0));
+            events.extend_from_slice(w.events());
+            if w.explosion.is_some() {
+                break;
+            }
+        }
+        assert!(events.contains(&Event::PullUp));
+        assert!(events.contains(&Event::Explosion), "it hit the ground");
+        assert_eq!(w.lives, 0, "every life gone at once");
+    }
+
+    #[test]
+    fn diving_to_the_ground_at_normal_speed_is_no_crash() {
+        let mut w = open_sky();
+        w.lives = LIVES;
+        fly(&mut w, 1.0, 3.0);
+        assert_eq!(w.explosion, None);
+        assert_eq!(w.lives, LIVES);
+    }
+
+    #[test]
+    fn too_slow_says_pull_up_and_the_plane_sags() {
+        let mut w = open_sky();
+        let y = w.player.pos.y;
+        let to_stall = (1.0 - STALL_AT) / AIRSPEED_CHANGE;
+        let events = throttle(&mut w, -1.0, to_stall + 0.1);
+        assert_eq!(events.iter().filter(|e| **e == Event::PullUp).count(), 1);
+        assert_eq!(w.warning(), Some(Warning::PullUp));
+        assert!(w.mix.stall > 0.0, "the warning tone");
+        throttle(&mut w, -1.0, 0.4);
+        assert!(
+            w.player.vel_y > 0.0 && w.player.pos.y > y,
+            "sags without steering"
+        );
+        // Keep braking but pull up hard (so it does not hit the ground).
+        let mut events = Vec::new();
+        for _ in 0..(WARNING_REPEAT_SECONDS / TICK_SECONDS).round() as u32 + 1 {
+            w.tick(&Input::with_throttle(-1.0, -1.0));
+            events.extend_from_slice(w.events());
+        }
+        assert!(events.contains(&Event::PullUp), "the voice repeats");
+        assert_eq!(w.explosion, None);
+        // Gas: the warning stops and it flies level again.
+        throttle(&mut w, 1.0, 1.0);
+        assert_eq!(w.warning(), None);
+        assert!(w.player.airspeed >= STALL_AT);
+    }
+
+    #[test]
+    fn the_screen_shakes_at_the_explosion_and_calms_down() {
+        let mut w = world_with_plane_ahead(300.0);
+        w.lives = 1;
+        assert_eq!(w.shake(), Vec2::new(0.0, 0.0), "no shake while flying");
+        crash(&mut w);
+        let size = |v: Vec2| (v.x * v.x + v.y * v.y).sqrt();
+        let max = SHAKE_PX * w.bounds.scale() * 1.25; // x and 0.7 y together
+        let mut early = 0.0_f32;
+        let mut late = 0.0_f32;
+        let mut directions = std::collections::HashSet::new();
+        for i in 0..CRASH_TICKS {
+            let s = w.shake();
+            assert!(size(s) <= max, "{s:?}");
+            if i < 10 {
+                early = early.max(size(s));
+                directions.insert((s.x > 0.0, s.y > 0.0));
+            }
+            if i > CRASH_TICKS - 10 {
+                late = late.max(size(s));
+            }
+            w.tick(&Input::NONE);
+        }
+        assert!(early > SHAKE_PX * 0.5, "strong at the bang: {early}");
+        assert!(late < early * 0.05, "calm at the end: {late}");
+        assert!(directions.len() >= 3, "shakes around: {directions:?}");
+        assert!(w.is_over());
+        assert_eq!(w.shake(), Vec2::new(0.0, 0.0), "still at game over");
     }
 
     #[test]
@@ -1119,34 +1607,89 @@ mod tests {
                         Event::GameOver => panic!("lives cannot run out"),
                         Event::NewHighscore => panic!("not from the world"),
                         Event::Explosion => panic!("lives cannot run out"),
+                        Event::Overspeed | Event::PullUp => panic!("no throttle given"),
                     }
                 }
             }
         }
     }
 
+    /// A phone-sized world with nothing to hit, mid-screen.
+    fn open_sky() -> World {
+        let mut w = World::new(PHONE);
+        w.lives = u32::MAX;
+        w
+    }
+
+    fn fly(w: &mut World, steer: f32, seconds: f32) {
+        for _ in 0..(seconds / TICK_SECONDS).round() as u32 {
+            w.balloons.list.clear();
+            w.huts.list.clear();
+            w.tick(&Input::new(steer));
+        }
+    }
+
     #[test]
-    fn full_dive_moves_player_down_by_speed_times_dt() {
-        let mut w = world();
+    fn a_dive_starts_gently_and_reaches_full_speed() {
+        let mut w = open_sky();
+        let y = w.player.pos.y;
         w.tick(&Input::new(1.0));
-        let expected = 25.0 + PLAYER_CLIMB_SPEED * w.bounds.scale() * TICK_SECONDS;
+        let first = w.player.pos.y - y;
+        let full = PLAYER_CLIMB_SPEED * TICK_SECONDS;
+        assert!(first > 0.0 && first < 0.25 * full, "gentle: {first}");
+        fly(&mut w, 1.0, 0.6);
         assert!(
-            (w.player.pos.y - expected).abs() < 1e-4,
-            "y = {}",
-            w.player.pos.y
+            (w.player.vel_y - PLAYER_CLIMB_SPEED).abs() < 3.0,
+            "{}",
+            w.player.vel_y
         );
     }
 
     #[test]
-    fn half_climb_moves_player_up_at_half_speed() {
-        let mut w = world();
-        w.tick(&Input::new(-0.5));
-        let expected = 25.0 - 0.5 * PLAYER_CLIMB_SPEED * w.bounds.scale() * TICK_SECONDS;
+    fn half_steering_settles_at_half_speed() {
+        let mut w = open_sky();
+        fly(&mut w, -0.5, 0.6);
+        let half = -0.5 * PLAYER_CLIMB_SPEED;
+        assert!((w.player.vel_y - half).abs() < 2.0, "{}", w.player.vel_y);
+    }
+
+    #[test]
+    fn the_nose_tilts_up_to_climb_and_down_to_dive_and_levels_out() {
+        let mut w = open_sky();
+        assert_eq!(w.player.pitch, 0.0);
+        let max = MAX_PITCH_DEG.to_radians();
+        fly(&mut w, -1.0, 0.1);
+        let early = w.player.pitch;
         assert!(
-            (w.player.pos.y - expected).abs() < 1e-4,
-            "y = {}",
-            w.player.pos.y
+            early < 0.0 && early > -max * 0.6,
+            "starts tilting up: {early}"
         );
+        fly(&mut w, -1.0, 0.6);
+        assert!(
+            (w.player.pitch + max).abs() < 0.02,
+            "nose up: {}",
+            w.player.pitch
+        );
+        fly(&mut w, 0.0, 1.0);
+        assert!(
+            w.player.pitch.abs() < 0.02,
+            "level again: {}",
+            w.player.pitch
+        );
+        fly(&mut w, 0.5, 1.0);
+        let down = w.player.pitch;
+        assert!((down - max * 0.5).abs() < 0.02, "half down: {down}");
+    }
+
+    #[test]
+    fn the_crash_shape_tilts_with_the_plane() {
+        let mut p = Player::at(Vec2::new(400.0, 200.0));
+        let level = p.shape(PHONE);
+        p.pitch = -MAX_PITCH_DEG.to_radians();
+        let tilted = p.shape(PHONE);
+        // The nose tip is higher when the nose is up.
+        assert!(tilted[1].0[1].y < level[1].0[1].y - 3.0);
+        assert!((tilted[1].0[1].x - level[1].0[1].x).abs() < 3.0);
     }
 
     #[test]

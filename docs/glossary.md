@@ -29,6 +29,11 @@ short **meaning**.
 | Hindernis | obstacle | `Balloons`, `Pad`, `Huts`, `Gulls`, `Towers` | Something you must not fly into; touching it is a crash. So far: hot-air balloons, launch pads and huts in level 1, gulls and lifeguard towers in level 2 |
 | Leben | life, lives | `World.lives`, `LIVES` | Crashes you can afford; shown as small planes at the top right |
 | Rauchfahne | smoke trail | `World::smoke`, `DAMAGE_SMOKE` | Smoke behind a damaged plane; thicker with every life lost |
+| Fluggeschwindigkeit | airspeed | `Player::airspeed`, `Input::throttle` | How fast you fly yourself: gas (→/D, tip forward) and brake (←/A, tip back) |
+| Overspeed | overspeed | `Warning::Overspeed`, `OVERSPEED_AT` | Too fast; after a countdown the plane breaks apart. On-screen label and voice stay English |
+| Pull up | pull up | `Warning::PullUp`, `STALL_AT` | Too slow; the plane sags. On-screen label and voice stay English |
+| Tempo | speed | `World::speed`, `SPEED_PER_POINT` | How fast the landscape comes by; a little faster with every point |
+| Wackeln | shake | `World::shake`, `SHAKE_PX` | The screen shaking at the explosion |
 | Explosion | explosion | `Event::Explosion`, `explosion.wav` | The plane blowing up when the last life goes |
 | geschützt (blinken) | safe (blinking) | `Player::is_safe`, `SAFE_SECONDS` | After a crash the plane blinks and cannot lose another life |
 | Game over | game over | `Event::GameOver`, `World::is_over` | The last life is gone; the flight ends. On-screen label, stays English |
@@ -77,6 +82,7 @@ short **meaning**.
 | Massstab | scale | `Bounds::scale`, `DESIGN_HEIGHT` | How much bigger everything is than on a phone (screen height / 390); keeps plane, obstacles and speeds in proportion to the landscape |
 | Objektgrösse | object size | `OBJECT_SIZE`, `Bounds::size` | How big the plane and obstacles are drawn and hit, relative to the first design (0.41), up in the sky; not the huts and pads, which belong to the landscape |
 | Trefferform | hit shape | `Poly`, `Player::shape` | The drawn outline used for crashes; only a real overlap counts |
+| Neigung | pitch | `Player::pitch`, `MAX_PITCH_DEG` | How the plane's nose tilts: up to climb, down to dive |
 | Tiefe | depth | `Bounds::depth`, `Bounds::plane_depth` | What flies is smallest at the top (far away) and grows steadily down to the huts; the plane grows the most |
 | Hintergrund | background | `crates/game/src/scenery.rs` | The landscape behind the plane |
 | Landschaft | landscape | `Scenery` | What the background shows |
