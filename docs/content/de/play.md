@@ -123,7 +123,8 @@ Spiel, das unscharf dahinter zu sehen ist:
   beginnt ein neuer Flug.
 
 Wechselst du die App oder den Tab, hält das Spiel von selbst an, und
-ebenso, wenn du das Handy hochkant drehst.
+ebenso, wenn du das Handy hochkant drehst oder am Computer in ein anderes
+Fenster klickst.
 
 ## Wetter und Zusammenstösse
 

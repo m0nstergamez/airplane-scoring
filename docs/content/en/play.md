@@ -118,7 +118,8 @@ with the game blurred behind:
   new flight.
 
 Switching to another app or tab pauses the game by itself, and so does
-turning the phone upright.
+turning the phone upright or, on a computer, clicking into another
+window.
 
 ## Weather and crashes
 

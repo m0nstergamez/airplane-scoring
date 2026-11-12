@@ -778,8 +778,44 @@
     // does turning the phone upright: the game hides behind "turn your
     // phone" then, and must not fly on unseen.
     document.addEventListener("visibilitychange", () => { if (document.hidden) openMenu(); });
+    // On a computer: another window in front pauses it too (the page
+    // stays visible then, so the visibility check above does not fire).
+    addEventListener("blur", openMenu);
     matchMedia("(orientation: portrait) and (pointer: coarse)")
       .addEventListener("change", (e) => { if (e.matches) openMenu(); });
+  </script>
+  <script>
+    // Steering with the mouse: the JS bundle only hears the mouse on the
+    // game's canvas. Let go of the button over the pause or speaker
+    // button (or outside the window) and the game never heard it: the
+    // plane kept flying to the pointer as if still held. Pass the release
+    // (and moves while held) from anywhere on the page on to the canvas.
+    (() => {
+      const canvas = document.getElementById("glcanvas");
+      addEventListener("mouseup", (e) => {
+        if (e.target !== canvas && canvas.onmouseup) canvas.onmouseup(e);
+      }, true);
+      addEventListener("mousemove", (e) => {
+        if (e.buttons && e.target !== canvas && canvas.onmousemove) canvas.onmousemove(e);
+      }, true);
+      // Keys the same way: hold up, click the pause button, let go, and
+      // the release landed on the button, so after Continue the plane
+      // kept climbing. Releases always reach the game; while flying, the
+      // steering keys do too (and the canvas takes the focus back), unless
+      // a menu is open.
+      const steering = new Set(["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "KeyW", "KeyA", "KeyS", "KeyD"]);
+      addEventListener("keyup", (e) => {
+        if (e.target !== canvas && canvas.onkeyup) canvas.onkeyup(e);
+      }, true);
+      addEventListener("keydown", (e) => {
+        const inMenu = e.target instanceof Element && e.target.closest("#menu, #start");
+        if (e.target === canvas || inMenu || !steering.has(e.code)) return;
+        if (!document.body.classList.contains("flying") || document.getElementById("menu").classList.contains("open")) return;
+        e.preventDefault(); // not "press the focused button"
+        canvas.focus();
+        if (canvas.onkeydown) canvas.onkeydown(e);
+      }, true);
+    })();
   </script>
   <script>load("airplane-scoring.wasm");</script>
   <script>

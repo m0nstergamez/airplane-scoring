@@ -604,6 +604,27 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
     im Flug, «Level complete» mit seinen Knöpfen bei 667×320 und
     844×390; der Pausen-Knopf hält Abstand zur Kerbe. Wake Lock und Ton
     auf einem echten iPhone sind hier nicht getestet.
+- Fehlersuche am Computer, gewünscht. Gefunden und behoben (alles in
+  `web/index.html`; das JS-Bundle hört nur auf der Spielfläche):
+  - Steuern mit der Maus: Liess man die Taste über dem Pausen- oder
+    Lautsprecher-Knopf los (oder ausserhalb des Fensters), hörte das
+    Spiel es nie, und das Flugzeug flog weiter zum Mauszeiger. Loslassen
+    (und Bewegen mit gedrückter Taste) wird jetzt von überall an die
+    Spielfläche weitergereicht.
+  - Tasten: ↑ halten, auf den Pausen-Knopf klicken, loslassen: Das
+    Loslassen landete auf dem Knopf, und nach Continue stieg das
+    Flugzeug weiter. Loslassen erreicht jetzt immer das Spiel; im Flug
+    auch die Steuertasten, und die Spielfläche holt sich den Fokus
+    zurück (nicht bei offenem Menü).
+  - Ein Klick in ein anderes Fenster liess das Spiel weiterfliegen (die
+    Seite bleibt sichtbar, also griff die Sichtbarkeitsprüfung nicht).
+    Jetzt pausiert es; im Hauptmenü passiert nichts.
+  - Jeder Fehler wurde zuerst im headless Chrome nachgestellt (das
+    Flugzeug landete nach 0,15 s Druck am oberen Rand), dann behoben
+    geprüft.
+  - Geprüft und in Ordnung: macroquad lässt gehaltene Tasten los, wenn
+    das Fenster den Fokus verliert, und der Lautsprecher-Knopf gibt den
+    Fokus zurück.
 
 ## Konzepte
 

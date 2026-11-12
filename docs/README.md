@@ -550,6 +550,23 @@ that isn't code here. Keep entries short and dated.
     complete" and its buttons at 667×320 and 844×390; the pause button
     keeps clear of the notch. Wake lock and sound on a real iPhone are
     not tested here.
+- PC bug hunt, asked for. Found and fixed (all in `web/index.html`; the
+  vendored JS bundle only listens on the canvas):
+  - Mouse steering: let go of the button over the pause or speaker
+    button (or outside the window) and the game never heard it, so the
+    plane kept flying to the pointer. Releases (and moves while held)
+    from anywhere are passed on to the canvas.
+  - Keys: hold ↑, click the pause button, let go: the release landed on
+    the button and the plane kept climbing after Continue. Key releases
+    always reach the game; while flying, the steering keys do too and
+    the canvas takes the focus back (not while a menu is open).
+  - Clicking into another window kept the game flying (the page stays
+    visible, so the visibility check did not fire). A window blur now
+    pauses it; on the main menu it does nothing.
+  - Each was reproduced in headless Chrome first (the plane ended at the
+    top edge after a 0.15 s press), then checked fixed.
+  - Checked and fine: macroquad already lets go of held keys when the
+    window loses focus, and the speaker button gives the focus back.
 
 ## Concepts
 
