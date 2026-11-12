@@ -6,22 +6,23 @@
 2. Turn your phone **sideways** (landscape). Held upright, the game asks
    you to turn it.
 3. In the **main menu** ("AIRPLANE SCORING", with the plane over the
-   coast), tap **"Tap to fly"**. On an iPhone, allow access to "Motion &
-   Orientation" when asked. At the bottom right is a **QR code**: friends
-   scan it with their camera to fly too.
+   coast), tap **"Tap to fly"**, then **choose a level**. On an iPhone,
+   allow access to "Motion & Orientation" when asked. At the bottom right
+   is a **QR code**: friends scan it with their camera to fly too.
 
-The main menu also has **Levels**: a map with a round picture of each
-landscape, joined by a dashed line. Tap a level to start there. Level 2
-is locked at first (grey with a padlock) and opens once you have
+"Tap to fly" opens the **level map** ("Choose a level"): a round picture
+of each landscape, joined by a dashed line. Tap a level to start there.
+Level 2 is locked at first (grey with a padlock) and opens once you have
 completed level 1; the game remembers. **How to play** gives a short
 guide (goal, steering, speed, pause); under **Options** you switch music
 and sounds.
 
 On a computer the main menu also shows the keys and a larger **QR
 code**. Scan it with your phone's camera to open the game there. To fly
-on the computer, click **"Click to fly"** or press Enter.
+on the computer, click **"Click to fly"** or press Enter, then pick a
+level (Enter flies level 1).
 
-The flight only begins with that tap or click. Until then the game waits,
+The flight only begins when you pick a level. Until then the game waits,
 however long the main menu is open.
 
 Every flight starts at an **airport**: your plane stands on the runway
@@ -105,7 +106,7 @@ with the game blurred behind:
   "level" from now on, for steering and for gas.
 - **Options:** switch music (the tunes) and sounds (everything else) on
   or off separately. **Back** goes back.
-- **Menu:** back to the main menu; "Tap to fly" or the levels start a
+- **Menu:** back to the main menu; "Tap to fly" and a level start a
   new flight.
 
 Switching to another app or tab pauses the game by itself, and so does
@@ -130,7 +131,7 @@ and ignores the controls for a moment (1.5 seconds). Then you fly again.
 
 ## Speed, overspeed and pull up
 
-Besides the speed that slowly rises with your score, you set how fast
+Besides the speed that slowly rises with your flight time, you set how fast
 you fly yourself. At the top left, the "SPEED" gauge shows it: amber
 is too slow, green is fine, red is too fast. With no gas and no brake
 you slowly return to normal speed.
@@ -145,11 +146,11 @@ you slowly return to normal speed.
   the ground like this, the plane explodes and every life is gone at
   once.
 
-## Score and lives
+## Time and lives
 
-At the top centre is your **score** (your points). It goes up by 2 every
-second while you fly: the longer you last, the more points you have.
-With every point the game gets a tiny bit **faster**: the landscape
+At the top centre is your **time**: how long you have been flying, in
+minutes and seconds ("Time 2:05"). The longer you last, the better.
+With every second the game gets a tiny bit **faster**: the landscape
 and everything in it come by quicker (after a minute about 12 %, at
 most 50 % faster).
 
@@ -162,29 +163,21 @@ While it blinks you are safe: nothing you touch costs a life then. So you do not
 lose two lives to the same flock of gulls.
 
 You can see the damage: after the first lost life your plane trails a
-thin, light **smoke**; after the second the smoke gets thick and dark
-and a small flame flickers at the tail.
+long grey trail of **smoke**; after the second there is much more smoke,
+thick and dark, and a small flame flickers at the tail.
 
 With the last life your plane **explodes**: a fireball, flying debris
 and a cloud of smoke, with a big bang, and the screen **shakes**. Then **"Game over"** shows on the
-screen, together with your score. After a short
+screen, together with your time. After a short
 moment "Tap or click to fly again" appears: tap, click or press Enter,
-and a new flight starts in level 1 with 3 lives.
+and a new flight starts in the same level with 3 lives.
 
-## Highscore
-
-The game remembers your **5 best scores** on this phone or computer. The
-best one shows small under the score while you fly ("Best").
-
-At "Game over" you see your score and the list of the best scores
-("Highscores"); this flight is marked with a "<" when it made the list.
-If you beat every earlier score, "New highscore!" blinks and a short
-fanfare plays. A flight you leave with **Menu** or **Restart** counts
-too, with the score it had then.
-
-The scores stay only in this browser: nothing goes online, and friends
-on their own phones have their own list. Deleting the browser's website
-data clears it.
+Under the time, **"Best times"** lists the 5 longest flights in the
+level you chose, in minutes and seconds; this flight is marked with a
+"<" when it made the list, and "New best time!" blinks when it beat
+them all. Each level has its own list. A flight you leave with **Menu**
+or **Restart** counts too. The times stay only in this browser: nothing
+goes online, and friends on their phones have their own lists.
 
 ## Levels
 
@@ -193,7 +186,7 @@ beach at sunset (level 2). After about a minute of flying, a level ends
 with a **landing**: no new obstacles come, a runway appears, and the
 autopilot takes over. Speed warnings stay off while it flies, and the
 speed settles back by itself. The gear comes down, the plane touches down,
-brakes and stops: "Level 1 complete" shows with your score and two
+brakes and stops: "Level 1 complete" shows with your time and two
 buttons. **Next level** (or Enter) starts the next level: its landscape
 appears, it counts 3, 2, 1, and you take off from its runway. **Menu**
 goes to the main menu. After the last level,
@@ -206,8 +199,9 @@ comes down from the sky and lands on a launch pad, one comes straight at
 you at your height, and one sinks slowly past from above. Within every
 four balloons each way comes once, so you never know which is next. Fly
 over or under them, and mind the basket too. When a balloon appears or
-takes off, you hear its burner roar. Flying into a launch pad costs a
-life too.
+takes off, you hear its burner roar. A balloon you fly into
+**explodes** with a bang and crashes to the ground (it costs you a life
+all the same). Flying into a launch pad costs a life too.
 
 Big wooden **huts** stand now and then right at the front, at the
 bottom of the screen, together with the launch pads. Only if you fly
@@ -223,7 +217,8 @@ riskier.
 
 At the beach, **gulls** fly around: from the front, from behind and up
 from the sand. Do not fly into them. You hear many of them call when
-they appear; gulls from behind always call, so listen out.
+they appear; gulls from behind always call, so listen out. A gull you
+hit squawks and tumbles to the ground; it costs you a life all the same.
 
 Now and then a **lifeguard tower** stands in the sand: on wooden legs,
 with a ladder and a small cabin. Some stand far back by the water (higher
@@ -245,7 +240,6 @@ legs is open air, but it is very tight.
 | Waves | At the beach (level 2). They fade in and out with the landscape. |
 | Gull | When a gull appears. Gulls from behind always call. |
 | Tune | When you have landed and a level is complete. |
-| Fanfare | When you set a new highscore. |
 | Takeoff | Rolling down the runway: the engine spools up and the wheels rumble until the plane lifts off. |
 | Gear | Just after lift-off: a whir while the wheels fold up, then a clunk. |
 | Explosion | When your plane loses its last life. |

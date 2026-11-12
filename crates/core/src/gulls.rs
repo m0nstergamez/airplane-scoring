@@ -1,4 +1,6 @@
-//! Gulls: the obstacles at the beach (level 2). Fly into one and you crash.
+//! Gulls: the obstacles at the beach (level 2). Fly into one and you crash,
+//! and the gull is knocked down: it tumbles to the ground, no longer in
+//! the way.
 //!
 //! While the beach is on screen, a new gull shows up every
 //! [`GULL_GAP_SECONDS`]: from the right (flying towards you), from the left
@@ -29,6 +31,14 @@ pub const GULL_CALL_CHANCE: f32 = 0.5;
 /// How far a gull bobs up and down while it flaps, in px.
 pub const GULL_BOB: f32 = 6.0;
 
+/// A struck gull: how hard it is thrown up first, how fast it then falls
+/// (px per second, and per second squared), how much of its speed ahead
+/// it keeps, and how fast it tumbles (turns per second).
+pub const GULL_HIT_POP: f32 = 90.0;
+pub const GULL_FALL: f32 = 700.0;
+pub const GULL_HIT_KEEP: f32 = 0.3;
+pub const GULL_TUMBLE: f32 = 1.4;
+
 const BOB_PER_SECOND: f32 = 1.3;
 /// Gulls start and are dropped this far outside the screen.
 const MARGIN: f32 = 40.0;
@@ -54,11 +64,52 @@ pub struct Gull {
     line: Vec2,
     /// How far it bobs, in px ([`GULL_BOB`] on this screen).
     bob: f32,
+    /// Ticks since it was struck; `None` while it flies.
+    pub down: Option<u32>,
+    /// Its fall, px per second squared (0 while it flies).
+    fall: f32,
 }
 
 impl Gull {
+    /// Put it at `at`, hovering there (for tests).
+    #[cfg(test)]
+    pub(crate) fn place_at(&mut self, at: Vec2) {
+        self.pos = at;
+        self.line = at;
+        self.vel = Vec2::new(0.0, 0.0);
+        self.bob = 0.0;
+    }
+
+    /// Was it struck? Then it tumbles down and cannot be hit again.
+    pub fn is_down(&self) -> bool {
+        self.down.is_some()
+    }
+
+    /// Struck by the plane: thrown up a little, slowed, then it falls.
+    /// `scale` is the screen's ([`Bounds::scale`]).
+    pub fn knock_down(&mut self, scale: f32) {
+        if self.is_down() {
+            return;
+        }
+        self.down = Some(0);
+        self.line = self.pos; // no more bobbing
+        self.vel = Vec2::new(self.vel.x * GULL_HIT_KEEP, -GULL_HIT_POP * scale);
+        self.fall = GULL_FALL * scale;
+    }
+
+    /// How far a struck gull has turned over, in radians (0 while it
+    /// flies): it spins the way it flew.
+    pub fn tumble(&self) -> f32 {
+        let t = self.down.unwrap_or(0) as f32 * TICK_SECONDS;
+        self.facing() * t * GULL_TUMBLE * std::f32::consts::TAU
+    }
+
     /// The wings' position, -1 (down) .. 1 (up): three beats a second.
+    /// A struck gull's wings hang up, limp.
     pub fn wing_beat(&self) -> f32 {
+        if self.is_down() {
+            return 0.8;
+        }
         (self.age as f32 * TICK_SECONDS * std::f32::consts::TAU * 3.0).sin()
     }
 
@@ -105,9 +156,15 @@ impl Gull {
     }
 
     fn step(&mut self) {
+        self.vel.y += self.fall * TICK_SECONDS;
         self.line.x += self.vel.x * TICK_SECONDS;
         self.line.y += self.vel.y * TICK_SECONDS;
         self.age += 1;
+        if let Some(t) = &mut self.down {
+            *t += 1;
+            self.pos = self.line;
+            return;
+        }
         let t = self.age as f32 * TICK_SECONDS;
         let bob = self.bob * (std::f32::consts::TAU * BOB_PER_SECOND * t).sin();
         self.pos = Vec2::new(self.line.x, self.line.y + bob);
@@ -116,7 +173,7 @@ impl Gull {
     fn gone(&self, bounds: Bounds) -> bool {
         let p = self.line;
         let m = 2.0 * MARGIN * bounds.scale();
-        p.x < -m || p.x > bounds.width + m || p.y < -m
+        p.x < -m || p.x > bounds.width + m || p.y < -m || p.y > bounds.height + m
     }
 }
 
@@ -198,6 +255,8 @@ impl Gulls {
             age: 0,
             line,
             bob: GULL_BOB * s,
+            down: None,
+            fall: 0.0,
         });
         if calls {
             events.push(Event::GullCall);
@@ -307,6 +366,43 @@ mod tests {
         }
         assert!(highest > GULL_BOB * 0.9 && lowest < -GULL_BOB * 0.9);
         assert!(highest <= GULL_BOB + 1e-3 && lowest >= -GULL_BOB - 1e-3);
+    }
+
+    #[test]
+    fn a_struck_gull_tumbles_down_and_is_dropped_below_the_screen() {
+        let mut g = Gulls::new(4);
+        while g.list.iter().all(|g| g.from != GullStart::Right) {
+            run(&mut g, 0.5, true);
+        }
+        let i = g
+            .list
+            .iter()
+            .position(|g| g.from == GullStart::Right)
+            .unwrap();
+        let before = g.list[i].clone();
+        assert!(!before.is_down());
+        g.list[i].knock_down(SCREEN.scale());
+        assert!(g.list[i].is_down());
+        let beat = g.list[i].wing_beat();
+        let mut events = Vec::new();
+        let (mut y, mut x) = (g.list[i].pos.y, g.list[i].pos.x);
+        let mut falling = 0;
+        for _ in 0..ticks(0.6) {
+            g.tick(SCREEN, false, &mut events);
+            let now = &g.list[i];
+            assert_eq!(now.wing_beat(), beat, "no more flapping");
+            assert!(now.pos.x <= x, "drifts on the way it flew");
+            if now.pos.y > y {
+                falling += 1;
+            }
+            y = now.pos.y;
+            x = now.pos.x;
+        }
+        assert!(falling > ticks(0.4), "it falls");
+        assert!(g.list[i].tumble().abs() > 1.0, "and tumbles");
+        // Down past the bottom edge: gone.
+        run(&mut g, 3.0, false);
+        assert!(g.list.iter().all(|g| !g.is_down()));
     }
 
     #[test]

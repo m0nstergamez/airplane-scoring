@@ -517,6 +517,49 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
   - Geprüft und in Ordnung: Ein Tipp auf die Spielfläche fällt nicht
     ins Hauptmenü durch (das JS-Bundle bricht Touch-Events ab), und die
     Knöpfe am Level-Ende rechnen Handy-Berührungen richtig um.
+- Gewünscht: Der Highscore ist weg (`highscore.rs` in core,
+  `Event::NewHighscore`, die Fanfare und ihre `.wav`, «Best» und die
+  Liste bei «Game over», der Speicher im Page-Plugin; Plugin-Version 5).
+  Die Seite löscht den alten Schlüssel `airplane-scoring.highscores`
+  einmal. «Game over» zeigt jetzt nur noch den Score.
+- Gewünscht: Eine Möwe, in die du fliegst, stürzt ab
+  (`Gull::knock_down`): ein wenig hochgeworfen, dann fällt sie trudelnd
+  mit schlaffen Flügeln zu Boden, kreischt (`GullCall`) und ist kein
+  Hindernis mehr. Ein Leben kostet es trotzdem. Tests: Eine getroffene
+  Möwe fällt, trudelt und verschwindet; eine fallende Möwe lässt das
+  Flugzeug nicht abstürzen.
+- Gewünscht: viel mehr Schadensrauch. `DAMAGE_SMOKE` nach einem
+  verlorenen Leben 0,4 → 0,5; die Zeichnung hat etwa doppelt so viele
+  Wölkchen, grösser und länger (14 + 30 × Rauch Wölkchen, eine Fahne bis
+  200 px).
+- Gewünscht: Die geflogene Zeit in Minuten ersetzt den Score.
+  `World::seconds_flown` (ganze Sekunden, steht bei «Level complete» und
+  «Game over» still) und `clock_text` («2:05») ersetzen `World::score`
+  und `SCORE_PER_SECOND`; das Schnellerwerden gilt jetzt pro Sekunde
+  (`SPEED_PER_SECOND` 0,002, nach einer Minute dieselben 12 % wie
+  vorher). «Time 2:05» steht oben in der Mitte, bei «Level complete» und
+  bei «Game over».
+- Gewünscht, alles auf einmal:
+  - Ein Ballon, in den du fliegst, explodiert und stürzt ab
+    (`Balloon::burst`, `Event::BalloonBurst` mit dem Explosionsgeräusch
+    bei `BALLOON_BURST_VOLUME`); gezeichnet als Feuerball, dann eine
+    geschrumpfte, verkohlte Hülle mit Rauch, die fällt. Kein Hindernis
+    mehr; ein Leben kostet es trotzdem. Ballone entstehen jetzt mit
+    `Balloon::new`.
+  - Bestzeiten statt Punkte: `best_times.rs` (die besten
+    `BEST_TIMES_COUNT` 5 pro Level, die längste zuerst, Gleichstand ist
+    kein Rekord), nach dem Level, in dem der Flug begann. Das Page-Plugin
+    (Version 6) speichert sie als `airplane-scoring.best-times`. Angezeigt
+    bei «Game over» mit diesem Flug markiert; ein mit Menu oder Restart
+    verlassener Flug zählt auch.
+  - «Tap/Click to fly» öffnet die Level-Karte («Choose a level»); der
+    eigene Knopf Levels ist weg. Mit der Tastatur öffnet Enter sie mit
+    Level 1 gewählt.
+  - Fehlersuche: zwei neue Tests für den Anflug (das letzte Leben dort
+    verloren ist «Game over», nie «Level complete»; ein Zusammenstoss
+    dort landet trotzdem). Beides funktionierte schon. Im Browser
+    geprüft: die Tastatur bis zur Level-Karte und die Bestzeiten-Tabelle
+    bei 844×390 und 1440×900.
 
 ## Konzepte
 

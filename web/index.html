@@ -288,13 +288,12 @@
     <img class="hero" src="plane.svg" alt="">
     <div class="panel shown" data-panel="home">
       <button type="button" class="primary" data-start="1"><span class="phone">Tap to fly</span><span class="computer">Click to fly</span></button>
-      <button type="button" data-go="levels">Levels</button>
       <button type="button" data-go="howto">How to play</button>
       <button type="button" data-go="options">Options</button>
     </div>
     <small class="phone calibrate-tip">Turn your phone like a steering wheel, tip it forward for speed, or drag your finger.<br><strong>Calibration matters!</strong> Hold your phone the way you want to fly <em>before</em> you tap: that counts as "level". Plane drifting? Pause (&#9776;) and tap <strong>Calibrate</strong>.</small>
     <div class="panel" data-panel="levels">
-      <h2>Levels</h2>
+      <h2>Choose a level</h2>
       <div class="map">
         <div class="stop">
           <button type="button" class="node" data-level="1" aria-label="Level 1: Coast"><span class="lock">&#128274;</span></button>
@@ -313,8 +312,8 @@
       <div class="guide">
         <section>
           <h3>The goal</h3>
-          <p>Fly as long as you can: every second earns points. Dodge what is in your way: hot-air balloons, launch pads and huts on the coast; gulls and lifeguard towers at the beach. You have <strong>3 lives</strong>; each crash costs one.</p>
-          <p>At the end of a level the autopilot <strong>lands</strong> on a runway: level complete! That unlocks the next level. Beat your <strong>highscore</strong>.</p>
+          <p>Fly as long as you can: the clock at the top counts your time in minutes and seconds. Dodge what is in your way: hot-air balloons, launch pads and huts on the coast; gulls and lifeguard towers at the beach. You have <strong>3 lives</strong>; each crash costs one.</p>
+          <p>At the end of a level the autopilot <strong>lands</strong> on a runway: level complete! That unlocks the next level. Each level keeps your <strong>5 best times</strong>.</p>
         </section>
         <section>
           <h3>Steering</h3>
@@ -484,31 +483,37 @@
       }
     };
     renderMap();
-    const HIGHSCORE_KEY = "airplane-scoring.highscores";
-    let highscores = [];
+    // The old highscores (points) are gone: forget them.
+    try { localStorage.removeItem("airplane-scoring.highscores"); } catch (_) { /* private mode */ }
+    // Each level's best times, in seconds: { "1": [125, 98, ...], "2": [...] }.
+    // Just numbers, kept in this browser only (core decides which count).
+    const BEST_KEY = "airplane-scoring.best-times";
+    let bestTimes = {};
     try {
-      const stored = JSON.parse(localStorage.getItem(HIGHSCORE_KEY) || "[]");
-      if (Array.isArray(stored)) highscores = stored.map((n) => Math.max(0, Math.floor(Number(n) || 0)));
+      const stored = JSON.parse(localStorage.getItem(BEST_KEY) || "{}");
+      if (stored && typeof stored === "object" && !Array.isArray(stored)) bestTimes = stored;
     } catch (_) { /* nothing stored, or private mode */ }
     miniquad_add_plugin({
       name: "page",
-      version: 4, // must match page_crate_version() in page_js.rs
+      version: 6, // must match page_crate_version() in page_js.rs
       register_plugin: (importObject) => {
         importObject.env.page_started = () => (flying && !paused ? 1 : 0);
         importObject.env.page_new_flight = () => newFlight;
         importObject.env.page_level = () => chosenLevel;
         importObject.env.page_show_menu = () => toStart();
+        importObject.env.page_best_time = (level, i) => {
+          const list = bestTimes[level];
+          return Array.isArray(list) ? Math.max(0, Math.floor(Number(list[i]) || 0)) : 0;
+        };
+        importObject.env.page_set_best_time = (level, i, seconds) => {
+          if (!Array.isArray(bestTimes[level])) bestTimes[level] = [];
+          bestTimes[level][i] = seconds;
+          try { localStorage.setItem(BEST_KEY, JSON.stringify(bestTimes)); } catch (_) { /* private mode: not kept */ }
+        };
         importObject.env.page_level_complete = (level) => {
           unlocked = Math.min(LEVELS, Math.max(unlocked, level + 1));
           try { localStorage.setItem(UNLOCK_KEY, String(unlocked)); } catch (_) { /* private mode */ }
           renderMap();
-        };
-        // Highscores: just numbers, kept in this browser only (core
-        // decides which scores count and their order).
-        importObject.env.page_highscore = (i) => highscores[i] || 0;
-        importObject.env.page_set_highscore = (i, score) => {
-          highscores[i] = score;
-          try { localStorage.setItem(HIGHSCORE_KEY, JSON.stringify(highscores)); } catch (_) { /* private mode: not kept */ }
         };
       },
     });
@@ -536,10 +541,17 @@
       document.body.classList.add("flying");
       document.getElementById("glcanvas").focus();
     };
+    // "Tap to fly" / "Click to fly" (or Enter) opens the level map: the
+    // player picks the level to fly. With the keyboard, level 1 gets the
+    // focus, so Enter flies it right away.
+    const chooseLevel = (keyboard) => {
+      showStart("levels");
+      if (keyboard) start.querySelector('.node[data-level="1"]').focus();
+    };
     start.addEventListener("click", (e) => {
       const b = e.target.closest("button");
       if (!b || b.disabled) return;
-      if (b.dataset.start) fly(1);
+      if (b.dataset.start) chooseLevel(e.detail === 0);
       else if (b.dataset.level) fly(Number(b.dataset.level));
       else if (b.dataset.go) showStart(b.dataset.go);
       else if (b.dataset.action === "music") setSound({ ...sound, music: !sound.music });
@@ -551,7 +563,7 @@
       const home = !start.classList.contains("gone")
         && start.querySelector('.panel[data-panel="home"]').classList.contains("shown");
       const onButton = e.target instanceof Element && e.target.closest("button");
-      if (home && !onButton && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); fly(1); }
+      if (home && !onButton && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); chooseLevel(true); }
     });
     if (new URLSearchParams(location.search).has("play")) {
       start.classList.add("gone");

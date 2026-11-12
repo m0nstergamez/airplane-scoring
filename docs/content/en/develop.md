@@ -181,12 +181,10 @@ flowchart LR
   decides when and where they appear (seeded, like the weather), moves
   them and checks the crash; a gull that calls sends a `GullCall` event,
   so every call you hear belongs to a gull you see.
-- **Highscores** (`crates/core/src/highscore.rs`): core keeps the rules
-  (`Highscores::add`: best first, top `HIGHSCORE_COUNT`, a tie is no
-  record, a record sends `Event::NewHighscore`). The page plugin stores
-  the numbers in the browser's local storage
-  (`airplane-scoring.highscores`); `page_js.rs` only loads and saves
-  them. Nothing leaves the device.
+- **Struck gulls** (`Gull::knock_down`): a gull the plane flies into
+  is thrown up a little, then falls (`GULL_FALL`) and tumbles
+  (`Gull::tumble`); it is no obstacle any more and is dropped below the
+  screen. The game only turns the drawing by `tumble`.
 - **Lives** are counted in core too: a crash costs one (`World.lives`),
   a recovering plane is safe for `SAFE_SECONDS` (`Player::is_safe`), and
   every lost life adds smoke (`World::smoke`, `DAMAGE_SMOKE`); when the
@@ -194,8 +192,9 @@ flowchart LR
   `World::explosion_progress` over the crash time), then `Event::GameOver` fires and
   `World::tick` stands still (`World::is_over`). The game crate only draws
   it and, once `World::can_restart` says so, starts a new `World` on a tap.
-  The score (`World::score`) follows from the ticks flown, so it stops
-  with them at game over.
+  The flight time (`World::seconds_flown`, shown by `clock_text` as
+  "m:ss") follows from the ticks flown, so it stops with them at game
+  over.
 - **Weather is random but repeatable:** `World::with_seed` takes a seed;
   the same seed gives the same rain and the same lightning, so tests can
   replay it.
@@ -324,14 +323,12 @@ keeps its size relative to the landscape:
 | `TILT_SMOOTHING` | `crates/core/src/tilt.rs` | smoother (lower) or more direct (higher) tilting |
 | `CRASH_SECONDS` | `crates/core/src/lib.rs` | how long a crashed plane is out of control |
 | `LIVES` | `crates/core/src/lib.rs` | lives at the start of a flight |
-| `SCORE_PER_SECOND` | `crates/core/src/lib.rs` | how many points each second of flight is worth |
-| `SPEED_PER_POINT` | `crates/core/src/lib.rs` | how much faster the game gets per point (`World::speed`, at most `MAX_SPEED`) |
+| `SPEED_PER_SECOND` | `crates/core/src/lib.rs` | how much faster the game gets per second flown (`World::speed`, at most `MAX_SPEED`) |
 | `AIRSPEED_RANGE` | `crates/core/src/lib.rs` | slowest and fastest airspeed you can set (1 = cruising) |
 | `OVERSPEED_AT` | `crates/core/src/lib.rs` | airspeed above which "Overspeed" warns; after `OVERSPEED_SECONDS` it breaks apart |
 | `STALL_AT` | `crates/core/src/lib.rs` | airspeed below which "Pull up" warns and the plane sags (up to `STALL_SINK`) |
 | `ROLL_SECONDS` | `crates/core/src/airport.rs` | how long the plane rolls down the runway before it lifts off |
 | `SHAKE_PX` | `crates/core/src/lib.rs` | how far the screen shakes at the explosion (`World::shake`) |
-| `HIGHSCORE_COUNT` | `crates/core/src/highscore.rs` | how many best scores are kept |
 | `SAFE_SECONDS` | `crates/core/src/lib.rs` | how long the plane blinks and cannot crash after a crash |
 | `RAIN_SECONDS` | `crates/core/src/weather.rs` | shortest and longest rain |
 | `STORM_RAIN` | `crates/core/src/weather.rs` | how heavy rain must be for lightning (0 to 1) |

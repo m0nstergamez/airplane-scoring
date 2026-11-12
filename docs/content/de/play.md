@@ -6,14 +6,14 @@
 2. Dreh dein Handy **quer**. Hältst du es aufrecht, bittet dich das Spiel,
    es zu drehen.
 3. Im **Hauptmenü** («AIRPLANE SCORING», mit dem Flugzeug vor der Küste)
-   tippst du auf **«Tap to fly»**. Auf dem iPhone erlaubst du den Zugriff
-   auf «Bewegung & Ausrichtung», wenn danach gefragt wird. Unten rechts
-   ist ein **QR-Code**: Deine Freunde scannen ihn mit der Kamera und
-   fliegen auch.
+   tippst du auf **«Tap to fly»** und **wählst dann ein Level**. Auf dem
+   iPhone erlaubst du den Zugriff auf «Bewegung & Ausrichtung», wenn
+   danach gefragt wird. Unten rechts ist ein **QR-Code**: Deine Freunde
+   scannen ihn mit der Kamera und fliegen auch.
 
-Im Hauptmenü gibt es auch **Levels**: eine Karte mit einem runden Bild
-jeder Landschaft, verbunden mit einer gestrichelten Linie. Tippe auf ein
-Level, um dort zu starten. Level 2 ist zuerst gesperrt (grau mit
+«Tap to fly» öffnet die **Level-Karte** («Choose a level»): ein rundes
+Bild jeder Landschaft, verbunden mit einer gestrichelten Linie. Tippe
+auf ein Level, um dort zu starten. Level 2 ist zuerst gesperrt (grau mit
 Schloss) und wird frei, sobald du Level 1 geschafft hast; das Spiel
 merkt es sich. Unter **How to play** steht eine kurze Anleitung auf
 Englisch (Ziel, Steuerung, Tempo, Pause), unter **Options** schaltest du
@@ -22,9 +22,9 @@ Musik und Geräusche.
 Am Computer zeigt das Hauptmenü auch die Tasten und einen grösseren
 **QR-Code**. Scanne ihn mit der Kamera deines Handys, um das Spiel dort
 zu öffnen. Um am Computer zu fliegen, klicke auf **«Click to fly»** oder
-drücke Enter.
+drücke Enter und wähle dann ein Level (Enter fliegt Level 1).
 
-Der Flug beginnt erst mit diesem Tipp oder Klick. Bis dahin wartet das
+Der Flug beginnt erst, wenn du ein Level wählst. Bis dahin wartet das
 Spiel, egal wie lange das Hauptmenü offen ist.
 
 Jeder Flug beginnt auf einem **Flughafen**: Dein Flugzeug steht vorne
@@ -110,7 +110,7 @@ Spiel, das unscharf dahinter zu sehen ist:
   ab sofort als «gerade», fürs Steuern und fürs Gas.
 - **Options:** Musik (die Melodien) und Geräusche (alles andere)
   einzeln ein- oder ausschalten. **Back** führt zurück.
-- **Menu:** zurück ins Hauptmenü; mit «Tap to fly» oder über die Levels
+- **Menu:** zurück ins Hauptmenü; mit «Tap to fly» und einem Level
   beginnt ein neuer Flug.
 
 Wechselst du die App oder den Tab, hält das Spiel von selbst an, und
@@ -138,7 +138,7 @@ nicht steuern. Danach fliegst du wieder.
 
 ## Tempo, Overspeed und Pull up
 
-Neben dem Tempo, das mit deinem Score langsam steigt, stellst du selbst
+Neben dem Tempo, das mit deiner Flugzeit langsam steigt, stellst du selbst
 ein, wie schnell du fliegst. Oben links zeigt die Anzeige «SPEED» dein
 Tempo: gelb ist zu langsam, grün ist gut, rot ist zu schnell. Gibst du
 kein Gas und bremst nicht, kommst du langsam zurück aufs normale Tempo.
@@ -153,11 +153,11 @@ kein Gas und bremst nicht, kommst du langsam zurück aufs normale Tempo.
   Gib Gas! Schlägst du so am Boden auf, explodiert das Flugzeug, und
   alle Leben sind auf einmal weg.
 
-## Punkte und Leben
+## Zeit und Leben
 
-Oben in der Mitte steht dein **Score** (deine Punkte). Er steigt jede
-Sekunde um 2, solange du fliegst: Je länger du durchhältst, desto mehr
-Punkte hast du. Mit jedem Punkt wird das Spiel ein ganz kleines bisschen
+Oben in der Mitte steht deine **Zeit**: wie lange du schon fliegst, in
+Minuten und Sekunden («Time 2:05»). Je länger du durchhältst, desto
+besser. Mit jeder Sekunde wird das Spiel ein ganz kleines bisschen
 **schneller**: Die Landschaft und alles darin kommen schneller daher
 (nach einer Minute etwa 12 %, höchstens 50 % schneller).
 
@@ -171,32 +171,24 @@ dann berührst, kostet kein Leben. So verlierst du nicht zwei Leben an derselben
 Möwengruppe.
 
 Man sieht den Schaden: Nach dem ersten verlorenen Leben zieht dein
-Flugzeug eine dünne, helle **Rauchfahne** hinter sich her; nach dem
-zweiten wird der Rauch dick und dunkel, und am Heck flackert eine kleine
-Flamme.
+Flugzeug eine lange graue **Rauchfahne** hinter sich her; nach dem
+zweiten kommt viel mehr Rauch, dick und dunkel, und am Heck flackert eine
+kleine Flamme.
 
 Beim letzten Leben **explodiert** dein Flugzeug: ein Feuerball,
 herumfliegende Trümmer und eine Rauchwolke, mit einem lauten Knall, und
 der Bildschirm **wackelt**.
-Dann steht **«Game over»** auf dem Bildschirm, zusammen mit deinem Score. Nach einem
+Dann steht **«Game over»** auf dem Bildschirm, zusammen mit deiner Zeit. Nach einem
 kurzen Moment erscheint «Tap or click to fly again»: Tippe, klicke oder
-drücke Enter, und ein neuer Flug beginnt bei Level 1 mit 3 Leben.
+drücke Enter, und ein neuer Flug beginnt im selben Level mit 3 Leben.
 
-## Highscore
-
-Das Spiel merkt sich deine **5 besten Scores** auf diesem Handy oder
-Computer. Der beste steht klein unter dem Score, während du fliegst
-(«Best»).
-
-Bei «Game over» siehst du deinen Score und die Liste der besten Scores
-(«Highscores»); dieser Flug ist mit «<» markiert, wenn er in die Liste
-kam. Schlägst du alle bisherigen Scores, blinkt «New highscore!», und
-eine kurze Fanfare spielt. Ein Flug, den du mit **Menu** oder
-**Restart** verlässt, zählt auch, mit dem Score, den er da hatte.
-
-Die Scores bleiben nur in diesem Browser: Nichts geht ins Internet, und
-deine Freunde haben auf ihren Handys ihre eigene Liste. Löschst du die
-Websitedaten des Browsers, ist sie weg.
+Unter der Zeit stehen die **«Best times»**: die 5 längsten Flüge im
+gewählten Level, in Minuten und Sekunden; dieser Flug ist mit «<»
+markiert, wenn er in die Liste kam, und «New best time!» blinkt, wenn er
+alle geschlagen hat. Jedes Level hat seine eigene Liste. Ein Flug, den
+du mit **Menu** oder **Restart** verlässt, zählt auch. Die Zeiten
+bleiben nur in diesem Browser: Nichts geht ins Internet, und deine
+Freunde haben auf ihren Handys ihre eigenen Listen.
 
 ## Levels
 
@@ -207,7 +199,7 @@ Hindernisse mehr, eine Landebahn erscheint, und der Autopilot übernimmt.
 Solange er fliegt, schweigen die Tempo-Warnungen, und das Tempo geht von
 selbst zurück.
 Das Fahrwerk fährt aus, das Flugzeug setzt auf, bremst und steht: «Level
-1 complete» erscheint mit deinem Score und zwei Knöpfen. **Next level**
+1 complete» erscheint mit deiner Zeit und zwei Knöpfen. **Next level**
 (oder Enter) startet das nächste Level: Seine Landschaft erscheint, es
 zählt 3, 2, 1, und du startest von seiner Startbahn. **Menu** führt ins
 Hauptmenü. Nach dem letzten Level beginnt wieder
@@ -221,8 +213,9 @@ genau auf deiner Höhe entgegen, und einer sinkt langsam von oben herab
 an dir vorbei. Unter je vier Ballonen kommt jede Art einmal, du weisst
 also nie, welche als Nächstes kommt. Flieg über oder unter ihnen durch,
 und pass auch auf den Korb auf. Wenn ein Ballon auftaucht oder abhebt,
-hörst du seinen Brenner fauchen. Auch in eine Startrampe zu fliegen
-kostet ein Leben.
+hörst du seinen Brenner fauchen. Ein Ballon, in den du fliegst,
+**explodiert** mit einem Knall und stürzt zu Boden (ein Leben kostet es
+dich trotzdem). Auch in eine Startrampe zu fliegen kostet ein Leben.
 
 Ganz vorne, am unteren Bildschirmrand, stehen ab und zu grosse
 **Hütten** aus Holz, zusammen mit den Startrampen. Nur wenn du nahe am
@@ -238,7 +231,9 @@ und braucht dann mehr Platz. Tief fliegen ist darum riskanter.
 
 Am Strand fliegen **Möwen** herum: von vorne, von hinten und vom Sand
 aus nach oben. Flieg nicht in sie hinein. Viele rufen, wenn sie
-auftauchen; Möwen von hinten rufen immer, also hör gut hin.
+auftauchen; Möwen von hinten rufen immer, also hör gut hin. Eine Möwe,
+die du triffst, kreischt und stürzt trudelnd zu Boden; ein Leben kostet
+es dich trotzdem.
 
 Ab und zu steht im Sand ein **Strandturm** der Bademeister: auf
 Holzbeinen, mit Leiter und kleiner Kabine. Manche stehen weit hinten
@@ -260,7 +255,6 @@ Beinen ist Luft, aber es ist sehr eng.
 | Wellen | Am Strand (Level 2). Sie werden mit der Landschaft ein- und ausgeblendet. |
 | Möwe | Wenn eine Möwe auftaucht. Möwen von hinten rufen immer. |
 | Melodie | Wenn du gelandet bist und ein Level geschafft ist. |
-| Fanfare | Wenn du einen neuen Highscore erreichst. |
 | Start | Beim Rollen auf der Startbahn: Das Triebwerk dreht hoch, die Räder rumpeln, bis das Flugzeug abhebt. |
 | Fahrwerk | Kurz nach dem Abheben: Surren, während die Räder einfahren, dann ein «Klonk». |
 | Explosion | Wenn dein Flugzeug sein letztes Leben verliert. |

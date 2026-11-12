@@ -188,12 +188,11 @@ flowchart LR
   Wetter), bewegt sie und prüft den Zusammenstoss; eine Möwe, die ruft,
   schickt ein Ereignis `GullCall`. So gehört jeder Ruf, den du hörst, zu
   einer Möwe, die du siehst.
-- **Highscores** (`crates/core/src/highscore.rs`): core hat die Regeln
-  (`Highscores::add`: der beste zuerst, die besten `HIGHSCORE_COUNT`,
-  Gleichstand ist kein Rekord, ein Rekord schickt `Event::NewHighscore`).
-  Das Page-Plugin speichert die Zahlen im lokalen Speicher des Browsers
-  (`airplane-scoring.highscores`); `page_js.rs` lädt und speichert sie
-  nur. Nichts verlässt das Gerät.
+- **Getroffene Möwen** (`Gull::knock_down`): Eine Möwe, in die das
+  Flugzeug fliegt, wird ein wenig hochgeworfen, fällt dann (`GULL_FALL`)
+  und trudelt (`Gull::tumble`); sie ist kein Hindernis mehr und
+  verschwindet unten aus dem Bild. Das Spiel dreht nur die Zeichnung um
+  `tumble`.
 - **Leben** zählt auch core: Ein Zusammenstoss kostet eines
   (`World.lives`), ein Flugzeug, das sich erholt, ist `SAFE_SECONDS` lang
   geschützt (`Player::is_safe`), jedes verlorene Leben gibt mehr Rauch
@@ -202,8 +201,9 @@ flowchart LR
   `World::explosion_progress` über die Absturzzeit), dann kommt `Event::GameOver`, und `World::tick` steht still
   (`World::is_over`). Das game-Crate zeichnet das nur und startet, sobald
   `World::can_restart` es erlaubt, bei einem Tipp eine neue `World`.
-  Der Score (`World::score`) ergibt sich aus den geflogenen Ticks, darum
-  bleibt er bei «Game over» mit ihnen stehen.
+  Die Flugzeit (`World::seconds_flown`, von `clock_text` als «m:ss»
+  angezeigt) ergibt sich aus den geflogenen Ticks, darum bleibt sie bei
+  «Game over» mit ihnen stehen.
 - **Das Wetter ist zufällig, aber wiederholbar:** `World::with_seed`
   bekommt einen Startwert; derselbe Startwert ergibt denselben Regen und
   dieselben Blitze, darum können Tests es nachspielen.
@@ -335,14 +335,12 @@ Landschaft:
 | `TILT_SMOOTHING` | `crates/core/src/tilt.rs` | weicheres (kleiner) oder direkteres (grösser) Kippen |
 | `CRASH_SECONDS` | `crates/core/src/lib.rs` | wie lange sich ein Flugzeug nach einem Zusammenstoss nicht steuern lässt |
 | `LIVES` | `crates/core/src/lib.rs` | Leben am Anfang eines Flugs |
-| `SCORE_PER_SECOND` | `crates/core/src/lib.rs` | wie viele Punkte jede Sekunde Flug wert ist |
-| `SPEED_PER_POINT` | `crates/core/src/lib.rs` | wie viel schneller das Spiel pro Punkt wird (`World::speed`, höchstens `MAX_SPEED`) |
+| `SPEED_PER_SECOND` | `crates/core/src/lib.rs` | wie viel schneller das Spiel pro geflogene Sekunde wird (`World::speed`, höchstens `MAX_SPEED`) |
 | `AIRSPEED_RANGE` | `crates/core/src/lib.rs` | langsamste und schnellste einstellbare Geschwindigkeit (1 = normal) |
 | `OVERSPEED_AT` | `crates/core/src/lib.rs` | Geschwindigkeit, ab der «Overspeed» warnt; nach `OVERSPEED_SECONDS` bricht es auseinander |
 | `STALL_AT` | `crates/core/src/lib.rs` | Geschwindigkeit, unter der «Pull up» warnt und das Flugzeug absackt (bis `STALL_SINK`) |
 | `ROLL_SECONDS` | `crates/core/src/airport.rs` | wie lange das Flugzeug auf der Startbahn rollt, bevor es abhebt |
 | `SHAKE_PX` | `crates/core/src/lib.rs` | wie weit der Bildschirm bei der Explosion wackelt (`World::shake`) |
-| `HIGHSCORE_COUNT` | `crates/core/src/highscore.rs` | wie viele beste Scores gespeichert werden |
 | `SAFE_SECONDS` | `crates/core/src/lib.rs` | wie lange das Flugzeug nach einem Zusammenstoss blinkt und geschützt ist |
 | `RAIN_SECONDS` | `crates/core/src/weather.rs` | kürzester und längster Regen |
 | `STORM_RAIN` | `crates/core/src/weather.rs` | wie stark der Regen für Blitze sein muss (0 bis 1) |

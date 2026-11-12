@@ -1,8 +1,8 @@
 //! What the web page tells the game about the start: whether the player
 //! has started yet ("Tap to fly" / "Click to fly") and which level to
-//! start in (`?level=2` in the URL, for testing and screenshots). The
-//! page also keeps the highscores in the browser's local storage. Both
-//! come from the "page" plugin in `web/index.html`. Native builds have no
+//! start in (the level map, or `?level=2` in the URL). The page also
+//! keeps each level's best times in the browser's local storage. All of
+//! it comes from the "page" plugin in `web/index.html`. Native builds have no
 //! start screen: they fly right away, in level 1. Core decides what the
 //! values mean (`Clock`, `start_level`).
 
@@ -16,14 +16,31 @@ mod imp {
         fn page_new_flight() -> u32;
         fn page_show_menu();
         fn page_level_complete(level: u32);
-        fn page_highscore(i: i32) -> f64;
-        fn page_set_highscore(i: i32, score: f64);
+        fn page_best_time(level: u32, i: u32) -> f64;
+        fn page_set_best_time(level: u32, i: u32, seconds: f64);
     }
 
     /// miniquad checks this against the JS plugin's `version`.
     #[no_mangle]
     pub extern "C" fn page_crate_version() -> u32 {
-        4
+        6
+    }
+
+    /// A level's stored best times, in seconds (0 = none).
+    pub fn load_best_times(level: u32, count: usize) -> Vec<u64> {
+        // SAFETY: plain getter provided by the page's plugin; no pointers.
+        (0..count as u32)
+            .map(|i| unsafe { page_best_time(level, i) }.max(0.0) as u64)
+            .collect()
+    }
+
+    /// Store a level's best times (missing places as 0).
+    pub fn save_best_times(level: u32, count: usize, seconds: &[u64]) {
+        for i in 0..count {
+            let s = seconds.get(i).copied().unwrap_or(0) as f64;
+            // SAFETY: plain setter provided by the page's plugin; no pointers.
+            unsafe { page_set_best_time(level, i as u32, s) }
+        }
     }
 
     /// Back to the main menu (the start page).
@@ -43,21 +60,6 @@ mod imp {
     pub fn new_flight() -> u32 {
         // SAFETY: plain getter provided by the page's plugin; no pointers.
         unsafe { page_new_flight() }
-    }
-
-    pub fn load_highscores(count: usize) -> Vec<u64> {
-        // SAFETY: plain getter provided by the page's plugin; no pointers.
-        (0..count as i32)
-            .map(|i| unsafe { page_highscore(i) }.max(0.0) as u64)
-            .collect()
-    }
-
-    pub fn save_highscores(count: usize, scores: &[u64]) {
-        for i in 0..count {
-            let score = scores.get(i).copied().unwrap_or(0) as f64;
-            // SAFETY: plain setter provided by the page's plugin; no pointers.
-            unsafe { page_set_highscore(i as i32, score) }
-        }
     }
 
     pub fn started() -> bool {
@@ -89,21 +91,25 @@ mod imp {
 
     pub fn level_complete(_level: u32) {}
 
-    // Native: highscores last until the window closes.
-    static HIGHSCORES: std::sync::Mutex<Vec<u64>> = std::sync::Mutex::new(Vec::new());
+    // Native: best times last until the window closes.
+    static BEST: std::sync::Mutex<Vec<(u32, Vec<u64>)>> = std::sync::Mutex::new(Vec::new());
 
-    pub fn load_highscores(_count: usize) -> Vec<u64> {
-        HIGHSCORES.lock().map(|h| h.clone()).unwrap_or_default()
+    pub fn load_best_times(level: u32, _count: usize) -> Vec<u64> {
+        let best = BEST.lock().map(|b| b.clone()).unwrap_or_default();
+        (best.into_iter().find(|(l, _)| *l == level))
+            .map(|(_, t)| t)
+            .unwrap_or_default()
     }
 
-    pub fn save_highscores(_count: usize, scores: &[u64]) {
-        if let Ok(mut h) = HIGHSCORES.lock() {
-            *h = scores.to_vec();
+    pub fn save_best_times(level: u32, _count: usize, seconds: &[u64]) {
+        if let Ok(mut best) = BEST.lock() {
+            best.retain(|(l, _)| *l != level);
+            best.push((level, seconds.to_vec()));
         }
     }
 }
 
 pub use imp::{
-    level_complete, load_highscores, new_flight, requested_level, save_highscores, show_menu,
+    level_complete, load_best_times, new_flight, requested_level, save_best_times, show_menu,
     started,
 };

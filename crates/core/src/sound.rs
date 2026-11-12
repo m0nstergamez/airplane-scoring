@@ -43,8 +43,9 @@ pub const WARNING_VOLUME: f32 = 0.45;
 pub const VOICE_VOLUME: f32 = 1.0;
 /// Volume of the explosion when the last life goes.
 pub const EXPLOSION_VOLUME: f32 = 1.0;
-/// Volume of the fanfare for a new highscore.
-pub const HIGHSCORE_VOLUME: f32 = 0.8;
+/// Volume of a balloon bursting (the explosion sound, softer: the
+/// plane's own explosion stays the big one).
+pub const BALLOON_BURST_VOLUME: f32 = 0.55;
 /// A full dive adds this much wind: the plane is faster.
 pub const DIVE_WIND: f32 = 0.25;
 /// Volumes move at most this much per second (silent to full in 0.25 s),

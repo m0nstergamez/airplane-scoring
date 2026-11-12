@@ -292,8 +292,8 @@ mod tests {
                 Event::NewLevel { .. }
                 | Event::GullCall
                 | Event::BalloonBurner
+                | Event::BalloonBurst
                 | Event::GameOver
-                | Event::NewHighscore
                 | Event::Explosion
                 | Event::Takeoff
                 | Event::GearUp
