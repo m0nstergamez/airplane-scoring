@@ -13,7 +13,12 @@
 "Tap to fly" opens the **level map** ("Choose a level"): a round picture
 of each landscape, joined by a dashed line. Tap a level to start there.
 Level 2 is locked at first (grey with a padlock) and opens once you have
-completed level 1; the game remembers. **How to play** gives a short
+completed level 1; the game remembers, and a completed level gets a
+green tick. Tapping a locked level tells you which level to complete
+first. The **Levels** button in the main menu opens the same map just to
+look: tapping a level there starts nothing but tells you whether you
+have completed it, have not yet, or must complete the one before.
+**How to play** gives a short
 guide (goal, steering, speed, pause); under **Options** you switch music
 and sounds.
 

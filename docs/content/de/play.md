@@ -15,7 +15,12 @@
 Bild jeder Landschaft, verbunden mit einer gestrichelten Linie. Tippe
 auf ein Level, um dort zu starten. Level 2 ist zuerst gesperrt (grau mit
 Schloss) und wird frei, sobald du Level 1 geschafft hast; das Spiel
-merkt es sich. Unter **How to play** steht eine kurze Anleitung auf
+merkt es sich, und ein geschafftes Level bekommt ein grünes Häkchen.
+Tippst du auf ein gesperrtes Level, steht da, welches du zuerst schaffen
+musst. Der Knopf **Levels** im Hauptmenü öffnet dieselbe Karte nur zum
+Anschauen: Ein Tipp auf ein Level startet dort nichts, sondern sagt dir,
+ob du es schon geschafft hast, noch nicht, oder zuerst das davor
+schaffen musst. Unter **How to play** steht eine kurze Anleitung auf
 Englisch (Ziel, Steuerung, Tempo, Pause), unter **Options** schaltest du
 Musik und Geräusche.
 

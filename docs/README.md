@@ -507,6 +507,30 @@ that isn't code here. Keep entries short and dated.
     there is game over, never "level complete"; a crash there still
     lands). Both already worked. Checked in the browser: keyboard flow
     to the level map, and the best-times table at 844×390 and 1440×900.
+- Asked for (seen on an iPhone): the main menu was cut off at the bottom
+  in landscape with Safari's bars, and the Levels button should come
+  back (it shows how far you have come). Levels is back; screens up to
+  420 px high get a compact menu (smaller title, flatter buttons) and
+  the phone tip box is shorter and stays clear of the buttons.
+  `scripts/shot.sh` got `PHONE=1` (touch-screen emulation); checked
+  home, Levels, How to play and Options at 667×320, 844×340 and
+  844×390.
+- Asked for: the Levels button only shows how far you are. Tapping a
+  level there starts nothing; a note says "already completed",
+  "not completed yet" or "locked: complete level N-1 first". In the
+  level choice ("Tap to fly") a locked level says the same. Completed
+  levels get a green tick; the page now keeps them as
+  `airplane-scoring.completed` (taken over once from the old
+  `airplane-scoring.unlocked`). Checked on screenshots at 667×320,
+  844×390 (phone) and 1440×900.
+- Found on an iPhone: in How to play, Back sat below the screen and
+  there was no way out. The card was sized in vh, and iOS Safari counts
+  vh without its bars, so it came out taller than the screen. Now the
+  card takes only the room between the title and Back and its text
+  scrolls inside it; screens under 300 px high get a smaller menu, and
+  the start screen and the pause menu (centred by auto margins now)
+  scroll instead of cutting anything off. Checked at 667×280, 667×320,
+  844×300, 844×390 (phone) and 1440×900.
 
 ## Concepts
 

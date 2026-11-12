@@ -10,6 +10,7 @@
 #      START=1   show the start screen ("Click to fly"); by default the page
 #                gets "?play" and skips it, so the shot shows the game
 #      LEVEL=2   start the flight in level 2 ("&level=2")
+#      PHONE=1   emulate a touch screen (the page's phone layout)
 set -euo pipefail
 cd "$(dirname "$0")/.."
 out="${1:-target/shots/latest.png}"

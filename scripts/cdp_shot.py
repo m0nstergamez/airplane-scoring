@@ -152,9 +152,18 @@ class DevTools:
 def main():
     chrome, url, out, size, ms, profile = sys.argv[1:7]
     width, height = (int(v) for v in size.split(","))
+    # PHONE=1: a touch screen without a mouse, so the page's
+    # "(pointer: coarse)" styles (the phone layout) apply.
+    phone = []
+    if os.environ.get("PHONE"):
+        phone = [
+            "--blink-settings=primaryPointerType=2,availablePointerTypes=2,"
+            "primaryHoverType=1,availableHoverTypes=1"
+        ]
     proc = subprocess.Popen(
         [
             chrome,
+            *phone,
             "--headless=new",
             "--use-angle=swiftshader",
             "--enable-unsafe-swiftshader",
