@@ -77,14 +77,22 @@ async fn main() {
         // fresh flight ready for the next "Tap to fly".
         if page_js::new_flight() != flight {
             flight = page_js::new_flight();
+            // Leaving a flight (Menu, Restart) still counts its score, like
+            // a game over does (that one is in the list already).
+            if !world.is_over() {
+                let mut fanfare = Vec::new();
+                highscores.add(world.score(), &mut fanfare);
+                page_js::save_highscores(HIGHSCORE_COUNT, highscores.list());
+            }
             world = new_world();
             crash_flash = 0.0;
             result = None;
         }
 
-        // "Level complete": a tap, click or Enter goes on to the next level.
         // "Level complete": the buttons Next level and Menu (Enter: next).
-        if world.level_complete().is_some() {
+        // Not while paused: a key pressed in the pause menu is not for them.
+        let playing = page_js::started();
+        if playing && world.level_complete().is_some() {
             match pressed_level_end_button(&world) {
                 Some(LevelEndChoice::Next) => world.go_on(),
                 Some(LevelEndChoice::Menu) => page_js::show_menu(),
@@ -93,7 +101,7 @@ async fn main() {
         }
 
         // Game over: a tap, click or Enter starts a new flight.
-        if world.can_restart() && restart_pressed() {
+        if playing && world.can_restart() && restart_pressed() {
             world = new_world();
             crash_flash = 0.0;
             result = None;

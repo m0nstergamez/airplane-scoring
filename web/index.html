@@ -545,9 +545,13 @@
       else if (b.dataset.action === "music") setSound({ ...sound, music: !sound.music });
       else if (b.dataset.action === "sounds") setSound({ ...sound, sounds: !sound.sounds });
     });
+    // Enter or Space flies from the main menu's home page. On a focused
+    // button (Tab) they press that button instead, e.g. a level on the map.
     addEventListener("keydown", (e) => {
-      const waiting = !start.classList.contains("gone");
-      if (waiting && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); fly(1); }
+      const home = !start.classList.contains("gone")
+        && start.querySelector('.panel[data-panel="home"]').classList.contains("shown");
+      const onButton = e.target instanceof Element && e.target.closest("button");
+      if (home && !onButton && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); fly(1); }
     });
     if (new URLSearchParams(location.search).has("play")) {
       start.classList.add("gone");
@@ -613,8 +617,12 @@
       if (e.key !== "Escape" && e.key !== "p" && e.key !== "P") return;
       if (menu.classList.contains("open")) closeMenu(); else openMenu();
     });
-    // Leaving the page (another app, another tab) pauses the game.
+    // Leaving the page (another app, another tab) pauses the game, and so
+    // does turning the phone upright: the game hides behind "turn your
+    // phone" then, and must not fly on unseen.
     document.addEventListener("visibilitychange", () => { if (document.hidden) openMenu(); });
+    matchMedia("(orientation: portrait) and (pointer: coarse)")
+      .addEventListener("change", (e) => { if (e.matches) openMenu(); });
   </script>
   <script>load("airplane-scoring.wasm");</script>
   <script>

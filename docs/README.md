@@ -449,6 +449,25 @@ that isn't code here. Keep entries short and dated.
   playing). `next_level` now refills them (`lives.max(LIVES)`, so a test
   with unlimited lives keeps them), which also clears the smoke. A test
   loses a life in level 1, lands, and checks level 2 starts with all 3.
+- Bug hunt (PC and phone), asked for. Found and fixed:
+  - Too fast or too slow right before a level's end: the autopilot took
+    over, but the overspeed timer ran on and the stall sank the plane,
+    so it blew up during the landing. `World::hands_off` (takeoff,
+    approach, rollout) now turns off the speed warnings, their tones and
+    the stall. Two tests fly into the landing at full gas and full brake.
+  - Computer: Enter on a button picked with Tab (e.g. "2 Beach" on the
+    level map) started level 1. Enter/Space start a flight only on the
+    home page and not on a focused button. Checked in headless Chrome
+    before and after (chosen level 1 → 2).
+  - Phone: turned upright mid-flight, the game flew on behind "turn
+    your phone". Now that pauses it, like switching apps.
+  - Leaving a flight with Menu or Restart dropped its score; it now goes
+    into the highscores like a game over.
+  - Enter/Space or a tap while the pause menu was open could still press
+    Next level or restart after game over; ignored while paused now.
+  - Checked and fine: a tap on the canvas cannot fall through to the
+    main menu (the JS glue cancels touch events), and the level-end
+    buttons handle phone touch coordinates.
 
 ## Concepts
 
