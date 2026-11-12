@@ -142,7 +142,7 @@ they appear; gulls from behind always call, so listen out.
 
 | You hear | When |
 |---|---|
-| Engine | Always. Climbing sounds like full power, diving like idling. |
+| Engine | Always, like a jet: a high turbine whine and a roar. Climbing sounds like full power, diving like idling. The higher (further away) you fly, the quieter. |
 | Wind | Always. Louder in rain, in gusts and when you dive. |
 | Rain | While it rains (only in later levels). Louder the harder it rains. |
 | Thunder | A moment after each lightning (only in later levels). |

@@ -277,6 +277,18 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
   Verjüngung, Öffnung, Seile, Korb, Rand; Möwenkörper, Kopf, Schnabel und
   die schlagenden Flügel. `PLAYER_HIT_RADIUS` und `GULL_RADIUS` sind weg.
   Tests prüfen knappe Vorbeiflüge mit 2-px-Quadraten.
+- Triebwerkston: eine Turbine statt des Propeller-Tuckerns, weil das
+  Flugzeug als Düsenflugzeug gezeichnet ist. `scripts/make-sounds.py`
+  `turbine()`: Pfeifen des Verdichters (zwei Töne 3 Hz auseinander für
+  ein Schimmern, dazu ein Oberton), ein Brummen bei 140 Hz und
+  gefiltertes Rauschen für den Abgasstrahl; Vollgas hat ein höheres
+  Pfeifen (1800 statt 1400 Hz), helleres Rauschen und Zischen.
+  Schleifen von 2 s mit ganzen Schwingungen, darum schliessen sie
+  nahtlos. Das Triebwerk wird auch mit der Entfernung leiser:
+  `Mix::target` bekommt die Nähe des Flugzeugs (`Bounds::nearness`,
+  dieselbe 0..1, die seine Grösse steuert), von 30 %
+  (`ENGINE_FAR_VOLUME`) ganz oben bis voll nahe am Boden. Die
+  Tondateien wurden mit Zahlen geprüft (Nahtstelle, Lautstärke).
 
 ## Konzepte
 

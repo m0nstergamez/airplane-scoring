@@ -39,8 +39,9 @@ pub use level::{
 pub use scenery::{background_x, scroll_distance, SCROLL_SPEED};
 pub use shape::{any_overlap, Poly};
 pub use sound::{
-    Mix, BALLOON_BURNER_VOLUME, BEACH_LEVEL, BEACH_VOLUME, CRASH_VOLUME, DIVE_WIND, ENGINE_VOLUME,
-    GULL_CALL_VOLUME, MIX_CHANGE_PER_SECOND, NEW_LEVEL_VOLUME, RAIN_VOLUME, WIND_VOLUME,
+    Mix, BALLOON_BURNER_VOLUME, BEACH_LEVEL, BEACH_VOLUME, CRASH_VOLUME, DIVE_WIND,
+    ENGINE_FAR_VOLUME, ENGINE_VOLUME, GULL_CALL_VOLUME, MIX_CHANGE_PER_SECOND, NEW_LEVEL_VOLUME,
+    RAIN_VOLUME, WIND_VOLUME,
 };
 pub use tilt::{Tilt, TILT_DEAD_ZONE_DEG, TILT_FULL_DEG, TILT_MIN_GRAVITY, TILT_SMOOTHING};
 pub use weather::{
@@ -247,13 +248,21 @@ impl Bounds {
         self.depth_up_to(y, PLANE_NEAR_SIZE)
     }
 
-    fn depth_up_to(&self, y: f32, near_size: f32) -> f32 {
+    /// How near something at height `y` is: 0 at the top of the screen
+    /// (far away) to 1 from the height of a balloon standing on a pad
+    /// down (in the foreground). Depth sizes and the engine's loudness
+    /// follow it.
+    pub fn nearness(&self, y: f32) -> f32 {
         let near_y = Balloon::standing_y(*self);
-        let near = if near_y > 0.0 {
+        if near_y > 0.0 {
             (y / near_y).clamp(0.0, 1.0)
         } else {
             1.0
-        };
+        }
+    }
+
+    fn depth_up_to(&self, y: f32, near_size: f32) -> f32 {
+        let near = self.nearness(y);
         self.scale() * (OBJECT_SIZE + (near_size - OBJECT_SIZE) * near)
     }
 }
@@ -463,7 +472,12 @@ impl World {
         // Rain (and storms) only where a rainy level shows; none yet.
         self.weather.tick(&mut self.events, levels.rain_room());
         self.mix = self.mix.approach(
-            Mix::target(&self.player, &self.weather, &self.levels()),
+            Mix::target(
+                &self.player,
+                &self.weather,
+                &self.levels(),
+                self.bounds.nearness(self.player.pos.y),
+            ),
             MIX_CHANGE_PER_SECOND * TICK_SECONDS,
         );
         let level = self.levels().level;
@@ -746,6 +760,25 @@ mod tests {
     }
 
     #[test]
+    fn climbing_away_makes_the_engine_quieter() {
+        let mut w = World::new(PHONE);
+        let engine = |w: &World| (w.mix.engine_idle.powi(2) + w.mix.engine_power.powi(2)).sqrt();
+        for _ in 0..60 {
+            w.tick(&Input::NONE); // settle, level flight mid-screen
+        }
+        let middle = engine(&w);
+        for _ in 0..120 {
+            w.balloons.list.clear();
+            w.tick(&Input::new(-1.0)); // up to the top
+        }
+        for _ in 0..60 {
+            w.balloons.list.clear();
+            w.tick(&Input::NONE); // level again: same throttle as before
+        }
+        assert!(engine(&w) < middle * 0.8, "{} vs {middle}", engine(&w));
+    }
+
+    #[test]
     fn the_engine_fades_in_at_the_start_and_cuts_out_in_a_crash() {
         let mut w = world_with_plane_ahead(300.0);
         assert_eq!(w.mix, Mix::SILENT);
@@ -755,7 +788,8 @@ mod tests {
         for _ in 0..60 {
             w.tick(&Input::NONE);
         }
-        assert_eq!(w.mix, Mix::target(&w.player, &w.weather, &w.levels()));
+        let near = w.bounds.nearness(w.player.pos.y);
+        assert_eq!(w.mix, Mix::target(&w.player, &w.weather, &w.levels(), near));
         assert!(w.mix.engine_idle > 0.0 && w.mix.engine_power > 0.0);
 
         w.planes[0].pos = w.player.pos;

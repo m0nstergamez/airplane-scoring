@@ -49,7 +49,7 @@ short **meaning**.
 | Lautstärke | volume | `Mix` | How loud a sound plays, 0 to 1 |
 | Mischung | mix | `Mix` | The volumes of all looping sounds at one moment |
 | Schleife | loop | `looped: true` | A sound that repeats without a gap (engine, wind, rain) |
-| Motor | engine | `engine_idle`, `engine_power` | The plane's engine sound |
+| Triebwerk (Motor) | engine | `engine_idle`, `engine_power` | The plane's jet engine sound: turbine whine and roar; quieter the further away |
 | Leerlauf | idle | `engine_idle` | Engine at low power (diving) |
 | Vollgas | full power | `engine_power` | Engine at high power (climbing) |
 | stummschalten | mute | `sound_js.rs` | Switch all sound off |

@@ -257,6 +257,16 @@ that isn't code here. Keep entries short and dated.
   balloon envelope (16-corner ellipse), taper, mouth, ropes, basket, rim;
   gull body, head, beak and the flapping wings. `PLAYER_HIT_RADIUS` and
   `GULL_RADIUS` are gone. Tests probe near misses with 2 px squares.
+- Engine sound: a turbine instead of the propeller putter, as the plane
+  is drawn as a jet. `scripts/make-sounds.py` `turbine()`: compressor
+  whine (two tones 3 Hz apart for a shimmer, plus an overtone), a 140 Hz
+  hum and filtered noise for the exhaust roar; full power has a higher
+  whine (1800 vs 1400 Hz), a brighter roar and hiss. 2 s loops, whole
+  cycles per loop, so they join seamlessly. The engine also fades with
+  distance: `Mix::target` takes the plane's nearness
+  (`Bounds::nearness`, the same 0..1 that drives its size), from 30 %
+  (`ENGINE_FAR_VOLUME`) at the top to full near the ground. The sound
+  files were checked by numbers (loop seam, loudness).
 
 ## Concepts
 
