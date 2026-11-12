@@ -4,8 +4,8 @@ Flieg dein Flugzeug durch Hindernisse und überlebe.
 
 **Jetzt spielen:** <https://m0nstergamez.github.io/airplane-scoring/>
 
-> Das Spiel ist noch am Anfang: Du kannst schon fliegen und das Flugzeug
-> steuern. Hindernisse und Punkte kommen als Nächstes.
+> Das Spiel ist noch am Anfang: Du fliegst durch zwei Levels, weichst
+> Möwen aus und sammelst Punkte. Ein Highscore kommt als Nächstes.
 
 ## Inhalt
 

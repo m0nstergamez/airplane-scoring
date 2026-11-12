@@ -61,6 +61,25 @@ pub const CRASH_TICKS: u32 = (CRASH_SECONDS * 60.0) as u32;
 /// A crashed plane falls this fast, in px per second.
 pub const CRASH_FALL_SPEED: f32 = 120.0;
 
+/// Lives at the start of a flight. Each crash costs one; when the last
+/// one is gone, the game is over.
+pub const LIVES: u32 = 3;
+
+/// After a crash, once the plane flies again, it is safe for this long:
+/// it blinks and cannot crash, so one flock of gulls costs only one life.
+pub const SAFE_SECONDS: f32 = 2.0;
+
+/// [`SAFE_SECONDS`] in ticks.
+pub const SAFE_TICKS: u32 = (SAFE_SECONDS * 60.0) as u32;
+
+/// Points for staying in the air: the score grows by this much every
+/// second of the flight (also while crashed; it stops at game over).
+pub const SCORE_PER_SECOND: u64 = 2;
+
+/// "Game over" shows at least this long before a tap starts again, so a
+/// finger still steering does not skip it.
+pub const RESTART_WAIT_SECONDS: f32 = 1.0;
+
 /// Something that happened during a tick. The game crate reacts to these
 /// with one-shot effects (a sound, a flash); they never change the rules.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -75,6 +94,8 @@ pub enum Event {
     NewLevel { level: u32 },
     /// A gull calls as it appears.
     GullCall,
+    /// The last life is gone: the plane has fallen and the flight is over.
+    GameOver,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -105,6 +126,8 @@ pub struct Player {
     pub steer: f32,
     /// Ticks left until a crashed plane flies again; 0 = flying.
     pub crash_ticks: u32,
+    /// Ticks left of the safe time after a crash; 0 = can crash.
+    pub safe_ticks: u32,
     /// Overlapping another plane right now. A crash needs a *new* touch,
     /// so a plane that recovers inside another one does not crash again.
     touching: bool,
@@ -117,6 +140,7 @@ impl Player {
             pos,
             steer: 0.0,
             crash_ticks: 0,
+            safe_ticks: 0,
             touching: false,
         }
     }
@@ -124,6 +148,11 @@ impl Player {
     /// Out of control after hitting another plane.
     pub fn is_crashed(&self) -> bool {
         self.crash_ticks > 0
+    }
+
+    /// Flying again after a crash, but cannot crash yet (it blinks).
+    pub fn is_safe(&self) -> bool {
+        self.safe_ticks > 0
     }
 }
 
@@ -146,6 +175,10 @@ pub struct World {
     pub ticks: u64,
     /// The level the flight started in (1 ..= `LEVEL_COUNT`).
     pub start_level: u32,
+    /// Lives left, [`LIVES`] at the start.
+    pub lives: u32,
+    /// Ticks since the game ended; 0 while flying.
+    over_ticks: u32,
     events: Vec<Event>,
 }
 
@@ -170,6 +203,8 @@ impl World {
             mix: Mix::SILENT,
             ticks: 0,
             start_level: 1,
+            lives: LIVES,
+            over_ticks: 0,
             events: Vec::new(),
         }
     }
@@ -177,6 +212,25 @@ impl World {
     /// Which level is on screen now, and how far the next has faded in.
     pub fn levels(&self) -> LevelView {
         level_view(self.ticks, self.start_level)
+    }
+
+    /// Is the flight over? True once the last life is gone and the plane
+    /// has fallen. Then nothing moves any more.
+    pub fn is_over(&self) -> bool {
+        self.lives == 0 && !self.player.is_crashed()
+    }
+
+    /// May a tap start a new flight? Only once "Game over" has shown for
+    /// [`RESTART_WAIT_SECONDS`].
+    pub fn can_restart(&self) -> bool {
+        self.is_over() && self.over_ticks as f32 * TICK_SECONDS >= RESTART_WAIT_SECONDS
+    }
+
+    /// Points so far: [`SCORE_PER_SECOND`] for every full second flown.
+    /// Stops growing at game over, since time stands still then.
+    pub fn score(&self) -> u64 {
+        let ticks_per_second = (1.0 / TICK_SECONDS).round() as u64;
+        self.ticks * SCORE_PER_SECOND / ticks_per_second
     }
 
     /// What happened in the last tick. Read it after every `tick`:
@@ -200,12 +254,30 @@ impl World {
         let Bounds { width, height } = self.bounds;
         self.events.clear();
 
-        // A crashed plane ignores the controls and falls until it recovers.
+        // Game over: everything stands still and the sound fades out.
+        if self.is_over() {
+            self.over_ticks += 1;
+            self.mix = self
+                .mix
+                .approach(Mix::SILENT, MIX_CHANGE_PER_SECOND * TICK_SECONDS);
+            return;
+        }
+
+        // A crashed plane ignores the controls and falls until it recovers;
+        // then it is safe for a while (with the last life gone, it is over).
         let fall = if self.player.is_crashed() {
             self.player.crash_ticks -= 1;
             self.player.steer = 0.0;
+            if self.player.crash_ticks == 0 {
+                if self.lives == 0 {
+                    self.events.push(Event::GameOver);
+                    return;
+                }
+                self.player.safe_ticks = SAFE_TICKS;
+            }
             CRASH_FALL_SPEED
         } else {
+            self.player.safe_ticks = self.player.safe_ticks.saturating_sub(1);
             self.player.steer = input.steer();
             input.steer() * PLAYER_CLIMB_SPEED
         };
@@ -244,6 +316,7 @@ impl World {
         self.gulls.tick(self.bounds, beach, &mut self.events);
 
         // Crash: the player's plane newly touches another plane or a gull.
+        // It costs a life; a crashed or safe plane cannot crash.
         let player = &mut self.player;
         let near = |pos: Vec2, radius: f32| {
             let reach = radius + PLAYER_HIT_RADIUS;
@@ -252,8 +325,9 @@ impl World {
         };
         let touching = self.planes.iter().any(|m| near(m.pos, PLANE_RADIUS))
             || self.gulls.list.iter().any(|g| near(g.pos, GULL_RADIUS));
-        if touching && !player.touching && !player.is_crashed() {
+        if touching && !player.touching && !player.is_crashed() && !player.is_safe() {
             player.crash_ticks = CRASH_TICKS;
+            self.lives = self.lives.saturating_sub(1);
             player.steer = 0.0;
             self.events.push(Event::Crash);
         }
@@ -386,13 +460,139 @@ mod tests {
         let mut w = world_with_plane_ahead(0.0);
         w.tick(&Input::NONE);
         w.planes[0].pos.x += 500.0; // far away
-        for _ in 0..=CRASH_TICKS {
+        for _ in 0..=CRASH_TICKS + SAFE_TICKS {
             w.tick(&Input::NONE);
         }
-        assert!(!w.player.is_crashed());
+        assert!(!w.player.is_crashed() && !w.player.is_safe());
         w.planes[0].pos = w.player.pos;
         w.tick(&Input::NONE);
         assert_eq!(w.events(), [Event::Crash]);
+    }
+
+    /// Crash into the plane parked on the player, then move it far away.
+    fn crash(w: &mut World) -> Vec<Event> {
+        w.planes[0].pos = w.player.pos;
+        w.tick(&Input::NONE);
+        w.planes[0].pos.x += 500.0;
+        w.events().to_vec()
+    }
+
+    /// Tick until the plane flies again and its safe time is over.
+    fn recover(w: &mut World) {
+        for _ in 0..CRASH_TICKS + SAFE_TICKS {
+            w.tick(&Input::NONE);
+        }
+        assert!(!w.player.is_crashed() && !w.player.is_safe());
+    }
+
+    #[test]
+    fn each_crash_costs_a_life() {
+        let mut w = world_with_plane_ahead(300.0);
+        assert_eq!(w.lives, LIVES);
+        assert_eq!(crash(&mut w), [Event::Crash]);
+        assert_eq!(w.lives, LIVES - 1);
+        recover(&mut w);
+        crash(&mut w);
+        assert_eq!(w.lives, LIVES - 2);
+        assert!(!w.is_over(), "one life left");
+    }
+
+    #[test]
+    fn after_a_crash_the_plane_is_safe_for_a_while() {
+        let mut w = world_with_plane_ahead(300.0);
+        crash(&mut w);
+        for _ in 0..CRASH_TICKS {
+            w.tick(&Input::NONE);
+        }
+        assert!(
+            !w.player.is_crashed() && w.player.is_safe(),
+            "flies, blinking"
+        );
+        let y = w.player.pos.y;
+        w.tick(&Input::new(-1.0));
+        assert!(w.player.pos.y < y, "steers while safe");
+        // Flying into something while safe costs nothing.
+        assert_eq!(crash(&mut w), []);
+        assert_eq!(w.lives, LIVES - 1);
+        for _ in 0..SAFE_TICKS {
+            w.tick(&Input::NONE);
+        }
+        assert!(!w.player.is_safe());
+        assert_eq!(crash(&mut w), [Event::Crash], "safe time is over");
+        assert_eq!(w.lives, LIVES - 2);
+    }
+
+    #[test]
+    fn the_last_crash_ends_the_game_once_the_plane_has_fallen() {
+        let mut w = world_with_plane_ahead(300.0);
+        for _ in 1..LIVES {
+            crash(&mut w);
+            recover(&mut w);
+        }
+        crash(&mut w);
+        assert_eq!(w.lives, 0);
+        let mut game_overs = 0;
+        for _ in 0..CRASH_TICKS {
+            assert!(!w.is_over(), "still falling");
+            w.tick(&Input::NONE);
+            game_overs += w.events().iter().filter(|e| **e == Event::GameOver).count();
+        }
+        assert!(w.is_over());
+        assert_eq!(game_overs, 1);
+    }
+
+    #[test]
+    fn after_game_over_nothing_moves_and_the_sound_fades_out() {
+        let mut w = world_with_plane_ahead(300.0);
+        w.lives = 1;
+        crash(&mut w);
+        for _ in 0..CRASH_TICKS {
+            w.tick(&Input::NONE);
+        }
+        assert!(w.is_over());
+        let (ticks, score, player) = (w.ticks, w.score(), w.player);
+        let plane = w.planes[0].clone();
+        for _ in 0..120 {
+            w.tick(&Input::new(-1.0));
+            assert_eq!(w.events(), []);
+        }
+        assert_eq!((w.ticks, w.score(), w.player), (ticks, score, player));
+        assert_eq!(w.planes[0], plane);
+        assert_eq!(w.mix, Mix::SILENT);
+    }
+
+    #[test]
+    fn a_new_flight_can_start_only_after_game_over_has_shown_a_moment() {
+        let mut w = world_with_plane_ahead(300.0);
+        w.lives = 1;
+        crash(&mut w);
+        assert!(!w.can_restart(), "still flying");
+        for _ in 0..CRASH_TICKS {
+            w.tick(&Input::NONE);
+        }
+        let wait = (RESTART_WAIT_SECONDS / TICK_SECONDS).round() as u32;
+        for _ in 0..wait - 1 {
+            w.tick(&Input::NONE);
+            assert!(!w.can_restart());
+        }
+        w.tick(&Input::NONE);
+        assert!(w.can_restart());
+    }
+
+    #[test]
+    fn the_score_grows_by_two_every_second() {
+        let mut w = world_with_plane_ahead(300.0);
+        assert_eq!(w.score(), 0);
+        let mut last = 0;
+        for second in 1..=10 {
+            for _ in 0..60 {
+                w.tick(&Input::NONE);
+                assert!(w.score() >= last, "never goes down");
+                last = w.score();
+            }
+            assert_eq!(w.score(), SCORE_PER_SECOND * second);
+        }
+        assert_eq!(SCORE_PER_SECOND, 2);
     }
 
     #[test]
@@ -442,6 +642,7 @@ mod tests {
     #[test]
     fn each_new_level_is_one_event_when_it_begins() {
         let mut w = world();
+        w.lives = u32::MAX; // gulls must not end the flight
         let level_ticks = (LEVEL_SECONDS / TICK_SECONDS).round() as u64;
         let seen = new_levels(&mut w, 2.5 * LEVEL_SECONDS);
         // Not at the start, then level 2, then level 1 again.
@@ -452,6 +653,7 @@ mod tests {
     fn a_flight_started_in_level_2_moves_on_to_level_1() {
         let mut w = world();
         w.start_level = 2;
+        w.lives = u32::MAX; // gulls must not end the flight
         assert_eq!(w.levels().level, 2);
         let seen = new_levels(&mut w, 1.5 * LEVEL_SECONDS);
         assert_eq!(seen.iter().map(|&(_, l)| l).collect::<Vec<_>>(), [1]);
@@ -505,6 +707,7 @@ mod tests {
         // ... at a calm moment: not crashed, no gull near the plane.
         let calm = |w: &World| {
             !w.player.is_crashed()
+                && !w.player.is_safe()
                 && w.gulls.list.iter().all(|g| {
                     (g.pos.x - w.player.pos.x).abs() + (g.pos.y - w.player.pos.y).abs() > 100.0
                 })
@@ -540,6 +743,7 @@ mod tests {
             },
             1,
         );
+        w.lives = u32::MAX; // keep flying through both levels
         let (mut lightning, mut thunder, mut loudest_rain) = (0, 0, 0.0_f32);
         for _ in 0..5 * 3600 {
             w.tick(&Input::NONE);
@@ -549,6 +753,7 @@ mod tests {
                     Event::Thunder { .. } => thunder += 1,
                     // 5 minutes: both levels; at the beach gulls can hit the plane.
                     Event::Crash | Event::NewLevel { .. } | Event::GullCall => {}
+                    Event::GameOver => panic!("lives cannot run out"),
                 }
             }
             loudest_rain = loudest_rain.max(w.mix.rain);
@@ -650,6 +855,7 @@ mod tests {
         let mut logs = [Vec::new(), Vec::new()];
         for (w, log) in [&mut a, &mut b].into_iter().zip(&mut logs) {
             w.spawn_plane("m", Vec2::new(5.0, 5.0), Vec2::new(37.0, 91.0));
+            w.lives = u32::MAX; // long enough for a thunderstorm
             for i in 0..10_000 {
                 w.tick(&Input::new(((i % 7) as f32 - 3.0) / 3.0));
                 log.extend_from_slice(w.events());

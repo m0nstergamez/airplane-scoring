@@ -3,7 +3,7 @@
 
 use airplane_scoring_core::{
     background_x, pick_steer, scroll_distance, start_level, steer_from_keys, steer_toward, Bounds,
-    Clock, Event, Gull, Input, Tilt, World, PLANE_RADIUS, TICK_SECONDS,
+    Clock, Event, Gull, Input, Tilt, World, LIVES, PLANE_RADIUS, TICK_SECONDS,
 };
 use macroquad::prelude::*;
 
@@ -32,16 +32,7 @@ async fn main() {
     let mut audio = audio::Audio::start();
     let mut scenery = scenery::Scenery::start();
 
-    // The seed decides the weather; the clock makes every flight different.
-    let seed = (macroquad::miniquad::date::now() * 1000.0) as u64;
-    let mut world = World::with_seed(
-        Bounds {
-            width: screen_width(),
-            height: screen_height(),
-        },
-        seed,
-    );
-    world.start_level = start_level(page_js::requested_level());
+    let mut world = new_world();
 
     let mut clock = Clock::default();
     let mut tilt = Tilt::default();
@@ -67,6 +58,12 @@ async fn main() {
         let gravity = tilt_js::sample();
         if is_key_pressed(KeyCode::M) {
             sound_js::toggle_mute();
+        }
+
+        // Game over: a tap, click or Enter starts a new flight.
+        if world.can_restart() && restart_pressed() {
+            world = new_world();
+            crash_flash = 0.0;
         }
 
         // Fixed ticks; the game stands still until "Tap to fly".
@@ -126,11 +123,16 @@ async fn main() {
             draw_gull(gull);
         }
 
-        draw_player(
-            world.player.pos.x,
-            world.player.pos.y,
-            world.player.is_crashed().then_some(world.ticks),
-        );
+        // A safe plane blinks (5 times a second), on real time so it
+        // also blinks smoothly between ticks.
+        let blink_off = world.player.is_safe() && (get_time() * 10.0) as u64 % 2 == 1;
+        if !blink_off {
+            draw_player(
+                world.player.pos.x,
+                world.player.pos.y,
+                world.player.is_crashed().then_some(world.ticks),
+            );
+        }
         draw_rain(rain, world.weather.wind, world.ticks);
 
         // Lightning lights the whole sky; a crash flashes red.
@@ -165,6 +167,13 @@ async fn main() {
             );
         }
 
+        draw_lives(&world);
+        if world.is_over() {
+            draw_game_over(&world); // shows the score itself
+        } else {
+            draw_score(&world);
+        }
+
         draw_text_on_landscape(
             &format!(
                 "{}  |  ticks: {}",
@@ -184,6 +193,114 @@ async fn main() {
         next_frame().await
     }
 }
+
+/// A new flight: full lives, level 1 (or `?level=`), fresh weather.
+fn new_world() -> World {
+    // The seed decides the weather; the clock makes every flight different.
+    let seed = (macroquad::miniquad::date::now() * 1000.0) as u64;
+    let mut world = World::with_seed(
+        Bounds {
+            width: screen_width(),
+            height: screen_height(),
+        },
+        seed,
+    );
+    world.start_level = start_level(page_js::requested_level());
+    world
+}
+
+/// A new tap, click, Enter or Space this frame (not a finger still held).
+fn restart_pressed() -> bool {
+    is_mouse_button_pressed(MouseButton::Left)
+        || touches().iter().any(|t| t.phase == TouchPhase::Started)
+        || is_key_pressed(KeyCode::Enter)
+        || is_key_pressed(KeyCode::Space)
+}
+
+/// The score, top centre, all game long.
+fn draw_score(world: &World) {
+    let text = format!("Score {}", world.score());
+    let size = 40.0;
+    let dims = measure_text(&text, None, size as u16, 1.0);
+    let colour = Color::from_rgba(255, 244, 214, 255);
+    draw_text_on_landscape(
+        &text,
+        (screen_width() - dims.width) / 2.0,
+        40.0,
+        size,
+        colour,
+    );
+}
+
+/// One small plane per life, top right, left of the speaker button. Lost
+/// lives are grey; the one just lost blinks while the plane is crashed or
+/// safe.
+fn draw_lives(world: &World) {
+    let (w, h) = (screen_width(), screen_height());
+    let scale = (h / 390.0).clamp(0.6, 1.2) * 0.6;
+    let step = 64.0 * scale;
+    // The speaker button (web/index.html) is 44 px wide, 8 px from the
+    // edge, and moves in for a phone's notch at the side; keep clear of both.
+    let right = w - (w * 0.06).max(8.0) - 44.0 - 16.0 - 30.0 * scale;
+    let left = right - (LIVES - 1) as f32 * step;
+    let y = 30.0;
+    let just_lost = world.player.is_crashed() || world.player.is_safe();
+    let blink = ((get_time() * 4.0) as u64).is_multiple_of(2);
+    for i in 0..LIVES {
+        let x = left + i as f32 * step;
+        let alive = i < world.lives;
+        let (body, accent) = if alive || (just_lost && i == world.lives && blink) {
+            (WHITE_PLANE, BLUE_PLANE)
+        } else {
+            (
+                Color::new(0.55, 0.57, 0.6, 0.55),
+                Color::new(0.4, 0.42, 0.45, 0.55),
+            )
+        };
+        // A soft shadow keeps the icons readable on the bright sky.
+        draw_plane(
+            x + 2.0,
+            y + 2.0,
+            scale,
+            Color::new(0.0, 0.0, 0.0, 0.3),
+            Color::new(0.0, 0.0, 0.0, 0.3),
+        );
+        draw_plane(x, y, scale, body, accent);
+    }
+}
+
+/// "Game over", the final score, and how to fly again.
+fn draw_game_over(world: &World) {
+    let (w, h) = (screen_width(), screen_height());
+    draw_rectangle(0.0, 0.0, w, h, Color::new(0.08, 0.09, 0.12, 0.6));
+    let centred = |text: &str, y: f32, size: f32, colour: Color| {
+        let dims = measure_text(text, None, size as u16, 1.0);
+        draw_text_on_landscape(text, (w - dims.width) / 2.0, y, size, colour);
+    };
+    centred(
+        "Game over",
+        h * 0.4,
+        80.0,
+        Color::from_rgba(255, 220, 90, 255),
+    );
+    centred(
+        &format!("Score {}", world.score()),
+        h * 0.4 + 52.0,
+        32.0,
+        WHITE,
+    );
+    if world.can_restart() {
+        centred(
+            "Tap or click to fly again",
+            h * 0.4 + 100.0,
+            28.0,
+            Color::from_rgba(160, 200, 255, 255),
+        );
+    }
+}
+
+const WHITE_PLANE: Color = Color::new(0.94, 0.957, 0.98, 1.0);
+const BLUE_PLANE: Color = Color::new(0.122, 0.435, 0.92, 1.0);
 
 /// Text with a dark shadow, so it stays readable on light sky and on grass.
 fn draw_text_on_landscape(text: &str, x: f32, y: f32, size: f32, colour: Color) {
@@ -268,8 +385,8 @@ fn draw_gull(gull: &Gull) {
 /// Side view of a small plane flying right, centred on (x, y).
 /// `crashed`: the tick count while the plane is out of control.
 fn draw_player(x: f32, y: f32, crashed: Option<u64>) {
-    let mut body = Color::from_rgba(240, 244, 250, 255);
-    let mut accent = Color::from_rgba(31, 111, 235, 255);
+    let mut body = WHITE_PLANE;
+    let mut accent = BLUE_PLANE;
     if let Some(ticks) = crashed {
         body = Color::from_rgba(255, 138, 92, 255);
         accent = Color::from_rgba(196, 48, 43, 255);
@@ -284,27 +401,21 @@ fn draw_player(x: f32, y: f32, crashed: Option<u64>) {
             );
         }
     }
+    draw_plane(x, y, 1.0, body, accent);
+}
+
+/// The plane's shape, flying right, centred on (x, y), `scale` times its
+/// size in the game (for the lives, top right).
+fn draw_plane(x: f32, y: f32, scale: f32, body: Color, accent: Color) {
+    let p = |dx: f32, dy: f32| vec2(x + dx * scale, y + dy * scale);
     // fuselage
-    draw_rectangle(x - 26.0, y - 5.0, 44.0, 10.0, body);
-    draw_triangle(
-        vec2(18.0 + x, y - 5.0),
-        vec2(30.0 + x, y),
-        vec2(18.0 + x, y + 5.0),
-        body,
-    );
+    let corner = p(-26.0, -5.0);
+    draw_rectangle(corner.x, corner.y, 44.0 * scale, 10.0 * scale, body);
+    draw_triangle(p(18.0, -5.0), p(30.0, 0.0), p(18.0, 5.0), body);
     // wing and tail fin
-    draw_triangle(
-        vec2(x - 6.0, y),
-        vec2(x + 6.0, y),
-        vec2(x - 10.0, y + 16.0),
-        accent,
-    );
-    draw_triangle(
-        vec2(x - 26.0, y - 5.0),
-        vec2(x - 18.0, y - 5.0),
-        vec2(x - 28.0, y - 18.0),
-        accent,
-    );
+    draw_triangle(p(-6.0, 0.0), p(6.0, 0.0), p(-10.0, 16.0), accent);
+    draw_triangle(p(-26.0, -5.0), p(-18.0, -5.0), p(-28.0, -18.0), accent);
     // cockpit
-    draw_circle(x + 10.0, y - 3.0, 3.5, accent);
+    let c = p(10.0, -3.0);
+    draw_circle(c.x, c.y, 3.5 * scale, accent);
 }
