@@ -113,7 +113,8 @@ Spiel, das unscharf dahinter zu sehen ist:
 - **Menu:** zurück ins Hauptmenü; mit «Tap to fly» oder über die Levels
   beginnt ein neuer Flug.
 
-Wechselst du die App oder den Tab, hält das Spiel von selbst an.
+Wechselst du die App oder den Tab, hält das Spiel von selbst an, und
+ebenso, wenn du das Handy hochkant drehst.
 
 ## Wetter und Zusammenstösse
 
@@ -190,7 +191,8 @@ Computer. Der beste steht klein unter dem Score, während du fliegst
 Bei «Game over» siehst du deinen Score und die Liste der besten Scores
 («Highscores»); dieser Flug ist mit «<» markiert, wenn er in die Liste
 kam. Schlägst du alle bisherigen Scores, blinkt «New highscore!», und
-eine kurze Fanfare spielt.
+eine kurze Fanfare spielt. Ein Flug, den du mit **Menu** oder
+**Restart** verlässt, zählt auch, mit dem Score, den er da hatte.
 
 Die Scores bleiben nur in diesem Browser: Nichts geht ins Internet, und
 deine Freunde haben auf ihren Handys ihre eigene Liste. Löschst du die
@@ -202,6 +204,8 @@ Jedes **Level** hat seine eigene Landschaft: zuerst die Küste (Level 1),
 dann einen Strand bei Sonnenuntergang (Level 2). Nach etwa einer Minute
 Flug endet ein Level mit einer **Landung**: Es kommen keine neuen
 Hindernisse mehr, eine Landebahn erscheint, und der Autopilot übernimmt.
+Solange er fliegt, schweigen die Tempo-Warnungen, und das Tempo geht von
+selbst zurück.
 Das Fahrwerk fährt aus, das Flugzeug setzt auf, bremst und steht: «Level
 1 complete» erscheint mit deinem Score und zwei Knöpfen. **Next level**
 (oder Enter) startet das nächste Level: Seine Landschaft erscheint, es

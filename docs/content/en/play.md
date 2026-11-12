@@ -108,7 +108,8 @@ with the game blurred behind:
 - **Menu:** back to the main menu; "Tap to fly" or the levels start a
   new flight.
 
-Switching to another app or tab pauses the game by itself.
+Switching to another app or tab pauses the game by itself, and so does
+turning the phone upright.
 
 ## Weather and crashes
 
@@ -178,7 +179,8 @@ best one shows small under the score while you fly ("Best").
 At "Game over" you see your score and the list of the best scores
 ("Highscores"); this flight is marked with a "<" when it made the list.
 If you beat every earlier score, "New highscore!" blinks and a short
-fanfare plays.
+fanfare plays. A flight you leave with **Menu** or **Restart** counts
+too, with the score it had then.
 
 The scores stay only in this browser: nothing goes online, and friends
 on their own phones have their own list. Deleting the browser's website
@@ -189,7 +191,8 @@ data clears it.
 Each **level** has its own landscape: first the coast (level 1), then a
 beach at sunset (level 2). After about a minute of flying, a level ends
 with a **landing**: no new obstacles come, a runway appears, and the
-autopilot takes over. The gear comes down, the plane touches down,
+autopilot takes over. Speed warnings stay off while it flies, and the
+speed settles back by itself. The gear comes down, the plane touches down,
 brakes and stops: "Level 1 complete" shows with your score and two
 buttons. **Next level** (or Enter) starts the next level: its landscape
 appears, it counts 3, 2, 1, and you take off from its runway. **Menu**

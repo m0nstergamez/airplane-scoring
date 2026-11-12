@@ -544,6 +544,13 @@ impl World {
         )
     }
 
+    /// Does the plane fly on its own now (takeoff, approach, rollout)? Then
+    /// the player cannot react, so the speed warnings stay off and it
+    /// cannot stall: the airspeed just settles back to cruising.
+    fn hands_off(&self) -> bool {
+        self.autopilot() || self.takeoff.is_some()
+    }
+
     /// Is the flight over? True once the last life is gone and the plane
     /// has fallen. Then nothing moves any more.
     /// How much the plane smokes now, 0..1 ([`DAMAGE_SMOKE`]): more with
@@ -676,7 +683,7 @@ impl World {
     /// apart after [`OVERSPEED_SECONDS`] of overspeed.
     fn warnings(&mut self) {
         let repeat = (WARNING_REPEAT_SECONDS / TICK_SECONDS).round() as u32;
-        let flying = self.explosion.is_none() && !self.is_over();
+        let flying = self.explosion.is_none() && !self.is_over() && !self.hands_off();
         let says = |ticks: u32| ticks >= 1 && (ticks - 1).is_multiple_of(repeat);
         if flying && self.player.is_overspeed() {
             self.overspeed_ticks += 1;
@@ -703,7 +710,7 @@ impl World {
 
     /// The warning to show now, if any.
     pub fn warning(&self) -> Option<Warning> {
-        if self.explosion.is_some() {
+        if self.explosion.is_some() || self.hands_off() {
             None
         } else if self.player.is_overspeed() {
             let limit = (OVERSPEED_SECONDS / TICK_SECONDS).round() as u32;
@@ -869,7 +876,7 @@ impl World {
         }
         *a = a.clamp(AIRSPEED_RANGE.0, AIRSPEED_RANGE.1);
         // Too slow: the wings lose lift and the plane sags.
-        let wanted = if self.player.is_stalling() {
+        let wanted = if self.player.is_stalling() && !self.hands_off() {
             let deep = (STALL_AT - self.player.airspeed) / (STALL_AT - AIRSPEED_RANGE.0);
             wanted + STALL_SINK * scale * deep.clamp(0.0, 1.0)
         } else {
@@ -909,7 +916,8 @@ impl World {
             self.player.vel_y = 0.0; // at the edge: no speed piles up
         }
         // Sagging without lift into the ground: it crashes and explodes.
-        if hit_ground && self.player.is_stalling() && self.explosion.is_none() {
+        if hit_ground && self.player.is_stalling() && self.explosion.is_none() && !self.hands_off()
+        {
             self.break_apart();
         }
         // Landing: touch down once over the runway and down at it, then
@@ -1051,6 +1059,11 @@ impl World {
         );
         // While a warning voice speaks, its tone steps back so the words
         // come through (like a real cockpit).
+        // The plane flies itself: no warning tones (see `hands_off`).
+        if self.hands_off() {
+            target.overspeed = 0.0;
+            target.stall = 0.0;
+        }
         if self.voice_speaking(self.stall_ticks) {
             target.stall *= VOICE_DUCK;
         }
@@ -1913,6 +1926,70 @@ mod tests {
         assert_eq!(w.levels().level, BEACH_LEVEL);
         assert_eq!(w.lives, LIVES, "full lives in level 2");
         assert_eq!(w.smoke(), 0.0, "no smoke either");
+    }
+
+    /// Fly with `gas` (nothing to hit) until the approach begins.
+    fn until_approach(w: &mut World, gas: f32) {
+        while w.landing.is_none() {
+            w.balloons.list.clear();
+            w.balloons.pads.clear();
+            w.huts.list.clear();
+            w.tick(&Input::with_throttle(0.0, gas));
+        }
+    }
+
+    #[test]
+    fn overspeed_at_the_end_of_a_level_does_not_wreck_the_landing() {
+        let mut w = World::with_seed(PHONE, 3);
+        // Gas on just before the landing: overspeed as the approach begins.
+        let ticks = ((LEVEL_SECONDS - 1.5) / TICK_SECONDS) as u32;
+        for _ in 0..ticks {
+            w.balloons.list.clear();
+            w.balloons.pads.clear();
+            w.huts.list.clear();
+            w.tick(&Input::NONE);
+        }
+        until_approach(&mut w, 1.0);
+        assert!(
+            w.player.airspeed > OVERSPEED_AT,
+            "overspeed at the approach"
+        );
+        assert_eq!(w.warning(), None, "no warning while the autopilot flies");
+        for _ in 0..(2.0 / TICK_SECONDS) as u32 {
+            w.tick(&Input::with_throttle(0.0, 1.0));
+            assert!(!w.events().contains(&Event::Overspeed));
+        }
+        assert_eq!(w.mix.overspeed, 0.0, "the warning tone has faded out");
+        for _ in 0..(20.0 / TICK_SECONDS) as u32 {
+            w.tick(&Input::with_throttle(0.0, 1.0));
+            if w.level_complete().is_some() {
+                break;
+            }
+        }
+        assert_eq!(w.explosion, None, "the autopilot takes care of the speed");
+        assert_eq!(w.level_complete(), Some(1));
+    }
+
+    #[test]
+    fn braking_into_the_landing_does_not_crash_it() {
+        let mut w = World::with_seed(PHONE, 3);
+        let ticks = ((LEVEL_SECONDS - 1.0) / TICK_SECONDS) as u32;
+        for _ in 0..ticks {
+            w.balloons.list.clear();
+            w.balloons.pads.clear();
+            w.huts.list.clear();
+            w.tick(&Input::NONE);
+        }
+        until_approach(&mut w, -1.0);
+        for _ in 0..(20.0 / TICK_SECONDS) as u32 {
+            w.tick(&Input::with_throttle(0.0, -1.0));
+            if w.level_complete().is_some() {
+                break;
+            }
+        }
+        assert_eq!(w.explosion, None);
+        assert_eq!(w.lives, LIVES);
+        assert_eq!(w.level_complete(), Some(1));
     }
 
     #[test]

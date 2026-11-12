@@ -495,6 +495,28 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
   (`lives.max(LIVES)`, damit ein Test mit unbegrenzten Leben sie
   behält), damit ist auch der Rauch weg. Ein Test verliert in Level 1 ein
   Leben, landet und prüft, dass Level 2 mit allen 3 beginnt.
+- Fehlersuche (Computer und Handy), gewünscht. Gefunden und behoben:
+  - Zu schnell oder zu langsam kurz vor dem Ende eines Levels: Der
+    Autopilot übernahm, aber die Overspeed-Uhr lief weiter, und das
+    Durchsacken zog das Flugzeug nach unten, also explodierte es bei
+    der Landung. `World::hands_off` (Start, Anflug, Ausrollen) schaltet
+    jetzt die Tempo-Warnungen, ihre Töne und das Durchsacken ab. Zwei
+    Tests fliegen mit Vollgas und Vollbremse in die Landung.
+  - Computer: Enter auf einem mit Tab gewählten Knopf (z. B. «2 Beach»
+    auf der Level-Karte) startete Level 1. Enter/Leertaste starten einen
+    Flug nur noch auf der Startseite des Menüs und nicht auf einem
+    gewählten Knopf. Im headless Chrome vorher und nachher geprüft
+    (gewähltes Level 1 → 2).
+  - Handy: Mitten im Flug hochkant gedreht, flog das Spiel hinter «turn
+    your phone» weiter. Jetzt hält es an, wie beim App-Wechsel.
+  - Wer einen Flug mit Menu oder Restart verliess, verlor seinen Score;
+    jetzt kommt er wie bei «Game over» in die Highscores.
+  - Enter/Leertaste oder ein Tipp bei offenem Pausenmenü konnten noch
+    Next level drücken oder nach «Game over» neu starten; während der
+    Pause wird das jetzt ignoriert.
+  - Geprüft und in Ordnung: Ein Tipp auf die Spielfläche fällt nicht
+    ins Hauptmenü durch (das JS-Bundle bricht Touch-Events ab), und die
+    Knöpfe am Level-Ende rechnen Handy-Berührungen richtig um.
 
 ## Konzepte
 
