@@ -82,7 +82,7 @@ async fn main() {
             world.tick(&Input::new(pick_steer(pointer, keys, tilted)));
             for &event in world.events() {
                 audio.play(event);
-                if event == Event::Crash {
+                if event == Event::Crash || event == Event::Explosion {
                     crash_flash = 1.0;
                 }
                 if event == Event::GameOver {
@@ -168,14 +168,27 @@ async fn main() {
         // A safe plane blinks (5 times a second), on real time so it
         // also blinks smoothly between ticks.
         let blink_off = world.player.is_safe() && (get_time() * 10.0) as u64 % 2 == 1;
-        if !blink_off {
-            draw_player(
+        // Small up high, big down low, like the balloons.
+        let plane_size = world.bounds.plane_depth(world.player.pos.y);
+        if let (Some(at), Some(t)) = (world.explosion, world.explosion_progress()) {
+            draw_explosion(at.x, at.y, plane_size, t);
+        } else {
+            // Damage: a smoke trail that thickens with every life lost.
+            draw_damage_smoke(
                 world.player.pos.x,
                 world.player.pos.y,
-                // Small up high, big down low, like the balloons.
-                world.bounds.plane_depth(world.player.pos.y),
-                world.player.is_crashed().then_some(world.ticks),
+                plane_size,
+                world.smoke(),
+                world.ticks,
             );
+            if !blink_off {
+                draw_player(
+                    world.player.pos.x,
+                    world.player.pos.y,
+                    plane_size,
+                    world.player.is_crashed().then_some(world.ticks),
+                );
+            }
         }
         draw_rain(rain, world.weather.wind, world.ticks, scale);
 
@@ -650,6 +663,88 @@ fn draw_gull(gull: &Gull, scale: f32) {
         p(dir * 11.0, -0.5),
         Color::from_rgba(240, 180, 40, 255),
     );
+}
+
+/// The damage smoke trailing from the tail: `smoke` 0 (none) .. 1 (thick
+/// and dark, with a little flame at the tail). Where each puff is
+/// follows from the tick count, so there is no state to keep.
+fn draw_damage_smoke(x: f32, y: f32, size: f32, smoke: f32, ticks: u64) {
+    if smoke <= 0.0 {
+        return;
+    }
+    let tail = vec2(x - 24.0 * size, y - 2.0 * size);
+    let puffs = (6.0 + 10.0 * smoke) as u64;
+    let grey = 0.75 - 0.4 * smoke; // darker when worse
+    for i in 0..puffs {
+        let period = 40;
+        let age = ((ticks + i * period / puffs) % period) as f32 / period as f32;
+        // Puffs drift back with the wind and rise a little, growing and fading.
+        let wobble = ((i * 37 % 11) as f32 - 5.0) * 0.6;
+        let px = tail.x - (10.0 + 90.0 * age) * size;
+        let py = tail.y - (4.0 + 18.0 * age + wobble * age) * size;
+        let r = (2.5 + (5.0 + 7.0 * smoke) * age) * size;
+        let alpha = (0.25 + 0.4 * smoke) * (1.0 - age);
+        draw_circle(px, py, r, Color::new(grey, grey, grey + 0.02, alpha));
+    }
+    if smoke >= 1.0 {
+        // A small flickering flame at the tail.
+        let flicker = 0.7 + 0.3 * ((ticks as f32) * 0.9).sin();
+        draw_circle(
+            tail.x,
+            tail.y,
+            3.5 * size * flicker,
+            Color::from_rgba(255, 150, 40, 220),
+        );
+        draw_circle(
+            tail.x,
+            tail.y,
+            2.0 * size * flicker,
+            Color::from_rgba(255, 230, 120, 240),
+        );
+    }
+}
+
+/// The plane blowing up at (x, y): `t` from 0 (the moment) to 1 (over).
+/// A fireball that swells and cools from white to red, debris flying out
+/// and falling, and a dark smoke cloud that grows and fades.
+fn draw_explosion(x: f32, y: f32, size: f32, t: f32) {
+    let t = t.clamp(0.0, 1.0);
+    // Smoke cloud, behind everything.
+    for i in 0..7 {
+        let a = i as f32 * std::f32::consts::TAU / 7.0;
+        let d = (8.0 + 30.0 * t) * size;
+        let r = (10.0 + 30.0 * t) * size;
+        let alpha = 0.55 * (t * 3.0).min(1.0) * (1.0 - t);
+        draw_circle(
+            x + a.cos() * d,
+            y + a.sin() * d * 0.6 - 12.0 * t * size,
+            r,
+            Color::new(0.22, 0.2, 0.2, alpha),
+        );
+    }
+    // Debris: pieces of the plane flying out, pulled down.
+    for i in 0..12 {
+        let a = i as f32 * 2.399; // golden angle: spread all round
+        let speed = (60.0 + (i * 23 % 40) as f32) * size;
+        let dx = a.cos() * speed * t;
+        let dy = a.sin() * speed * t + 90.0 * size * t * t;
+        let colour = if i % 3 == 0 { BLUE_PLANE } else { WHITE_PLANE };
+        let s = (3.0 - 1.5 * t) * size;
+        draw_rectangle(
+            x + dx - s,
+            y + dy - s,
+            2.0 * s,
+            2.0 * s,
+            Color::new(colour.r, colour.g, colour.b, 1.0 - t * 0.6),
+        );
+    }
+    // Fireball: big quickly, then shrinking and cooling.
+    let swell = (t * 5.0).min(1.0);
+    let fire = (1.0 - t).powf(1.5);
+    let r = (12.0 + 26.0 * swell) * size * (0.4 + 0.6 * fire);
+    draw_circle(x, y, r, Color::new(0.85, 0.2, 0.08, 0.8 * fire));
+    draw_circle(x, y, r * 0.72, Color::new(1.0, 0.55, 0.1, 0.9 * fire));
+    draw_circle(x, y, r * 0.42, Color::new(1.0, 0.92, 0.6, fire));
 }
 
 /// Side view of a small plane flying right, centred on (x, y), at the

@@ -189,7 +189,9 @@ flowchart LR
   them. Nothing leaves the device.
 - **Lives** are counted in core too: a crash costs one (`World.lives`),
   a recovering plane is safe for `SAFE_SECONDS` (`Player::is_safe`), and
-  when the last one is gone the plane falls, `Event::GameOver` fires and
+  every lost life adds smoke (`World::smoke`, `DAMAGE_SMOKE`); when the
+  last one goes the plane explodes (`Event::Explosion`, `World::explosion`,
+  `World::explosion_progress` over the crash time), then `Event::GameOver` fires and
   `World::tick` stands still (`World::is_over`). The game crate only draws
   it and, once `World::can_restart` says so, starts a new `World` on a tap.
   The score (`World::score`) follows from the ticks flown, so it stops

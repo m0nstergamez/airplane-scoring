@@ -229,6 +229,32 @@ def burner(seed, seconds):
     return out
 
 
+def explosion(seed, seconds):
+    """Explosion: a sharp blast, a deep boom that drops in pitch, a
+    rumbling cloud that rolls away, and crackling bits."""
+    rng = random.Random(seed)
+    n = int(seconds * RATE)
+    blast = lowpass(noise(rng, n), 3000.0)
+    rumble = lowpass(lowpass(noise(rng, n), 160.0), 160.0)
+    out = []
+    phase = 0.0
+    for i in range(n):
+        t = i / RATE
+        hz = 30.0 + 60.0 * math.exp(-t / 0.25)  # boom: 90 Hz down to 30 Hz
+        phase += 2 * math.pi * hz / RATE
+        x = 1.6 * blast[i] * math.exp(-t / 0.08)
+        x += 1.2 * math.sin(phase) * math.exp(-t / 0.5)
+        x += 7.0 * rumble[i] * math.exp(-t / 0.9)
+        out.append(x)
+    # Crackles: short bright ticks scattered over the first second.
+    for _ in range(40):
+        at, loud = rng.randrange(int(0.1 * RATE), int(1.2 * RATE)), rng.uniform(0.2, 0.6)
+        for j in range(120):
+            if at + j < n:
+                out[at + j] += loud * rng.uniform(-1, 1) * math.exp(-j / 25.0)
+    return [x * min(1.0, (seconds - i / RATE) / 0.3) for i, x in enumerate(out)]
+
+
 def fanfare(seconds):
     """New highscore: a short brassy fanfare, "ta-ta-ta-taaa", ending on a
     bright chord that rings out. Brass-like: a few strong overtones and a
@@ -283,3 +309,4 @@ if __name__ == "__main__":
     write("new-level.wav", new_level(1.3), 0.8)
     write("balloon-burner.wav", burner(8, 1.1), 0.8)
     write("new-highscore.wav", fanfare(1.8), 0.8)
+    write("explosion.wav", explosion(9, 2.5), 0.95)

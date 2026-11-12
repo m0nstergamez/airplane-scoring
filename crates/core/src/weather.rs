@@ -293,7 +293,8 @@ mod tests {
                 | Event::GullCall
                 | Event::BalloonBurner
                 | Event::GameOver
-                | Event::NewHighscore => {
+                | Event::NewHighscore
+                | Event::Explosion => {
                     panic!("not weather")
                 }
             }

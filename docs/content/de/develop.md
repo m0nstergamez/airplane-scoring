@@ -196,8 +196,10 @@ flowchart LR
   nur. Nichts verlässt das Gerät.
 - **Leben** zählt auch core: Ein Zusammenstoss kostet eines
   (`World.lives`), ein Flugzeug, das sich erholt, ist `SAFE_SECONDS` lang
-  geschützt (`Player::is_safe`), und ist das letzte weg, fällt das
-  Flugzeug, `Event::GameOver` kommt, und `World::tick` steht still
+  geschützt (`Player::is_safe`), jedes verlorene Leben gibt mehr Rauch
+  (`World::smoke`, `DAMAGE_SMOKE`), und ist das letzte weg, explodiert
+  das Flugzeug (`Event::Explosion`, `World::explosion`,
+  `World::explosion_progress` über die Absturzzeit), dann kommt `Event::GameOver`, und `World::tick` steht still
   (`World::is_over`). Das game-Crate zeichnet das nur und startet, sobald
   `World::can_restart` es erlaubt, bei einem Tipp eine neue `World`.
   Der Score (`World::score`) ergibt sich aus den geflogenen Ticks, darum

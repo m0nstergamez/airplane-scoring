@@ -28,6 +28,8 @@ short **meaning**.
 | Spielerin / Spieler (kurz: Spieler:in) | player | — | Person playing. In running text «Spielerin oder Spieler», in short labels «Spieler:in» |
 | Hindernis | obstacle | `Balloons`, `Pad`, `Huts`, `Gulls`, `Towers` | Something you must not fly into; touching it is a crash. So far: hot-air balloons, launch pads and huts in level 1, gulls and lifeguard towers in level 2 |
 | Leben | life, lives | `World.lives`, `LIVES` | Crashes you can afford; shown as small planes at the top right |
+| Rauchfahne | smoke trail | `World::smoke`, `DAMAGE_SMOKE` | Smoke behind a damaged plane; thicker with every life lost |
+| Explosion | explosion | `Event::Explosion`, `explosion.wav` | The plane blowing up when the last life goes |
 | geschützt (blinken) | safe (blinking) | `Player::is_safe`, `SAFE_SECONDS` | After a crash the plane blinks and cannot lose another life |
 | Game over | game over | `Event::GameOver`, `World::is_over` | The last life is gone; the flight ends. On-screen label, stays English |
 | Highscore | highscore | `Highscores`, `Event::NewHighscore` | The best scores on this device (top 5); a new best one is a new highscore. On-screen labels «Best», «Highscores», «New highscore!» stay English |

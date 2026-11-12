@@ -290,6 +290,16 @@ that isn't code here. Keep entries short and dated.
   water) to 98 % (front), its size from 55 % to 100 %. Added parallax as
   a suggestion: far towers also slide slower, by the same factor. The
   list is kept in depth order so far ones are drawn first.
+- Damage you can see, asked for: after the first lost life a thin light
+  smoke trail, after the second a thick dark one with a flickering flame
+  at the tail (`World::smoke` from `DAMAGE_SMOKE`), and the last life is
+  an explosion instead of a crash (`Event::Explosion`, fireball, debris,
+  smoke cloud, red flash, generated `explosion.wav`), then "Game over".
+  Puff positions follow from the tick count, no particle state. The
+  explosion was checked in a screenshot with a temporary local setup
+  (one life, a plane parked in front; not committed). Lifeguard tower
+  depth (previous entry) rides along in this PR, since #24 was merged
+  before it was pushed.
 
 ## Concepts
 

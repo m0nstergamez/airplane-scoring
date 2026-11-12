@@ -106,8 +106,14 @@ Fliegst du nach einem Zusammenstoss wieder, **blinkt** dein Flugzeug
 dann berührst, kostet kein Leben. So verlierst du nicht zwei Leben an derselben
 Möwengruppe.
 
-Beim letzten Leben fällt dein Flugzeug, dann steht **«Game over»** auf dem
-Bildschirm, zusammen mit deinem Score. Nach einem
+Man sieht den Schaden: Nach dem ersten verlorenen Leben zieht dein
+Flugzeug eine dünne, helle **Rauchfahne** hinter sich her; nach dem
+zweiten wird der Rauch dick und dunkel, und am Heck flackert eine kleine
+Flamme.
+
+Beim letzten Leben **explodiert** dein Flugzeug: ein Feuerball,
+herumfliegende Trümmer und eine Rauchwolke, mit einem lauten Knall.
+Dann steht **«Game over»** auf dem Bildschirm, zusammen mit deinem Score. Nach einem
 kurzen Moment erscheint «Tap or click to fly again»: Tippe, klicke oder
 drücke Enter, und ein neuer Flug beginnt bei Level 1 mit 3 Leben.
 
@@ -182,6 +188,7 @@ Beinen ist Luft, aber es ist sehr eng.
 | Möwe | Wenn eine Möwe auftaucht. Möwen von hinten rufen immer. |
 | Melodie | Wenn ein neues Level beginnt. |
 | Fanfare | Wenn du einen neuen Highscore erreichst. |
+| Explosion | Wenn dein Flugzeug sein letztes Leben verliert. |
 
 Browser erlauben Ton erst, nachdem du die Seite berührt hast. Auf dem
 Handy ist das der Tipp auf «Tap to fly», am Computer der erste Klick

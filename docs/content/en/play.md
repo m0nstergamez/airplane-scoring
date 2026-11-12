@@ -99,7 +99,12 @@ When you fly again after a crash, your plane **blinks** for 2 seconds.
 While it blinks you are safe: nothing you touch costs a life then. So you do not
 lose two lives to the same flock of gulls.
 
-With the last life your plane falls, then **"Game over"** shows on the
+You can see the damage: after the first lost life your plane trails a
+thin, light **smoke**; after the second the smoke gets thick and dark
+and a small flame flickers at the tail.
+
+With the last life your plane **explodes**: a fireball, flying debris
+and a cloud of smoke, with a big bang. Then **"Game over"** shows on the
 screen, together with your score. After a short
 moment "Tap or click to fly again" appears: tap, click or press Enter,
 and a new flight starts in level 1 with 3 lives.
@@ -173,6 +178,7 @@ legs is open air, but it is very tight.
 | Gull | When a gull appears. Gulls from behind always call. |
 | Tune | When a new level begins. |
 | Fanfare | When you set a new highscore. |
+| Explosion | When your plane loses its last life. |
 
 Browsers only allow sound after you have touched the page. On a phone
 that is the tap on "Tap to fly"; on a computer the first click or key
