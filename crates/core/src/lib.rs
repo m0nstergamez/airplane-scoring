@@ -8,6 +8,7 @@ pub const TICK_SECONDS: f32 = 1.0 / 60.0;
 mod balloons;
 mod clock;
 mod gulls;
+mod highscore;
 mod huts;
 mod input;
 mod level;
@@ -27,6 +28,7 @@ pub use gulls::{
     Gull, GullStart, Gulls, FIRST_GULL_SECONDS, GULL_BOB, GULL_CALL_CHANCE, GULL_FROM_LEFT,
     GULL_FROM_RIGHT, GULL_GAP_SECONDS, GULL_SPEED,
 };
+pub use highscore::{Highscores, HIGHSCORE_COUNT};
 pub use huts::{
     Hut, Huts, FIRST_HUT_SECONDS, HUT_EAVES, HUT_GAP_SECONDS, HUT_GROUND, HUT_HEIGHT, HUT_INSET,
     HUT_STYLES, HUT_WIDTH,
@@ -40,8 +42,8 @@ pub use scenery::{background_x, scroll_distance, SCROLL_SPEED};
 pub use shape::{any_overlap, Poly};
 pub use sound::{
     Mix, BALLOON_BURNER_VOLUME, BEACH_LEVEL, BEACH_VOLUME, CRASH_VOLUME, DIVE_WIND,
-    ENGINE_FAR_VOLUME, ENGINE_VOLUME, GULL_CALL_VOLUME, MIX_CHANGE_PER_SECOND, NEW_LEVEL_VOLUME,
-    RAIN_VOLUME, WIND_VOLUME,
+    ENGINE_FAR_VOLUME, ENGINE_VOLUME, GULL_CALL_VOLUME, HIGHSCORE_VOLUME, MIX_CHANGE_PER_SECOND,
+    NEW_LEVEL_VOLUME, RAIN_VOLUME, WIND_VOLUME,
 };
 pub use tilt::{Tilt, TILT_DEAD_ZONE_DEG, TILT_FULL_DEG, TILT_MIN_GRAVITY, TILT_SMOOTHING};
 pub use weather::{
@@ -135,6 +137,9 @@ pub enum Event {
     BalloonBurner,
     /// The last life is gone: the plane has fallen and the flight is over.
     GameOver,
+    /// The finished flight beat every earlier score on this device (sent
+    /// by [`Highscores::add`], not by `World::tick`).
+    NewHighscore,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -1023,6 +1028,7 @@ mod tests {
                         | Event::GullCall
                         | Event::BalloonBurner => {}
                         Event::GameOver => panic!("lives cannot run out"),
+                        Event::NewHighscore => panic!("not from the world"),
                     }
                 }
             }

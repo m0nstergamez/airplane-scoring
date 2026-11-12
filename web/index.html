@@ -223,12 +223,25 @@
     const params = new URLSearchParams(location.search);
     const requestedLevel = parseInt(params.get("level"), 10) || 1;
     let flying = params.has("play");
+    const HIGHSCORE_KEY = "airplane-scoring.highscores";
+    let highscores = [];
+    try {
+      const stored = JSON.parse(localStorage.getItem(HIGHSCORE_KEY) || "[]");
+      if (Array.isArray(stored)) highscores = stored.map((n) => Math.max(0, Math.floor(Number(n) || 0)));
+    } catch (_) { /* nothing stored, or private mode */ }
     miniquad_add_plugin({
       name: "page",
-      version: 1, // must match page_crate_version() in page_js.rs
+      version: 2, // must match page_crate_version() in page_js.rs
       register_plugin: (importObject) => {
         importObject.env.page_started = () => (flying ? 1 : 0);
         importObject.env.page_level = () => requestedLevel;
+        // Highscores: just numbers, kept in this browser only (core
+        // decides which scores count and their order).
+        importObject.env.page_highscore = (i) => highscores[i] || 0;
+        importObject.env.page_set_highscore = (i, score) => {
+          highscores[i] = score;
+          try { localStorage.setItem(HIGHSCORE_KEY, JSON.stringify(highscores)); } catch (_) { /* private mode: not kept */ }
+        };
       },
     });
 

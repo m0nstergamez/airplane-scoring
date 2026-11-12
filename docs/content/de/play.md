@@ -110,6 +110,21 @@ Bildschirm, zusammen mit deinem Score. Nach einem
 kurzen Moment erscheint «Tap or click to fly again»: Tippe, klicke oder
 drücke Enter, und ein neuer Flug beginnt bei Level 1 mit 3 Leben.
 
+## Highscore
+
+Das Spiel merkt sich deine **5 besten Scores** auf diesem Handy oder
+Computer. Der beste steht klein unter dem Score, während du fliegst
+(«Best»).
+
+Bei «Game over» siehst du deinen Score und die Liste der besten Scores
+(«Highscores»); dieser Flug ist mit «<» markiert, wenn er in die Liste
+kam. Schlägst du alle bisherigen Scores, blinkt «New highscore!», und
+eine kurze Fanfare spielt.
+
+Die Scores bleiben nur in diesem Browser: Nichts geht ins Internet, und
+deine Freunde haben auf ihren Handys ihre eigene Liste. Löschst du die
+Websitedaten des Browsers, ist sie weg.
+
 ## Levels
 
 Jede Minute erreichst du ein neues **Level** mit einer neuen Landschaft:
@@ -158,6 +173,7 @@ auftauchen; Möwen von hinten rufen immer, also hör gut hin.
 | Wellen | Am Strand (Level 2). Sie werden mit der Landschaft ein- und ausgeblendet. |
 | Möwe | Wenn eine Möwe auftaucht. Möwen von hinten rufen immer. |
 | Melodie | Wenn ein neues Level beginnt. |
+| Fanfare | Wenn du einen neuen Highscore erreichst. |
 
 Browser erlauben Ton erst, nachdem du die Seite berührt hast. Auf dem
 Handy ist das der Tipp auf «Tap to fly», am Computer der erste Klick

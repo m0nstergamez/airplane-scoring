@@ -173,6 +173,12 @@ flowchart LR
   decides when and where they appear (seeded, like the weather), moves
   them and checks the crash; a gull that calls sends a `GullCall` event,
   so every call you hear belongs to a gull you see.
+- **Highscores** (`crates/core/src/highscore.rs`): core keeps the rules
+  (`Highscores::add`: best first, top `HIGHSCORE_COUNT`, a tie is no
+  record, a record sends `Event::NewHighscore`). The page plugin stores
+  the numbers in the browser's local storage
+  (`airplane-scoring.highscores`); `page_js.rs` only loads and saves
+  them. Nothing leaves the device.
 - **Lives** are counted in core too: a crash costs one (`World.lives`),
   a recovering plane is safe for `SAFE_SECONDS` (`Player::is_safe`), and
   when the last one is gone the plane falls, `Event::GameOver` fires and
@@ -307,6 +313,7 @@ keeps its size relative to the landscape:
 | `CRASH_SECONDS` | `crates/core/src/lib.rs` | how long a crashed plane is out of control |
 | `LIVES` | `crates/core/src/lib.rs` | lives at the start of a flight |
 | `SCORE_PER_SECOND` | `crates/core/src/lib.rs` | how many points each second of flight is worth |
+| `HIGHSCORE_COUNT` | `crates/core/src/highscore.rs` | how many best scores are kept |
 | `SAFE_SECONDS` | `crates/core/src/lib.rs` | how long the plane blinks and cannot crash after a crash |
 | `RAIN_SECONDS` | `crates/core/src/weather.rs` | shortest and longest rain |
 | `STORM_RAIN` | `crates/core/src/weather.rs` | how heavy rain must be for lightning (0 to 1) |

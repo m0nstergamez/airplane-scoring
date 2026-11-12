@@ -229,6 +229,33 @@ def burner(seed, seconds):
     return out
 
 
+def fanfare(seconds):
+    """New highscore: a short brassy fanfare, "ta-ta-ta-taaa", ending on a
+    bright chord that rings out. Brass-like: a few strong overtones and a
+    quick swell at each note's start."""
+    n = int(seconds * RATE)
+    g, c, e, g2, c2 = 392.0, 523.25, 659.25, 783.99, 1046.5
+    notes = [(g, 0.0, 0.12), (c, 0.13, 0.12), (e, 0.26, 0.12), (g2, 0.39, 0.12)]
+    chord = [(c, 0.55), (e, 0.55), (g2, 0.55), (c2, 0.55)]
+    out = [0.0] * n
+
+    def brass(hz, t):
+        p = 2 * math.pi * hz * t
+        return math.sin(p) + 0.6 * math.sin(2 * p) + 0.4 * math.sin(3 * p) + 0.2 * math.sin(4 * p)
+
+    for hz, at, length in notes:
+        for i in range(round(at * RATE), min(n, round((at + length) * RATE))):
+            t = i / RATE - at
+            env = min(1.0, t / 0.02) * min(1.0, (length - t) / 0.03)
+            out[i] += brass(hz, t) * env
+    for hz, at in chord:
+        for i in range(round(at * RATE), n):
+            t = i / RATE - at
+            env = min(1.0, t / 0.03) * math.exp(-t / 0.6)
+            out[i] += 0.5 * brass(hz, t) * env
+    return [x * min(1.0, (seconds - i / RATE) / 0.15) for i, x in enumerate(out)]
+
+
 def new_level(seconds):
     """New level: a short rising tune (C, E, G, high C), bright and happy,
     the last note ringing out."""
@@ -255,3 +282,4 @@ if __name__ == "__main__":
     write("gull-call.wav", gull_call(1.15), 0.8)
     write("new-level.wav", new_level(1.3), 0.8)
     write("balloon-burner.wav", burner(8, 1.1), 0.8)
+    write("new-highscore.wav", fanfare(1.8), 0.8)

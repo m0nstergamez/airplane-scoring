@@ -104,6 +104,20 @@ screen, together with your score. After a short
 moment "Tap or click to fly again" appears: tap, click or press Enter,
 and a new flight starts in level 1 with 3 lives.
 
+## Highscore
+
+The game remembers your **5 best scores** on this phone or computer. The
+best one shows small under the score while you fly ("Best").
+
+At "Game over" you see your score and the list of the best scores
+("Highscores"); this flight is marked with a "<" when it made the list.
+If you beat every earlier score, "New highscore!" blinks and a short
+fanfare plays.
+
+The scores stay only in this browser: nothing goes online, and friends
+on their own phones have their own list. Deleting the browser's website
+data clears it.
+
 ## Levels
 
 Every minute you reach a new **level** with a new landscape: first the
@@ -151,6 +165,7 @@ they appear; gulls from behind always call, so listen out.
 | Waves | At the beach (level 2). They fade in and out with the landscape. |
 | Gull | When a gull appears. Gulls from behind always call. |
 | Tune | When a new level begins. |
+| Fanfare | When you set a new highscore. |
 
 Browsers only allow sound after you have touched the page. On a phone
 that is the tap on "Tap to fly"; on a computer the first click or key

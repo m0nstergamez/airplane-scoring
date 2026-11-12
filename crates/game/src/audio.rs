@@ -8,7 +8,8 @@
 //! own unlock misses iPhones; see docs/README.md).
 
 use airplane_scoring_core::{
-    Event, Mix, BALLOON_BURNER_VOLUME, CRASH_VOLUME, GULL_CALL_VOLUME, NEW_LEVEL_VOLUME,
+    Event, Mix, BALLOON_BURNER_VOLUME, CRASH_VOLUME, GULL_CALL_VOLUME, HIGHSCORE_VOLUME,
+    NEW_LEVEL_VOLUME,
 };
 use macroquad::audio::{load_sound, play_sound, set_sound_volume, PlaySoundParams, Sound};
 use macroquad::experimental::coroutines::{start_coroutine, Coroutine};
@@ -25,6 +26,7 @@ struct Sounds {
     new_level: Sound,
     gull_call: Sound,
     burner: Sound,
+    fanfare: Sound,
 }
 
 impl Sounds {
@@ -51,6 +53,7 @@ impl Sounds {
             new_level: file("new-level").await?,
             gull_call: file("gull-call").await?,
             burner: file("balloon-burner").await?,
+            fanfare: file("new-highscore").await?,
         })
     }
 
@@ -110,6 +113,7 @@ impl Audio {
             set_sound_volume(&s.new_level, 0.0);
             set_sound_volume(&s.gull_call, 0.0);
             set_sound_volume(&s.burner, 0.0);
+            set_sound_volume(&s.fanfare, 0.0);
         }
         self.muted = muted;
     }
@@ -127,7 +131,8 @@ impl Audio {
             Event::GullCall => (&s.gull_call, GULL_CALL_VOLUME),
             Event::BalloonBurner => (&s.burner, BALLOON_BURNER_VOLUME),
             Event::Lightning { .. } => return, // seen, not heard
-            Event::GameOver => return,         // the crash was the sound
+            Event::NewHighscore => (&s.fanfare, HIGHSCORE_VOLUME),
+            Event::GameOver => return, // the crash was the sound
         };
         play_sound(
             sound,

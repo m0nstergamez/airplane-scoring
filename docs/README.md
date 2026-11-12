@@ -270,6 +270,15 @@ that isn't code here. Keep entries short and dated.
 - Removed the help text at the bottom left ("drag or arrow keys to fly |
   ticks: …"): it was meant for testing and lay over the big huts. The
   start screen and the manual explain the controls.
+- Highscore: the user did not answer the design questions, so the
+  recommended defaults were built: stored on the device only (page
+  plugin, localStorage key `airplane-scoring.highscores`, plugin version
+  2), top 5 (`HIGHSCORE_COUNT`), "Best" under the score while flying, the
+  list at game over with this flight marked, "New highscore!" and a
+  generated fanfare (`new-highscore.wav`) for a record. Rules in core
+  (`highscore.rs`): zeros do not count, a tie is no record. Native builds
+  keep the list in memory only. Checked in a screenshot (game over with
+  one life set locally, not committed).
 
 ## Concepts
 
