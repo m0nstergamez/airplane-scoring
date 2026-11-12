@@ -625,6 +625,12 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
   - Geprüft und in Ordnung: macroquad lässt gehaltene Tasten los, wenn
     das Fenster den Fokus verliert, und der Lautsprecher-Knopf gibt den
     Fokus zurück.
+- Version 0.2.0, gewünscht: `Cargo.toml` 0.1.0 → 0.2.0. Seit 0.1.0
+  (PRs #10 bis #36): Level 2 am Strand, Leben und «Game over», Ballone,
+  Hütten, Möwen und Strandtürme, Gas mit Overspeed und Pull up, Start
+  und Landung, Pause und Hauptmenü mit Level-Karte, Bestzeiten pro
+  Level, und viele Korrekturen für Handy und Computer. Tag `v0.2.0` und
+  ein GitHub-Release folgen, sobald das gemergt ist.
 
 ## Konzepte
 
@@ -661,3 +667,9 @@ flowchart LR
     CI -- rot --> PR
     CI -- grün --> M["Merge nach main"] --> CD["CI nochmals + Deploy"] --> P["GitHub Pages:<br/>m0nstergamez.github.io/airplane-scoring"]
 ```
+
+Jeder Merge nach `main` ist auf GitHub Pages live. Eine **Version**
+markiert einen Stand, der einen Namen verdient: Die Workspace-Version in
+`Cargo.toml` steigt in einem Pull Request, und sobald der gemergt ist,
+bekommt sein Merge-Commit einen annotierten Tag `vX.Y.Z` und ein
+GitHub-Release mit den Änderungen seit der letzten Version.

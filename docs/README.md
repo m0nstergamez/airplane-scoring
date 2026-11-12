@@ -567,6 +567,12 @@ that isn't code here. Keep entries short and dated.
     top edge after a 0.15 s press), then checked fixed.
   - Checked and fine: macroquad already lets go of held keys when the
     window loses focus, and the speaker button gives the focus back.
+- Version 0.2.0, asked for: `Cargo.toml` 0.1.0 → 0.2.0. Since 0.1.0
+  (PRs #10 to #36): level 2 at the beach, lives and game over, balloons,
+  huts, gulls and lifeguard towers, throttle with overspeed and pull up,
+  takeoff and landing, pause and main menu with level map, best times
+  per level, and many phone and PC fixes. Tag `v0.2.0` and a GitHub
+  release follow once this is merged.
 
 ## Concepts
 
@@ -603,3 +609,9 @@ flowchart LR
     CI -- red --> PR
     CI -- green --> M["Merge to main"] --> CD["CI again + deploy"] --> P["GitHub Pages:<br/>m0nstergamez.github.io/airplane-scoring"]
 ```
+
+Every merge to `main` is live on GitHub Pages. A **version** marks a
+state worth naming: the workspace version in `Cargo.toml` goes up in a
+pull request, and once that is merged, its merge commit gets an
+annotated tag `vX.Y.Z` and a GitHub release with the changes since the
+last version.
