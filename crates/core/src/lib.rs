@@ -238,14 +238,6 @@ impl World {
         );
         self.ticks += 1;
     }
-
-    /// Greeting shown on screen. Lives in core so it is unit-tested.
-    pub fn greeting(&self) -> String {
-        match self.planes.first() {
-            Some(m) => format!("hello {}", m.name),
-            None => "hello nobody".to_string(),
-        }
-    }
 }
 
 #[cfg(test)]
@@ -257,14 +249,6 @@ mod tests {
             width: 100.0,
             height: 50.0,
         })
-    }
-
-    #[test]
-    fn greeting_names_first_plane() {
-        let mut w = world();
-        assert_eq!(w.greeting(), "hello nobody");
-        w.spawn_plane("plane", Vec2::new(10.0, 10.0), Vec2::new(0.0, 0.0));
-        assert_eq!(w.greeting(), "hello plane");
     }
 
     #[test]

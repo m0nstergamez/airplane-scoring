@@ -3,7 +3,7 @@
 
 use airplane_scoring_core::{
     background_x, level_view, pick_steer, scroll_distance, start_level, steer_from_keys,
-    steer_toward, Bounds, Clock, Event, Input, Tilt, Vec2, World, PLANE_RADIUS, TICK_SECONDS,
+    steer_toward, Bounds, Clock, Event, Input, Tilt, World, PLANE_RADIUS, TICK_SECONDS,
 };
 use macroquad::prelude::*;
 
@@ -41,11 +41,6 @@ async fn main() {
             height: screen_height(),
         },
         seed,
-    );
-    world.spawn_plane(
-        "plane",
-        Vec2::new(screen_width() / 2.0, screen_height() / 2.0),
-        Vec2::new(120.0, 90.0),
     );
 
     let mut clock = Clock::default();
@@ -166,16 +161,6 @@ async fn main() {
             );
         }
 
-        let text = world.greeting();
-        let size = 48.0;
-        let dims = measure_text(&text, None, size as u16, 1.0);
-        draw_text_on_landscape(
-            &text,
-            (screen_width() - dims.width) / 2.0,
-            64.0,
-            size,
-            WHITE,
-        );
         draw_text_on_landscape(
             &format!(
                 "{}  |  ticks: {}",

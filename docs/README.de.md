@@ -131,6 +131,11 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
   keine auf; die Seite meldet den Start über das Plugin "page"
   (`page_js.rs`, ersetzt "level"). Geprüft mit lokal durchsichtig
   gemachter Startanzeige: dahinter `ticks: 0`.
+- Aufgeräumter Bildschirm: Der grüne Ball (das «andere Flugzeug» aus der
+  Vorlage, erzeugt in `main.rs`) und der Text «hello plane»
+  (`World::greeting`, entfernt) sind weg. Darum gibt es vorerst keinen
+  Zusammenstoss; die Regeln dafür bleiben mit ihren Tests in core, für
+  die kommenden Hindernisse.
 
 ## Konzepte
 

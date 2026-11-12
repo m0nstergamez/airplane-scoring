@@ -79,8 +79,10 @@ sets in, gets heavier and fades again. Heavy rain is a **thunderstorm**:
 lightning lights up the sky, and the thunder follows. The further away
 the lightning, the later and quieter the thunder.
 
-If you touch the other plane, you **crash**: your plane smokes, falls
-and ignores the controls for a moment (1.5 seconds). Then you fly again.
+For now the sky is empty, so you cannot crash yet. Once there is
+something in your way and you touch it, you **crash**: your plane
+smokes, falls and ignores the controls for a moment (1.5 seconds). Then
+you fly again.
 
 ## Levels
 
@@ -98,7 +100,7 @@ again.
 | Wind | Always. Louder in rain, in gusts and when you dive. |
 | Rain | While it rains. Louder the harder it rains. |
 | Thunder | A moment after each lightning. |
-| Crash | When you touch the other plane. |
+| Crash | When you touch something (nothing to touch yet). |
 
 Browsers only allow sound after you have touched the page. On a phone
 that is the tap on "Tap to fly"; on a computer the first click or key

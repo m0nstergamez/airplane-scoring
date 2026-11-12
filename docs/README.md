@@ -129,6 +129,10 @@ that isn't code here. Keep entries short and dated.
   and saves none up, before the start; the page reports the start through
   the "page" plugin (`page_js.rs`, replaces "level"). Checked with the
   start screen made see-through locally: behind it `ticks: 0`.
+- Clean screen: the green ball (the template's "other plane", spawned in
+  `main.rs`) and the "hello plane" text (`World::greeting`, removed) are
+  gone. So nothing can crash the player for now; the crash rules stay in
+  core with their tests for the obstacles to come.
 
 ## Concepts
 

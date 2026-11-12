@@ -98,8 +98,8 @@ and a test can replay it exactly.
 
 How many ticks a frame gets is decided by `Clock` in
 `crates/core/src/clock.rs`. Until "Tap to fly" it gives none: the game
-stands still on the start screen, and the flight (weather, levels, the
-other plane) begins with the tap.
+stands still on the start screen, and the flight (weather, levels)
+begins with the tap.
 
 ### Sound
 

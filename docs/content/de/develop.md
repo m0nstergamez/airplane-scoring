@@ -99,8 +99,8 @@ und ein Test kann es genau nachspielen.
 
 Wie viele Ticks ein Bild bekommt, entscheidet `Clock` in
 `crates/core/src/clock.rs`. Bis «Tap to fly» gibt es keine: Das Spiel
-steht auf der Startanzeige still, und der Flug (Wetter, Levels, das
-andere Flugzeug) beginnt mit dem Tipp.
+steht auf der Startanzeige still, und der Flug (Wetter, Levels)
+beginnt mit dem Tipp.
 
 ### Ton
 

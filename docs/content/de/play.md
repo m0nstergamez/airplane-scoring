@@ -81,9 +81,10 @@ Nach einer Weile setzt Regen ein, wird stärker und lässt wieder nach.
 Starker Regen ist ein **Gewitter**: Blitze erhellen den Himmel, und der
 Donner folgt. Je weiter weg der Blitz, desto später und leiser der Donner.
 
-Berührst du das andere Flugzeug, gibt es einen **Zusammenstoss**: Dein
-Flugzeug raucht, fällt und lässt sich einen Moment lang (1,5 Sekunden)
-nicht steuern. Danach fliegst du wieder.
+Im Moment ist der Himmel leer, also gibt es noch keinen Zusammenstoss.
+Sobald dir etwas im Weg ist und du es berührst, gibt es einen
+**Zusammenstoss**: Dein Flugzeug raucht, fällt und lässt sich einen
+Moment lang (1,5 Sekunden) nicht steuern. Danach fliegst du wieder.
 
 ## Levels
 
@@ -101,7 +102,7 @@ Nach dem letzten Level beginnt wieder Level 1.
 | Wind | Immer. Lauter bei Regen, in Böen und wenn du sinkst. |
 | Regen | Solange es regnet. Je stärker der Regen, desto lauter. |
 | Donner | Einen Moment nach jedem Blitz. |
-| Zusammenstoss | Wenn du das andere Flugzeug berührst. |
+| Zusammenstoss | Wenn du etwas berührst (noch gibt es nichts). |
 
 Browser erlauben Ton erst, nachdem du die Seite berührt hast. Auf dem
 Handy ist das der Tipp auf «Tap to fly», am Computer der erste Klick
