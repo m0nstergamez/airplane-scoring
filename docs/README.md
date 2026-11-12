@@ -1,5 +1,8 @@
 # Project notes
 
+Deutsch: [README.de.md](README.de.md). Both versions are kept in sync:
+every entry goes into both files, in the same pull request.
+
 Put design decisions, open questions and anything Claude Code should know
 that isn't code here. Keep entries short and dated.
 
@@ -104,6 +107,8 @@ that isn't code here. Keep entries short and dated.
   layer rules as level 1. Not used by the game yet: there is still no way
   to pick or reach a level, so it only waits in `web/levels/`. Checked in
   the game by drawing it in place of level 1 locally.
+- The project notes now exist in German too (`docs/README.de.md`),
+  kept in sync like the manual; `scripts/check-docs.sh` compares the structure.
 
 ## Concepts
 

@@ -103,6 +103,7 @@ short **meaning**.
 | Deutsch | English | In code | Meaning |
 |---|---|---|---|
 | Anleitung | manual | `docs/content` | This manual (player + developer part) |
+| Projektnotizen | project notes | `docs/README.de.md`, `docs/README.md` | Dated design decisions and open questions, in German and English |
 | Entwickeln | developing | — | Changing the game |
 | bauen | build | `scripts/build-web.sh` | Turn the code into the playable game |
 | Prüfungen | checks | `scripts/check.sh` | Tests, formatting, lints, build, screenshot |
