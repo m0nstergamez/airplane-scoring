@@ -12,25 +12,43 @@ pub const TOUCH_EASE_DISTANCE: f32 = 48.0;
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Input {
     steer: f32,
+    throttle: f32,
 }
 
 impl Input {
     /// No steering: fly level.
-    pub const NONE: Input = Input { steer: 0.0 };
+    pub const NONE: Input = Input {
+        steer: 0.0,
+        throttle: 0.0,
+    };
 
     /// Clamps to [-1, 1]; NaN or infinite (e.g. a sensor glitch) means level.
     pub fn new(steer: f32) -> Self {
-        if steer.is_finite() {
-            Self {
-                steer: steer.clamp(-1.0, 1.0),
+        Self::with_throttle(steer, 0.0)
+    }
+
+    /// Steering plus throttle: -1 = brake, 0 = leave the speed be,
+    /// 1 = full gas. Each clamped; NaN or infinite counts as 0.
+    pub fn with_throttle(steer: f32, throttle: f32) -> Self {
+        let clean = |v: f32| {
+            if v.is_finite() {
+                v.clamp(-1.0, 1.0)
+            } else {
+                0.0
             }
-        } else {
-            Self::NONE
+        };
+        Self {
+            steer: clean(steer),
+            throttle: clean(throttle),
         }
     }
 
     pub fn steer(&self) -> f32 {
         self.steer
+    }
+
+    pub fn throttle(&self) -> f32 {
+        self.throttle
     }
 }
 
@@ -44,6 +62,15 @@ pub fn steer_from_keys(up: bool, down: bool) -> f32 {
 /// [`TOUCH_EASE_DISTANCE`] so it settles without overshooting.
 pub fn steer_toward(target_y: f32, plane_y: f32) -> f32 {
     ((target_y - plane_y) / TOUCH_EASE_DISTANCE).clamp(-1.0, 1.0)
+}
+
+/// Throttle: keys (left/A brake, right/D gas) win over tipping the phone.
+pub fn pick_throttle(keys: f32, tilt: Option<f32>) -> f32 {
+    if keys != 0.0 {
+        keys
+    } else {
+        tilt.unwrap_or(0.0)
+    }
 }
 
 /// Combine devices. A finger (or held mouse) on screen wins, then keys

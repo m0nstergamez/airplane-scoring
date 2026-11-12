@@ -300,6 +300,54 @@ that isn't code here. Keep entries short and dated.
   (one life, a plane parked in front; not committed). Lifeguard tower
   depth (previous entry) rides along in this PR, since #24 was merged
   before it was pushed.
+- Screen shake at the explosion, as suggested: `World::shake` gives an
+  offset of up to `SHAKE_PX` (10 px at phone size) that jumps around with
+  the ticks and fades with `(1 - progress)²`. The game draws the
+  landscape and everything in it through a `Camera2D` moved by it and
+  zoomed 6 % so no edge shows; flashes, score and lives stay still.
+  macroquad 0.4.16's `Camera2D::from_display_rect` turns y upwards (the
+  first screenshot was upside down), so the game flips `zoom.y` back.
+- The game speeds up a little with every point, asked for: `World::speed`
+  = 1 + 0.1 % per point (`SPEED_PER_POINT`), at most `MAX_SPEED` 1.5.
+  The landscape now moves by `World::distance`, which adds the speed each
+  tick; huts, pads, balloons, gulls and towers (far ones less) get the
+  extra shift from the world; new landings are planned for the current
+  speed so they still touch down in view. Climbing stays the same.
+- Smooth climbing with a tilting nose, asked for: the vertical speed
+  (`Player::vel_y`) now follows the steering exponentially
+  (`CLIMB_RESPONSE` 8/s, full speed after about a quarter second) instead
+  of jumping; a crash still drops at once. The nose tilts with the
+  vertical speed (`Player::pitch`, up to `MAX_PITCH_DEG` 20°, smoothed by
+  `PITCH_RESPONSE`); the crash shape turns with it
+  (`Poly::at_turned`), and the game draws the same turned points. The
+  finger aims from where the plane will be (`y + vel_y / CLIMB_RESPONSE`),
+  which damps the follow so it still never shoots past the finger (the
+  existing no-overshoot test passes unchanged). Checked in a screenshot
+  with a forced climb (temporary, not committed).
+- Throttle, overspeed and pull up, asked for: →/D and ←/A, or tipping
+  the phone forward/back (`Tilt::lean`, gravity's z, which the page makes
+  the same sign on iOS and Android; tilt plugin version 2) set the
+  airspeed (`Player::airspeed`, 0.5–2, drifting back to 1 without
+  input). It multiplies the game's speed. Above 1.5 "OVERSPEED"
+  (countdown, clacker loop, voice); 3 s there and the plane breaks
+  apart: every life gone, the explosion. Below 0.75 "PULL UP" (warning
+  light, whoop loop, voice) and the plane sags (chosen over a plain
+  warning or a timed crash). Voices repeat every 1.5 s. The voices
+  (`voice-overspeed.wav`, `voice-pull-up.wav`) are spoken by macOS's
+  `say` (voice "Fred") in `scripts/make-sounds.py`. Licence note: Apple
+  licenses its system voices for personal use; the user chose them
+  knowingly over espeak-ng (open source, free to share), which could not
+  be installed because Homebrew's folder was not writable. To replace
+  them, change `voice()` in the script and run it again. So "Pull up"
+  is heard over its whoop: the warning tone ducks to 20 % while a voice
+  speaks (`VOICE_DUCK`, `VOICE_SECONDS`), the voices are softly
+  compressed and play at full volume.
+  A "SPEED" gauge at the bottom left shows the zones. Asked for after
+  trying it: sagging into the ground while "Pull up" blows the plane up
+  too, every life gone (`break_apart`, shared with overspeed); diving to
+  the ground at normal speed stays harmless. The voice files are
+  optional at runtime: without them every other sound still plays (a
+  missing file had silenced the whole game).
 
 ## Concepts
 

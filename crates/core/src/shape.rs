@@ -22,6 +22,21 @@ impl Poly {
         )
     }
 
+    /// Like [`Poly::at`], turned by `angle` (radians, clockwise on the
+    /// screen) around `at`.
+    pub fn at_turned(at: Vec2, size: f32, angle: f32, points: &[(f32, f32)]) -> Poly {
+        let (sin, cos) = angle.sin_cos();
+        Poly(
+            points
+                .iter()
+                .map(|&(x, y)| {
+                    let (x, y) = (x * size, y * size);
+                    Vec2::new(at.x + x * cos - y * sin, at.y + x * sin + y * cos)
+                })
+                .collect(),
+        )
+    }
+
     /// An upright rectangle from its left top corner and size.
     pub fn rect(left: f32, top: f32, width: f32, height: f32) -> Poly {
         let (r, b) = (left + width, top + height);

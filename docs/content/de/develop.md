@@ -326,6 +326,8 @@ Landschaft:
 | `PLANE_NEAR_SIZE` | `crates/core/src/lib.rs` | wie gross das Flugzeug nahe am Boden wird (1 = erster Entwurf) |
 | `OBJECT_SIZE` | `crates/core/src/lib.rs` | wie gross Flugzeug und Hindernisse gezeichnet und getroffen werden (1 = erster Entwurf, jetzt 0.41): die Grösse oben am Himmel; kleiner gibt mehr Platz |
 | `PLAYER_CLIMB_SPEED` | `crates/core/src/lib.rs` | Steig-/Sinkgeschwindigkeit (Pixel pro Sekunde) |
+| `CLIMB_RESPONSE` | `crates/core/src/lib.rs` | wie schnell das Flugzeug Steigen oder Sinken aufnimmt (kleiner = weicher) |
+| `MAX_PITCH_DEG` | `crates/core/src/lib.rs` | wie weit sich die Nase bei vollem Steigen oder Sinken neigt (Grad) |
 | `PLAYER_X_FRACTION` | `crates/core/src/lib.rs` | wo das Flugzeug steht (0.2 = 20 % von links) |
 | `TILT_FULL_DEG` | `crates/core/src/tilt.rs` | wie weit du das Handy für volle Geschwindigkeit drehst |
 | `TILT_DEAD_ZONE_DEG` | `crates/core/src/tilt.rs` | kleine Drehungen, die ignoriert werden |
@@ -333,6 +335,11 @@ Landschaft:
 | `CRASH_SECONDS` | `crates/core/src/lib.rs` | wie lange sich ein Flugzeug nach einem Zusammenstoss nicht steuern lässt |
 | `LIVES` | `crates/core/src/lib.rs` | Leben am Anfang eines Flugs |
 | `SCORE_PER_SECOND` | `crates/core/src/lib.rs` | wie viele Punkte jede Sekunde Flug wert ist |
+| `SPEED_PER_POINT` | `crates/core/src/lib.rs` | wie viel schneller das Spiel pro Punkt wird (`World::speed`, höchstens `MAX_SPEED`) |
+| `AIRSPEED_RANGE` | `crates/core/src/lib.rs` | langsamste und schnellste einstellbare Geschwindigkeit (1 = normal) |
+| `OVERSPEED_AT` | `crates/core/src/lib.rs` | Geschwindigkeit, ab der «Overspeed» warnt; nach `OVERSPEED_SECONDS` bricht es auseinander |
+| `STALL_AT` | `crates/core/src/lib.rs` | Geschwindigkeit, unter der «Pull up» warnt und das Flugzeug absackt (bis `STALL_SINK`) |
+| `SHAKE_PX` | `crates/core/src/lib.rs` | wie weit der Bildschirm bei der Explosion wackelt (`World::shake`) |
 | `HIGHSCORE_COUNT` | `crates/core/src/highscore.rs` | wie viele beste Scores gespeichert werden |
 | `SAFE_SECONDS` | `crates/core/src/lib.rs` | wie lange das Flugzeug nach einem Zusammenstoss blinkt und geschützt ist |
 | `RAIN_SECONDS` | `crates/core/src/weather.rs` | kürzester und längster Regen |

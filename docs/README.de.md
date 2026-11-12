@@ -327,6 +327,60 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
   Flugzeug direkt davor; nicht committet). Die Tiefe der Strandtürme
   (Eintrag davor) kommt in diesem PR mit, weil #24 gemergt wurde, bevor
   sie hochgeladen war.
+- Wackeln beim Explodieren, wie vorgeschlagen: `World::shake` gibt einen
+  Versatz von bis zu `SHAKE_PX` (10 px auf dem Handy), der mit den Ticks
+  hin und her springt und mit `(1 - Fortschritt)²` ausklingt. Das Spiel
+  zeichnet die Landschaft und alles darin durch eine damit verschobene
+  `Camera2D`, 6 % gezoomt, damit kein Rand sichtbar wird; Blitze, Score
+  und Leben bleiben ruhig. `Camera2D::from_display_rect` in macroquad
+  0.4.16 dreht y nach oben (der erste Screenshot stand auf dem Kopf),
+  darum dreht das Spiel `zoom.y` zurück.
+- Das Spiel wird mit jedem Punkt ein bisschen schneller, gewünscht:
+  `World::speed` = 1 + 0.1 % pro Punkt (`SPEED_PER_POINT`), höchstens
+  `MAX_SPEED` 1.5. Die Landschaft bewegt sich jetzt um `World::distance`,
+  das jeden Tick das Tempo addiert; Hütten, Rampen, Ballone, Möwen und
+  Türme (hintere weniger) bekommen den zusätzlichen Weg von der Welt;
+  neue Landungen werden fürs aktuelle Tempo geplant, damit sie im Bild
+  aufsetzen. Das Steigen bleibt gleich.
+- Weiches Steigen mit sich neigender Nase, gewünscht: Die vertikale
+  Geschwindigkeit (`Player::vel_y`) folgt der Steuerung jetzt
+  exponentiell (`CLIMB_RESPONSE` 8/s, volle Geschwindigkeit nach etwa
+  einer Viertelsekunde) statt zu springen; ein Absturz fällt weiter
+  sofort. Die Nase neigt sich mit der vertikalen Geschwindigkeit
+  (`Player::pitch`, bis `MAX_PITCH_DEG` 20°, geglättet mit
+  `PITCH_RESPONSE`); die Trefferform dreht sich mit (`Poly::at_turned`),
+  und das Spiel zeichnet dieselben gedrehten Punkte. Der Finger zielt von
+  dort, wo das Flugzeug gleich sein wird (`y + vel_y / CLIMB_RESPONSE`);
+  das dämpft das Nachfahren, sodass es weiterhin nie über den Finger
+  hinausschiesst (der bestehende Test dafür besteht unverändert).
+  Geprüft mit einem Screenshot mit erzwungenem Steigen (vorübergehend,
+  nicht committet).
+- Gas, Overspeed und Pull up, gewünscht: →/D und ←/A oder das Handy
+  nach vorne/hinten kippen (`Tilt::lean`, das z der Schwerkraft, das die
+  Seite auf iOS und Android gleich gerichtet liefert; Tilt-Plugin
+  Version 2) stellen die Fluggeschwindigkeit ein (`Player::airspeed`,
+  0.5–2, ohne Eingabe zurück zu 1). Sie multipliziert das Tempo des
+  Spiels. Über 1.5 «OVERSPEED» (Countdown, Klapper-Schleife, Stimme);
+  3 s dort, und das Flugzeug bricht auseinander: alle Leben weg, die
+  Explosion. Unter 0.75 «PULL UP» (Warnlicht, Heulton-Schleife, Stimme),
+  und das Flugzeug sackt ab (gewählt statt nur einer Warnung oder eines
+  Absturzes nach Zeit). Die Stimmen wiederholen sich alle 1.5 s. Die
+  Stimmen (`voice-overspeed.wav`, `voice-pull-up.wav`) spricht macOS'
+  `say` (Stimme «Fred») in `scripts/make-sounds.py`. Lizenzhinweis: Apple
+  lizenziert seine Systemstimmen für den persönlichen Gebrauch; sie
+  wurden bewusst gewählt statt espeak-ng (Open Source, frei
+  verteilbar), das sich nicht installieren liess, weil der
+  Homebrew-Ordner nicht beschreibbar war. Zum Ersetzen `voice()` im
+  Skript ändern und es neu laufen lassen. Damit «Pull up» über dem
+  Heulton zu hören ist: Der Warnton geht auf 20 % zurück, solange eine
+  Stimme spricht (`VOICE_DUCK`, `VOICE_SECONDS`), und die Stimmen sind
+  sanft verdichtet und spielen in voller Lautstärke. Eine Anzeige «SPEED»
+  unten links zeigt die Bereiche. Nach dem Ausprobieren gewünscht:
+  Sackt man bei «Pull up» bis auf den Boden ab, explodiert das Flugzeug
+  ebenfalls, alle Leben weg (`break_apart`, wie bei Overspeed); im
+  normalen Tempo zum Boden zu sinken bleibt harmlos. Die Stimm-Dateien
+  sind zur Laufzeit freiwillig: Ohne sie spielen alle anderen Töne
+  (eine fehlende Datei hatte das ganze Spiel stumm gemacht).
 
 ## Konzepte
 

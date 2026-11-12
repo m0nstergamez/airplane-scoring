@@ -19,6 +19,10 @@ beginning of level 1.
 
 ## Controls
 
+The plane responds smoothly: it picks up a climb or dive gradually and
+tilts its nose, up to climb and down to dive, the more the harder you
+steer.
+
 You have three ways to steer. If you use several at once, the finger
 wins, then the keys, then tilting:
 
@@ -56,6 +60,10 @@ xychart-beta
 Between −2° and +2° nothing happens (so a calm hand flies level), from
 there steering grows evenly, and from 25° on it is at full strength.
 
+**Speed:** tip the phone forward (top edge away from you) for gas, back
+toward you to brake. Again, how you held it at the start counts as
+"level"; up to 5° nothing happens, from 25° on it is full.
+
 ### Finger (phone and computer)
 
 Touch the screen and hold: the plane flies to the height of your finger.
@@ -67,6 +75,8 @@ On a computer, hold down the mouse button instead.
 |---|---|
 | ↑ or W | climb |
 | ↓ or S | dive |
+| → or D | faster (gas) |
+| ← or A | slower (brake) |
 | M | sound on or off |
 
 ## Weather and crashes
@@ -86,10 +96,30 @@ gull or a lifeguard tower (level 2), you **crash**. Only a real touch counts: fl
 closely, or through the gap beside a roof, is fine. In a crash your plane smokes, falls
 and ignores the controls for a moment (1.5 seconds). Then you fly again.
 
+## Speed, overspeed and pull up
+
+Besides the speed that slowly rises with your score, you set how fast
+you fly yourself. At the bottom left, the "SPEED" gauge shows it: amber
+is too slow, green is fine, red is too fast. With no gas and no brake
+you slowly return to normal speed.
+
+- **Too fast:** "OVERSPEED" blinks red with a countdown, a warning
+  clacks, and a voice says "Overspeed". If you do not brake within 3
+  seconds, the plane breaks apart: it explodes, and every life is gone
+  at once.
+- **Too slow:** "PULL UP" blinks amber, a warning light glows, a whooping
+  tone sounds, and a voice says "Pull up". The wings stop carrying you
+  properly: the plane sags, more the slower it is. Give gas! If you hit
+  the ground like this, the plane explodes and every life is gone at
+  once.
+
 ## Score and lives
 
 At the top centre is your **score** (your points). It goes up by 2 every
 second while you fly: the longer you last, the more points you have.
+With every point the game gets a tiny bit **faster**: the landscape
+and everything in it come by quicker (after a minute about 12 %, at
+most 50 % faster).
 
 You have **3 lives**. At the top right, next to the speaker button, one
 small plane per life shows how many you have left. Each crash costs a life: its plane turns grey and
@@ -104,7 +134,7 @@ thin, light **smoke**; after the second the smoke gets thick and dark
 and a small flame flickers at the tail.
 
 With the last life your plane **explodes**: a fireball, flying debris
-and a cloud of smoke, with a big bang. Then **"Game over"** shows on the
+and a cloud of smoke, with a big bang, and the screen **shakes**. Then **"Game over"** shows on the
 screen, together with your score. After a short
 moment "Tap or click to fly again" appears: tap, click or press Enter,
 and a new flight starts in level 1 with 3 lives.
@@ -179,6 +209,8 @@ legs is open air, but it is very tight.
 | Tune | When a new level begins. |
 | Fanfare | When you set a new highscore. |
 | Explosion | When your plane loses its last life. |
+| Overspeed | While you fly too fast: clacking and the voice "Overspeed". |
+| Pull up | While you fly too slow: a whooping tone and the voice "Pull up". |
 
 Browsers only allow sound after you have touched the page. On a phone
 that is the tap on "Tap to fly"; on a computer the first click or key
