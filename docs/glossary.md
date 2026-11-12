@@ -26,7 +26,7 @@ short **meaning**.
 | Finger | finger | `pointer` | Steering by touching the screen |
 | Taste | key | `steer_from_keys` | Keyboard key (↑/W, ↓/S) |
 | Spielerin / Spieler (kurz: Spieler:in) | player | — | Person playing. In running text «Spielerin oder Spieler», in short labels «Spieler:in» |
-| Hindernis | obstacle | — | Coming soon |
+| Hindernis | obstacle | `Gulls` | Something you must not fly into; touching it is a crash. So far: gulls in level 2 |
 | Punkte | points | — | Coming soon |
 
 ## Weather and sound
@@ -52,6 +52,9 @@ short **meaning**.
 | stummschalten | mute | `sound_js.rs` | Switch all sound off |
 | Lautsprecher-Knopf | speaker button | `#mute` | Button at the top right for sound on/off |
 | Ereignis | event | `Event` | Something that happened in one tick |
+| Wellen | waves | `beach.wav` | Sea sound at the beach (level 2) |
+| Möwe | gull | `Gull`, `gull-call.wav` | Sea bird at the beach: an obstacle; many call when they appear |
+| Melodie | tune | `Event::NewLevel`, `new-level.wav` | Short rising tune when a new level begins |
 | Startwert | seed | `World::with_seed` | The number that decides the random weather |
 
 ## Pictures and levels

@@ -6,6 +6,7 @@
 pub const TICK_SECONDS: f32 = 1.0 / 60.0;
 
 mod clock;
+mod gulls;
 mod input;
 mod level;
 mod rng;
@@ -14,6 +15,10 @@ mod sound;
 mod tilt;
 mod weather;
 pub use clock::{Clock, MAX_FRAME_SECONDS};
+pub use gulls::{
+    Gull, GullStart, Gulls, FIRST_GULL_SECONDS, GULL_BOB, GULL_CALL_CHANCE, GULL_FROM_LEFT,
+    GULL_FROM_RIGHT, GULL_GAP_SECONDS, GULL_RADIUS, GULL_SPEED,
+};
 pub use input::{pick_steer, steer_from_keys, steer_toward, Input, TOUCH_EASE_DISTANCE};
 pub use level::{
     level_view, start_level, LevelView, LEVEL_BANNER_SECONDS, LEVEL_COUNT, LEVEL_FADE_SECONDS,
@@ -21,7 +26,8 @@ pub use level::{
 };
 pub use scenery::{background_x, scroll_distance, SCROLL_SPEED};
 pub use sound::{
-    Mix, CRASH_VOLUME, DIVE_WIND, ENGINE_VOLUME, MIX_CHANGE_PER_SECOND, RAIN_VOLUME, WIND_VOLUME,
+    Mix, BEACH_LEVEL, BEACH_VOLUME, CRASH_VOLUME, DIVE_WIND, ENGINE_VOLUME, GULL_CALL_VOLUME,
+    MIX_CHANGE_PER_SECOND, NEW_LEVEL_VOLUME, RAIN_VOLUME, WIND_VOLUME,
 };
 pub use tilt::{Tilt, TILT_DEAD_ZONE_DEG, TILT_FULL_DEG, TILT_MIN_GRAVITY, TILT_SMOOTHING};
 pub use weather::{
@@ -65,6 +71,10 @@ pub enum Event {
     Lightning { distance: f32 },
     /// Thunder from an earlier strike arrives. `volume` is 0..1.
     Thunder { volume: f32 },
+    /// A new level begins (also when the game starts over with level 1).
+    NewLevel { level: u32 },
+    /// A gull calls as it appears.
+    GullCall,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -128,10 +138,14 @@ pub struct World {
     pub bounds: Bounds,
     pub player: Player,
     pub planes: Vec<Plane>,
+    /// The obstacles at the beach.
+    pub gulls: Gulls,
     pub weather: Weather,
     /// Volumes of the looping sounds, eased toward what fits the world now.
     pub mix: Mix,
     pub ticks: u64,
+    /// The level the flight started in (1 ..= `LEVEL_COUNT`).
+    pub start_level: u32,
     events: Vec<Event>,
 }
 
@@ -151,11 +165,18 @@ impl World {
             bounds,
             player,
             planes: Vec::new(),
+            gulls: Gulls::new(seed),
             weather: Weather::new(seed),
             mix: Mix::SILENT,
             ticks: 0,
+            start_level: 1,
             events: Vec::new(),
         }
+    }
+
+    /// Which level is on screen now, and how far the next has faded in.
+    pub fn levels(&self) -> LevelView {
+        level_view(self.ticks, self.start_level)
     }
 
     /// What happened in the last tick. Read it after every `tick`:
@@ -217,13 +238,20 @@ impl World {
             }
         }
 
-        // Crash: the player's plane newly touches another plane.
+        // Gulls fly only while the beach is fully on screen.
+        let levels = self.levels();
+        let beach = levels.level == BEACH_LEVEL && levels.fade == 0.0;
+        self.gulls.tick(self.bounds, beach, &mut self.events);
+
+        // Crash: the player's plane newly touches another plane or a gull.
         let player = &mut self.player;
-        let reach = PLANE_RADIUS + PLAYER_HIT_RADIUS;
-        let touching = self.planes.iter().any(|m| {
-            let (dx, dy) = (m.pos.x - player.pos.x, m.pos.y - player.pos.y);
+        let near = |pos: Vec2, radius: f32| {
+            let reach = radius + PLAYER_HIT_RADIUS;
+            let (dx, dy) = (pos.x - player.pos.x, pos.y - player.pos.y);
             dx * dx + dy * dy < reach * reach
-        });
+        };
+        let touching = self.planes.iter().any(|m| near(m.pos, PLANE_RADIUS))
+            || self.gulls.list.iter().any(|g| near(g.pos, GULL_RADIUS));
         if touching && !player.touching && !player.is_crashed() {
             player.crash_ticks = CRASH_TICKS;
             player.steer = 0.0;
@@ -231,19 +259,18 @@ impl World {
         }
         player.touching = touching;
 
-        self.weather.tick(&mut self.events);
+        // The beach is always dry: rain only where level 1 shows.
+        let max_rain = 1.0 - levels.presence(BEACH_LEVEL);
+        self.weather.tick(&mut self.events, max_rain);
         self.mix = self.mix.approach(
-            Mix::target(&self.player, &self.weather),
+            Mix::target(&self.player, &self.weather, &self.levels()),
             MIX_CHANGE_PER_SECOND * TICK_SECONDS,
         );
+        let level = self.levels().level;
         self.ticks += 1;
-    }
-
-    /// Greeting shown on screen. Lives in core so it is unit-tested.
-    pub fn greeting(&self) -> String {
-        match self.planes.first() {
-            Some(m) => format!("hello {}", m.name),
-            None => "hello nobody".to_string(),
+        let now = self.levels().level;
+        if now != level {
+            self.events.push(Event::NewLevel { level: now });
         }
     }
 }
@@ -257,14 +284,6 @@ mod tests {
             width: 100.0,
             height: 50.0,
         })
-    }
-
-    #[test]
-    fn greeting_names_first_plane() {
-        let mut w = world();
-        assert_eq!(w.greeting(), "hello nobody");
-        w.spawn_plane("plane", Vec2::new(10.0, 10.0), Vec2::new(0.0, 0.0));
-        assert_eq!(w.greeting(), "hello plane");
     }
 
     #[test]
@@ -395,7 +414,7 @@ mod tests {
         for _ in 0..60 {
             w.tick(&Input::NONE);
         }
-        assert_eq!(w.mix, Mix::target(&w.player, &w.weather));
+        assert_eq!(w.mix, Mix::target(&w.player, &w.weather, &w.levels()));
         assert!(w.mix.engine_idle > 0.0 && w.mix.engine_power > 0.0);
 
         w.planes[0].pos = w.player.pos;
@@ -405,6 +424,111 @@ mod tests {
             w.tick(&Input::NONE);
         }
         assert_eq!((w.mix.engine_idle, w.mix.engine_power), (0.0, 0.0));
+    }
+
+    fn new_levels(w: &mut World, seconds: f32) -> Vec<(u64, u32)> {
+        let mut seen = Vec::new();
+        for _ in 0..(seconds / TICK_SECONDS).round() as u64 {
+            w.tick(&Input::NONE);
+            for e in w.events() {
+                if let Event::NewLevel { level } = *e {
+                    seen.push((w.ticks, level));
+                }
+            }
+        }
+        seen
+    }
+
+    #[test]
+    fn each_new_level_is_one_event_when_it_begins() {
+        let mut w = world();
+        let level_ticks = (LEVEL_SECONDS / TICK_SECONDS).round() as u64;
+        let seen = new_levels(&mut w, 2.5 * LEVEL_SECONDS);
+        // Not at the start, then level 2, then level 1 again.
+        assert_eq!(seen, [(level_ticks, 2), (2 * level_ticks, 1)]);
+    }
+
+    #[test]
+    fn a_flight_started_in_level_2_moves_on_to_level_1() {
+        let mut w = world();
+        w.start_level = 2;
+        assert_eq!(w.levels().level, 2);
+        let seen = new_levels(&mut w, 1.5 * LEVEL_SECONDS);
+        assert_eq!(seen.iter().map(|&(_, l)| l).collect::<Vec<_>>(), [1]);
+    }
+
+    #[test]
+    fn the_beach_fades_into_the_mix_with_level_2() {
+        let mut w = world();
+        new_levels(&mut w, LEVEL_SECONDS - LEVEL_FADE_SECONDS);
+        assert_eq!(w.mix.beach, 0.0);
+        new_levels(&mut w, LEVEL_FADE_SECONDS + 1.0);
+        assert!((w.mix.beach - BEACH_VOLUME).abs() < 1e-6, "{}", w.mix.beach);
+    }
+
+    /// A phone in landscape, in logical px.
+    const PHONE: Bounds = Bounds {
+        width: 844.0,
+        height: 390.0,
+    };
+
+    #[test]
+    fn the_beach_is_dry_and_has_no_thunderstorms() {
+        for seed in 0..8 {
+            let mut w = World::with_seed(PHONE, seed);
+            w.start_level = BEACH_LEVEL;
+            // Until level 1 starts to fade back in.
+            for _ in 0..((LEVEL_SECONDS - LEVEL_FADE_SECONDS) / TICK_SECONDS) as u32 {
+                w.tick(&Input::NONE);
+                assert_eq!(w.weather.rain, 0.0, "seed {seed}");
+                for e in w.events() {
+                    assert!(
+                        !matches!(e, Event::Lightning { .. } | Event::Thunder { .. }),
+                        "seed {seed}: {e:?}"
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn touching_a_gull_is_a_crash() {
+        let mut w = World::with_seed(PHONE, 1);
+        w.start_level = BEACH_LEVEL;
+        // Wait for a gull in the open sky, far from the plane.
+        let in_sky = |g: &Gull| {
+            g.pos.x > PHONE.width / 2.0
+                && g.pos.x < PHONE.width
+                && g.pos.y > 2.0 * PLAYER_HALF_HEIGHT
+                && g.pos.y < PHONE.height - 2.0 * PLAYER_HALF_HEIGHT
+        };
+        // ... at a calm moment: not crashed, no gull near the plane.
+        let calm = |w: &World| {
+            !w.player.is_crashed()
+                && w.gulls.list.iter().all(|g| {
+                    (g.pos.x - w.player.pos.x).abs() + (g.pos.y - w.player.pos.y).abs() > 100.0
+                })
+        };
+        while !(w.gulls.list.iter().any(in_sky) && calm(&w)) {
+            w.tick(&Input::NONE);
+        }
+        // Move the plane to where that gull will be next tick.
+        let i = w.gulls.list.iter().position(in_sky).unwrap();
+        let mut ahead = w.clone();
+        ahead.tick(&Input::NONE);
+        let target = ahead.gulls.list[i].pos;
+        w.player.pos.y = target.y;
+        w.bounds.width = target.x / PLAYER_X_FRACTION; // the plane's x follows the width
+        w.tick(&Input::NONE);
+        assert!(w.player.is_crashed());
+        assert!(w.events().contains(&Event::Crash));
+    }
+
+    #[test]
+    fn no_gulls_in_level_1() {
+        let mut w = world();
+        new_levels(&mut w, LEVEL_SECONDS - 0.1);
+        assert!(w.gulls.list.is_empty());
     }
 
     #[test]
@@ -423,7 +547,8 @@ mod tests {
                 match e {
                     Event::Lightning { .. } => lightning += 1,
                     Event::Thunder { .. } => thunder += 1,
-                    Event::Crash => panic!("nothing to crash into"),
+                    // 5 minutes: both levels; at the beach gulls can hit the plane.
+                    Event::Crash | Event::NewLevel { .. } | Event::GullCall => {}
                 }
             }
             loudest_rain = loudest_rain.max(w.mix.rain);

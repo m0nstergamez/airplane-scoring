@@ -99,8 +99,8 @@ und ein Test kann es genau nachspielen.
 
 Wie viele Ticks ein Bild bekommt, entscheidet `Clock` in
 `crates/core/src/clock.rs`. Bis «Tap to fly» gibt es keine: Das Spiel
-steht auf der Startanzeige still, und der Flug (Wetter, Levels, das
-andere Flugzeug) beginnt mit dem Tipp.
+steht auf der Startanzeige still, und der Flug (Wetter, Levels)
+beginnt mit dem Tipp.
 
 ### Ton
 
@@ -111,8 +111,8 @@ und **wie laut**; `game` spielt nur Dateien ab:
 flowchart LR
     subgraph core["crates/core: Regeln und Tests"]
         W["World::tick"]
-        M["Mischung: je eine Lautstärke für<br/>Motor Leerlauf, Motor Vollgas, Wind, Regen"]
-        E["Ereignisse:<br/>Crash, Lightning, Thunder"]
+        M["Mischung: je eine Lautstärke für<br/>Motor Leerlauf, Motor Vollgas, Wind, Regen, Strand"]
+        E["Ereignisse:<br/>Crash, Lightning, Thunder,<br/>NewLevel, GullCall"]
     end
     subgraph game["crates/game: spielt ab"]
         L["Schleifen laufen immer,<br/>Lautstärke bei jedem Bild setzen"]
@@ -125,13 +125,24 @@ flowchart LR
     F --> O
 ```
 
-- **Schleifen** (Motor, Wind, Regen) hören nie auf. Bei jedem Tick
+- **Schleifen** (Motor, Wind, Regen, Strand) hören nie auf. Bei jedem Tick
   berechnet `core` eine Mischung (`Mix`) mit ihren Lautstärken; diese
   ändern sich pro Tick nur wenig, damit nichts knackt.
 - **Der Motor** besteht aus zwei Schleifen. macroquad 0.4.16 kann die
   Tonhöhe nicht ändern, darum blendet Steigen vom Leerlauf zum Vollgas über.
-- **Einzelne Töne** (Donner, Zusammenstoss) sind Ereignisse eines Ticks.
-  Der Donner ist ein eigenes Ereignis, weil er später kommt als sein Blitz.
+- **Einzelne Töne** (Donner, Zusammenstoss, die Melodie für ein neues
+  Level, der Ruf einer Möwe) sind Ereignisse eines Ticks. Der Donner ist ein eigenes Ereignis,
+  weil er später kommt als sein Blitz.
+- **Töne eines Levels** folgen seiner Landschaft: Die Lautstärke der
+  Strand-Schleife ist `BEACH_VOLUME` mal, wie viel von Level 2 zu sehen ist
+  (`LevelView::presence`). So werden die Wellen mit dem Strand eingeblendet.
+  Beim Wetter ist es gleich: Der Regen darf nur so stark sein, wie Level 1
+  zu sehen ist, darum ist es am Strand immer trocken.
+- **Möwen** (`crates/core/src/gulls.rs`) sind die Hindernisse am Strand.
+  core entscheidet, wann und wo sie auftauchen (mit Startwert, wie das
+  Wetter), bewegt sie und prüft den Zusammenstoss; eine Möwe, die ruft,
+  schickt ein Ereignis `GullCall`. So gehört jeder Ruf, den du hörst, zu
+  einer Möwe, die du siehst.
 - **Das Wetter ist zufällig, aber wiederholbar:** `World::with_seed`
   bekommt einen Startwert; derselbe Startwert ergibt denselben Regen und
   dieselben Blitze, darum können Tests es nachspielen.
@@ -256,6 +267,9 @@ Weitere Zahlen zum Ausprobieren:
 | `STORM_RAIN` | `crates/core/src/weather.rs` | wie stark der Regen für Blitze sein muss (0 bis 1) |
 | `STRIKE_GAP_SECONDS` | `crates/core/src/weather.rs` | Zeit zwischen zwei Blitzen |
 | `ENGINE_VOLUME` | `crates/core/src/sound.rs` | wie laut der Motor ist (0 bis 1) |
+| `BEACH_VOLUME` | `crates/core/src/sound.rs` | wie laut Wellen und Möwen sind (0 bis 1) |
+| `GULL_GAP_SECONDS` | `crates/core/src/gulls.rs` | kürzeste und längste Zeit zwischen zwei Möwen |
+| `GULL_SPEED` | `crates/core/src/gulls.rs` | wie schnell Möwen fliegen (Pixel pro Sekunde) |
 | `SCROLL_SPEED` | `crates/core/src/scenery.rs` | wie schnell die Landschaft vorbeizieht (Pixel pro Sekunde) |
 | `LEVEL_SECONDS` | `crates/core/src/level.rs` | wie lange ein Level dauert (Sekunden) |
 | `LEVEL_FADE_SECONDS` | `crates/core/src/level.rs` | wie lange die nächste Landschaft zum Einblenden braucht |

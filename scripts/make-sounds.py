@@ -162,6 +162,68 @@ def crash(seed, seconds):
     return out
 
 
+def beach(seed, seconds):
+    """Beach (level 2): waves rolling onto the sand, two per loop, the
+    second one smaller. Each wave swells slowly, breaks bright and washes
+    out; between them the sea whispers. The gulls are their own sound
+    (gull-call.wav): each one calls when it appears on screen."""
+    rng = random.Random(seed)
+    waves = [(0.0, 1.0), (seconds / 2, 0.7)]  # (start in s, strength)
+
+    def swell(t):
+        rise, wash = 1.8, 0.9
+        return (t / rise) ** 2 if t < rise else math.exp(-(t - rise) / wash)
+
+    def make(n):
+        env = []
+        for i in range(2 * n):
+            env.append(0.12 + sum(a * swell(((i - round(at * RATE)) % n) / RATE) for at, a in waves))
+        hz = [250.0 + 1400.0 * min(e, 1.0) for e in env]  # brighter when breaking
+        src = noise(rng, n)
+        xs = highpass(lowpass(lowpass(src + src, hz), hz), 70.0)
+        return [x * e for x, e in zip(xs, env)]
+
+    return looped(make, seconds)
+
+
+def gull(pitch, length):
+    """One "kee-ow": up, then down, with a few overtones."""
+    out, phase = [], 0.0
+    for i in range(int(length * RATE)):
+        t = i / length / RATE  # 0..1 through the call
+        hz = pitch * (1.0 + 0.35 * math.sin(math.pi * t) - 0.25 * t)
+        phase += 2 * math.pi * hz / RATE
+        tone = math.sin(phase) + 0.5 * math.sin(2 * phase) + 0.25 * math.sin(3 * phase)
+        out.append(tone * math.sin(math.pi * t) ** 0.6)
+    return out
+
+
+def gull_call(seconds):
+    """A gull calling as it appears: three "kee-ow"s, the same calls that
+    the first version of the beach loop had."""
+    out = [0.0] * int(seconds * RATE)
+    for at, pitch, length in [(0.0, 1250.0, 0.30), (0.4, 1300.0, 0.26), (0.75, 1200.0, 0.34)]:
+        start = round(at * RATE)
+        for j, x in enumerate(gull(pitch, length)):
+            out[start + j] += x
+    return out
+
+
+def new_level(seconds):
+    """New level: a short rising tune (C, E, G, high C), bright and happy,
+    the last note ringing out."""
+    n = int(seconds * RATE)
+    notes = [(523.25, 0.0, 0.18), (659.25, 0.1, 0.18), (783.99, 0.2, 0.18), (1046.5, 0.3, 0.55)]
+    out = [0.0] * n
+    for hz, at, ring in notes:
+        for i in range(round(at * RATE), n):
+            t = i / RATE - at
+            p = 2 * math.pi * hz * t
+            tone = math.sin(p) + 0.3 * math.sin(2 * p) + 0.15 * math.sin(3 * p)
+            out[i] += tone * min(1.0, t / 0.005) * math.exp(-t / ring)
+    return [x * min(1.0, (seconds - i / RATE) / 0.1) for i, x in enumerate(out)]
+
+
 if __name__ == "__main__":
     write("engine-idle.wav", engine(1, pulses_per_second=52, cutoff=380.0, hiss=0.25), 0.8)
     write("engine-power.wav", engine(2, pulses_per_second=92, cutoff=800.0, hiss=0.5), 0.8)
@@ -169,3 +231,6 @@ if __name__ == "__main__":
     write("rain.wav", rain(4, 3.0), 0.55)
     write("thunder.wav", thunder(5, 3.5), 0.9)
     write("crash.wav", crash(6, 1.2), 0.9)
+    write("beach.wav", beach(7, 8.0), 0.8)
+    write("gull-call.wav", gull_call(1.15), 0.8)
+    write("new-level.wav", new_level(1.3), 0.8)

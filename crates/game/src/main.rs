@@ -2,8 +2,8 @@
 //! This file should only: read input, call `World::tick`, draw state.
 
 use airplane_scoring_core::{
-    background_x, level_view, pick_steer, scroll_distance, start_level, steer_from_keys,
-    steer_toward, Bounds, Clock, Event, Input, Tilt, Vec2, World, PLANE_RADIUS, TICK_SECONDS,
+    background_x, pick_steer, scroll_distance, start_level, steer_from_keys, steer_toward, Bounds,
+    Clock, Event, Gull, Input, Tilt, World, PLANE_RADIUS, TICK_SECONDS,
 };
 use macroquad::prelude::*;
 
@@ -31,7 +31,6 @@ async fn main() {
     set_pc_assets_folder("web");
     let mut audio = audio::Audio::start();
     let mut scenery = scenery::Scenery::start();
-    let first_level = start_level(page_js::requested_level());
 
     // The seed decides the weather; the clock makes every flight different.
     let seed = (macroquad::miniquad::date::now() * 1000.0) as u64;
@@ -42,11 +41,7 @@ async fn main() {
         },
         seed,
     );
-    world.spawn_plane(
-        "plane",
-        Vec2::new(screen_width() / 2.0, screen_height() / 2.0),
-        Vec2::new(120.0, 90.0),
-    );
+    world.start_level = start_level(page_js::requested_level());
 
     let mut clock = Clock::default();
     let mut tilt = Tilt::default();
@@ -101,7 +96,7 @@ async fn main() {
             1.0,
         ));
         scenery.update();
-        let levels = level_view(world.ticks, first_level);
+        let levels = world.levels();
         let distance = scroll_distance(world.ticks);
         let mut landscape = false;
         for (level, alpha) in [(levels.level, 1.0), (levels.next, levels.fade)] {
@@ -125,6 +120,10 @@ async fn main() {
             draw_circle(m.pos.x, m.pos.y, PLANE_RADIUS, LIME);
             draw_circle(m.pos.x - 8.0, m.pos.y - 6.0, 4.0, BLACK);
             draw_circle(m.pos.x + 8.0, m.pos.y - 6.0, 4.0, BLACK);
+        }
+
+        for gull in &world.gulls.list {
+            draw_gull(gull);
         }
 
         draw_player(
@@ -166,16 +165,6 @@ async fn main() {
             );
         }
 
-        let text = world.greeting();
-        let size = 48.0;
-        let dims = measure_text(&text, None, size as u16, 1.0);
-        draw_text_on_landscape(
-            &text,
-            (screen_width() - dims.width) / 2.0,
-            64.0,
-            size,
-            WHITE,
-        );
         draw_text_on_landscape(
             &format!(
                 "{}  |  ticks: {}",
@@ -238,6 +227,42 @@ fn draw_rain(rain: f32, wind: f32, ticks: u64) {
         let len = 10.0 + 8.0 * b as f32;
         draw_line(x, y, x - len * slant, y + len, 1.5, colour);
     }
+}
+
+/// A gull seen from the side, centred on its position, facing where it
+/// flies. The wings beat; their size matches core's `GULL_RADIUS`.
+fn draw_gull(gull: &Gull) {
+    let (x, y) = (gull.pos.x, gull.pos.y);
+    let dir = if gull.vel.x < 0.0 { -1.0 } else { 1.0 }; // -1 = facing left
+    let beat = (gull.age as f32 * TICK_SECONDS * std::f32::consts::TAU * 3.0).sin();
+    let tip_y = y - 4.0 - 9.0 * beat; // wing tips up and down
+    let wing = Color::from_rgba(120, 128, 140, 255);
+    let tip = Color::from_rgba(40, 42, 48, 255);
+    let body = Color::from_rgba(250, 250, 246, 255);
+    // Wings: a soft "M", shoulder to bend to tip, on both sides.
+    for side in [-1.0_f32, 1.0] {
+        let bend = vec2(x + side * 8.0, y - 3.0 - 4.0 * beat);
+        let end = vec2(x + side * 17.0, tip_y);
+        draw_line(x, y, bend.x, bend.y, 4.0, wing);
+        draw_line(bend.x, bend.y, end.x, end.y, 3.0, wing);
+        draw_line(
+            end.x - side * 3.0,
+            end.y + (bend.y - end.y) * 0.3,
+            end.x,
+            end.y,
+            3.0,
+            tip,
+        );
+    }
+    // Body, head and a yellow beak towards the flight direction.
+    draw_ellipse(x, y, 9.0, 4.0, 0.0, body);
+    draw_circle(x + dir * 8.0, y - 2.0, 3.5, body);
+    draw_triangle(
+        vec2(x + dir * 11.0, y - 3.0),
+        vec2(x + dir * 16.0, y - 1.5),
+        vec2(x + dir * 11.0, y - 0.5),
+        Color::from_rgba(240, 180, 40, 255),
+    );
 }
 
 /// Side view of a small plane flying right, centred on (x, y).

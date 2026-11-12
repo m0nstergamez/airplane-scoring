@@ -131,6 +131,34 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
   keine auf; die Seite meldet den Start über das Plugin "page"
   (`page_js.rs`, ersetzt "level"). Geprüft mit lokal durchsichtig
   gemachter Startanzeige: dahinter `ticks: 0`.
+- Aufgeräumter Bildschirm: Der grüne Ball (das «andere Flugzeug» aus der
+  Vorlage, erzeugt in `main.rs`) und der Text «hello plane»
+  (`World::greeting`, entfernt) sind weg. Darum gibt es vorerst keinen
+  Zusammenstoss; die Regeln dafür bleiben mit ihren Tests in core, für
+  die kommenden Hindernisse.
+- Töne für Levels: eine kurze, aufsteigende Melodie (C-E-G-C,
+  `new-level.wav`), wenn ein neues Level beginnt (`Event::NewLevel` aus
+  `World::tick`; `World` merkt sich jetzt `start_level` und bietet
+  `levels()`), und eine Strand-Schleife für Level 2 (Wellen und Möwen,
+  `beach.wav`, 8 s, 344 KB), deren Lautstärke `BEACH_VOLUME` mal
+  `LevelView::presence(BEACH_LEVEL)` ist, also mit der Landschaft
+  ein- und ausblendet. Beide erzeugt `make-sounds.py`; als Zahlen geprüft
+  (nahtlose Schleife, zwei Wellen pro Schleife) und lokal angehört: gut.
+- Möwen am Strand (core `gulls.rs`): die ersten Hindernisse. Solange
+  Level 2 ganz zu sehen ist, taucht alle 1.2–2.8 s eine Möwe auf (die
+  erste nach 2.5 s, während «Level 2» steht): 45 % von rechts, 25 % von
+  hinten (langsamer und rufen immer, damit man sie kommen hört), 30 % vom
+  Sand aus nach oben. Sie wippen beim Flügelschlagen; eine berühren ist
+  der übliche Zusammenstoss. Mit eigenem Zufallsstrom, damit sie das
+  Wetter nicht verändern. Die Möwenrufe sind aus `beach.wav` in
+  `gull-call.wav` gewandert und spielen bei `Event::GullCall`, also
+  gehört jeder Ruf zu einer sichtbaren Möwe. Die Möwen wurden auf
+  Screenshots geprüft, bei denen sie im Bild starteten (lokale Änderung,
+  nicht committet).
+- Kein Regen am Strand: `Weather::tick` bekommt `max_rain` = wie viel von
+  Level 1 zu sehen ist; bei 0 gibt es kein Gewitter, und Donner unterwegs
+  fällt weg. Die Phasen laufen darunter weiter, also hat Level 1 sein
+  Wetter wieder. Grund: Regen passt nicht zur Sonnenuntergangsstimmung.
 
 ## Konzepte
 

@@ -129,6 +129,30 @@ that isn't code here. Keep entries short and dated.
   and saves none up, before the start; the page reports the start through
   the "page" plugin (`page_js.rs`, replaces "level"). Checked with the
   start screen made see-through locally: behind it `ticks: 0`.
+- Clean screen: the green ball (the template's "other plane", spawned in
+  `main.rs`) and the "hello plane" text (`World::greeting`, removed) are
+  gone. So nothing can crash the player for now; the crash rules stay in
+  core with their tests for the obstacles to come.
+- Level sounds: a short rising tune (C-E-G-C, `new-level.wav`) when a
+  new level begins (`Event::NewLevel` from `World::tick`; `World` now
+  keeps `start_level` and offers `levels()`), and a beach loop for
+  level 2 (waves and gulls, `beach.wav`, 8 s, 344 KB) whose volume is
+  `BEACH_VOLUME` times `LevelView::presence(BEACH_LEVEL)`, so it fades
+  with the landscape. Both made by `make-sounds.py`; checked as numbers
+  (seamless loop, two swells per loop) and listened to locally: good.
+- Gulls at the beach (core `gulls.rs`): the first obstacles. While level 2
+  is fully on screen a gull appears every 1.2–2.8 s (first after 2.5 s,
+  while "Level 2" shows): 45 % from the right, 25 % from behind (slower,
+  always calling, so you hear them coming), 30 % up from the sand. They
+  bob while flapping; touching one is the usual crash. Seeded with their
+  own stream, so they do not change the weather. The gull calls moved
+  out of `beach.wav` into `gull-call.wav`, played on `Event::GullCall`,
+  so every call belongs to a visible gull. Gulls were checked in
+  screenshots with them spawning on screen (local change, not committed).
+- No rain at the beach: `Weather::tick` takes `max_rain` = how much of
+  level 1 is on screen; at 0 there is no storm and pending thunder is
+  dropped. Spells keep their timing underneath, so level 1 gets its
+  weather back. Reason: rain does not fit the sunset mood.
 
 ## Concepts
 
