@@ -289,6 +289,9 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
   dieselbe 0..1, die seine Grösse steuert), von 30 %
   (`ENGINE_FAR_VOLUME`) ganz oben bis voll nahe am Boden. Die
   Tondateien wurden mit Zahlen geprüft (Nahtstelle, Lautstärke).
+- Hilfetext unten links entfernt («drag or arrow keys to fly | ticks:
+  …»): Er war zum Testen gedacht und lag über den grossen Hütten. Die
+  Startanzeige und die Anleitung erklären die Steuerung.
 
 ## Konzepte
 
