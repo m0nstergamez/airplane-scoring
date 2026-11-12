@@ -66,6 +66,8 @@ short **meaning**.
 | scrollen | scroll | `SCROLL_SPEED` | The landscape slides past the plane |
 | Kopie | copy | `background_x` | The background drawn once more beside itself |
 | Naht | seam | `make-backgrounds.sh` | Where one copy touches the next; must not be visible |
+| Levelwechsel | level change | `level_view`, `LEVEL_SECONDS` | Every minute the next level begins; after the last one, level 1 again |
+| einblenden | fade in | `LEVEL_FADE_SECONDS`, `LevelView::fade` | The next landscape appears slowly over the old one |
 | Ebene | layer | `<g id="sky">` | One group in the SVG (sky, hills, …); can later scroll at its own speed |
 
 ## Phone and screen
@@ -93,6 +95,7 @@ short **meaning**.
 | Regeln | rules | `crates/core` | Everything the game decides; no graphics, all tested |
 | Spielschleife | game loop | `main` loop | Read input → ticks → draw, again and again |
 | Tick | tick | `World::tick`, `TICK_SECONDS` | One fixed step of 1/60 second |
+| Takt | clock | `Clock` | Turns the time between two frames into ticks; gives none before "Tap to fly" |
 | Bild | frame | `next_frame()` | One drawn picture on the screen |
 | zeichnen | draw | `crates/game` | Put the game on the screen |
 | Eingabe | input | `Input` | What the player does (finger, keys, tilt) |

@@ -5,13 +5,20 @@
 /// and calls `tick` zero or more times per frame.
 pub const TICK_SECONDS: f32 = 1.0 / 60.0;
 
+mod clock;
 mod input;
+mod level;
 mod rng;
 mod scenery;
 mod sound;
 mod tilt;
 mod weather;
+pub use clock::{Clock, MAX_FRAME_SECONDS};
 pub use input::{pick_steer, steer_from_keys, steer_toward, Input, TOUCH_EASE_DISTANCE};
+pub use level::{
+    level_view, start_level, LevelView, LEVEL_BANNER_SECONDS, LEVEL_COUNT, LEVEL_FADE_SECONDS,
+    LEVEL_SECONDS,
+};
 pub use scenery::{background_x, scroll_distance, SCROLL_SPEED};
 pub use sound::{
     Mix, CRASH_VOLUME, DIVE_WIND, ENGINE_VOLUME, MIX_CHANGE_PER_SECOND, RAIN_VOLUME, WIND_VOLUME,

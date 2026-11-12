@@ -2,12 +2,13 @@
 //! This file should only: read input, call `World::tick`, draw state.
 
 use airplane_scoring_core::{
-    background_x, pick_steer, scroll_distance, steer_from_keys, steer_toward, Bounds, Event, Input,
-    Tilt, Vec2, World, PLANE_RADIUS, TICK_SECONDS,
+    background_x, level_view, pick_steer, scroll_distance, start_level, steer_from_keys,
+    steer_toward, Bounds, Clock, Event, Input, Tilt, Vec2, World, PLANE_RADIUS, TICK_SECONDS,
 };
 use macroquad::prelude::*;
 
 mod audio;
+mod page_js;
 mod scenery;
 mod sound_js;
 mod tilt_js;
@@ -30,6 +31,7 @@ async fn main() {
     set_pc_assets_folder("web");
     let mut audio = audio::Audio::start();
     let mut scenery = scenery::Scenery::start();
+    let first_level = start_level(page_js::requested_level());
 
     // The seed decides the weather; the clock makes every flight different.
     let seed = (macroquad::miniquad::date::now() * 1000.0) as u64;
@@ -46,7 +48,7 @@ async fn main() {
         Vec2::new(120.0, 90.0),
     );
 
-    let mut accumulator = 0.0_f32;
+    let mut clock = Clock::default();
     let mut tilt = Tilt::default();
     let mut tilt_epoch = tilt_js::epoch();
     let mut crash_flash = 0.0_f32; // screen effect only, fades out
@@ -72,9 +74,8 @@ async fn main() {
             sound_js::toggle_mute();
         }
 
-        // Fixed-step simulation; cap to avoid spiral of death after a tab sleeps.
-        accumulator += get_frame_time().min(0.25);
-        while accumulator >= TICK_SECONDS {
+        // Fixed ticks; the game stands still until "Tap to fly".
+        for _ in 0..clock.ticks_for(get_frame_time(), page_js::started()) {
             // Recomputed each step: steering toward a finger depends on where
             // the plane is now.
             let pointer = pointer_y.map(|y| steer_toward(y, world.player.pos.y));
@@ -86,14 +87,30 @@ async fn main() {
                     crash_flash = 1.0;
                 }
             }
-            accumulator -= TICK_SECONDS;
         }
         audio.update(world.mix, sound_js::muted());
 
-        // The landscape scrolls past; until its image has loaded, a plain sky.
+        // The landscape scrolls past; at the end of a level the next one
+        // fades in over it. Until an image has loaded, a plain sky that
+        // rain clouds grey.
         let rain = world.weather.rain;
-        let x = background_x(scroll_distance(world.ticks), scenery.tile_width());
-        if scenery.draw(x) {
+        clear_background(Color::new(
+            0.078 + 0.06 * rain,
+            0.094 + 0.06 * rain,
+            0.125 + 0.06 * rain,
+            1.0,
+        ));
+        scenery.update();
+        let levels = level_view(world.ticks, first_level);
+        let distance = scroll_distance(world.ticks);
+        let mut landscape = false;
+        for (level, alpha) in [(levels.level, 1.0), (levels.next, levels.fade)] {
+            if alpha > 0.0 {
+                let x = background_x(distance, scenery.tile_width(level));
+                landscape |= scenery.draw(level, x, alpha);
+            }
+        }
+        if landscape {
             // Rain clouds darken the landscape.
             draw_rectangle(
                 0.0,
@@ -102,14 +119,6 @@ async fn main() {
                 screen_height(),
                 Color::new(0.16, 0.18, 0.22, 0.45 * rain),
             );
-        } else {
-            // Rain clouds grey the sky.
-            clear_background(Color::new(
-                0.078 + 0.06 * rain,
-                0.094 + 0.06 * rain,
-                0.125 + 0.06 * rain,
-                1.0,
-            ));
         }
 
         for m in &world.planes {
@@ -142,6 +151,20 @@ async fn main() {
             Color::new(1.0, 0.2, 0.1, 0.35 * crash_flash),
         );
         crash_flash = (crash_flash - get_frame_time() / 0.3).max(0.0);
+
+        // "Level N" at the start of each level.
+        if levels.banner > 0.0 {
+            let text = format!("Level {}", levels.level);
+            let size = 72.0;
+            let dims = measure_text(&text, None, size as u16, 1.0);
+            draw_text_on_landscape(
+                &text,
+                (w - dims.width) / 2.0,
+                h * 0.42,
+                size,
+                Color::new(1.0, 0.86, 0.35, levels.banner),
+            );
+        }
 
         let text = world.greeting();
         let size = 48.0;
@@ -180,7 +203,7 @@ fn draw_text_on_landscape(text: &str, x: f32, y: f32, size: f32, colour: Color) 
         x + 2.0,
         y + 2.0,
         size,
-        Color::new(0.0, 0.0, 0.0, 0.55),
+        Color::new(0.0, 0.0, 0.0, 0.55 * colour.a),
     );
     draw_text(text, x, y, size, colour);
 }

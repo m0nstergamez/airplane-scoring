@@ -13,6 +13,10 @@ On a computer the start screen shows the keys and a **QR code**. Scan
 it with your phone's camera to open the game there. To fly on the
 computer, click **"Click to fly"** or press Enter.
 
+The flight only begins with that tap or click. Until then the game waits,
+however long the start screen is open, so you always start at the
+beginning of level 1 in dry weather.
+
 ## Controls
 
 You have three ways to steer. If you use several at once, the finger
@@ -77,6 +81,14 @@ the lightning, the later and quieter the thunder.
 
 If you touch the other plane, you **crash**: your plane smokes, falls
 and ignores the controls for a moment (1.5 seconds). Then you fly again.
+
+## Levels
+
+Every minute you reach a new **level** with a new landscape: first the
+coast (level 1), then a beach at sunset (level 2). Near the end of a
+level the next landscape slowly appears over the old one, and "Level 2"
+shows in the middle of the screen. After the last level, level 1 starts
+again.
 
 ## Sound
 

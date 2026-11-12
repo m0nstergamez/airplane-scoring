@@ -110,6 +110,26 @@ that isn't code here. Keep entries short and dated.
 - The project notes now exist in German too (`docs/README.de.md`),
   kept in sync like the manual; `scripts/check-docs.sh` compares the structure.
 
+## 2026-11-12
+
+- Level change: every `LEVEL_SECONDS` (60 s) the next level begins,
+  after the last one level 1 again (core `level.rs`, `level_view`). The
+  next landscape fades in over the last `LEVEL_FADE_SECONDS` (3 s) and
+  "Level N" shows for 2.5 s. Picked over points (none yet) and a menu
+  (in the way on a phone); when points come, only the trigger changes.
+  Derived from ticks and the start level, so no new state in `World`.
+  All level images load at the start. `?level=2` (plugin "page",
+  `LEVEL=2 scripts/shot.sh`) starts in level 2. Headless Chrome barely
+  advances the game, so the fade was checked with levels shortened
+  locally to 1 s.
+- The game stands still until "Tap to fly" / "Click to fly" / `?play`.
+  Before, the clock ran from page load: a long wait on the start screen
+  skipped the "Level 1" banner, the dry first 10 s, even whole levels.
+  Core `Clock` (`clock.rs`) now turns frame time into ticks and gives none,
+  and saves none up, before the start; the page reports the start through
+  the "page" plugin (`page_js.rs`, replaces "level"). Checked with the
+  start screen made see-through locally: behind it `ticks: 0`.
+
 ## Concepts
 
 ### Tilt: from sensor to steering

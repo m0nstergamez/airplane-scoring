@@ -14,6 +14,10 @@ Am Computer zeigt die Startanzeige die Tasten und einen **QR-Code**.
 Scanne ihn mit der Kamera deines Handys, um das Spiel dort zu öffnen. Um
 am Computer zu fliegen, klicke auf **«Click to fly»** oder drücke Enter.
 
+Der Flug beginnt erst mit diesem Tipp oder Klick. Bis dahin wartet das
+Spiel, egal wie lange die Startanzeige offen ist. So startest du immer am
+Anfang von Level 1 und bei trockenem Wetter.
+
 ## Steuerung
 
 Du kannst auf drei Arten steuern. Benutzt du mehrere gleichzeitig,
@@ -80,6 +84,14 @@ Donner folgt. Je weiter weg der Blitz, desto später und leiser der Donner.
 Berührst du das andere Flugzeug, gibt es einen **Zusammenstoss**: Dein
 Flugzeug raucht, fällt und lässt sich einen Moment lang (1,5 Sekunden)
 nicht steuern. Danach fliegst du wieder.
+
+## Levels
+
+Jede Minute erreichst du ein neues **Level** mit einer neuen Landschaft:
+zuerst die Küste (Level 1), dann einen Strand bei Sonnenuntergang
+(Level 2). Gegen Ende eines Levels erscheint die nächste Landschaft
+langsam über der alten, und in der Mitte des Bildschirms steht «Level 2».
+Nach dem letzten Level beginnt wieder Level 1.
 
 ## Ton
 

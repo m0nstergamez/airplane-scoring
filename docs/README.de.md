@@ -111,6 +111,27 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
 - Die Projektnotizen gibt es jetzt auch auf Deutsch (`docs/README.de.md`),
   parallel geführt wie die Anleitung; `scripts/check-docs.sh` vergleicht den Aufbau.
 
+## 2026-11-12
+
+- Levelwechsel: Alle `LEVEL_SECONDS` (60 s) beginnt das nächste Level,
+  nach dem letzten wieder Level 1 (core `level.rs`, `level_view`). Die
+  nächste Landschaft wird in den letzten `LEVEL_FADE_SECONDS` (3 s)
+  eingeblendet, und «Level N» steht 2.5 s lang da. Gewählt statt Punkten
+  (gibt es noch nicht) und statt eines Menüs (stört am Handy); kommen
+  Punkte, ändert sich nur der Auslöser. Aus den Ticks und dem Start-Level
+  abgeleitet, also kein neuer Zustand in `World`. Alle Level-Bilder laden
+  beim Start. `?level=2` (Plugin "page", `LEVEL=2 scripts/shot.sh`)
+  startet in Level 2. Headless Chrome lässt das Spiel kaum laufen, darum
+  wurde die Überblendung lokal mit 1 s langen Levels geprüft.
+- Das Spiel steht still bis «Tap to fly» / «Click to fly» / `?play`.
+  Vorher lief die Uhr ab dem Laden der Seite: Wer lange auf der
+  Startanzeige wartete, verpasste die Anzeige «Level 1», die trockenen
+  ersten 10 s, sogar ganze Levels. core `Clock` (`clock.rs`) macht jetzt
+  aus der Zeit pro Bild Ticks und gibt vor dem Start keine, spart auch
+  keine auf; die Seite meldet den Start über das Plugin "page"
+  (`page_js.rs`, ersetzt "level"). Geprüft mit lokal durchsichtig
+  gemachter Startanzeige: dahinter `ticks: 0`.
+
 ## Konzepte
 
 ### Kippen: vom Sensor zur Steuerung
