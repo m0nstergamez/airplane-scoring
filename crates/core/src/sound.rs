@@ -26,6 +26,8 @@ pub const NEW_LEVEL_VOLUME: f32 = 0.8;
 /// Volume of a gull's call as it appears (as loud as the calls in the
 /// first beach loop, a bit more so you hear gulls from behind).
 pub const GULL_CALL_VOLUME: f32 = 0.25;
+/// Volume of a hot-air balloon's burner as it appears: clear, not loud.
+pub const BALLOON_BURNER_VOLUME: f32 = 0.35;
 /// A full dive adds this much wind: the plane is faster.
 pub const DIVE_WIND: f32 = 0.25;
 /// Volumes move at most this much per second (silent to full in 0.25 s),

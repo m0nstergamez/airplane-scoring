@@ -21,6 +21,12 @@ pub const LEVEL_FADE_SECONDS: f32 = 3.0;
 /// second it fades out).
 pub const LEVEL_BANNER_SECONDS: f32 = 2.5;
 
+/// Levels where it may rain (and storm). None so far: rain does not fit
+/// the balloons over the coast (level 1) nor the sunset at the beach
+/// (level 2). The weather keeps running underneath, so a later level only
+/// has to be listed here to get rain and thunderstorms.
+pub const RAINY_LEVELS: &[u32] = &[];
+
 const BANNER_FADE_SECONDS: f32 = 0.5;
 
 fn to_ticks(seconds: f32) -> u64 {
@@ -41,6 +47,17 @@ pub struct LevelView {
 }
 
 impl LevelView {
+    /// How heavy the rain may be now (0..1): how much of the rainy levels
+    /// ([`RAINY_LEVELS`]) is on screen, so rain fades with the landscape.
+    pub fn rain_room(&self) -> f32 {
+        self.rain_room_in(RAINY_LEVELS)
+    }
+
+    fn rain_room_in(&self, rainy: &[u32]) -> f32 {
+        let room: f32 = rainy.iter().map(|&l| self.presence(l)).sum();
+        room.min(1.0)
+    }
+
     /// How much of `level` is on screen: 1 = only it, 0 = not at all,
     /// in between while it fades in or out. Sounds that belong to a level
     /// (the beach) follow this, so they fade with the landscape.
@@ -172,6 +189,22 @@ mod tests {
             assert_eq!(level_view(start + at(LEVEL_BANNER_SECONDS), 1).banner, 0.0);
         }
         assert_eq!(level_view(at(LEVEL_SECONDS / 2.0), 1).banner, 0.0);
+    }
+
+    #[test]
+    fn no_level_has_rain_yet() {
+        for t in 0..at(2.0 * LEVEL_SECONDS) {
+            assert_eq!(level_view(t, 1).rain_room(), 0.0);
+        }
+    }
+
+    #[test]
+    fn rain_fades_with_a_rainy_landscape() {
+        let rainy = [1];
+        assert_eq!(level_view(0, 1).rain_room_in(&rainy), 1.0);
+        let half = level_view(at(LEVEL_SECONDS - LEVEL_FADE_SECONDS / 2.0), 1);
+        assert!((half.rain_room_in(&rainy) - 0.5).abs() < 0.01);
+        assert_eq!(level_view(at(LEVEL_SECONDS), 1).rain_room_in(&rainy), 0.0);
     }
 
     #[test]

@@ -26,7 +26,7 @@ short **meaning**.
 | Finger | finger | `pointer` | Steering by touching the screen |
 | Taste | key | `steer_from_keys` | Keyboard key (↑/W, ↓/S) |
 | Spielerin / Spieler (kurz: Spieler:in) | player | — | Person playing. In running text «Spielerin oder Spieler», in short labels «Spieler:in» |
-| Hindernis | obstacle | `Gulls` | Something you must not fly into; touching it is a crash. So far: gulls in level 2 |
+| Hindernis | obstacle | `Balloons`, `Gulls` | Something you must not fly into; touching it is a crash. So far: hot-air balloons in level 1, gulls in level 2 |
 | Leben | life, lives | `World.lives`, `LIVES` | Crashes you can afford; shown as small planes at the top right |
 | geschützt (blinken) | safe (blinking) | `Player::is_safe`, `SAFE_SECONDS` | After a crash the plane blinks and cannot lose another life |
 | Game over | game over | `Event::GameOver`, `World::is_over` | The last life is gone; the flight ends. On-screen label, stays English |
@@ -56,6 +56,8 @@ short **meaning**.
 | Lautsprecher-Knopf | speaker button | `#mute` | Button at the top right for sound on/off |
 | Ereignis | event | `Event` | Something that happened in one tick |
 | Wellen | waves | `beach.wav` | Sea sound at the beach (level 2) |
+| Heissluftballon | hot-air balloon | `Balloon`, `BalloonWay` | Level 1's obstacle: drifts left while rising, coming at the plane's height, or sinking to land; envelope and basket both count |
+| Brenner | burner | `Event::BalloonBurner`, `balloon-burner.wav` | The roar of a balloon's gas flame, heard as it appears |
 | Möwe | gull | `Gull`, `gull-call.wav` | Sea bird at the beach: an obstacle; many call when they appear |
 | Melodie | tune | `Event::NewLevel`, `new-level.wav` | Short rising tune when a new level begins |
 | Startwert | seed | `World::with_seed` | The number that decides the random weather |

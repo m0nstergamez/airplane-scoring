@@ -136,8 +136,17 @@ flowchart LR
 - **Töne eines Levels** folgen seiner Landschaft: Die Lautstärke der
   Strand-Schleife ist `BEACH_VOLUME` mal, wie viel von Level 2 zu sehen ist
   (`LevelView::presence`). So werden die Wellen mit dem Strand eingeblendet.
-  Beim Wetter ist es gleich: Der Regen darf nur so stark sein, wie Level 1
-  zu sehen ist, darum ist es am Strand immer trocken.
+  Beim Wetter ist es gleich: Der Regen darf nur so stark sein, wie die
+  Levels in `RAINY_LEVELS` zu sehen sind (`LevelView::rain_room`). Diese
+  Liste ist im Moment leer, darum sind Level 1 und 2 trocken; das Wetter
+  läuft für spätere Levels darunter weiter.
+- **Heissluftballone** (`crates/core/src/balloons.rs`) sind die
+  Hindernisse von Level 1: gross, langsam und selten, weil Level 1 das
+  einfachste Level ist. Jeder steigt, kommt waagrecht auf der Höhe des
+  Flugzeugs oder sinkt zum Landen (`BalloonWay`, Anteile `BALLOON_RISING`
+  und `BALLOON_AT_PLANE`). core lässt sie auftauchen (mit Startwert), bewegt
+  sie und prüft den Zusammenstoss mit Hülle und Korb; jeder neue schickt
+  ein Ereignis `BalloonBurner` für seinen Ton.
 - **Möwen** (`crates/core/src/gulls.rs`) sind die Hindernisse am Strand.
   core entscheidet, wann und wo sie auftauchen (mit Startwert, wie das
   Wetter), bewegt sie und prüft den Zusammenstoss; eine Möwe, die ruft,
@@ -281,6 +290,8 @@ Weitere Zahlen zum Ausprobieren:
 | `BEACH_VOLUME` | `crates/core/src/sound.rs` | wie laut Wellen und Möwen sind (0 bis 1) |
 | `GULL_GAP_SECONDS` | `crates/core/src/gulls.rs` | kürzeste und längste Zeit zwischen zwei Möwen |
 | `GULL_SPEED` | `crates/core/src/gulls.rs` | wie schnell Möwen fliegen (Pixel pro Sekunde) |
+| `BALLOON_GAP_SECONDS` | `crates/core/src/balloons.rs` | kürzeste und längste Zeit zwischen zwei Ballonen |
+| `BALLOON_RISE` | `crates/core/src/balloons.rs` | wie schnell Ballone steigen (Pixel pro Sekunde) |
 | `SCROLL_SPEED` | `crates/core/src/scenery.rs` | wie schnell die Landschaft vorbeizieht (Pixel pro Sekunde) |
 | `LEVEL_SECONDS` | `crates/core/src/level.rs` | wie lange ein Level dauert (Sekunden) |
 | `LEVEL_FADE_SECONDS` | `crates/core/src/level.rs` | wie lange die nächste Landschaft zum Einblenden braucht |

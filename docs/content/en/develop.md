@@ -135,8 +135,17 @@ flowchart LR
 - **Sounds of a level** follow its landscape: the beach loop's volume is
   `BEACH_VOLUME` times how much of level 2 is on screen
   (`LevelView::presence`), so the waves fade in with the beach. The
-  weather works the same way: rain may only be as heavy as level 1 is on
-  screen, so the beach is always dry.
+  weather works the same way: rain may only be as heavy as the levels in
+  `RAINY_LEVELS` are on screen (`LevelView::rain_room`). That list is
+  empty for now, so levels 1 and 2 are dry; the weather keeps running
+  underneath for later levels.
+- **Hot-air balloons** (`crates/core/src/balloons.rs`) are level 1's
+  obstacles: big, slow and rare, since level 1 is the easiest level.
+  Each one rises, comes level at the plane's height, or sinks to land
+  (`BalloonWay`, shares `BALLOON_RISING` and `BALLOON_AT_PLANE`).
+  Core spawns them (seeded), moves them and checks the crash against the
+  envelope and the basket; each new one sends a `BalloonBurner` event for
+  its sound.
 - **Gulls** (`crates/core/src/gulls.rs`) are the beach's obstacles. Core
   decides when and where they appear (seeded, like the weather), moves
   them and checks the crash; a gull that calls sends a `GullCall` event,
@@ -277,6 +286,8 @@ More numbers you can try:
 | `BEACH_VOLUME` | `crates/core/src/sound.rs` | how loud the waves and gulls are (0 to 1) |
 | `GULL_GAP_SECONDS` | `crates/core/src/gulls.rs` | shortest and longest time between two gulls |
 | `GULL_SPEED` | `crates/core/src/gulls.rs` | how fast gulls fly (pixels per second) |
+| `BALLOON_GAP_SECONDS` | `crates/core/src/balloons.rs` | shortest and longest time between two balloons |
+| `BALLOON_RISE` | `crates/core/src/balloons.rs` | how fast balloons rise (pixels per second) |
 | `SCROLL_SPEED` | `crates/core/src/scenery.rs` | how fast the landscape slides past (pixels per second) |
 | `LEVEL_SECONDS` | `crates/core/src/level.rs` | how long one level lasts (seconds) |
 | `LEVEL_FADE_SECONDS` | `crates/core/src/level.rs` | how long the next landscape takes to fade in |
