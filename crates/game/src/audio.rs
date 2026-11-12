@@ -8,8 +8,8 @@
 //! own unlock misses iPhones; see docs/README.md).
 
 use airplane_scoring_core::{
-    Event, Mix, BALLOON_BURNER_VOLUME, CRASH_VOLUME, EXPLOSION_VOLUME, GEAR_VOLUME,
-    GULL_CALL_VOLUME, HIGHSCORE_VOLUME, NEW_LEVEL_VOLUME, TAKEOFF_VOLUME, VOICE_VOLUME,
+    Event, Mix, BALLOON_BURNER_VOLUME, BALLOON_BURST_VOLUME, CRASH_VOLUME, EXPLOSION_VOLUME,
+    GEAR_VOLUME, GULL_CALL_VOLUME, NEW_LEVEL_VOLUME, TAKEOFF_VOLUME, VOICE_VOLUME,
 };
 use macroquad::audio::{load_sound, play_sound, set_sound_volume, PlaySoundParams, Sound};
 use macroquad::experimental::coroutines::{start_coroutine, Coroutine};
@@ -26,7 +26,6 @@ struct Sounds {
     new_level: Sound,
     gull_call: Sound,
     burner: Sound,
-    fanfare: Sound,
     explosion: Sound,
     overspeed_alarm: Sound,
     stall_alarm: Sound,
@@ -63,7 +62,6 @@ impl Sounds {
             new_level: file("new-level").await?,
             gull_call: file("gull-call").await?,
             burner: file("balloon-burner").await?,
-            fanfare: file("new-highscore").await?,
             explosion: file("explosion").await?,
             overspeed_alarm: file("warning-overspeed").await?,
             stall_alarm: file("warning-stall").await?,
@@ -93,7 +91,7 @@ pub struct Audio {
     loading: Option<Coroutine<Option<Sounds>>>,
     sounds: Option<Sounds>,
     muted: bool,
-    /// The "Music" switch: the tunes (new level, highscore fanfare).
+    /// The "Music" switch: the tune (level complete).
     music: bool,
 }
 
@@ -140,7 +138,6 @@ impl Audio {
             set_sound_volume(&s.new_level, 0.0);
             set_sound_volume(&s.gull_call, 0.0);
             set_sound_volume(&s.burner, 0.0);
-            set_sound_volume(&s.fanfare, 0.0);
             set_sound_volume(&s.explosion, 0.0);
             set_sound_volume(&s.takeoff, 0.0);
             set_sound_volume(&s.gear, 0.0);
@@ -155,7 +152,7 @@ impl Audio {
     pub fn play(&self, event: Event) {
         let Some(s) = &self.sounds else { return };
         // The tunes follow the "Music" switch, everything else "Sounds".
-        let tune = matches!(event, Event::LevelComplete { .. } | Event::NewHighscore);
+        let tune = matches!(event, Event::LevelComplete { .. });
         if (tune && !self.music) || (!tune && self.muted) {
             return;
         }
@@ -167,8 +164,8 @@ impl Audio {
             Event::NewLevel { .. } => return,
             Event::GullCall => (&s.gull_call, GULL_CALL_VOLUME),
             Event::BalloonBurner => (&s.burner, BALLOON_BURNER_VOLUME),
+            Event::BalloonBurst => (&s.explosion, BALLOON_BURST_VOLUME),
             Event::Lightning { .. } => return, // seen, not heard
-            Event::NewHighscore => (&s.fanfare, HIGHSCORE_VOLUME),
             Event::Explosion => (&s.explosion, EXPLOSION_VOLUME),
             Event::Takeoff => (&s.takeoff, TAKEOFF_VOLUME),
             Event::GearUp | Event::GearDown => (&s.gear, GEAR_VOLUME),

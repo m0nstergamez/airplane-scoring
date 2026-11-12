@@ -7,9 +7,9 @@ pub const TICK_SECONDS: f32 = 1.0 / 60.0;
 
 mod airport;
 mod balloons;
+mod best_times;
 mod clock;
 mod gulls;
-mod highscore;
 mod huts;
 mod input;
 mod level;
@@ -30,12 +30,12 @@ pub use balloons::{
     BALLOON_RADIUS, BALLOON_RISE, BASKET_BELOW, BASKET_HALF, BASKET_RADIUS, FIRST_BALLOON_SECONDS,
     PAD_GROUND, PAD_HEIGHT, PAD_WIDTH, TAKEOFF_AT, TOUCHDOWN_AT,
 };
+pub use best_times::{BestTimes, Placed, BEST_TIMES_COUNT};
 pub use clock::{Clock, MAX_FRAME_SECONDS};
 pub use gulls::{
     Gull, GullStart, Gulls, FIRST_GULL_SECONDS, GULL_BOB, GULL_CALL_CHANCE, GULL_FROM_LEFT,
     GULL_FROM_RIGHT, GULL_GAP_SECONDS, GULL_SPEED,
 };
-pub use highscore::{Highscores, HIGHSCORE_COUNT};
 pub use huts::{
     Hut, Huts, FIRST_HUT_SECONDS, HUT_EAVES, HUT_GAP_SECONDS, HUT_GROUND, HUT_HEIGHT, HUT_INSET,
     HUT_STYLES, HUT_WIDTH,
@@ -50,10 +50,10 @@ pub use level::{
 pub use scenery::{background_x, scroll_distance, SCROLL_SPEED};
 pub use shape::{any_overlap, Poly};
 pub use sound::{
-    Mix, BALLOON_BURNER_VOLUME, BEACH_LEVEL, BEACH_VOLUME, CRASH_VOLUME, DIVE_WIND,
-    ENGINE_FAR_VOLUME, ENGINE_VOLUME, EXPLOSION_VOLUME, GEAR_VOLUME, GULL_CALL_VOLUME,
-    HIGHSCORE_VOLUME, MIX_CHANGE_PER_SECOND, NEW_LEVEL_VOLUME, RAIN_VOLUME, RUMBLE_VOLUME,
-    TAKEOFF_VOLUME, VOICE_VOLUME, WARNING_VOLUME, WIND_VOLUME,
+    Mix, BALLOON_BURNER_VOLUME, BALLOON_BURST_VOLUME, BEACH_LEVEL, BEACH_VOLUME, CRASH_VOLUME,
+    DIVE_WIND, ENGINE_FAR_VOLUME, ENGINE_VOLUME, EXPLOSION_VOLUME, GEAR_VOLUME, GULL_CALL_VOLUME,
+    MIX_CHANGE_PER_SECOND, NEW_LEVEL_VOLUME, RAIN_VOLUME, RUMBLE_VOLUME, TAKEOFF_VOLUME,
+    VOICE_VOLUME, WARNING_VOLUME, WIND_VOLUME,
 };
 pub use tilt::{
     Tilt, LEAN_DEAD_ZONE_DEG, LEAN_FULL_DEG, TILT_DEAD_ZONE_DEG, TILT_FULL_DEG, TILT_MIN_GRAVITY,
@@ -164,14 +164,15 @@ pub const SAFE_SECONDS: f32 = 2.0;
 /// [`SAFE_SECONDS`] in ticks.
 pub const SAFE_TICKS: u32 = (SAFE_SECONDS * 60.0) as u32;
 
-/// Points for staying in the air: the score grows by this much every
-/// second of the flight (also while crashed; it stops at game over).
-pub const SCORE_PER_SECOND: u64 = 2;
+/// The flight time as a clock, minutes and seconds: 125 → "2:05".
+pub fn clock_text(seconds: u64) -> String {
+    format!("{}:{:02}", seconds / 60, seconds % 60)
+}
 
 /// How much the plane smokes after losing lives: index = lives lost
-/// (0 = none, 1 = a thin trail, 2 = thick smoke and a flame). The last
-/// life lost is an explosion instead.
-pub const DAMAGE_SMOKE: [f32; 3] = [0.0, 0.4, 1.0];
+/// (0 = none, 1 = a clear grey trail, 2 = thick dark smoke and a flame).
+/// The last life lost is an explosion instead.
+pub const DAMAGE_SMOKE: [f32; 3] = [0.0, 0.5, 1.0];
 
 /// How far the screen shakes at the moment of the explosion, in px (on a
 /// phone; it grows with the screen). It fades out over the explosion.
@@ -180,7 +181,7 @@ pub const SHAKE_PX: f32 = 10.0;
 /// The game speeds up a little with every point: the landscape and
 /// everything in it slide past this much faster per point (0.1 %: after
 /// a minute, 120 points, about 12 % faster).
-pub const SPEED_PER_POINT: f32 = 0.001;
+pub const SPEED_PER_SECOND: f32 = 0.002;
 /// It never gets faster than this (1 = the start).
 pub const MAX_SPEED: f32 = 1.5;
 
@@ -209,11 +210,10 @@ pub enum Event {
     GullCall,
     /// A hot-air balloon's burner roars as it appears.
     BalloonBurner,
+    /// The plane flew into a balloon: it explodes (a bang) and falls.
+    BalloonBurst,
     /// The last life is gone: the plane has fallen and the flight is over.
     GameOver,
-    /// The finished flight beat every earlier score on this device (sent
-    /// by [`Highscores::add`], not by `World::tick`).
-    NewHighscore,
     /// The last life is gone: the plane explodes (instead of a crash).
     Explosion,
     /// The takeoff roll begins: the engine's spool-up sound.
@@ -440,7 +440,7 @@ pub struct World {
     /// Where the plane blew up when the last life went; `None` before.
     pub explosion: Option<Vec2>,
     /// How far the landscape has slid past, in px at phone size (it
-    /// speeds up with the score, see [`World::speed`]).
+    /// speeds up with the time flown, see [`World::speed`]).
     pub distance: f64,
     /// The airport the flight starts from, while it is on screen.
     pub airport: Option<Airport>,
@@ -587,11 +587,11 @@ impl World {
     }
 
     /// How fast the game goes now: 1 at the start, a little faster with
-    /// every point ([`SPEED_PER_POINT`], at most [`MAX_SPEED`]), times the
+    /// every second flown ([`SPEED_PER_SECOND`], at most [`MAX_SPEED`]), times the
     /// airspeed you set with the throttle.
     pub fn speed(&self) -> f32 {
-        let score = (1.0 + SPEED_PER_POINT * self.score() as f32).min(MAX_SPEED);
-        score * self.player.airspeed * self.rolling()
+        let flown = (1.0 + SPEED_PER_SECOND * self.seconds_flown() as f32).min(MAX_SPEED);
+        flown * self.player.airspeed * self.rolling()
     }
 
     /// Start this flight on the airport's runway (the game does this for
@@ -733,11 +733,12 @@ impl World {
         self.is_over() && self.over_ticks as f32 * TICK_SECONDS >= RESTART_WAIT_SECONDS
     }
 
-    /// Points so far: [`SCORE_PER_SECOND`] for every full second flown.
-    /// Stops growing at game over, since time stands still then.
-    pub fn score(&self) -> u64 {
+    /// Full seconds flown in this flight (shown as a clock, see
+    /// [`clock_text`]). Stands still at "Level complete" and game over,
+    /// since time stands still then.
+    pub fn seconds_flown(&self) -> u64 {
         let ticks_per_second = (1.0 / TICK_SECONDS).round() as u64;
-        self.ticks * SCORE_PER_SECOND / ticks_per_second
+        self.ticks / ticks_per_second
     }
 
     /// Steering toward a finger at `target_y` (screen px), from where the
@@ -1025,12 +1026,30 @@ impl World {
         let bounds = self.bounds;
         let me = self.player.shape(bounds);
         let hits = |them: &[Poly]| any_overlap(&me, them);
+        // Gulls the plane flies into are knocked down (a falling one is
+        // no obstacle any more).
+        let struck: Vec<usize> = if self.explosion.is_none() {
+            (self.gulls.list.iter().enumerate())
+                .filter(|(_, g)| !g.is_down() && hits(&g.shape(bounds.depth(g.pos.y))))
+                .map(|(i, _)| i)
+                .collect()
+        } else {
+            Vec::new()
+        };
+        // Balloons too: one the plane flies into explodes and falls.
+        let burst: Vec<usize> = if self.explosion.is_none() {
+            (self.balloons.list.iter().enumerate())
+                .filter(|(_, b)| !b.is_burst() && hits(&b.shape(b.size(bounds))))
+                .map(|(i, _)| i)
+                .collect()
+        } else {
+            Vec::new()
+        };
         let touching = (self.planes.iter()).any(|m| {
             let r = PLANE_RADIUS * bounds.depth(m.pos.y);
             me.iter().any(|part| part.overlaps_circle(m.pos, r))
-        }) || (self.gulls.list.iter())
-            .any(|g| hits(&g.shape(bounds.depth(g.pos.y))))
-            || (self.balloons.list.iter()).any(|b| hits(&b.shape(b.size(bounds))))
+        }) || !struck.is_empty()
+            || !burst.is_empty()
             || (self.balloons.pads.iter()).any(|p| hits(&p.shape(bounds)))
             || (self.huts.list.iter()).any(|h| hits(&h.shape(bounds)))
             || (self.towers.list.iter()).any(|t| hits(&t.shape(bounds)));
@@ -1048,6 +1067,18 @@ impl World {
             }
         }
         player.touching = touching;
+        for &i in &struck {
+            self.gulls.list[i].knock_down(scale);
+        }
+        if !struck.is_empty() {
+            self.events.push(Event::GullCall); // a squawk
+        }
+        for &i in &burst {
+            self.balloons.list[i].burst(scale);
+        }
+        if !burst.is_empty() {
+            self.events.push(Event::BalloonBurst);
+        }
 
         // Rain (and storms) only where a rainy level shows; none yet.
         self.weather.tick(&mut self.events, levels.rain_room());
@@ -1537,9 +1568,9 @@ mod tests {
         };
         let start = step(&mut w);
         assert!((start - (SCROLL_SPEED * TICK_SECONDS) as f64).abs() < 1e-6);
-        // A minute later (120 points): 12 % faster, only a little.
+        // A minute later: 12 % faster, only a little.
         w.ticks = 60 * 60; // one minute of ticks
-        assert_eq!(w.score(), 120);
+        assert_eq!(w.seconds_flown(), 60);
         assert!((w.speed() - 1.12).abs() < 1e-5, "{}", w.speed());
         let later = step(&mut w);
         assert!((later / start - w.speed() as f64).abs() < 0.01);
@@ -1759,13 +1790,16 @@ mod tests {
             w.tick(&Input::NONE);
         }
         assert!(w.is_over());
-        let (ticks, score, player) = (w.ticks, w.score(), w.player);
+        let (ticks, flown, player) = (w.ticks, w.seconds_flown(), w.player);
         let plane = w.planes[0].clone();
         for _ in 0..120 {
             w.tick(&Input::new(-1.0));
             assert_eq!(w.events(), []);
         }
-        assert_eq!((w.ticks, w.score(), w.player), (ticks, score, player));
+        assert_eq!(
+            (w.ticks, w.seconds_flown(), w.player),
+            (ticks, flown, player)
+        );
         assert_eq!(w.planes[0], plane);
         assert_eq!(w.mix, Mix::SILENT);
     }
@@ -1789,19 +1823,28 @@ mod tests {
     }
 
     #[test]
-    fn the_score_grows_by_two_every_second() {
+    fn the_flight_time_counts_whole_seconds() {
         let mut w = world_with_plane_ahead(300.0);
-        assert_eq!(w.score(), 0);
+        assert_eq!(w.seconds_flown(), 0);
         let mut last = 0;
         for second in 1..=10 {
             for _ in 0..60 {
                 w.tick(&Input::NONE);
-                assert!(w.score() >= last, "never goes down");
-                last = w.score();
+                assert!(w.seconds_flown() >= last, "never goes down");
+                last = w.seconds_flown();
             }
-            assert_eq!(w.score(), SCORE_PER_SECOND * second);
+            assert_eq!(w.seconds_flown(), second);
         }
-        assert_eq!(SCORE_PER_SECOND, 2);
+    }
+
+    #[test]
+    fn the_clock_shows_minutes_and_seconds() {
+        assert_eq!(clock_text(0), "0:00");
+        assert_eq!(clock_text(9), "0:09");
+        assert_eq!(clock_text(59), "0:59");
+        assert_eq!(clock_text(60), "1:00");
+        assert_eq!(clock_text(125), "2:05");
+        assert_eq!(clock_text(3600), "60:00");
     }
 
     #[test]
@@ -1939,6 +1982,67 @@ mod tests {
     }
 
     #[test]
+    fn the_last_life_lost_on_the_approach_is_game_over_not_level_complete() {
+        let mut w = World::with_seed(PHONE, 3);
+        until_approach(&mut w, 0.0);
+        // A gull from behind, still around: it hits on the way down.
+        w.lives = 1;
+        w.player.crash_ticks = 0;
+        w.player.safe_ticks = 0;
+        let mut ahead = w.clone();
+        ahead.tick(&Input::NONE);
+        let at = ahead.player.pos;
+        let mut gulls = Gulls::new(1);
+        while gulls.list.is_empty() {
+            gulls.tick(PHONE, true, &mut Vec::new());
+        }
+        let mut gull = gulls.list[0].clone();
+        gull.pos = at;
+        gull.vel = Vec2::new(0.0, 0.0);
+        gull.place_at(at);
+        w.gulls.list = vec![gull];
+        w.tick(&Input::NONE);
+        assert!(w.explosion.is_some(), "the last life: it explodes");
+        let mut events = Vec::new();
+        for _ in 0..(30.0 / TICK_SECONDS) as u32 {
+            w.tick(&Input::NONE);
+            events.extend_from_slice(w.events());
+        }
+        assert!(w.is_over(), "game over");
+        assert!(events.contains(&Event::GameOver));
+        assert!(
+            !events
+                .iter()
+                .any(|e| matches!(e, Event::LevelComplete { .. })),
+            "no level complete after the plane blew up"
+        );
+        assert_eq!(w.level_complete(), None);
+    }
+
+    #[test]
+    fn a_crash_on_the_approach_still_ends_the_level() {
+        for late in [0.0, 1.0, 2.0, 3.0] {
+            let mut w = World::with_seed(PHONE, 3);
+            until_approach(&mut w, 0.0);
+            for _ in 0..(late / TICK_SECONDS) as u32 {
+                w.tick(&Input::NONE);
+            }
+            // Hit by a gull from behind (a life left): it falls a moment.
+            w.lives = 2;
+            w.player.crash_ticks = CRASH_TICKS;
+            let mut done = false;
+            for _ in 0..(40.0 / TICK_SECONDS) as u32 {
+                w.tick(&Input::NONE);
+                if w.level_complete().is_some() {
+                    done = true;
+                    break;
+                }
+            }
+            assert!(done, "hit {late} s into the approach: never landed");
+        }
+    }
+
+    #[test]
     fn overspeed_at_the_end_of_a_level_does_not_wreck_the_landing() {
         let mut w = World::with_seed(PHONE, 3);
         // Gas on just before the landing: overspeed as the approach begins.
@@ -2029,13 +2133,13 @@ mod tests {
         assert_eq!(w.lives, u32::MAX, "no crash on the way down");
         assert_eq!(w.level_complete(), Some(1));
         assert_eq!(w.speed(), 0.0, "standing still");
-        let score = w.score();
+        let flown = w.seconds_flown();
         // "Level complete" waits for the player (Next level or Menu).
         for _ in 0..60 * 30 {
             w.tick(&Input::NONE);
         }
         assert_eq!(w.level_complete(), Some(1), "still waiting");
-        assert_eq!(w.score(), score, "the score stands still");
+        assert_eq!(w.seconds_flown(), flown, "the clock stands still");
         w.go_on();
         w.tick(&Input::NONE);
         assert_eq!(w.levels().level, BEACH_LEVEL);
@@ -2106,6 +2210,34 @@ mod tests {
         w.tick(&Input::NONE);
         assert!(w.player.is_crashed());
         assert!(w.events().contains(&Event::Crash));
+        // The gull is hit too: it tumbles down, no longer in the way.
+        let gull = &w.gulls.list[i];
+        assert!(gull.is_down(), "the gull is knocked down");
+        assert!(w.events().contains(&Event::GullCall), "with a squawk");
+        let y = gull.pos.y;
+        for _ in 0..30 {
+            w.tick(&Input::NONE);
+        }
+        assert!(w.gulls.list.iter().any(|g| g.is_down() && g.pos.y > y));
+    }
+
+    #[test]
+    fn a_falling_gull_is_no_obstacle() {
+        let mut w = World::with_seed(PHONE, 1);
+        w.start_level = BEACH_LEVEL;
+        while w.gulls.list.is_empty() {
+            w.tick(&Input::NONE);
+        }
+        w.gulls.list.truncate(1);
+        w.gulls.list[0].knock_down(PHONE.scale());
+        let mut ahead = w.clone();
+        ahead.tick(&Input::NONE);
+        let target = ahead.gulls.list[0].pos;
+        w.player.pos.y = target.y;
+        w.bounds.width = target.x / PLAYER_X_FRACTION;
+        w.tick(&Input::NONE);
+        assert!(!w.player.is_crashed());
+        assert_eq!(w.lives, LIVES);
     }
 
     #[test]
@@ -2123,6 +2255,20 @@ mod tests {
         w.tick(&Input::NONE);
         assert!(w.events().contains(&Event::Crash));
         assert_eq!(w.lives, LIVES - 1);
+        // The balloon explodes and falls; it is no obstacle any more.
+        assert!(w.balloons.list[0].is_burst(), "the balloon bursts");
+        assert!(w.events().contains(&Event::BalloonBurst), "with a bang");
+        let y = w.balloons.list[0].pos.y;
+        let mut again = w.clone();
+        again.player.crash_ticks = 0;
+        again.player.safe_ticks = 0;
+        again.player.touching = false;
+        again.tick(&Input::NONE);
+        assert_eq!(again.lives, LIVES - 1, "a burst balloon is no crash");
+        for _ in 0..30 {
+            w.tick(&Input::NONE);
+        }
+        assert!(w.balloons.list.iter().any(|b| b.is_burst() && b.pos.y > y));
     }
 
     #[test]
@@ -2266,9 +2412,9 @@ mod tests {
                         Event::Crash
                         | Event::NewLevel { .. }
                         | Event::GullCall
-                        | Event::BalloonBurner => {}
+                        | Event::BalloonBurner
+                        | Event::BalloonBurst => {}
                         Event::GameOver => panic!("lives cannot run out"),
-                        Event::NewHighscore => panic!("not from the world"),
                         Event::Explosion => panic!("lives cannot run out"),
                         Event::Overspeed | Event::PullUp => panic!("no throttle given"),
                         // 5 minutes: several levels, each landed and taken off.
@@ -2442,14 +2588,12 @@ mod tests {
         }
         // Balloons follow the same rule.
         for y in [50.0, 200.0, 260.0, 320.0, 380.0] {
-            let b = Balloon {
-                pos: Vec2::new(400.0, y),
-                vel: Vec2::new(0.0, 0.0),
-                colour: 0,
-                way: BalloonWay::AtPlane,
-                takeoff: None,
-                touchdown: None,
-            };
+            let b = Balloon::new(
+                Vec2::new(400.0, y),
+                Vec2::new(0.0, 0.0),
+                0,
+                BalloonWay::AtPlane,
+            );
             assert_eq!(b.size(PHONE), w.bounds.depth(y));
         }
         // A plane parked low hits from further away than one up high.
@@ -2507,13 +2651,13 @@ mod tests {
         };
         assert!((share(phone) - share(computer)).abs() < 1e-4);
         // A balloon touches at the same share of the screen.
-        let balloon = |b: Bounds| Balloon {
-            pos: Vec2::new(500.0, b.height / 2.0),
-            vel: Vec2::new(0.0, 0.0),
-            colour: 0,
-            way: BalloonWay::AtPlane,
-            takeoff: None,
-            touchdown: None,
+        let balloon = |b: Bounds| {
+            Balloon::new(
+                Vec2::new(500.0, b.height / 2.0),
+                Vec2::new(0.0, 0.0),
+                0,
+                BalloonWay::AtPlane,
+            )
         };
         let mut shares = Vec::new();
         for b in [phone, computer] {

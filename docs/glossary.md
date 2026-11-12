@@ -32,13 +32,13 @@ short **meaning**.
 | Fluggeschwindigkeit | airspeed | `Player::airspeed`, `Input::throttle` | How fast you fly yourself: gas (→/D, tip forward) and brake (←/A, tip back) |
 | Overspeed | overspeed | `Warning::Overspeed`, `OVERSPEED_AT` | Too fast; after a countdown the plane breaks apart. On-screen label and voice stay English |
 | Pull up | pull up | `Warning::PullUp`, `STALL_AT` | Too slow; the plane sags. On-screen label and voice stay English |
-| Tempo | speed | `World::speed`, `SPEED_PER_POINT` | How fast the landscape comes by; a little faster with every point |
+| Tempo | speed | `World::speed`, `SPEED_PER_SECOND` | How fast the landscape comes by; a little faster with every second flown |
 | Wackeln | shake | `World::shake`, `SHAKE_PX` | The screen shaking at the explosion |
 | Explosion | explosion | `Event::Explosion`, `explosion.wav` | The plane blowing up when the last life goes |
 | geschützt (blinken) | safe (blinking) | `Player::is_safe`, `SAFE_SECONDS` | After a crash the plane blinks and cannot lose another life |
 | Game over | game over | `Event::GameOver`, `World::is_over` | The last life is gone; the flight ends. On-screen label, stays English |
-| Highscore | highscore | `Highscores`, `Event::NewHighscore` | The best scores on this device (top 5); a new best one is a new highscore. On-screen labels «Best», «Highscores», «New highscore!» stay English |
-| Punkte, Score | points, score | `World::score`, `SCORE_PER_SECOND` | 2 per second flown; shown at the top centre and at game over. On-screen label «Score» stays English |
+| Bestzeiten | best times | `BestTimes`, `BEST_TIMES_COUNT` | The 5 longest flights per level (the level chosen on the map), shown at game over. On-screen labels «Best times», «New best time!» stay English |
+| Flugzeit, Zeit | flight time, time | `World::seconds_flown`, `clock_text` | How long this flight has lasted, in minutes and seconds («2:05»); shown at the top centre, at «Level complete» and at game over. On-screen label «Time» stays English |
 
 ## Weather and sound
 
@@ -80,7 +80,7 @@ short **meaning**.
 | Brenner | burner | `Event::BalloonBurner`, `balloon-burner.wav` | The roar of a balloon's gas flame, heard as it appears |
 | Strandturm | lifeguard tower | `Tower`, `Towers` | Wooden lifeguard tower in the beach's sand (level 2), near the front or back by the water; an obstacle |
 | Parallaxe | parallax | `Tower::size` | Things further away slide past more slowly |
-| Möwe | gull | `Gull`, `gull-call.wav` | Sea bird at the beach: an obstacle; many call when they appear |
+| Möwe | gull | `Gull`, `gull-call.wav` | Sea bird at the beach: an obstacle; many call when they appear. One you hit tumbles to the ground (`Gull::knock_down`) |
 | Melodie | tune | `Event::LevelComplete`, `new-level.wav` | Short rising tune when a level is landed and complete |
 | Landung | landing | `Landing`, `World::landing` | How a level ends: approach on autopilot, touchdown, rollout, "Level complete" |
 | Landebahn | runway (landing) | `Airport` | The runway a level ends on; the same kind as the takeoff runway |

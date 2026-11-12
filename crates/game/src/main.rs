@@ -3,11 +3,12 @@
 
 use airplane_scoring_core::Vec2 as Vec2Core;
 use airplane_scoring_core::{
-    background_x, pick_steer, pick_throttle, start_level, steer_from_keys, Airport, Balloon,
-    Bounds, Clock, Event, Gull, Highscores, Hut, Input, Mix, Pad, Tilt, Tower, Warning, World,
-    AIRSPEED_RANGE, BALLOON_RADIUS, BASKET_BELOW, HIGHSCORE_COUNT, HUT_EAVES, HUT_INSET, LIVES,
-    OVERSPEED_AT, PAD_HEIGHT, PAD_WIDTH, PLANE_COCKPIT, PLANE_FUSELAGE, PLANE_NOSE, PLANE_RADIUS,
-    PLANE_TAIL, PLANE_WING, RUNWAY_HEIGHT, RUNWAY_LENGTH, STALL_AT, TICK_SECONDS, WHEELS_BELOW,
+    background_x, clock_text, pick_steer, pick_throttle, start_level, steer_from_keys, Airport,
+    Balloon, BestTimes, Bounds, Clock, Event, Gull, Hut, Input, Mix, Pad, Tilt, Tower, Warning,
+    World, AIRSPEED_RANGE, BALLOON_RADIUS, BASKET_BELOW, BEST_TIMES_COUNT, HUT_EAVES, HUT_INSET,
+    LIVES, OVERSPEED_AT, PAD_HEIGHT, PAD_WIDTH, PLANE_COCKPIT, PLANE_FUSELAGE, PLANE_NOSE,
+    PLANE_RADIUS, PLANE_TAIL, PLANE_WING, RUNWAY_HEIGHT, RUNWAY_LENGTH, STALL_AT, TICK_SECONDS,
+    WHEELS_BELOW,
 };
 use macroquad::prelude::*;
 
@@ -37,10 +38,10 @@ async fn main() {
     let mut scenery = scenery::Scenery::start();
 
     let mut world = new_world();
-    // The best scores on this device; where the last flight landed in them.
-    let mut highscores = Highscores::from_scores(page_js::load_highscores(HIGHSCORE_COUNT));
-    let mut result: Option<FlightResult> = None;
     let mut flight = page_js::new_flight();
+    // The level's best times and where the last flight landed in them,
+    // for "Game over".
+    let mut result: Option<FlightResult> = None;
 
     let mut clock = Clock::default();
     let mut tilt = Tilt::default();
@@ -77,12 +78,10 @@ async fn main() {
         // fresh flight ready for the next "Tap to fly".
         if page_js::new_flight() != flight {
             flight = page_js::new_flight();
-            // Leaving a flight (Menu, Restart) still counts its score, like
-            // a game over does (that one is in the list already).
+            // Leaving a flight (Menu, Restart) still counts its time, like
+            // a game over does (that one is in the table already).
             if !world.is_over() {
-                let mut fanfare = Vec::new();
-                highscores.add(world.score(), &mut fanfare);
-                page_js::save_highscores(HIGHSCORE_COUNT, highscores.list());
+                record_time(&world);
             }
             world = new_world();
             crash_flash = 0.0;
@@ -125,17 +124,7 @@ async fn main() {
                     page_js::level_complete(level); // unlocks the next level
                 }
                 if event == Event::GameOver {
-                    // Core ranks the score; the page keeps the list.
-                    let mut fanfare = Vec::new();
-                    let place = highscores.add(world.score(), &mut fanfare);
-                    page_js::save_highscores(HIGHSCORE_COUNT, highscores.list());
-                    for e in &fanfare {
-                        audio.play(*e);
-                    }
-                    result = Some(FlightResult {
-                        place,
-                        record: !fanfare.is_empty(),
-                    });
+                    result = Some(record_time(&world));
                 }
             }
         }
@@ -158,7 +147,7 @@ async fn main() {
             1.0,
         ));
         // The explosion shakes the landscape and everything in it (not
-        // the score and lives): a camera moved by core's shake, zoomed in
+        // the time and lives): a camera moved by core's shake, zoomed in
         // a little so no empty edge shows.
         let shake = world.shake();
         if shake.x != 0.0 || shake.y != 0.0 {
@@ -262,7 +251,7 @@ async fn main() {
         }
         draw_rain(rain, world.weather.wind, world.ticks, scale);
 
-        set_default_camera(); // flashes and the score do not shake
+        set_default_camera(); // flashes and the time do not shake
                               // Lightning lights the whole sky; a crash flashes red.
         let (w, h) = (screen_width(), screen_height());
         draw_rectangle(
@@ -299,13 +288,35 @@ async fn main() {
         draw_warning(&world);
         draw_lives(&world);
         if world.is_over() {
-            draw_game_over(&world, &highscores, result); // shows the score itself
+            draw_game_over(&world, result.as_ref()); // shows the time itself
         } else {
-            draw_score(&world, highscores.best());
+            draw_time(&world);
         }
         draw_level_end(&world);
 
         next_frame().await
+    }
+}
+
+/// A finished flight's time in its level's best times (the level it
+/// started in): core ranks it, the page keeps the table.
+struct FlightResult {
+    level: u32,
+    times: BestTimes,
+    placed: Option<airplane_scoring_core::Placed>,
+}
+
+fn record_time(world: &World) -> FlightResult {
+    let level = start_level(world.start_level as i32);
+    let mut times = BestTimes::from_seconds(page_js::load_best_times(level, BEST_TIMES_COUNT));
+    let placed = times.add(world.seconds_flown());
+    if placed.is_some() {
+        page_js::save_best_times(level, BEST_TIMES_COUNT, times.list());
+    }
+    FlightResult {
+        level,
+        times,
+        placed,
     }
 }
 
@@ -380,7 +391,7 @@ fn pressed_level_end_button(world: &World) -> Option<LevelEndChoice> {
         .map(|(_, _, choice)| choice)
 }
 
-/// The end of a level: "Level N complete" with the score after the
+/// The end of a level: "Level N complete" with the time after the
 /// landing, then the next level's number and a 3, 2, 1 countdown.
 fn draw_level_end(world: &World) {
     let (w, h) = (screen_width(), screen_height());
@@ -395,7 +406,7 @@ fn draw_level_end(world: &World) {
         draw_rectangle(0.0, 0.0, w, h, Color::new(0.08, 0.09, 0.12, 0.45));
         centred(&format!("Level {level} complete"), h * 0.36, 56.0, gold);
         centred(
-            &format!("Score {}", world.score()),
+            &format!("Time {}", clock_text(world.seconds_flown())),
             h * 0.36 + 44.0 * s,
             30.0,
             WHITE,
@@ -510,19 +521,10 @@ fn draw_warning(world: &World) {
     }
 }
 
-/// The score, top centre, all game long.
-fn draw_score(world: &World, best: u64) {
+/// The flight time (minutes and seconds), top centre, all game long.
+fn draw_time(world: &World) {
     let scale = world.bounds.scale();
-    // The best score so far, small under the score.
-    if best > 0 {
-        let text = format!("Best {}", best.max(world.score()));
-        let size = 22.0 * scale;
-        let dims = measure_text(&text, None, size as u16, 1.0);
-        let colour = Color::from_rgba(255, 220, 90, 230);
-        let x = (screen_width() - dims.width) / 2.0;
-        draw_text_on_landscape(&text, x, 64.0 * scale, size, colour);
-    }
-    let text = format!("Score {}", world.score());
+    let text = format!("Time {}", clock_text(world.seconds_flown()));
     let size = 40.0 * scale;
     let dims = measure_text(&text, None, size as u16, 1.0);
     let colour = Color::from_rgba(255, 244, 214, 255);
@@ -575,18 +577,8 @@ fn draw_lives(world: &World) {
     }
 }
 
-/// Where a finished flight landed in the highscores.
-#[derive(Clone, Copy)]
-struct FlightResult {
-    /// Its place in the list (0 = best), if it made it.
-    place: Option<usize>,
-    /// Better than every earlier flight.
-    record: bool,
-}
-
-/// "Game over", the final score, the best scores on this device (this
-/// flight highlighted), and how to fly again.
-fn draw_game_over(world: &World, highscores: &Highscores, result: Option<FlightResult>) {
+/// "Game over", the time flown and how to fly again.
+fn draw_game_over(world: &World, result: Option<&FlightResult>) {
     let (w, h) = (screen_width(), screen_height());
     draw_rectangle(0.0, 0.0, w, h, Color::new(0.08, 0.09, 0.12, 0.65));
     let s = world.bounds.scale();
@@ -597,33 +589,42 @@ fn draw_game_over(world: &World, highscores: &Highscores, result: Option<FlightR
     };
     let gold = Color::from_rgba(255, 220, 90, 255);
     let mut y = h * 0.2;
-    centred("Game over", y, 64.0, gold);
+    centred("Game over", y, 60.0, gold);
     y += 40.0 * s;
-    centred(&format!("Score {}", world.score()), y, 30.0, WHITE);
-    if result.is_some_and(|r| r.record) {
-        y += 30.0 * s;
-        // Blinks, to celebrate.
-        let on = ((get_time() * 3.0) as u64).is_multiple_of(2);
-        let colour = if on {
-            gold
-        } else {
-            Color::from_rgba(255, 150, 60, 255)
-        };
-        centred("New highscore!", y, 28.0, colour);
-    }
-    // The best scores, this flight highlighted.
-    y += 34.0 * s;
-    centred("Highscores", y, 22.0, Color::from_rgba(200, 210, 225, 255));
-    for (i, score) in highscores.list().iter().enumerate() {
-        y += 22.0 * s;
-        let mine = result.and_then(|r| r.place) == Some(i);
-        let colour = if mine {
-            gold
-        } else {
-            Color::from_rgba(235, 235, 225, 255)
-        };
-        let text = format!("{}.  {}{}", i + 1, score, if mine { "  <" } else { "" });
-        centred(&text, y, 22.0, colour);
+    centred(
+        &format!("Time {}", clock_text(world.seconds_flown())),
+        y,
+        32.0,
+        WHITE,
+    );
+    if let Some(r) = result {
+        if r.placed.is_some_and(|p| p.record) {
+            y += 30.0 * s;
+            // Blinks, to celebrate.
+            let on = ((get_time() * 3.0) as u64).is_multiple_of(2);
+            let colour = if on {
+                gold
+            } else {
+                Color::from_rgba(255, 150, 60, 255)
+            };
+            centred("New best time!", y, 26.0, colour);
+        }
+        // This level's best times, this flight highlighted.
+        y += 32.0 * s;
+        let label = format!("Best times  Level {}", r.level);
+        centred(&label, y, 22.0, Color::from_rgba(200, 210, 225, 255));
+        let mine = r.placed.map(|p| p.place);
+        for (i, &seconds) in r.times.list().iter().enumerate() {
+            y += 22.0 * s;
+            let colour = if mine == Some(i) {
+                gold
+            } else {
+                Color::from_rgba(235, 235, 225, 255)
+            };
+            let marker = if mine == Some(i) { "  <" } else { "" };
+            let text = format!("{}.  {}{}", i + 1, clock_text(seconds), marker);
+            centred(&text, y, 22.0, colour);
+        }
     }
     if world.can_restart() {
         centred(
@@ -928,6 +929,26 @@ fn draw_balloon(balloon: &Balloon, scale: f32) {
             Color::from_rgba(246, 232, 190, 255),
         ),
     };
+    // A burst balloon: the envelope burns, shrivels and goes dark while
+    // the whole thing falls (core moves it); a fireball at first.
+    let t = balloon.burst_seconds();
+    let burst = balloon.is_burst();
+    let (wide, tall) = if burst {
+        ((1.0 - 1.6 * t).max(0.3), (1.0 - 1.2 * t).max(0.45))
+    } else {
+        (1.0, 1.0)
+    };
+    let char = if burst { (2.0 * t).min(0.8) } else { 0.0 };
+    let burnt = |c: Color| {
+        let k = 1.0 - char;
+        Color::new(
+            c.r * k + 0.12 * char,
+            c.g * k + 0.1 * char,
+            c.b * k + 0.08 * char,
+            1.0,
+        )
+    };
+    let (main, stripe) = (burnt(main), burnt(stripe));
     let basket_y = y + BASKET_BELOW * s;
     let neck_y = y + r * 1.15;
     // Ropes from the envelope's mouth to the basket.
@@ -938,11 +959,14 @@ fn draw_balloon(balloon: &Balloon, scale: f32) {
     }
     // Envelope: round top, tapering down to the mouth; stripes are
     // narrower copies on top.
+    // (A burst one hangs shrivelled from its mouth.)
+    let top = neck_y - (neck_y - y) * tall;
     for (w, colour) in [(1.0, main), (0.62, stripe), (0.3, main)] {
-        draw_ellipse(x, y, r * w, r * 1.05, 0.0, colour);
+        let w = w * wide;
+        draw_ellipse(x, top, r * w, r * 1.05 * tall, 0.0, colour);
         draw_triangle(
-            vec2(x - r * w * 0.93, y + r * 0.35),
-            vec2(x + r * w * 0.93, y + r * 0.35),
+            vec2(x - r * w * 0.93, top + r * 0.35 * tall),
+            vec2(x + r * w * 0.93, top + r * 0.35 * tall),
             vec2(x, neck_y + 4.0 * s),
             colour,
         );
@@ -966,6 +990,38 @@ fn draw_balloon(balloon: &Balloon, scale: f32) {
         3.0,
         Color::from_rgba(104, 68, 36, 255),
     );
+    if burst {
+        draw_balloon_fire(x, top, r, t, s);
+    }
+}
+
+/// The burst: a fireball where the envelope was, white-hot, then orange
+/// and red as it swells and fades (`t` seconds after the burst); later
+/// just smoke rising from the falling wreck.
+fn draw_balloon_fire(x: f32, y: f32, r: f32, t: f32, s: f32) {
+    let ball = (t / 0.5).min(1.0);
+    if ball < 1.0 {
+        let fade = 1.0 - ball;
+        let size = r * (0.7 + 1.1 * ball);
+        draw_circle(x, y, size, Color::new(0.85, 0.2, 0.08, 0.7 * fade));
+        draw_circle(x, y, size * 0.72, Color::new(1.0, 0.55, 0.12, 0.85 * fade));
+        draw_circle(x, y, size * 0.4, Color::new(1.0, 0.95, 0.75, fade));
+    }
+    // Smoke and a few flames on the falling wreck.
+    for i in 0..5 {
+        let k = i as f32;
+        let up = (t * 60.0 + k * 9.0) % 40.0;
+        let alpha = 0.5 * (1.0 - up / 40.0) * (t / 0.3).min(1.0);
+        let px = x + (k - 2.0) * 5.0 * s;
+        draw_circle(
+            px,
+            y - up * s,
+            (4.0 + up * 0.25) * s,
+            Color::new(0.2, 0.2, 0.22, alpha),
+        );
+    }
+    let flicker = 0.7 + 0.3 * (t * 40.0).sin();
+    draw_circle(x, y, 6.0 * s * flicker, Color::new(1.0, 0.6, 0.15, 0.9));
 }
 
 /// A gull seen from the side, centred on its position, facing where it
@@ -974,8 +1030,13 @@ fn draw_balloon(balloon: &Balloon, scale: f32) {
 fn draw_gull(gull: &Gull, scale: f32) {
     let (x, y) = (gull.pos.x, gull.pos.y);
     let dir = gull.facing(); // -1 = facing left
-                             // A point (dx, dy) design px from the gull's centre.
-    let p = |dx: f32, dy: f32| vec2(x + dx * scale, y + dy * scale);
+                             // A struck gull tumbles: everything turns around its centre.
+    let (sin, cos) = gull.tumble().sin_cos();
+    // A point (dx, dy) design px from the gull's centre.
+    let p = |dx: f32, dy: f32| {
+        let (dx, dy) = (dx * scale, dy * scale);
+        vec2(x + dx * cos - dy * sin, y + dx * sin + dy * cos)
+    };
     let wing = Color::from_rgba(120, 128, 140, 255);
     let tip = Color::from_rgba(40, 42, 48, 255);
     let body = Color::from_rgba(250, 250, 246, 255);
@@ -986,11 +1047,19 @@ fn draw_gull(gull: &Gull, scale: f32) {
         let (bend, end) = (p(bx, by), p(ex, ey));
         draw_line(x, y, bend.x, bend.y, 4.0 * scale, wing);
         draw_line(bend.x, bend.y, end.x, end.y, 3.0 * scale, wing);
-        let from = vec2(end.x - side * 3.0 * scale, end.y + (bend.y - end.y) * 0.3);
+        // The dark tip: the wing's last part (turns along when tumbling).
+        let from = bend + (end - bend) * 0.7;
         draw_line(from.x, from.y, end.x, end.y, 3.0 * scale, tip);
     }
     // Body, head and a yellow beak towards the flight direction.
-    draw_ellipse(x, y, 9.0 * scale, 4.0 * scale, 0.0, body);
+    draw_ellipse(
+        x,
+        y,
+        9.0 * scale,
+        4.0 * scale,
+        gull.tumble().to_degrees(),
+        body,
+    );
     let head = p(dir * 8.0, -2.0);
     draw_circle(head.x, head.y, 3.5 * scale, body);
     draw_triangle(
@@ -1009,17 +1078,19 @@ fn draw_damage_smoke(x: f32, y: f32, size: f32, smoke: f32, ticks: u64) {
         return;
     }
     let tail = vec2(x - 24.0 * size, y - 2.0 * size);
-    let puffs = (6.0 + 10.0 * smoke) as u64;
-    let grey = 0.75 - 0.4 * smoke; // darker when worse
+    // Many puffs in a long trail; more, bigger and darker with each
+    // life lost.
+    let puffs = (14.0 + 30.0 * smoke) as u64;
+    let grey = 0.7 - 0.45 * smoke; // darker when worse
     for i in 0..puffs {
-        let period = 40;
+        let period = 60;
         let age = ((ticks + i * period / puffs) % period) as f32 / period as f32;
         // Puffs drift back with the wind and rise a little, growing and fading.
-        let wobble = ((i * 37 % 11) as f32 - 5.0) * 0.6;
-        let px = tail.x - (10.0 + 90.0 * age) * size;
-        let py = tail.y - (4.0 + 18.0 * age + wobble * age) * size;
-        let r = (2.5 + (5.0 + 7.0 * smoke) * age) * size;
-        let alpha = (0.25 + 0.4 * smoke) * (1.0 - age);
+        let wobble = ((i * 37 % 11) as f32 - 5.0) * (1.0 + smoke);
+        let px = tail.x - (8.0 + (120.0 + 80.0 * smoke) * age) * size;
+        let py = tail.y - (3.0 + (16.0 + 14.0 * smoke) * age + wobble * age) * size;
+        let r = (3.5 + 3.0 * smoke + (7.0 + 13.0 * smoke) * age) * size;
+        let alpha = (0.35 + 0.4 * smoke) * (1.0 - age);
         draw_circle(px, py, r, Color::new(grey, grey, grey + 0.02, alpha));
     }
     if smoke >= 1.0 {

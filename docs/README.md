@@ -468,6 +468,45 @@ that isn't code here. Keep entries short and dated.
   - Checked and fine: a tap on the canvas cannot fall through to the
     main menu (the JS glue cancels touch events), and the level-end
     buttons handle phone touch coordinates.
+- Asked for: the highscore is gone (core's `highscore.rs`,
+  `Event::NewHighscore`, the fanfare and its `.wav`, "Best" and the list
+  at game over, the page plugin's storage; plugin version 5). The page
+  removes the old `airplane-scoring.highscores` key once. Game over now
+  shows just the score.
+- Asked for: a gull you fly into is knocked down (`Gull::knock_down`):
+  thrown up a little, then it falls and tumbles to the ground with limp
+  wings, squawks (`GullCall`), and is no obstacle any more. It still
+  costs a life. Tests: a struck gull falls, tumbles and is dropped; a
+  falling gull does not crash the plane.
+- Asked for: much more damage smoke. `DAMAGE_SMOKE` after one lost life
+  0.4 → 0.5; the drawing has about twice the puffs, bigger and longer
+  (14 + 30 × smoke puffs, a trail up to 200 px).
+- Asked for: the time flown in minutes replaces the score.
+  `World::seconds_flown` (whole seconds, stands still at "Level
+  complete" and game over) and `clock_text` ("2:05") replace
+  `World::score` and `SCORE_PER_SECOND`; the speed-up is now per second
+  (`SPEED_PER_SECOND` 0.002, the same 12 % after a minute as before).
+  "Time 2:05" shows at the top centre, at "Level complete" and at game
+  over.
+- Asked for, all in one go:
+  - A balloon you fly into explodes and crashes (`Balloon::burst`,
+    `Event::BalloonBurst` with the explosion sound at
+    `BALLOON_BURST_VOLUME`); drawn as a fireball, then a shrivelled,
+    burnt envelope with smoke, falling. No obstacle any more; it still
+    costs a life. Balloons are now built with `Balloon::new`.
+  - Best times instead of points: `best_times.rs` (top
+    `BEST_TIMES_COUNT` 5 per level, longest first, a tie is no record),
+    keyed by the level the flight started in. The page plugin (version
+    6) keeps them as `airplane-scoring.best-times`. Shown at game over
+    with this flight marked; a flight left with Menu or Restart counts
+    too.
+  - "Tap/Click to fly" opens the level map ("Choose a level"); the
+    separate Levels button is gone. With the keyboard, Enter opens it
+    with level 1 focused.
+  - Bug hunt: two new tests for the landing approach (the last life lost
+    there is game over, never "level complete"; a crash there still
+    lands). Both already worked. Checked in the browser: keyboard flow
+    to the level map, and the best-times table at 844×390 and 1440×900.
 
 ## Concepts
 

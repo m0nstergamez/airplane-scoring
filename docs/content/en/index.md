@@ -5,7 +5,7 @@ Fly your plane through obstacles and survive.
 **Play now:** <https://m0nstergamez.github.io/airplane-scoring/>
 
 > The game is at an early stage: you fly through two levels, dodge
-> hot-air balloons and gulls and collect points for your highscore.
+> hot-air balloons and gulls and fly as long as you can.
 
 ## Contents
 

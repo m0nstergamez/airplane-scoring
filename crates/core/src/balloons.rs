@@ -43,6 +43,11 @@ pub const BALLOON_RISE: (f32, f32) = (8.0, 25.0);
 pub const BALLOON_HIGH: (f32, f32) = (0.1, 0.3);
 /// How many colour patterns there are (the game crate draws them).
 pub const BALLOON_COLOURS: u32 = 4;
+/// A balloon the plane flies into explodes and crashes to the ground: how
+/// fast it falls (px per second squared) and how much of its drift it
+/// keeps.
+pub const BALLOON_FALL: f32 = 500.0;
+pub const BALLOON_BURST_KEEP: f32 = 0.5;
 /// Where the launch pads lie: their bottom, as a fraction of the screen
 /// height from the top (in the foreground grass, like the huts).
 pub const PAD_GROUND: f32 = crate::huts::HUT_GROUND;
@@ -103,6 +108,10 @@ pub struct Balloon {
     /// While a landing balloon is still in the air: the height (screen y)
     /// of its centre once it stands on the pad. `None` otherwise.
     pub touchdown: Option<f32>,
+    /// Ticks since the plane burst it; `None` while it is whole.
+    pub burst: Option<u32>,
+    /// Its fall, px per second squared (0 while it is whole).
+    fall: f32,
 }
 
 /// A launch pad in the grass. It slides with the landscape. Flying into
@@ -183,6 +192,43 @@ impl Balloon {
                 (-9.0, b - 4.0),
             ]),
         ]
+    }
+
+    /// A whole balloon in the air at `pos`, flying at `vel`.
+    pub fn new(pos: Vec2, vel: Vec2, colour: u32, way: BalloonWay) -> Self {
+        Self {
+            pos,
+            vel,
+            colour,
+            way,
+            takeoff: None,
+            touchdown: None,
+            burst: None,
+            fall: 0.0,
+        }
+    }
+
+    /// Burst by the plane: it explodes and crashes to the ground, no
+    /// longer in the way. `scale` is the screen's ([`Bounds::scale`]).
+    pub fn burst(&mut self, scale: f32) {
+        if self.is_burst() {
+            return;
+        }
+        self.burst = Some(0);
+        self.takeoff = None;
+        self.touchdown = None;
+        self.vel = Vec2::new(self.vel.x * BALLOON_BURST_KEEP, 0.0);
+        self.fall = BALLOON_FALL * scale;
+    }
+
+    /// Has it burst? Then it falls and cannot be hit again.
+    pub fn is_burst(&self) -> bool {
+        self.burst.is_some()
+    }
+
+    /// Seconds since it burst (0 while whole), for drawing the explosion.
+    pub fn burst_seconds(&self) -> f32 {
+        self.burst.unwrap_or(0) as f32 * TICK_SECONDS
     }
 
     /// Standing on its launch pad, waiting to take off.
@@ -287,6 +333,10 @@ impl Balloons {
                     events.push(Event::BalloonBurner);
                 }
             }
+            if let Some(t) = &mut b.burst {
+                *t += 1;
+            }
+            b.vel.y += b.fall * TICK_SECONDS;
             b.pos.x += b.vel.x * TICK_SECONDS;
             b.pos.y += b.vel.y * TICK_SECONDS;
             // Touch down on the pad: stand on it and slide off with it.
@@ -329,14 +379,7 @@ impl Balloons {
         let colour = (r.unit() * BALLOON_COLOURS as f32) as u32 % BALLOON_COLOURS;
         let h = bounds.height;
         let flying = Vec2::new(-(ground_speed + drift), 0.0);
-        let mut balloon = Balloon {
-            pos: Vec2::new(x, 0.0),
-            vel: flying,
-            colour,
-            way,
-            takeoff: None,
-            touchdown: None,
-        };
+        let mut balloon = Balloon::new(Vec2::new(x, 0.0), flying, colour, way);
         match way {
             BalloonWay::Rising => {
                 // Standing on the pad, sliding in with it until take-off.
@@ -568,13 +611,13 @@ mod tests {
 
     #[test]
     fn balloons_are_big_on_the_pad_and_small_up_high() {
-        let at = |y: f32| Balloon {
-            pos: Vec2::new(400.0, y),
-            vel: Vec2::new(0.0, 0.0),
-            colour: 0,
-            way: BalloonWay::Rising,
-            takeoff: None,
-            touchdown: None,
+        let at = |y: f32| {
+            Balloon::new(
+                Vec2::new(400.0, y),
+                Vec2::new(0.0, 0.0),
+                0,
+                BalloonWay::Rising,
+            )
         };
         let standing = at(Balloon::standing_y(PHONE)).size(PHONE);
         assert!(
@@ -681,6 +724,34 @@ mod tests {
     }
 
     #[test]
+    fn a_burst_balloon_crashes_to_the_ground_and_is_dropped() {
+        let mut b = Balloons::new(4);
+        while !b.list.iter().any(|b| b.way == BalloonWay::Landing) {
+            run(&mut b, 0.5, true);
+        }
+        let i = (b.list.iter())
+            .position(|b| b.way == BalloonWay::Landing)
+            .unwrap();
+        assert!(!b.list[i].is_burst());
+        b.list[i].burst(PHONE.scale());
+        assert!(b.list[i].is_burst());
+        assert_eq!(b.list[i].touchdown, None, "it no longer lands on its pad");
+        let mut y = b.list[i].pos.y;
+        let mut falling = 0;
+        for _ in 0..ticks(0.8) {
+            run(&mut b, TICK_SECONDS, false);
+            if b.list[i].pos.y > y {
+                falling += 1;
+            }
+            y = b.list[i].pos.y;
+        }
+        assert!(falling > ticks(0.6), "it falls");
+        assert!(b.list[i].burst_seconds() > 0.7);
+        run(&mut b, 4.0, false);
+        assert!(b.list.iter().all(|b| !b.is_burst()), "down below: gone");
+    }
+
+    #[test]
     fn balloons_and_pads_drift_off_and_are_dropped() {
         let mut b = Balloons::new(4);
         run(&mut b, 60.0, true);
@@ -690,14 +761,12 @@ mod tests {
 
     #[test]
     fn only_touching_the_balloon_itself_is_a_hit() {
-        let b = Balloon {
-            pos: Vec2::new(400.0, 200.0),
-            vel: Vec2::new(0.0, 0.0),
-            colour: 0,
-            way: BalloonWay::AtPlane,
-            takeoff: None,
-            touchdown: None,
-        };
+        let b = Balloon::new(
+            Vec2::new(400.0, 200.0),
+            Vec2::new(0.0, 0.0),
+            0,
+            BalloonWay::AtPlane,
+        );
         let shape = b.shape(1.0);
         let hit = |x: f32, y: f32| crate::shape::any_overlap(&shape, &probe(x, y));
         let r = BALLOON_RADIUS;
