@@ -197,22 +197,6 @@ async fn main() {
             draw_score(&world);
         }
 
-        draw_text_on_landscape(
-            &format!(
-                "{}  |  ticks: {}",
-                if gravity.is_some() {
-                    "tilt or drag to fly"
-                } else {
-                    "drag or arrow keys to fly"
-                },
-                world.ticks
-            ),
-            12.0 * scale,
-            screen_height() - 12.0 * scale,
-            20.0 * scale,
-            Color::from_rgba(235, 235, 225, 255),
-        );
-
         next_frame().await
     }
 }

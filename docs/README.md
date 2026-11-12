@@ -267,6 +267,9 @@ that isn't code here. Keep entries short and dated.
   (`Bounds::nearness`, the same 0..1 that drives its size), from 30 %
   (`ENGINE_FAR_VOLUME`) at the top to full near the ground. The sound
   files were checked by numbers (loop seam, loudness).
+- Removed the help text at the bottom left ("drag or arrow keys to fly |
+  ticks: …"): it was meant for testing and lay over the big huts. The
+  start screen and the manual explain the controls.
 
 ## Concepts
 
