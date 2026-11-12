@@ -120,9 +120,17 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
   (gibt es noch nicht) und statt eines Menüs (stört am Handy); kommen
   Punkte, ändert sich nur der Auslöser. Aus den Ticks und dem Start-Level
   abgeleitet, also kein neuer Zustand in `World`. Alle Level-Bilder laden
-  beim Start. `?level=2` (Plugin "level", `LEVEL=2 scripts/shot.sh`)
+  beim Start. `?level=2` (Plugin "page", `LEVEL=2 scripts/shot.sh`)
   startet in Level 2. Headless Chrome lässt das Spiel kaum laufen, darum
   wurde die Überblendung lokal mit 1 s langen Levels geprüft.
+- Das Spiel steht still bis «Tap to fly» / «Click to fly» / `?play`.
+  Vorher lief die Uhr ab dem Laden der Seite: Wer lange auf der
+  Startanzeige wartete, verpasste die Anzeige «Level 1», die trockenen
+  ersten 10 s, sogar ganze Levels. core `Clock` (`clock.rs`) macht jetzt
+  aus der Zeit pro Bild Ticks und gibt vor dem Start keine, spart auch
+  keine auf; die Seite meldet den Start über das Plugin "page"
+  (`page_js.rs`, ersetzt "level"). Geprüft mit lokal durchsichtig
+  gemachter Startanzeige: dahinter `ticks: 0`.
 
 ## Konzepte
 

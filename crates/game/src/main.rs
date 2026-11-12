@@ -3,12 +3,12 @@
 
 use airplane_scoring_core::{
     background_x, level_view, pick_steer, scroll_distance, start_level, steer_from_keys,
-    steer_toward, Bounds, Event, Input, Tilt, Vec2, World, PLANE_RADIUS, TICK_SECONDS,
+    steer_toward, Bounds, Clock, Event, Input, Tilt, Vec2, World, PLANE_RADIUS, TICK_SECONDS,
 };
 use macroquad::prelude::*;
 
 mod audio;
-mod level_js;
+mod page_js;
 mod scenery;
 mod sound_js;
 mod tilt_js;
@@ -31,7 +31,7 @@ async fn main() {
     set_pc_assets_folder("web");
     let mut audio = audio::Audio::start();
     let mut scenery = scenery::Scenery::start();
-    let first_level = start_level(level_js::requested());
+    let first_level = start_level(page_js::requested_level());
 
     // The seed decides the weather; the clock makes every flight different.
     let seed = (macroquad::miniquad::date::now() * 1000.0) as u64;
@@ -48,7 +48,7 @@ async fn main() {
         Vec2::new(120.0, 90.0),
     );
 
-    let mut accumulator = 0.0_f32;
+    let mut clock = Clock::default();
     let mut tilt = Tilt::default();
     let mut tilt_epoch = tilt_js::epoch();
     let mut crash_flash = 0.0_f32; // screen effect only, fades out
@@ -74,9 +74,8 @@ async fn main() {
             sound_js::toggle_mute();
         }
 
-        // Fixed-step simulation; cap to avoid spiral of death after a tab sleeps.
-        accumulator += get_frame_time().min(0.25);
-        while accumulator >= TICK_SECONDS {
+        // Fixed ticks; the game stands still until "Tap to fly".
+        for _ in 0..clock.ticks_for(get_frame_time(), page_js::started()) {
             // Recomputed each step: steering toward a finger depends on where
             // the plane is now.
             let pointer = pointer_y.map(|y| steer_toward(y, world.player.pos.y));
@@ -88,7 +87,6 @@ async fn main() {
                     crash_flash = 1.0;
                 }
             }
-            accumulator -= TICK_SECONDS;
         }
         audio.update(world.mix, sound_js::muted());
 

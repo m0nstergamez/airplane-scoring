@@ -96,6 +96,11 @@ A slow phone does several ticks per frame, a fast one sometimes none.
 Because each tick is the same, the game behaves the same everywhere –
 and a test can replay it exactly.
 
+How many ticks a frame gets is decided by `Clock` in
+`crates/core/src/clock.rs`. Until "Tap to fly" it gives none: the game
+stands still on the start screen, and the flight (weather, levels, the
+other plane) begins with the tap.
+
 ### Sound
 
 Sound follows the same split. `core` decides **what** you hear and

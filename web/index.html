@@ -216,15 +216,19 @@
       },
     });
 
-    // Level plugin: "?level=2" starts the flight in level 2 (testing,
-    // screenshots). The Rust side (crates/game/src/level_js.rs) asks once;
-    // core turns anything invalid into level 1.
-    const requestedLevel = parseInt(new URLSearchParams(location.search).get("level"), 10) || 1;
+    // Page plugin (crates/game/src/page_js.rs): the game stands still
+    // until the player starts ("Tap to fly", "Click to fly", or "?play"),
+    // and "?level=2" starts the flight in level 2 (testing, screenshots;
+    // core turns anything invalid into level 1).
+    const params = new URLSearchParams(location.search);
+    const requestedLevel = parseInt(params.get("level"), 10) || 1;
+    let flying = params.has("play");
     miniquad_add_plugin({
-      name: "level",
-      version: 1, // must match level_crate_version() in level_js.rs
+      name: "page",
+      version: 1, // must match page_crate_version() in page_js.rs
       register_plugin: (importObject) => {
-        importObject.env.level_requested = () => requestedLevel;
+        importObject.env.page_started = () => (flying ? 1 : 0);
+        importObject.env.page_level = () => requestedLevel;
       },
     });
 
@@ -242,6 +246,7 @@
         try { await DeviceMotionEvent.requestPermission(); } catch (_) { /* denied: drag still works */ }
       }
       recalibrate(); // neutral = how the player holds the phone right now
+      flying = true; // the game's clock starts now
       document.getElementById("glcanvas").focus();
     };
     start.querySelector("button").addEventListener("click", fly);

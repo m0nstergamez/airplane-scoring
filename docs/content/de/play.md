@@ -14,6 +14,10 @@ Am Computer zeigt die Startanzeige die Tasten und einen **QR-Code**.
 Scanne ihn mit der Kamera deines Handys, um das Spiel dort zu öffnen. Um
 am Computer zu fliegen, klicke auf **«Click to fly»** oder drücke Enter.
 
+Der Flug beginnt erst mit diesem Tipp oder Klick. Bis dahin wartet das
+Spiel, egal wie lange die Startanzeige offen ist. So startest du immer am
+Anfang von Level 1 und bei trockenem Wetter.
+
 ## Steuerung
 
 Du kannst auf drei Arten steuern. Benutzt du mehrere gleichzeitig,

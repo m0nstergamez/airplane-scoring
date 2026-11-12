@@ -13,6 +13,10 @@ On a computer the start screen shows the keys and a **QR code**. Scan
 it with your phone's camera to open the game there. To fly on the
 computer, click **"Click to fly"** or press Enter.
 
+The flight only begins with that tap or click. Until then the game waits,
+however long the start screen is open, so you always start at the
+beginning of level 1 in dry weather.
+
 ## Controls
 
 You have three ways to steer. If you use several at once, the finger

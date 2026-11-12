@@ -97,6 +97,11 @@ Ein langsames Handy macht mehrere Ticks pro Bild, ein schnelles manchmal
 keinen. Weil jeder Tick gleich ist, verhält sich das Spiel überall gleich –
 und ein Test kann es genau nachspielen.
 
+Wie viele Ticks ein Bild bekommt, entscheidet `Clock` in
+`crates/core/src/clock.rs`. Bis «Tap to fly» gibt es keine: Das Spiel
+steht auf der Startanzeige still, und der Flug (Wetter, Levels, das
+andere Flugzeug) beginnt mit dem Tipp.
+
 ### Ton
 
 Beim Ton gilt dieselbe Aufteilung. `core` entscheidet, **was** du hörst

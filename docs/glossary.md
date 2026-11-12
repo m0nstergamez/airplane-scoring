@@ -95,6 +95,7 @@ short **meaning**.
 | Regeln | rules | `crates/core` | Everything the game decides; no graphics, all tested |
 | Spielschleife | game loop | `main` loop | Read input → ticks → draw, again and again |
 | Tick | tick | `World::tick`, `TICK_SECONDS` | One fixed step of 1/60 second |
+| Takt | clock | `Clock` | Turns the time between two frames into ticks; gives none before "Tap to fly" |
 | Bild | frame | `next_frame()` | One drawn picture on the screen |
 | zeichnen | draw | `crates/game` | Put the game on the screen |
 | Eingabe | input | `Input` | What the player does (finger, keys, tilt) |
