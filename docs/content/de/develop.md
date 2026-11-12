@@ -128,8 +128,12 @@ flowchart LR
 - **Schleifen** (Motor, Wind, Regen, Strand) hören nie auf. Bei jedem Tick
   berechnet `core` eine Mischung (`Mix`) mit ihren Lautstärken; diese
   ändern sich pro Tick nur wenig, damit nichts knackt.
-- **Der Motor** besteht aus zwei Schleifen. macroquad 0.4.16 kann die
-  Tonhöhe nicht ändern, darum blendet Steigen vom Leerlauf zum Vollgas über.
+- **Das Triebwerk** ist eine Turbine (Düse) und besteht aus zwei
+  Schleifen. macroquad 0.4.16 kann die Tonhöhe nicht ändern, darum
+  blendet Steigen vom Leerlauf (tieferes Pfeifen, leises Rauschen) zum
+  Vollgas (höheres Pfeifen, lauteres Rauschen und Zischen) über. Die
+  Lautstärke folgt der Entfernung des Flugzeugs (`Bounds::nearness`):
+  voll nahe am Boden, `ENGINE_FAR_VOLUME` (30 %) ganz oben.
 - **Einzelne Töne** (Donner, Zusammenstoss, die Melodie für ein neues
   Level, der Ruf einer Möwe) sind Ereignisse eines Ticks. Der Donner ist ein eigenes Ereignis,
   weil er später kommt als sein Blitz.

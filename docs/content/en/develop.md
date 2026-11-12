@@ -127,8 +127,12 @@ flowchart LR
 - **Loops** (engine, wind, rain, beach) never stop. Each tick `core` computes a
   `Mix` with their volumes; the volumes move a little per tick, so
   nothing clicks.
-- **The engine** is two loops. macroquad 0.4.16 cannot change the pitch
-  of a sound, so climbing fades from the idle loop to the power loop.
+- **The engine** is a turbine (jet) and two loops. macroquad 0.4.16
+  cannot change the pitch of a sound, so climbing fades from the idle
+  loop (lower whine, soft roar) to the power loop (higher whine, louder
+  roar and hiss). Its volume follows the plane's distance
+  (`Bounds::nearness`): full near the ground, `ENGINE_FAR_VOLUME` (30 %)
+  at the top of the screen.
 - **One-shot sounds** (thunder, crash, the tune for a new level, a gull's
   call) are events of one tick. Thunder is its own event because it arrives later
   than its lightning.

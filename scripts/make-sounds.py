@@ -62,29 +62,32 @@ def write(name, xs, peak):
     print(f"{name}: {len(xs) / RATE:.2f} s, {len(data) // 1024} KB")
 
 
-def engine(seed, pulses_per_second, cutoff, hiss):
-    """Propeller engine: a train of cylinder pulses with a repeating
-    pattern (uneven firing gives the putter), through a low-pass, plus
-    some prop wash. One second, loops seamlessly."""
+def turbine(seed, whine_hz, roar_hz, blast, seconds=2.0):
+    """Turbine (jet) engine: the whine of the spinning compressor (two
+    close tones, so it shimmers, with a little overtone), a low hum, and
+    the broad roar of the exhaust; `blast` adds the bright hiss of full
+    thrust. Every tone has a whole number of cycles in the loop and the
+    noise is run twice (see `looped`), so it loops seamlessly."""
     rng = random.Random(seed)
-    pattern = [1.0, 0.62, 0.85, 0.5]
+    n = int(seconds * RATE)
 
-    def make(n):
-        wash = noise(rng, n)
-        xs = [0.0] * (2 * n)
-        for k in range(2 * pulses_per_second):
-            at = round(k * RATE / pulses_per_second)
-            xs[at] += pattern[k % len(pattern)] * 40.0
-        xs = lowpass(lowpass(xs, cutoff), cutoff)
-        body = highpass(xs, 60.0)
-        air = lowpass(highpass(wash + wash, 300.0), cutoff * 3.0)
-        # The wash pulses with the blades.
-        return [
-            b + hiss * a * (0.6 + 0.4 * math.sin(2 * math.pi * pulses_per_second / 2 * i / RATE))
-            for i, (b, a) in enumerate(zip(body, air))
-        ]
+    def make(m):
+        src = noise(rng, m)
+        both = src + src
+        roar = highpass(lowpass(lowpass(both, roar_hz), roar_hz), 80.0)
+        hiss = lowpass(highpass(both, 2500.0), 7000.0)
+        return [r + blast * h for r, h in zip(roar, hiss)]
 
-    return looped(make, 1.0)
+    air = looped(make, seconds)
+    tones = [(whine_hz, 0.10), (whine_hz + 3.0, 0.08), (2 * whine_hz, 0.03), (140.0, 0.12)]
+    out = []
+    for i in range(n):
+        t = i / RATE
+        tone = sum(a * math.sin(2 * math.pi * hz * t) for hz, a in tones)
+        # The roar breathes a little (once per loop, so it still joins).
+        swell = 0.9 + 0.1 * math.sin(2 * math.pi * t / seconds)
+        out.append(tone + 0.9 * swell * air[i])
+    return out
 
 
 def wind(seed, seconds):
@@ -242,8 +245,8 @@ def new_level(seconds):
 
 
 if __name__ == "__main__":
-    write("engine-idle.wav", engine(1, pulses_per_second=52, cutoff=380.0, hiss=0.25), 0.8)
-    write("engine-power.wav", engine(2, pulses_per_second=92, cutoff=800.0, hiss=0.5), 0.8)
+    write("engine-idle.wav", turbine(1, whine_hz=1400.0, roar_hz=600.0, blast=0.1), 0.8)
+    write("engine-power.wav", turbine(2, whine_hz=1800.0, roar_hz=1300.0, blast=0.35), 0.9)
     write("wind.wav", wind(3, 4.0), 0.8)
     write("rain.wav", rain(4, 3.0), 0.55)
     write("thunder.wav", thunder(5, 3.5), 0.9)

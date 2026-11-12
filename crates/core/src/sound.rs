@@ -9,8 +9,11 @@ use crate::level::LevelView;
 use crate::weather::{approach, Weather};
 use crate::Player;
 
-/// Loudest the two engine loops get.
+/// Loudest the two engine loops get (the plane near the ground).
 pub const ENGINE_VOLUME: f32 = 0.5;
+/// Share of [`ENGINE_VOLUME`] left when the plane is at the very top,
+/// far away; in between it fades with its nearness, like its size.
+pub const ENGINE_FAR_VOLUME: f32 = 0.3;
 /// Loudest the wind loop gets.
 pub const WIND_VOLUME: f32 = 0.6;
 /// Loudest the rain loop gets.
@@ -57,8 +60,10 @@ impl Mix {
     };
 
     /// The volumes that fit the current state of the plane, the weather
-    /// and the level on screen.
-    pub fn target(player: &Player, weather: &Weather, levels: &LevelView) -> Mix {
+    /// and the level on screen. `near`: how near the plane is, 0 (top of
+    /// the screen, far away) to 1 (down in the foreground), see
+    /// [`Bounds::nearness`](crate::Bounds::nearness).
+    pub fn target(player: &Player, weather: &Weather, levels: &LevelView, near: f32) -> Mix {
         // Throttle: 1 in a full climb, 0.5 flying level, 0 in a full dive.
         // The two engine loops cross-fade with it at constant loudness
         // (macroquad 0.4.16 cannot change a sound's pitch).
@@ -68,7 +73,8 @@ impl Mix {
         let (engine, dive) = if player.is_crashed() {
             (0.0, 1.0)
         } else {
-            (ENGINE_VOLUME, player.steer.max(0.0))
+            let far = ENGINE_FAR_VOLUME + (1.0 - ENGINE_FAR_VOLUME) * near.clamp(0.0, 1.0);
+            (ENGINE_VOLUME * far, player.steer.max(0.0))
         };
         Mix {
             engine_idle: engine * angle.cos(),
@@ -98,7 +104,7 @@ mod tests {
 
     /// The mix in level 1, before any fade: no beach.
     fn target(player: &Player, weather: &Weather) -> Mix {
-        Mix::target(player, weather, &level_view(0, 1))
+        Mix::target(player, weather, &level_view(0, 1), 1.0)
     }
 
     fn player(steer: f32) -> Player {
@@ -163,6 +169,33 @@ mod tests {
     }
 
     #[test]
+    fn the_engine_is_quieter_the_further_away_the_plane_flies() {
+        let (p, w) = (player(0.0), weather(0.0, 0.0));
+        let loud = |near: f32| {
+            let m = Mix::target(&p, &w, &level_view(0, 1), near);
+            // Both loops together, at constant loudness.
+            (m.engine_idle.powi(2) + m.engine_power.powi(2)).sqrt()
+        };
+        assert!(
+            (loud(1.0) - ENGINE_VOLUME).abs() < 1e-6,
+            "full near the ground"
+        );
+        assert!(
+            (loud(0.0) - ENGINE_VOLUME * ENGINE_FAR_VOLUME).abs() < 1e-6,
+            "quiet at the top"
+        );
+        let mut last = 0.0;
+        for i in 0..=10 {
+            let v = loud(i as f32 / 10.0);
+            assert!(v > last, "louder the nearer");
+            last = v;
+        }
+        // The wind does not change with it.
+        let wind = |near: f32| Mix::target(&p, &w, &level_view(0, 1), near).wind;
+        assert_eq!(wind(0.0), wind(1.0));
+    }
+
+    #[test]
     fn a_crashed_plane_has_no_engine_but_still_wind_and_rain() {
         let mut p = player(0.0);
         p.crash_ticks = CRASH_TICKS;
@@ -202,7 +235,7 @@ mod tests {
     fn the_beach_is_heard_only_at_the_beach_and_fades_with_it() {
         let (p, w) = (player(0.0), weather(0.0, 0.0));
         let ticks = |s: f32| (s / TICK_SECONDS).round() as u64;
-        let at = |s: f32| Mix::target(&p, &w, &level_view(ticks(s), 1)).beach;
+        let at = |s: f32| Mix::target(&p, &w, &level_view(ticks(s), 1), 1.0).beach;
         assert_eq!(at(0.0), 0.0);
         let half = at(LEVEL_SECONDS - LEVEL_FADE_SECONDS / 2.0);
         assert!((half - BEACH_VOLUME / 2.0).abs() < 0.01, "{half}");
@@ -210,7 +243,7 @@ mod tests {
         assert_eq!(at(2.0 * LEVEL_SECONDS + 1.0), 0.0);
         // Starting at the beach (?level=2) means waves from the start.
         assert_eq!(
-            Mix::target(&p, &w, &level_view(0, BEACH_LEVEL)).beach,
+            Mix::target(&p, &w, &level_view(0, BEACH_LEVEL), 1.0).beach,
             BEACH_VOLUME
         );
     }

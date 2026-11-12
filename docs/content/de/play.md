@@ -149,7 +149,7 @@ auftauchen; Möwen von hinten rufen immer, also hör gut hin.
 
 | Du hörst | Wann |
 |---|---|
-| Motor | Immer. Steigen klingt nach Vollgas, Sinken nach Leerlauf. |
+| Triebwerk | Immer, wie bei einem Düsenflugzeug: eine hohe Turbine und ein Rauschen. Steigen klingt nach Vollgas, Sinken nach Leerlauf. Je höher (weiter weg) du fliegst, desto leiser. |
 | Wind | Immer. Lauter bei Regen, in Böen und wenn du sinkst. |
 | Regen | Solange es regnet (erst in späteren Levels). Je stärker der Regen, desto lauter. |
 | Donner | Einen Moment nach jedem Blitz (erst in späteren Levels). |
