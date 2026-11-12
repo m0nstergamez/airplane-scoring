@@ -13,6 +13,7 @@ mod rng;
 mod scenery;
 mod sound;
 mod tilt;
+mod towers;
 mod weather;
 pub use clock::{Clock, MAX_FRAME_SECONDS};
 pub use gulls::{
@@ -30,6 +31,9 @@ pub use sound::{
     MIX_CHANGE_PER_SECOND, NEW_LEVEL_VOLUME, RAIN_VOLUME, WIND_VOLUME,
 };
 pub use tilt::{Tilt, TILT_DEAD_ZONE_DEG, TILT_FULL_DEG, TILT_MIN_GRAVITY, TILT_SMOOTHING};
+pub use towers::{
+    Tower, Towers, FIRST_TOWER_SECONDS, TOWER_GAP_SECONDS, TOWER_GROUND, TOWER_HEIGHT, TOWER_WIDTH,
+};
 pub use weather::{
     Weather, CALM_WIND, DRY_SECONDS, FIRST_DRY_SECONDS, FLASH_SECONDS, GUST_WIND,
     RAIN_CHANGE_PER_SECOND, RAIN_PEAK, RAIN_SECONDS, RAIN_WIND, STORM_RAIN, STRIKE_GAP_SECONDS,
@@ -140,6 +144,8 @@ pub struct World {
     pub planes: Vec<Plane>,
     /// The obstacles at the beach.
     pub gulls: Gulls,
+    /// The obstacles of level 1.
+    pub towers: Towers,
     pub weather: Weather,
     /// Volumes of the looping sounds, eased toward what fits the world now.
     pub mix: Mix,
@@ -166,6 +172,7 @@ impl World {
             player,
             planes: Vec::new(),
             gulls: Gulls::new(seed),
+            towers: Towers::new(seed),
             weather: Weather::new(seed),
             mix: Mix::SILENT,
             ticks: 0,
@@ -242,8 +249,13 @@ impl World {
         let levels = self.levels();
         let beach = levels.level == BEACH_LEVEL && levels.fade == 0.0;
         self.gulls.tick(self.bounds, beach, &mut self.events);
+        // Lifeguard towers stand only while level 1 is fully on screen.
+        let coast = levels.level == 1 && levels.fade == 0.0;
+        self.towers.tick(self.bounds, coast);
 
-        // Crash: the player's plane newly touches another plane or a gull.
+        // Crash: the player's plane newly touches another plane, a gull
+        // or a tower.
+        let bounds = self.bounds;
         let player = &mut self.player;
         let near = |pos: Vec2, radius: f32| {
             let reach = radius + PLAYER_HIT_RADIUS;
@@ -251,7 +263,8 @@ impl World {
             dx * dx + dy * dy < reach * reach
         };
         let touching = self.planes.iter().any(|m| near(m.pos, PLANE_RADIUS))
-            || self.gulls.list.iter().any(|g| near(g.pos, GULL_RADIUS));
+            || self.gulls.list.iter().any(|g| near(g.pos, GULL_RADIUS))
+            || (self.towers.list.iter()).any(|t| t.touches(player.pos, PLAYER_HIT_RADIUS, bounds));
         if touching && !player.touching && !player.is_crashed() {
             player.crash_ticks = CRASH_TICKS;
             player.steer = 0.0;
@@ -525,6 +538,39 @@ mod tests {
     }
 
     #[test]
+    fn flying_into_a_lifeguard_tower_is_a_crash_and_flying_over_is_not() {
+        let mut w = World::with_seed(PHONE, 1);
+        // Low and slow: steer to the bottom and wait for the first tower.
+        let down = Input::new(1.0);
+        while !(w.towers.list.iter()).any(|t| t.rect(w.bounds).0 < w.player.pos.x + 40.0) {
+            w.tick(&down);
+        }
+        let mut crashed = false;
+        for _ in 0..120 {
+            w.tick(&down);
+            crashed |= w.events().contains(&Event::Crash);
+        }
+        assert!(crashed, "a low plane hits the tower");
+
+        // The same flight high up passes every tower.
+        let mut w = World::with_seed(PHONE, 1);
+        let up = Input::new(-1.0);
+        for _ in 0..(50.0 / TICK_SECONDS) as u32 {
+            w.tick(&up);
+            assert!(!w.events().contains(&Event::Crash));
+        }
+        assert!(!w.towers.list.is_empty());
+    }
+
+    #[test]
+    fn no_towers_at_the_beach() {
+        let mut w = World::with_seed(PHONE, 1);
+        w.start_level = BEACH_LEVEL;
+        new_levels(&mut w, LEVEL_SECONDS - LEVEL_FADE_SECONDS);
+        assert!(w.towers.list.is_empty());
+    }
+
+    #[test]
     fn no_gulls_in_level_1() {
         let mut w = world();
         new_levels(&mut w, LEVEL_SECONDS - 0.1);
@@ -603,6 +649,7 @@ mod tests {
         let target = 330.0;
         let mut last = w.player.pos.y;
         for _ in 0..600 {
+            w.towers.list.clear(); // about steering, not obstacles
             let steer = steer_toward(target, w.player.pos.y);
             w.tick(&Input::new(steer));
             let y = w.player.pos.y;

@@ -26,7 +26,8 @@ short **meaning**.
 | Finger | finger | `pointer` | Steering by touching the screen |
 | Taste | key | `steer_from_keys` | Keyboard key (↑/W, ↓/S) |
 | Spielerin / Spieler (kurz: Spieler:in) | player | — | Person playing. In running text «Spielerin oder Spieler», in short labels «Spieler:in» |
-| Hindernis | obstacle | `Gulls` | Something you must not fly into; touching it is a crash. So far: gulls in level 2 |
+| Hindernis | obstacle | `Towers`, `Gulls` | Something you must not fly into; touching it is a crash. Level 1: towers, level 2: gulls |
+| Bademeisterturm | lifeguard tower | `Tower` | Obstacle of level 1: a cabin on stilts in the grass; fly over it |
 | Punkte | points | — | Coming soon |
 
 ## Weather and sound

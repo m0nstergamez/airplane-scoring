@@ -3,7 +3,7 @@
 
 use airplane_scoring_core::{
     background_x, pick_steer, scroll_distance, start_level, steer_from_keys, steer_toward, Bounds,
-    Clock, Event, Gull, Input, Tilt, World, PLANE_RADIUS, TICK_SECONDS,
+    Clock, Event, Gull, Input, Tilt, Tower, World, PLANE_RADIUS, TICK_SECONDS,
 };
 use macroquad::prelude::*;
 
@@ -122,6 +122,9 @@ async fn main() {
             draw_circle(m.pos.x + 8.0, m.pos.y - 6.0, 4.0, BLACK);
         }
 
+        for tower in &world.towers.list {
+            draw_tower(tower, world.bounds);
+        }
         for gull in &world.gulls.list {
             draw_gull(gull);
         }
@@ -227,6 +230,83 @@ fn draw_rain(rain: f32, wind: f32, ticks: u64) {
         let len = 10.0 + 8.0 * b as f32;
         draw_line(x, y, x - len * slant, y + len, 1.5, colour);
     }
+}
+
+/// A lifeguard tower on stilts. Its box comes from core (`Tower::rect`):
+/// the roof's tip is the top, the feet stand on the ground.
+fn draw_tower(tower: &Tower, bounds: Bounds) {
+    let (l, top, r, ground) = tower.rect(bounds);
+    let (w, x) = (r - l, (l + r) / 2.0);
+    let wood = Color::from_rgba(122, 86, 52, 255);
+    let wood_dark = Color::from_rgba(92, 62, 36, 255);
+    let red = Color::from_rgba(206, 52, 44, 255);
+    let white = Color::from_rgba(246, 244, 236, 255);
+    let roof_h = 0.35 * w;
+    let cabin_h = 0.8 * w;
+    let floor = top + roof_h + cabin_h; // platform under the cabin
+    let post = (0.07 * w).max(2.0);
+
+    // Legs, splayed a little, with two cross braces.
+    let (top_l, top_r) = (x - 0.38 * w, x + 0.38 * w);
+    let (foot_l, foot_r) = (x - 0.55 * w, x + 0.55 * w);
+    draw_line(top_l, floor, foot_l, ground, post, wood);
+    draw_line(top_r, floor, foot_r, ground, post, wood);
+    let at = |a: f32, b: f32, t: f32| a + (b - a) * t;
+    for (t0, t1) in [(0.15, 0.55), (0.55, 0.95)] {
+        let y0 = at(floor, ground, t0);
+        let y1 = at(floor, ground, t1);
+        draw_line(
+            at(top_l, foot_l, t0),
+            y0,
+            at(top_r, foot_r, t1),
+            y1,
+            post * 0.6,
+            wood_dark,
+        );
+        draw_line(
+            at(top_r, foot_r, t0),
+            y0,
+            at(top_l, foot_l, t1),
+            y1,
+            post * 0.6,
+            wood_dark,
+        );
+    }
+    // Ladder down the front (right, where the plane comes from).
+    let (lad_top, lad_foot) = (x + 0.3 * w, x + 0.95 * w);
+    draw_line(lad_top, floor, lad_foot, ground, post * 0.6, wood_dark);
+    draw_line(
+        lad_top + 0.2 * w,
+        floor,
+        lad_foot + 0.2 * w,
+        ground,
+        post * 0.6,
+        wood_dark,
+    );
+    let rungs = ((ground - floor) / (0.25 * w)).max(1.0) as u32;
+    for i in 1..rungs {
+        let t = i as f32 / rungs as f32;
+        let y = at(floor, ground, t);
+        let lx = at(lad_top, lad_foot, t);
+        draw_line(lx, y, lx + 0.2 * w, y, post * 0.5, wood_dark);
+    }
+    // Platform, cabin with a red stripe and a dark window, roof.
+    draw_rectangle(x - 0.65 * w, floor - post, 1.3 * w, post * 1.5, wood);
+    draw_rectangle(l, top + roof_h, w, cabin_h, white);
+    draw_rectangle(l, top + roof_h + 0.62 * cabin_h, w, 0.18 * cabin_h, red);
+    draw_rectangle(
+        l + 0.18 * w,
+        top + roof_h + 0.15 * cabin_h,
+        0.64 * w,
+        0.35 * cabin_h,
+        Color::from_rgba(44, 58, 72, 255),
+    );
+    draw_triangle(
+        vec2(x - 0.65 * w, top + roof_h),
+        vec2(x + 0.65 * w, top + roof_h),
+        vec2(x, top),
+        red,
+    );
 }
 
 /// A gull seen from the side, centred on its position, facing where it

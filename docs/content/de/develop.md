@@ -143,6 +143,11 @@ flowchart LR
   Wetter), bewegt sie und prüft den Zusammenstoss; eine Möwe, die ruft,
   schickt ein Ereignis `GullCall`. So gehört jeder Ruf, den du hörst, zu
   einer Möwe, die du siehst.
+- **Bademeistertürme** (`crates/core/src/towers.rs`) sind die
+  Hindernisse von Level 1. Sie ziehen mit der Landschaft vorbei
+  (`SCROLL_SPEED`), und ihre Grösse richtet sich wie der Hintergrund nach
+  der Bildschirmhöhe. Ihre Trefferfläche reicht bis zum unteren Rand, also
+  kannst du nicht unten durchfliegen.
 - **Das Wetter ist zufällig, aber wiederholbar:** `World::with_seed`
   bekommt einen Startwert; derselbe Startwert ergibt denselben Regen und
   dieselben Blitze, darum können Tests es nachspielen.
@@ -270,6 +275,8 @@ Weitere Zahlen zum Ausprobieren:
 | `BEACH_VOLUME` | `crates/core/src/sound.rs` | wie laut Wellen und Möwen sind (0 bis 1) |
 | `GULL_GAP_SECONDS` | `crates/core/src/gulls.rs` | kürzeste und längste Zeit zwischen zwei Möwen |
 | `GULL_SPEED` | `crates/core/src/gulls.rs` | wie schnell Möwen fliegen (Pixel pro Sekunde) |
+| `TOWER_GAP_SECONDS` | `crates/core/src/towers.rs` | kürzeste und längste Zeit zwischen zwei Türmen |
+| `TOWER_HEIGHT` | `crates/core/src/towers.rs` | niedrigster und höchster Turm (Anteil der Bildschirmhöhe) |
 | `SCROLL_SPEED` | `crates/core/src/scenery.rs` | wie schnell die Landschaft vorbeizieht (Pixel pro Sekunde) |
 | `LEVEL_SECONDS` | `crates/core/src/level.rs` | wie lange ein Level dauert (Sekunden) |
 | `LEVEL_FADE_SECONDS` | `crates/core/src/level.rs` | wie lange die nächste Landschaft zum Einblenden braucht |

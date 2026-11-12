@@ -141,6 +141,10 @@ flowchart LR
   decides when and where they appear (seeded, like the weather), moves
   them and checks the crash; a gull that calls sends a `GullCall` event,
   so every call you hear belongs to a gull you see.
+- **Lifeguard towers** (`crates/core/src/towers.rs`) are level 1's
+  obstacles. They slide with the landscape (`SCROLL_SPEED`) and are sized
+  by the screen height, like the background. Their box reaches down to
+  the screen's edge, so you cannot fly under them.
 - **Weather is random but repeatable:** `World::with_seed` takes a seed;
   the same seed gives the same rain and the same lightning, so tests can
   replay it.
@@ -267,6 +271,8 @@ More numbers you can try:
 | `BEACH_VOLUME` | `crates/core/src/sound.rs` | how loud the waves and gulls are (0 to 1) |
 | `GULL_GAP_SECONDS` | `crates/core/src/gulls.rs` | shortest and longest time between two gulls |
 | `GULL_SPEED` | `crates/core/src/gulls.rs` | how fast gulls fly (pixels per second) |
+| `TOWER_GAP_SECONDS` | `crates/core/src/towers.rs` | shortest and longest time between two towers |
+| `TOWER_HEIGHT` | `crates/core/src/towers.rs` | lowest and tallest tower (share of the screen height) |
 | `SCROLL_SPEED` | `crates/core/src/scenery.rs` | how fast the landscape slides past (pixels per second) |
 | `LEVEL_SECONDS` | `crates/core/src/level.rs` | how long one level lasts (seconds) |
 | `LEVEL_FADE_SECONDS` | `crates/core/src/level.rs` | how long the next landscape takes to fade in |

@@ -80,7 +80,8 @@ sets in, gets heavier and fades again. Heavy rain is a **thunderstorm**:
 lightning lights up the sky, and the thunder follows. The further away
 the lightning, the later and quieter the thunder.
 
-If you touch a gull (level 2), you **crash**: your plane smokes, falls
+If you touch a lifeguard tower (level 1) or a gull (level 2), you
+**crash**: your plane smokes, falls
 and ignores the controls for a moment (1.5 seconds). Then you fly again.
 
 ## Levels
@@ -90,6 +91,9 @@ coast (level 1), then a beach at sunset (level 2). Near the end of a
 level the next landscape slowly appears over the old one, and "Level 2"
 shows in the middle of the screen. After the last level, level 1 starts
 again.
+
+On the coast, **lifeguard towers** stand in the grass, some taller than
+others. Fly over them; you cannot slip underneath.
 
 At the beach, **gulls** fly around: from the front, from behind and up
 from the sand. Do not fly into them. You hear many of them call when
@@ -103,7 +107,7 @@ they appear; gulls from behind always call, so listen out.
 | Wind | Always. Louder in rain, in gusts and when you dive. |
 | Rain | While it rains. Louder the harder it rains. |
 | Thunder | A moment after each lightning. |
-| Crash | When you touch a gull. |
+| Crash | When you touch a tower or a gull. |
 | Waves | At the beach (level 2). They fade in and out with the landscape. |
 | Gull | When a gull appears. Gulls from behind always call. |
 | Tune | When a new level begins. |

@@ -163,6 +163,14 @@ that isn't code here. Keep entries short and dated.
 - `scripts/serve.sh` skips `socket.getfqdn()` in `HTTPServer.server_bind`:
   with Homebrew's Python 3.14 that reverse lookup of 127.0.0.1 took 35 s
   on a Mac, so every shot and `scripts/dev.sh` start waited for it.
+- Lifeguard towers (core `towers.rs`): level 1's obstacles, asked for as
+  fitting the coast picture. While level 1 is fully on screen a tower
+  appears every 2.2–4.5 s (first after 2.5 s), standing in the grass at
+  90 % of the screen height, 25–50 % of the screen height tall, sliding
+  with the landscape. Sizes follow the screen height like the
+  background. The hit box reaches the screen's bottom edge: without that
+  a plane at the very bottom slipped under the towers through the
+  foreground grass. Own random stream. Checked in a real-time screenshot.
 
 ## Concepts
 

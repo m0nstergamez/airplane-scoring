@@ -171,6 +171,15 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
   `HTTPServer.server_bind`: Mit Homebrews Python 3.14 dauerte diese
   Rückwärtsabfrage von 127.0.0.1 auf einem Mac 35 s, und jeder Screenshot
   und jeder Start von `scripts/dev.sh` wartete darauf.
+- Bademeistertürme (core `towers.rs`): die Hindernisse von Level 1,
+  gewünscht als passend zum Küstenbild. Solange Level 1 ganz zu sehen ist,
+  kommt alle 2.2–4.5 s ein Turm (der erste nach 2.5 s). Er steht in der
+  Wiese auf 90 % der Bildschirmhöhe, ist 25–50 % der Bildschirmhöhe hoch
+  und zieht mit der Landschaft vorbei. Die Grössen richten sich wie der
+  Hintergrund nach der Bildschirmhöhe. Die Trefferfläche reicht bis zum
+  unteren Rand: Ohne das schlüpfte ein Flugzeug ganz unten durch die
+  Wiese im Vordergrund unter den Türmen durch. Eigener Zufallsstrom.
+  Geprüft mit einem Screenshot in echter Zeit.
 
 ## Konzepte
 
