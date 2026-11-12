@@ -31,6 +31,8 @@ pub const NEW_LEVEL_VOLUME: f32 = 0.8;
 pub const GULL_CALL_VOLUME: f32 = 0.25;
 /// Volume of a hot-air balloon's burner as it appears: clear, not loud.
 pub const BALLOON_BURNER_VOLUME: f32 = 0.35;
+/// Volume of the explosion when the last life goes.
+pub const EXPLOSION_VOLUME: f32 = 1.0;
 /// Volume of the fanfare for a new highscore.
 pub const HIGHSCORE_VOLUME: f32 = 0.8;
 /// A full dive adds this much wind: the plane is faster.

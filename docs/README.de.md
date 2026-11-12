@@ -310,6 +310,23 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
   sind diese selten und niedrig. Genaue Trefferformen über
   `Tower::parts` (auch zum Zeichnen): Beine, Leiter, Plattform, Kabine,
   Dach. Geprüft mit Screenshots.
+- Strandtürme stehen jetzt wie gewünscht in verschiedenen Tiefen: Jeder
+  bekommt `near` 0..1; seine Bodenlinie geht von 80 % der
+  Bildschirmhöhe (beim Wasser) bis 98 % (vorne), seine Grösse von 55 %
+  bis 100 %. Als Vorschlag dazu Parallaxe: Hintere Türme ziehen auch
+  langsamer vorbei, um denselben Faktor. Die Liste bleibt nach Tiefe
+  sortiert, damit hintere zuerst gezeichnet werden.
+- Sichtbarer Schaden, gewünscht: nach dem ersten verlorenen Leben eine
+  dünne, helle Rauchfahne, nach dem zweiten eine dicke, dunkle mit
+  flackernder Flamme am Heck (`World::smoke` aus `DAMAGE_SMOKE`), und das
+  letzte Leben ist statt eines Zusammenstosses eine Explosion
+  (`Event::Explosion`, Feuerball, Trümmer, Rauchwolke, roter Blitz,
+  erzeugte `explosion.wav`), dann «Game over». Die Rauchwolken ergeben
+  sich aus den Ticks, ohne Partikel-Zustand. Die Explosion wurde mit
+  einer vorübergehenden lokalen Einstellung geprüft (ein Leben, ein
+  Flugzeug direkt davor; nicht committet). Die Tiefe der Strandtürme
+  (Eintrag davor) kommt in diesem PR mit, weil #24 gemergt wurde, bevor
+  sie hochgeladen war.
 
 ## Konzepte
 

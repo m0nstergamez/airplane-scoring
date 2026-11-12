@@ -170,8 +170,11 @@ flowchart LR
   game crate draws. Only a real overlap is a crash; a near miss, or the
   empty corner beside a roof, is not.
 - **Lifeguard towers** (`crates/core/src/towers.rs`) stand in the
-  beach's foreground sand, like the huts in level 1: rare (one every
-  6–10 s) and not tall (92–112 px). `Tower::parts` places legs, ladder,
+  beach's sand: rare (one every 6–10 s) and not tall (92–112 px). Each
+  has its own depth (`Tower::near`): by the water it stands higher
+  (`TOWER_GROUND`), is `TOWER_FAR_SIZE` (55 %) as big and slides that much
+  slower (parallax); at the front it is full size. Far ones are drawn
+  first. `Tower::parts` places legs, ladder,
   platform, cabin and roof; crashes (`Tower::shape`) and drawing both use
   it.
 - **Gulls** (`crates/core/src/gulls.rs`) are the beach's obstacles. Core
@@ -186,7 +189,9 @@ flowchart LR
   them. Nothing leaves the device.
 - **Lives** are counted in core too: a crash costs one (`World.lives`),
   a recovering plane is safe for `SAFE_SECONDS` (`Player::is_safe`), and
-  when the last one is gone the plane falls, `Event::GameOver` fires and
+  every lost life adds smoke (`World::smoke`, `DAMAGE_SMOKE`); when the
+  last one goes the plane explodes (`Event::Explosion`, `World::explosion`,
+  `World::explosion_progress` over the crash time), then `Event::GameOver` fires and
   `World::tick` stands still (`World::is_over`). The game crate only draws
   it and, once `World::can_restart` says so, starts a new `World` on a tap.
   The score (`World::score`) follows from the ticks flown, so it stops

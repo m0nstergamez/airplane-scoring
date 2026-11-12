@@ -43,13 +43,13 @@ pub use scenery::{background_x, scroll_distance, SCROLL_SPEED};
 pub use shape::{any_overlap, Poly};
 pub use sound::{
     Mix, BALLOON_BURNER_VOLUME, BEACH_LEVEL, BEACH_VOLUME, CRASH_VOLUME, DIVE_WIND,
-    ENGINE_FAR_VOLUME, ENGINE_VOLUME, GULL_CALL_VOLUME, HIGHSCORE_VOLUME, MIX_CHANGE_PER_SECOND,
-    NEW_LEVEL_VOLUME, RAIN_VOLUME, WIND_VOLUME,
+    ENGINE_FAR_VOLUME, ENGINE_VOLUME, EXPLOSION_VOLUME, GULL_CALL_VOLUME, HIGHSCORE_VOLUME,
+    MIX_CHANGE_PER_SECOND, NEW_LEVEL_VOLUME, RAIN_VOLUME, WIND_VOLUME,
 };
 pub use tilt::{Tilt, TILT_DEAD_ZONE_DEG, TILT_FULL_DEG, TILT_MIN_GRAVITY, TILT_SMOOTHING};
 pub use towers::{
-    Tower, TowerParts, Towers, FIRST_TOWER_SECONDS, TOWER_GAP_SECONDS, TOWER_GROUND, TOWER_HEIGHT,
-    TOWER_STYLES, TOWER_WIDTH,
+    Tower, TowerParts, Towers, FIRST_TOWER_SECONDS, TOWER_FAR_SIZE, TOWER_GAP_SECONDS,
+    TOWER_GROUND, TOWER_HEIGHT, TOWER_STYLES, TOWER_WIDTH,
 };
 pub use weather::{
     Weather, CALM_WIND, DRY_SECONDS, FIRST_DRY_SECONDS, FLASH_SECONDS, GUST_WIND,
@@ -120,6 +120,11 @@ pub const SAFE_TICKS: u32 = (SAFE_SECONDS * 60.0) as u32;
 /// second of the flight (also while crashed; it stops at game over).
 pub const SCORE_PER_SECOND: u64 = 2;
 
+/// How much the plane smokes after losing lives: index = lives lost
+/// (0 = none, 1 = a thin trail, 2 = thick smoke and a flame). The last
+/// life lost is an explosion instead.
+pub const DAMAGE_SMOKE: [f32; 3] = [0.0, 0.4, 1.0];
+
 /// "Game over" shows at least this long before a tap starts again, so a
 /// finger still steering does not skip it.
 pub const RESTART_WAIT_SECONDS: f32 = 1.0;
@@ -145,6 +150,8 @@ pub enum Event {
     /// The finished flight beat every earlier score on this device (sent
     /// by [`Highscores::add`], not by `World::tick`).
     NewHighscore,
+    /// The last life is gone: the plane explodes (instead of a crash).
+    Explosion,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -297,6 +304,8 @@ pub struct World {
     pub start_level: u32,
     /// Lives left, [`LIVES`] at the start.
     pub lives: u32,
+    /// Where the plane blew up when the last life went; `None` before.
+    pub explosion: Option<Vec2>,
     /// Ticks since the game ended; 0 while flying.
     over_ticks: u32,
     events: Vec<Event>,
@@ -327,6 +336,7 @@ impl World {
             ticks: 0,
             start_level: 1,
             lives: LIVES,
+            explosion: None,
             over_ticks: 0,
             events: Vec::new(),
         }
@@ -339,6 +349,23 @@ impl World {
 
     /// Is the flight over? True once the last life is gone and the plane
     /// has fallen. Then nothing moves any more.
+    /// How much the plane smokes now, 0..1 ([`DAMAGE_SMOKE`]): more with
+    /// every life lost. 0 once it has exploded.
+    pub fn smoke(&self) -> f32 {
+        if self.explosion.is_some() {
+            return 0.0;
+        }
+        let lost = LIVES.saturating_sub(self.lives) as usize;
+        DAMAGE_SMOKE[lost.min(DAMAGE_SMOKE.len() - 1)]
+    }
+
+    /// How far the explosion has gone, 0 (just blew up) .. 1 (over);
+    /// `None` without an explosion.
+    pub fn explosion_progress(&self) -> Option<f32> {
+        self.explosion?;
+        Some(1.0 - self.player.crash_ticks as f32 / CRASH_TICKS as f32)
+    }
+
     pub fn is_over(&self) -> bool {
         self.lives == 0 && !self.player.is_crashed()
     }
@@ -480,7 +507,13 @@ impl World {
             player.crash_ticks = CRASH_TICKS;
             self.lives = self.lives.saturating_sub(1);
             player.steer = 0.0;
-            self.events.push(Event::Crash);
+            if self.lives == 0 {
+                // The last life: it blows up where it was hit.
+                self.explosion = Some(player.pos);
+                self.events.push(Event::Explosion);
+            } else {
+                self.events.push(Event::Crash);
+            }
         }
         player.touching = touching;
 
@@ -709,6 +742,32 @@ mod tests {
         }
         assert!(w.is_over());
         assert_eq!(game_overs, 1);
+    }
+
+    #[test]
+    fn the_plane_smokes_more_with_each_life_lost_and_explodes_at_the_last() {
+        let mut w = world_with_plane_ahead(300.0);
+        assert_eq!(w.smoke(), 0.0);
+        assert_eq!(crash(&mut w), [Event::Crash]);
+        assert_eq!(w.smoke(), DAMAGE_SMOKE[1]);
+        recover(&mut w);
+        assert_eq!(w.smoke(), DAMAGE_SMOKE[1], "the smoke stays");
+        assert_eq!(crash(&mut w), [Event::Crash]);
+        assert!(w.smoke() > DAMAGE_SMOKE[1], "more smoke");
+        recover(&mut w);
+        let at = w.player.pos;
+        assert_eq!(crash(&mut w), [Event::Explosion], "no plain crash");
+        assert_eq!(w.explosion, Some(at), "where it was hit");
+        assert_eq!(w.smoke(), 0.0, "nothing left to smoke");
+        // The explosion runs for the crash time, then the game is over.
+        let mut last = -1.0;
+        while !w.is_over() {
+            let p = w.explosion_progress().unwrap();
+            assert!(p > last && p <= 1.0);
+            last = p;
+            w.tick(&Input::NONE);
+        }
+        assert_eq!(w.explosion_progress(), Some(1.0));
     }
 
     #[test]
@@ -1059,6 +1118,7 @@ mod tests {
                         | Event::BalloonBurner => {}
                         Event::GameOver => panic!("lives cannot run out"),
                         Event::NewHighscore => panic!("not from the world"),
+                        Event::Explosion => panic!("lives cannot run out"),
                     }
                 }
             }

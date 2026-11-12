@@ -99,7 +99,12 @@ When you fly again after a crash, your plane **blinks** for 2 seconds.
 While it blinks you are safe: nothing you touch costs a life then. So you do not
 lose two lives to the same flock of gulls.
 
-With the last life your plane falls, then **"Game over"** shows on the
+You can see the damage: after the first lost life your plane trails a
+thin, light **smoke**; after the second the smoke gets thick and dark
+and a small flame flickers at the tail.
+
+With the last life your plane **explodes**: a fireball, flying debris
+and a cloud of smoke, with a big bang. Then **"Game over"** shows on the
 screen, together with your score. After a short
 moment "Tap or click to fly again" appears: tap, click or press Enter,
 and a new flight starts in level 1 with 3 lives.
@@ -152,9 +157,11 @@ At the beach, **gulls** fly around: from the front, from behind and up
 from the sand. Do not fly into them. You hear many of them call when
 they appear; gulls from behind always call, so listen out.
 
-Now and then a **lifeguard tower** stands right at the front in the
-sand: on wooden legs, with a ladder and a small cabin. They are not
-tall; only if you fly low do you have to climb over them. Between the
+Now and then a **lifeguard tower** stands in the sand: on wooden legs,
+with a ladder and a small cabin. Some stand far back by the water (higher
+up the screen, smaller, and they pass more slowly), others near the
+front (bigger). They are not tall; only if you fly low do you have to
+climb over them. Between the
 legs is open air, but it is very tight.
 
 ## Sound
@@ -171,6 +178,7 @@ legs is open air, but it is very tight.
 | Gull | When a gull appears. Gulls from behind always call. |
 | Tune | When a new level begins. |
 | Fanfare | When you set a new highscore. |
+| Explosion | When your plane loses its last life. |
 
 Browsers only allow sound after you have touched the page. On a phone
 that is the tap on "Tap to fly"; on a computer the first click or key
