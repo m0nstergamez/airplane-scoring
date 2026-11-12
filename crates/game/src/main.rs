@@ -1,11 +1,12 @@
 //! Thin rendering shell. All game rules live in `airplane-scoring-core`.
 //! This file should only: read input, call `World::tick`, draw state.
 
+use airplane_scoring_core::Vec2 as Vec2Core;
 use airplane_scoring_core::{
     background_x, pick_steer, scroll_distance, start_level, steer_from_keys, Balloon, Bounds,
-    Clock, Event, Gull, Highscores, Hut, Input, Pad, Tilt, World, BALLOON_RADIUS, BASKET_BELOW,
-    HIGHSCORE_COUNT, HUT_EAVES, HUT_INSET, LIVES, PAD_HEIGHT, PAD_WIDTH, PLANE_COCKPIT,
-    PLANE_FUSELAGE, PLANE_NOSE, PLANE_RADIUS, PLANE_TAIL, PLANE_WING, TICK_SECONDS,
+    Clock, Event, Gull, Highscores, Hut, Input, Pad, Tilt, Tower, World, BALLOON_RADIUS,
+    BASKET_BELOW, HIGHSCORE_COUNT, HUT_EAVES, HUT_INSET, LIVES, PAD_HEIGHT, PAD_WIDTH,
+    PLANE_COCKPIT, PLANE_FUSELAGE, PLANE_NOSE, PLANE_RADIUS, PLANE_TAIL, PLANE_WING, TICK_SECONDS,
 };
 use macroquad::prelude::*;
 
@@ -155,6 +156,9 @@ async fn main() {
         }
         for hut in &world.huts.list {
             draw_hut(hut, world.bounds);
+        }
+        for tower in &world.towers.list {
+            draw_tower(tower, world.bounds);
         }
 
         for gull in &world.gulls.list {
@@ -466,6 +470,58 @@ fn draw_hut(hut: &Hut, bounds: Bounds) {
         Color::from_rgba(52, 62, 76, 255),
     );
     draw_rectangle_lines(l + w * 0.6, eaves + h * 0.12, win, win, 1.5 * s, plank);
+}
+
+/// A lifeguard tower on the beach: wooden legs with a cross brace, a
+/// ladder, a platform, a cabin with a stripe and a window, and a roof.
+/// Uses core's `Tower::parts`, which crashes use too.
+fn draw_tower(tower: &Tower, bounds: Bounds) {
+    let p = tower.parts(bounds);
+    let s = bounds.scale();
+    let wood = Color::from_rgba(122, 86, 58, 255);
+    let (cabin, roof, stripe) = match tower.style {
+        0 => (
+            Color::from_rgba(244, 240, 228, 255),
+            Color::from_rgba(200, 52, 44, 255),
+            Color::from_rgba(200, 52, 44, 255),
+        ),
+        _ => (
+            Color::from_rgba(240, 200, 70, 255),
+            Color::from_rgba(44, 96, 168, 255),
+            Color::from_rgba(44, 96, 168, 255),
+        ),
+    };
+    for (a, b) in p.legs {
+        draw_line(a.x, a.y, b.x, b.y, p.leg_width, wood);
+    }
+    // A cross brace between the legs (thin, inside the gap's frame).
+    let [(a0, b0), (a1, b1)] = p.legs;
+    let mid = |a: Vec2Core, b: Vec2Core, t: f32| vec2(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t);
+    let (l1, r1) = (mid(a0, b0, 0.25), mid(a1, b1, 0.7));
+    let (l2, r2) = (mid(a0, b0, 0.7), mid(a1, b1, 0.25));
+    draw_line(l1.x, l1.y, r1.x, r1.y, 1.5 * s, wood);
+    draw_line(l2.x, l2.y, r2.x, r2.y, 1.5 * s, wood);
+    // Ladder: two rails and rungs.
+    let (lb, lt) = p.ladder;
+    draw_line(lb.x, lb.y, lt.x, lt.y, p.leg_width * 0.75, wood);
+    for i in 1..6 {
+        let r = mid(lb, lt, i as f32 / 6.0);
+        draw_line(r.x - 4.0 * s, r.y, r.x, r.y, 1.5 * s, wood);
+    }
+    let (l, t, w, h) = p.platform;
+    draw_rectangle(l, t, w, h, wood);
+    let (l, t, w, h) = p.cabin;
+    draw_rectangle(l, t, w, h, cabin);
+    draw_rectangle(l, t + h * 0.62, w, h * 0.16, stripe);
+    draw_rectangle(
+        l + w * 0.2,
+        t + h * 0.15,
+        w * 0.6,
+        h * 0.32,
+        Color::from_rgba(52, 62, 76, 255),
+    );
+    let [a, b, c] = p.roof;
+    draw_triangle(vec2(a.x, a.y), vec2(b.x, b.y), vec2(c.x, c.y), roof);
 }
 
 /// A balloon launch pad: a flat wooden deck on the grass with a yellow

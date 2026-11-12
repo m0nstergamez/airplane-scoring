@@ -26,7 +26,7 @@ short **meaning**.
 | Finger | finger | `pointer` | Steering by touching the screen |
 | Taste | key | `steer_from_keys` | Keyboard key (↑/W, ↓/S) |
 | Spielerin / Spieler (kurz: Spieler:in) | player | — | Person playing. In running text «Spielerin oder Spieler», in short labels «Spieler:in» |
-| Hindernis | obstacle | `Balloons`, `Pad`, `Huts`, `Gulls` | Something you must not fly into; touching it is a crash. So far: hot-air balloons, launch pads and huts in level 1, gulls in level 2 |
+| Hindernis | obstacle | `Balloons`, `Pad`, `Huts`, `Gulls`, `Towers` | Something you must not fly into; touching it is a crash. So far: hot-air balloons, launch pads and huts in level 1, gulls and lifeguard towers in level 2 |
 | Leben | life, lives | `World.lives`, `LIVES` | Crashes you can afford; shown as small planes at the top right |
 | geschützt (blinken) | safe (blinking) | `Player::is_safe`, `SAFE_SECONDS` | After a crash the plane blinks and cannot lose another life |
 | Game over | game over | `Event::GameOver`, `World::is_over` | The last life is gone; the flight ends. On-screen label, stays English |
@@ -61,6 +61,7 @@ short **meaning**.
 | Startrampe | launch pad | `Pad` | Flat deck in the grass where balloons take off and land; an obstacle |
 | Hütte | hut | `Hut`, `Huts` | Big wooden hut in level 1's foreground, at the bottom of the screen; an obstacle |
 | Brenner | burner | `Event::BalloonBurner`, `balloon-burner.wav` | The roar of a balloon's gas flame, heard as it appears |
+| Strandturm | lifeguard tower | `Tower`, `Towers` | Wooden lifeguard tower in the beach's foreground sand (level 2); an obstacle |
 | Möwe | gull | `Gull`, `gull-call.wav` | Sea bird at the beach: an obstacle; many call when they appear |
 | Melodie | tune | `Event::NewLevel`, `new-level.wav` | Short rising tune when a new level begins |
 | Startwert | seed | `World::with_seed` | The number that decides the random weather |

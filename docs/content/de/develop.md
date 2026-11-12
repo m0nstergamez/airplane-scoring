@@ -175,6 +175,11 @@ flowchart LR
   Vielecke mit denselben Punkten, die das game-Crate zeichnet. Nur eine
   echte Überlappung ist ein Zusammenstoss; ein knappes Vorbeifliegen
   oder die leere Ecke neben einem Dach nicht.
+- **Strandtürme** (`crates/core/src/towers.rs`) stehen im vorderen Sand
+  des Strandes, wie die Hütten in Level 1: selten (alle 6–10 s einer)
+  und nicht hoch (92–112 px). `Tower::parts` legt Beine, Leiter,
+  Plattform, Kabine und Dach fest; Zusammenstösse (`Tower::shape`) und
+  Zeichnen nutzen beide das.
 - **Möwen** (`crates/core/src/gulls.rs`) sind die Hindernisse am Strand.
   core entscheidet, wann und wo sie auftauchen (mit Startwert, wie das
   Wetter), bewegt sie und prüft den Zusammenstoss; eine Möwe, die ruft,
@@ -332,6 +337,8 @@ Landschaft:
 | `BEACH_VOLUME` | `crates/core/src/sound.rs` | wie laut Wellen und Möwen sind (0 bis 1) |
 | `GULL_GAP_SECONDS` | `crates/core/src/gulls.rs` | kürzeste und längste Zeit zwischen zwei Möwen |
 | `GULL_SPEED` | `crates/core/src/gulls.rs` | wie schnell Möwen fliegen (Pixel pro Sekunde) |
+| `TOWER_GAP_SECONDS` | `crates/core/src/towers.rs` | kürzeste und längste Zeit zwischen zwei Strandtürmen |
+| `TOWER_HEIGHT` | `crates/core/src/towers.rs` | niedrigster und höchster Strandturm (Pixel) |
 | `BALLOON_GAP_SECONDS` | `crates/core/src/balloons.rs` | kürzeste und längste Zeit zwischen zwei Ballonen |
 | `BALLOON_RISE` | `crates/core/src/balloons.rs` | wie schnell Ballone steigen (Pixel pro Sekunde) |
 | `HUT_GAP_SECONDS` | `crates/core/src/huts.rs` | kürzeste und längste Zeit zwischen zwei Hütten |
