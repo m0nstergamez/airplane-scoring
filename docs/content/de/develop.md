@@ -175,9 +175,12 @@ flowchart LR
   Vielecke mit denselben Punkten, die das game-Crate zeichnet. Nur eine
   echte Überlappung ist ein Zusammenstoss; ein knappes Vorbeifliegen
   oder die leere Ecke neben einem Dach nicht.
-- **Strandtürme** (`crates/core/src/towers.rs`) stehen im vorderen Sand
-  des Strandes, wie die Hütten in Level 1: selten (alle 6–10 s einer)
-  und nicht hoch (92–112 px). `Tower::parts` legt Beine, Leiter,
+- **Strandtürme** (`crates/core/src/towers.rs`) stehen im Sand des
+  Strandes: selten (alle 6–10 s einer) und nicht hoch (92–112 px).
+  Jeder hat seine eigene Tiefe (`Tower::near`): beim Wasser steht er
+  höher (`TOWER_GROUND`), ist `TOWER_FAR_SIZE` (55 %) so gross und zieht
+  entsprechend langsamer vorbei (Parallaxe); vorne ist er voll gross.
+  Hintere werden zuerst gezeichnet. `Tower::parts` legt Beine, Leiter,
   Plattform, Kabine und Dach fest; Zusammenstösse (`Tower::shape`) und
   Zeichnen nutzen beide das.
 - **Möwen** (`crates/core/src/gulls.rs`) sind die Hindernisse am Strand.

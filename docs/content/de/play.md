@@ -161,9 +161,11 @@ Am Strand fliegen **Möwen** herum: von vorne, von hinten und vom Sand
 aus nach oben. Flieg nicht in sie hinein. Viele rufen, wenn sie
 auftauchen; Möwen von hinten rufen immer, also hör gut hin.
 
-Ab und zu steht ganz vorne im Sand ein **Strandturm** der Bademeister:
-auf Holzbeinen, mit Leiter und kleiner Kabine. Die Türme sind nicht
-hoch; nur wenn du tief fliegst, musst du über sie steigen. Zwischen den
+Ab und zu steht im Sand ein **Strandturm** der Bademeister: auf
+Holzbeinen, mit Leiter und kleiner Kabine. Manche stehen weit hinten
+beim Wasser (höher im Bild, kleiner, und sie ziehen langsamer vorbei),
+andere vorne (grösser). Die Türme sind nicht hoch; nur wenn du tief
+fliegst, musst du über sie steigen. Zwischen den
 Beinen ist Luft, aber es ist sehr eng.
 
 ## Ton

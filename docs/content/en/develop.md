@@ -170,8 +170,11 @@ flowchart LR
   game crate draws. Only a real overlap is a crash; a near miss, or the
   empty corner beside a roof, is not.
 - **Lifeguard towers** (`crates/core/src/towers.rs`) stand in the
-  beach's foreground sand, like the huts in level 1: rare (one every
-  6–10 s) and not tall (92–112 px). `Tower::parts` places legs, ladder,
+  beach's sand: rare (one every 6–10 s) and not tall (92–112 px). Each
+  has its own depth (`Tower::near`): by the water it stands higher
+  (`TOWER_GROUND`), is `TOWER_FAR_SIZE` (55 %) as big and slides that much
+  slower (parallax); at the front it is full size. Far ones are drawn
+  first. `Tower::parts` places legs, ladder,
   platform, cabin and roof; crashes (`Tower::shape`) and drawing both use
   it.
 - **Gulls** (`crates/core/src/gulls.rs`) are the beach's obstacles. Core

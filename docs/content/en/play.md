@@ -152,9 +152,11 @@ At the beach, **gulls** fly around: from the front, from behind and up
 from the sand. Do not fly into them. You hear many of them call when
 they appear; gulls from behind always call, so listen out.
 
-Now and then a **lifeguard tower** stands right at the front in the
-sand: on wooden legs, with a ladder and a small cabin. They are not
-tall; only if you fly low do you have to climb over them. Between the
+Now and then a **lifeguard tower** stands in the sand: on wooden legs,
+with a ladder and a small cabin. Some stand far back by the water (higher
+up the screen, smaller, and they pass more slowly), others near the
+front (bigger). They are not tall; only if you fly low do you have to
+climb over them. Between the
 legs is open air, but it is very tight.
 
 ## Sound

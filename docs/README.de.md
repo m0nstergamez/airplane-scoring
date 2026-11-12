@@ -310,6 +310,12 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
   sind diese selten und niedrig. Genaue Trefferformen über
   `Tower::parts` (auch zum Zeichnen): Beine, Leiter, Plattform, Kabine,
   Dach. Geprüft mit Screenshots.
+- Strandtürme stehen jetzt wie gewünscht in verschiedenen Tiefen: Jeder
+  bekommt `near` 0..1; seine Bodenlinie geht von 80 % der
+  Bildschirmhöhe (beim Wasser) bis 98 % (vorne), seine Grösse von 55 %
+  bis 100 %. Als Vorschlag dazu Parallaxe: Hintere Türme ziehen auch
+  langsamer vorbei, um denselben Faktor. Die Liste bleibt nach Tiefe
+  sortiert, damit hintere zuerst gezeichnet werden.
 
 ## Konzepte
 

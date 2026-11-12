@@ -61,7 +61,8 @@ short **meaning**.
 | Startrampe | launch pad | `Pad` | Flat deck in the grass where balloons take off and land; an obstacle |
 | Hütte | hut | `Hut`, `Huts` | Big wooden hut in level 1's foreground, at the bottom of the screen; an obstacle |
 | Brenner | burner | `Event::BalloonBurner`, `balloon-burner.wav` | The roar of a balloon's gas flame, heard as it appears |
-| Strandturm | lifeguard tower | `Tower`, `Towers` | Wooden lifeguard tower in the beach's foreground sand (level 2); an obstacle |
+| Strandturm | lifeguard tower | `Tower`, `Towers` | Wooden lifeguard tower in the beach's sand (level 2), near the front or back by the water; an obstacle |
+| Parallaxe | parallax | `Tower::size` | Things further away slide past more slowly |
 | Möwe | gull | `Gull`, `gull-call.wav` | Sea bird at the beach: an obstacle; many call when they appear |
 | Melodie | tune | `Event::NewLevel`, `new-level.wav` | Short rising tune when a new level begins |
 | Startwert | seed | `World::with_seed` | The number that decides the random weather |

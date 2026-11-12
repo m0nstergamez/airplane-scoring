@@ -3,18 +3,23 @@
 //! and not tall, so they only matter when you fly low. Fly into one and
 //! you crash.
 //!
-//! They slide past with the landscape and belong to it: their sizes are
-//! for a phone and grow with the screen ([`Bounds::scale`]), not with
-//! [`OBJECT_SIZE`](crate::OBJECT_SIZE). Seeded, so the same seed gives the
-//! same towers.
+//! Each tower stands at its own depth in the sand ([`Tower::near`]): far
+//! back by the water it stands higher on the screen, is smaller and
+//! slides past more slowly; near the front it is full size and moves with
+//! the foreground. Their sizes are for a phone and grow with the screen
+//! ([`Bounds::scale`]), not with [`OBJECT_SIZE`](crate::OBJECT_SIZE).
+//! Seeded, so the same seed gives the same towers.
 
 use crate::rng::Rng;
 use crate::shape::Poly;
 use crate::{Bounds, Vec2, SCROLL_SPEED, TICK_SECONDS};
 
-/// Where the towers stand: the ground line, as a fraction of the screen
-/// height from the top (in the closest sand, like the huts).
-pub const TOWER_GROUND: f32 = crate::huts::HUT_GROUND;
+/// Where the towers stand, as a fraction of the screen height from the
+/// top: far back by the water, and at the front (the huts' ground line).
+pub const TOWER_GROUND: (f32, f32) = (0.8, crate::huts::HUT_GROUND);
+/// How big a tower far back by the water is, compared with one at the
+/// front; it also slides past this much slower.
+pub const TOWER_FAR_SIZE: f32 = 0.55;
 /// How wide a tower's cabin and platform are, narrowest and widest, in px.
 pub const TOWER_WIDTH: (f32, f32) = (46.0, 56.0);
 /// How tall a tower is from the sand to the tip of its roof, in px: not
@@ -36,6 +41,8 @@ pub struct Tower {
     pub height: f32,
     /// Which look, 0 .. [`TOWER_STYLES`].
     pub style: u32,
+    /// How near it stands: 0 = far back by the water, 1 = at the front.
+    pub near: f32,
 }
 
 /// Where a tower's parts are on screen, in px. Crashes and drawing both
@@ -57,11 +64,24 @@ pub struct TowerParts {
 }
 
 impl Tower {
+    /// Its size and speed factor for its depth: [`TOWER_FAR_SIZE`] by the
+    /// water up to 1 at the front, times the screen's scale.
+    pub fn size(&self, bounds: Bounds) -> f32 {
+        let near = self.near.clamp(0.0, 1.0);
+        bounds.scale() * (TOWER_FAR_SIZE + (1.0 - TOWER_FAR_SIZE) * near)
+    }
+
+    /// Where it stands, in screen px from the top.
+    pub fn ground(&self, bounds: Bounds) -> f32 {
+        let (far, front) = TOWER_GROUND;
+        (far + (front - far) * self.near.clamp(0.0, 1.0)) * bounds.height
+    }
+
     /// The tower's box on screen: (left, top, right, ground) in px.
     pub fn rect(&self, bounds: Bounds) -> (f32, f32, f32, f32) {
-        let s = bounds.scale();
+        let s = self.size(bounds);
         let half = self.width * s / 2.0;
-        let ground = TOWER_GROUND * bounds.height;
+        let ground = self.ground(bounds);
         (
             self.x - half,
             ground - self.height * s,
@@ -72,9 +92,9 @@ impl Tower {
 
     /// Where each part is on this screen.
     pub fn parts(&self, bounds: Bounds) -> TowerParts {
-        let s = bounds.scale();
+        let s = self.size(bounds);
         let (w, h) = (self.width * s, self.height * s);
-        let (x, g) = (self.x, TOWER_GROUND * bounds.height);
+        let (x, g) = (self.x, self.ground(bounds));
         let top = g - h;
         let deck = g - 0.55 * h; // top of the platform
         let eaves = top + 0.18 * h;
@@ -139,7 +159,8 @@ impl Towers {
         let s = bounds.scale();
         let margin = TOWER_WIDTH.1 * s;
         for t in &mut self.list {
-            t.x -= SCROLL_SPEED * s * TICK_SECONDS;
+            // Far ones slide slower (parallax).
+            t.x -= SCROLL_SPEED * t.size(bounds) * TICK_SECONDS;
         }
         self.list.retain(|t| t.x > -margin);
 
@@ -157,7 +178,10 @@ impl Towers {
             width: r.range(TOWER_WIDTH.0, TOWER_WIDTH.1),
             height: r.range(TOWER_HEIGHT.0, TOWER_HEIGHT.1),
             style: (r.unit() * TOWER_STYLES as f32) as u32 % TOWER_STYLES,
+            near: r.unit(),
         });
+        // Far ones first, so a near tower is drawn in front of them.
+        self.list.sort_by(|a, b| a.near.total_cmp(&b.near));
         self.next_ticks = ticks(r.range(TOWER_GAP_SECONDS.0, TOWER_GAP_SECONDS.1));
     }
 }
@@ -195,8 +219,14 @@ mod tests {
         assert!(t.list[0].rect(PHONE).0 > PHONE.width, "starts off screen");
     }
 
+    /// The x of the newest tower (the rightmost; the list is in depth
+    /// order).
+    fn newest(t: &Towers) -> Option<f32> {
+        t.list.iter().map(|n| n.x).reduce(f32::max)
+    }
+
     #[test]
-    fn towers_are_rare_not_tall_and_slide_with_the_landscape() {
+    fn towers_are_rare_and_not_tall() {
         let mut t = Towers::new(2);
         let mut most = 0;
         let mut came = 0;
@@ -204,25 +234,73 @@ mod tests {
         for _ in 0..ticks(120.0) {
             t.tick(PHONE, true);
             for tower in &t.list {
-                let (_, top, _, ground) = tower.rect(PHONE);
-                assert_eq!(ground, TOWER_GROUND * PHONE.height);
-                assert!(top > 0.68 * PHONE.height, "not tall: {top}");
+                let (_, top, _, _) = tower.rect(PHONE);
+                assert!(top > 0.6 * PHONE.height, "not tall: {top}");
             }
-            for pair in t.list.windows(2) {
-                let gap = pair[1].x - pair[0].x;
-                assert!(gap >= SCROLL_SPEED * TOWER_GAP_SECONDS.0 - 1.0, "{gap}");
-            }
-            if let Some(n) = t.list.last() {
-                if n.x > last_x + 1.0 {
+            if let Some(x) = newest(&t) {
+                if x > last_x + 1.0 {
                     came += 1;
                 }
-                last_x = n.x;
+                last_x = x;
             }
             most = most.max(t.list.len());
         }
         // One every 6–10 s over two minutes (the first after 4 s).
         assert!((11..=20).contains(&came), "{came}");
-        assert!(most <= 2, "{most} at once");
+        assert!(most <= 3, "{most} at once");
+    }
+
+    #[test]
+    fn towers_by_the_water_are_higher_smaller_and_slower() {
+        let at = |near: f32| Tower {
+            x: 400.0,
+            width: 50.0,
+            height: 100.0,
+            style: 0,
+            near,
+        };
+        let (far, front) = (at(0.0), at(1.0));
+        assert!(
+            far.ground(PHONE) < front.ground(PHONE),
+            "further up the screen"
+        );
+        assert_eq!(front.ground(PHONE), TOWER_GROUND.1 * PHONE.height);
+        assert!((far.size(PHONE) - TOWER_FAR_SIZE).abs() < 1e-6);
+        assert!((front.size(PHONE) - 1.0).abs() < 1e-6);
+        let tall = |t: &Tower| t.rect(PHONE).3 - t.rect(PHONE).1;
+        assert!(tall(&far) < tall(&front));
+        // One second of sliding: the front one with the landscape, the far
+        // one slower.
+        let mut t = Towers::new(1);
+        t.list = vec![far, front];
+        run(&mut t, 1.0, false);
+        let moved = |i: usize| 400.0 - t.list[i].x;
+        assert!((moved(1) - SCROLL_SPEED).abs() < 0.5, "front: {}", moved(1));
+        assert!((moved(0) - SCROLL_SPEED * TOWER_FAR_SIZE).abs() < 0.5);
+    }
+
+    #[test]
+    fn towers_stand_at_all_depths_and_far_ones_are_drawn_first() {
+        let mut t = Towers::new(3);
+        let mut nears = Vec::new();
+        let mut last_x = f32::MIN;
+        for _ in 0..ticks(240.0) {
+            t.tick(PHONE, true);
+            for pair in t.list.windows(2) {
+                assert!(pair[0].near <= pair[1].near, "far first");
+            }
+            if let Some(x) = newest(&t) {
+                if x > last_x + 1.0 {
+                    let n = t.list.iter().find(|n| n.x == x).unwrap();
+                    nears.push(n.near);
+                }
+                last_x = x;
+            }
+        }
+        assert!(
+            nears.iter().any(|&n| n < 0.3) && nears.iter().any(|&n| n > 0.7),
+            "{nears:?}"
+        );
     }
 
     #[test]
@@ -232,6 +310,7 @@ mod tests {
             width: 50.0,
             height: 100.0,
             style: 0,
+            near: 1.0,
         };
         let shape = tower.shape(PHONE);
         let parts = tower.parts(PHONE);

@@ -477,7 +477,7 @@ fn draw_hut(hut: &Hut, bounds: Bounds) {
 /// Uses core's `Tower::parts`, which crashes use too.
 fn draw_tower(tower: &Tower, bounds: Bounds) {
     let p = tower.parts(bounds);
-    let s = bounds.scale();
+    let s = tower.size(bounds); // smaller further back by the water
     let wood = Color::from_rgba(122, 86, 58, 255);
     let (cabin, roof, stripe) = match tower.style {
         0 => (

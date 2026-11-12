@@ -285,6 +285,11 @@ that isn't code here. Keep entries short and dated.
   Unlike the dropped level 1 towers (tall, every 2–4.5 s), these are
   rare and low. Exact crash shapes via `Tower::parts` (also used for
   drawing): legs, ladder, platform, cabin, roof. Checked in screenshots.
+- Lifeguard towers now stand at different depths, as asked: each gets
+  `near` 0..1; its ground line goes from 80 % of the screen height (by the
+  water) to 98 % (front), its size from 55 % to 100 %. Added parallax as
+  a suggestion: far towers also slide slower, by the same factor. The
+  list is kept in depth order so far ones are drawn first.
 
 ## Concepts
 
