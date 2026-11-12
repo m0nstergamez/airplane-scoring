@@ -6,14 +6,14 @@
 //! they appear; gulls from behind always do, so you hear them coming.
 //! Gulls that have left the screen are dropped.
 //!
-//! Positions are screen px, like the player's. Seeded, so the same seed
+//! Positions are screen px, like the player's. Sizes and speeds are for a
+//! phone and grow with the screen ([`Bounds::scale`]). Seeded, so the same seed
 //! gives the same gulls.
 
 use crate::rng::Rng;
+use crate::shape::Poly;
 use crate::{Bounds, Event, Vec2, TICK_SECONDS};
 
-/// A gull's size for crashing, in px (its drawn wings are a bit wider).
-pub const GULL_RADIUS: f32 = 13.0;
 /// Time between two new gulls, shortest and longest, in seconds.
 pub const GULL_GAP_SECONDS: (f32, f32) = (1.2, 2.8);
 /// No gull in the first seconds of the beach, while "Level 2" shows.
@@ -52,21 +52,71 @@ pub struct Gull {
     pub age: u32,
     /// Where it would be without the bob.
     line: Vec2,
+    /// How far it bobs, in px ([`GULL_BOB`] on this screen).
+    bob: f32,
 }
 
 impl Gull {
+    /// The wings' position, -1 (down) .. 1 (up): three beats a second.
+    pub fn wing_beat(&self) -> f32 {
+        (self.age as f32 * TICK_SECONDS * std::f32::consts::TAU * 3.0).sin()
+    }
+
+    /// Facing: -1 = left, 1 = right (where it flies).
+    pub fn facing(&self) -> f32 {
+        if self.vel.x < 0.0 {
+            -1.0
+        } else {
+            1.0
+        }
+    }
+
+    /// Where a wing bends and where its tip is, for `side` -1 (left) or 1
+    /// (right), relative to the centre, in px at size 1.
+    pub fn wing(&self, side: f32) -> ((f32, f32), (f32, f32)) {
+        let beat = self.wing_beat();
+        (
+            (side * 8.0, -3.0 - 4.0 * beat),
+            (side * 17.0, -4.0 - 9.0 * beat),
+        )
+    }
+
+    /// The gull as drawn, for crashing, at `size` (`Bounds::depth`): body,
+    /// head, beak and both wings as they are right now.
+    pub fn shape(&self, size: f32) -> Vec<Poly> {
+        let c = self.pos;
+        let p = |(x, y): (f32, f32)| Vec2::new(c.x + x * size, c.y + y * size);
+        let dir = self.facing();
+        let mut parts = vec![
+            Poly::ellipse(c, 9.0 * size, 4.0 * size),
+            Poly::ellipse(p((dir * 8.0, -2.0)), 3.5 * size, 3.5 * size),
+            Poly::at(
+                c,
+                size,
+                &[(dir * 11.0, -3.0), (dir * 16.0, -1.5), (dir * 11.0, -0.5)],
+            ),
+        ];
+        for side in [-1.0, 1.0] {
+            let (bend, tip) = self.wing(side);
+            parts.push(Poly::line(c, p(bend), 4.0 * size));
+            parts.push(Poly::line(p(bend), p(tip), 3.0 * size));
+        }
+        parts
+    }
+
     fn step(&mut self) {
         self.line.x += self.vel.x * TICK_SECONDS;
         self.line.y += self.vel.y * TICK_SECONDS;
         self.age += 1;
         let t = self.age as f32 * TICK_SECONDS;
-        let bob = GULL_BOB * (std::f32::consts::TAU * BOB_PER_SECOND * t).sin();
+        let bob = self.bob * (std::f32::consts::TAU * BOB_PER_SECOND * t).sin();
         self.pos = Vec2::new(self.line.x, self.line.y + bob);
     }
 
     fn gone(&self, bounds: Bounds) -> bool {
         let p = self.line;
-        p.x < -MARGIN * 2.0 || p.x > bounds.width + MARGIN * 2.0 || p.y < -MARGIN * 2.0
+        let m = 2.0 * MARGIN * bounds.scale();
+        p.x < -m || p.x > bounds.width + m || p.y < -m
     }
 }
 
@@ -111,22 +161,25 @@ impl Gulls {
         }
     }
 
-    fn spawn(&mut self, Bounds { width, height }: Bounds, events: &mut Vec<Event>) {
+    fn spawn(&mut self, bounds: Bounds, events: &mut Vec<Event>) {
+        let Bounds { width, height } = bounds;
+        let s = bounds.scale();
+        let margin = MARGIN * s;
         let r = &mut self.rng;
         let kind = r.unit();
-        let speed = r.range(GULL_SPEED.0, GULL_SPEED.1);
+        let speed = r.range(GULL_SPEED.0, GULL_SPEED.1) * s;
         let sky_y = r.range(0.12, 0.72) * height;
-        let drift = r.range(-25.0, 25.0);
+        let drift = r.range(-25.0, 25.0) * s;
         let (from, line, vel) = if kind < GULL_FROM_RIGHT {
-            let at = Vec2::new(width + MARGIN, sky_y);
+            let at = Vec2::new(width + margin, sky_y);
             (GullStart::Right, at, Vec2::new(-speed, drift))
         } else if kind < GULL_FROM_RIGHT + GULL_FROM_LEFT {
             // From behind: a bit slower, so it does not come as a surprise.
-            let at = Vec2::new(-MARGIN, sky_y);
+            let at = Vec2::new(-margin, sky_y);
             (GullStart::Left, at, Vec2::new(speed * 0.6, drift))
         } else {
-            let at = Vec2::new(r.range(0.4, 0.95) * width, height + MARGIN);
-            let vel = Vec2::new(-r.range(30.0, 90.0), -speed * 0.75);
+            let at = Vec2::new(r.range(0.4, 0.95) * width, height + margin);
+            let vel = Vec2::new(-r.range(30.0, 90.0) * s, -speed * 0.75);
             (GullStart::Ground, at, vel)
         };
         let calls = from == GullStart::Left || r.unit() < GULL_CALL_CHANCE;
@@ -136,6 +189,7 @@ impl Gulls {
             from,
             age: 0,
             line,
+            bob: GULL_BOB * s,
         });
         if calls {
             events.push(Event::GullCall);

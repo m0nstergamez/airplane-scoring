@@ -8,22 +8,28 @@ pub const TICK_SECONDS: f32 = 1.0 / 60.0;
 mod balloons;
 mod clock;
 mod gulls;
+mod huts;
 mod input;
 mod level;
 mod rng;
 mod scenery;
+mod shape;
 mod sound;
 mod tilt;
 mod weather;
 pub use balloons::{
-    Balloon, BalloonWay, Balloons, BALLOON_AT_PLANE, BALLOON_COLOURS, BALLOON_GAP_SECONDS,
-    BALLOON_LANDING_HEIGHT, BALLOON_RADIUS, BALLOON_RISE, BALLOON_RISING, BALLOON_START_HEIGHT,
-    BASKET_BELOW, BASKET_RADIUS, FIRST_BALLOON_SECONDS,
+    Balloon, BalloonWay, Balloons, Pad, BALLOON_COLOURS, BALLOON_GAP_SECONDS, BALLOON_HIGH,
+    BALLOON_RADIUS, BALLOON_RISE, BASKET_BELOW, BASKET_HALF, BASKET_RADIUS, FIRST_BALLOON_SECONDS,
+    PAD_GROUND, PAD_HEIGHT, PAD_WIDTH, TAKEOFF_AT, TOUCHDOWN_AT,
 };
 pub use clock::{Clock, MAX_FRAME_SECONDS};
 pub use gulls::{
     Gull, GullStart, Gulls, FIRST_GULL_SECONDS, GULL_BOB, GULL_CALL_CHANCE, GULL_FROM_LEFT,
-    GULL_FROM_RIGHT, GULL_GAP_SECONDS, GULL_RADIUS, GULL_SPEED,
+    GULL_FROM_RIGHT, GULL_GAP_SECONDS, GULL_SPEED,
+};
+pub use huts::{
+    Hut, Huts, FIRST_HUT_SECONDS, HUT_EAVES, HUT_GAP_SECONDS, HUT_GROUND, HUT_HEIGHT, HUT_INSET,
+    HUT_STYLES, HUT_WIDTH,
 };
 pub use input::{pick_steer, steer_from_keys, steer_toward, Input, TOUCH_EASE_DISTANCE};
 pub use level::{
@@ -31,6 +37,7 @@ pub use level::{
     LEVEL_SECONDS, RAINY_LEVELS,
 };
 pub use scenery::{background_x, scroll_distance, SCROLL_SPEED};
+pub use shape::{any_overlap, Poly};
 pub use sound::{
     Mix, BALLOON_BURNER_VOLUME, BEACH_LEVEL, BEACH_VOLUME, CRASH_VOLUME, DIVE_WIND, ENGINE_VOLUME,
     GULL_CALL_VOLUME, MIX_CHANGE_PER_SECOND, NEW_LEVEL_VOLUME, RAIN_VOLUME, WIND_VOLUME,
@@ -41,6 +48,21 @@ pub use weather::{
     RAIN_CHANGE_PER_SECOND, RAIN_PEAK, RAIN_SECONDS, RAIN_WIND, STORM_RAIN, STRIKE_GAP_SECONDS,
     THUNDER_DELAY_SECONDS, THUNDER_VOLUME,
 };
+
+/// The screen height that every size and speed in px below is made for:
+/// a phone in landscape. On other screens they grow or shrink with the
+/// height ([`Bounds::scale`]), like the background picture does, so the
+/// game looks and plays the same on a phone and on a computer.
+pub const DESIGN_HEIGHT: f32 = 390.0;
+
+/// How big the plane and the obstacles are, compared with the sizes in px
+/// below (which are how they were first drawn). Smaller leaves more room
+/// to dodge; speeds do not change with it. See [`Bounds::size`].
+pub const OBJECT_SIZE: f32 = 0.41;
+
+/// How big the plane gets near the ground, compared with its first
+/// design (balloons get to 1 there). See [`Bounds::plane_depth`].
+pub const PLANE_NEAR_SIZE: f32 = 1.5;
 
 /// Vertical speed of the player plane at full steer, in px per second.
 pub const PLAYER_CLIMB_SPEED: f32 = 300.0;
@@ -54,9 +76,17 @@ pub const PLAYER_X_FRACTION: f32 = 0.2;
 /// Radius of the other planes, in px.
 pub const PLANE_RADIUS: f32 = 24.0;
 
-/// The player's plane crashes when another plane's centre comes closer
-/// than this plus [`PLANE_RADIUS`].
-pub const PLAYER_HIT_RADIUS: f32 = 16.0;
+/// The player's plane as drawn, in px at size 1, centred on its position
+/// and flying right: fuselage, nose, wing, tail fin. Crashes use exactly
+/// these parts (and the game crate draws them), so only a real touch
+/// counts. The round cockpit sits on the fuselage.
+pub const PLANE_FUSELAGE: [(f32, f32); 4] =
+    [(-26.0, -5.0), (18.0, -5.0), (18.0, 5.0), (-26.0, 5.0)];
+pub const PLANE_NOSE: [(f32, f32); 3] = [(18.0, -5.0), (30.0, 0.0), (18.0, 5.0)];
+pub const PLANE_WING: [(f32, f32); 3] = [(-6.0, 0.0), (6.0, 0.0), (-10.0, 16.0)];
+pub const PLANE_TAIL: [(f32, f32); 3] = [(-26.0, -5.0), (-18.0, -5.0), (-28.0, -18.0)];
+/// The cockpit: centre and radius, in px at size 1.
+pub const PLANE_COCKPIT: ((f32, f32), f32) = ((10.0, -3.0), 3.5);
 
 /// After a crash the plane is out of control for this long.
 pub const CRASH_SECONDS: f32 = 1.5;
@@ -158,6 +188,22 @@ impl Player {
         self.crash_ticks > 0
     }
 
+    /// The plane as drawn, for crashing, on this screen (its size follows
+    /// [`Bounds::plane_depth`]).
+    pub fn shape(&self, bounds: Bounds) -> Vec<Poly> {
+        let size = bounds.plane_depth(self.pos.y);
+        let at = |points: &[(f32, f32)]| Poly::at(self.pos, size, points);
+        let ((cx, cy), r) = PLANE_COCKPIT;
+        let cockpit = Vec2::new(self.pos.x + cx * size, self.pos.y + cy * size);
+        vec![
+            at(&PLANE_FUSELAGE),
+            at(&PLANE_NOSE),
+            at(&PLANE_WING),
+            at(&PLANE_TAIL),
+            Poly::ellipse(cockpit, r * size, r * size),
+        ]
+    }
+
     /// Flying again after a crash, but cannot crash yet (it blinks).
     pub fn is_safe(&self) -> bool {
         self.safe_ticks > 0
@@ -170,13 +216,56 @@ pub struct Bounds {
     pub height: f32,
 }
 
+impl Bounds {
+    /// How much bigger than at [`DESIGN_HEIGHT`] everything is on this
+    /// screen: 1 on a phone in landscape, about 2.3 on a 900 px high
+    /// window. Multiply every size and speed in px by it.
+    pub fn scale(&self) -> f32 {
+        self.height.max(1.0) / DESIGN_HEIGHT
+    }
+
+    /// The factor for sizes of the plane and obstacles (radii, heights)
+    /// on this screen: [`Bounds::scale`] times [`OBJECT_SIZE`]. Speeds and
+    /// distances use [`Bounds::scale`] alone.
+    pub fn size(&self) -> f32 {
+        self.scale() * OBJECT_SIZE
+    }
+
+    /// Depth: the size factor of balloons and gulls at height `y`
+    /// (screen px). At the top of the screen they are far away and
+    /// smallest ([`Bounds::size`]); lower down they come closer and grow
+    /// steadily over the whole height, until they are full size
+    /// ([`Bounds::scale`]) at the height of a balloon standing on a launch
+    /// pad in the foreground, and stay full size below.
+    pub fn depth(&self, y: f32) -> f32 {
+        self.depth_up_to(y, 1.0)
+    }
+
+    /// The plane's depth: like [`Bounds::depth`], just as small at the
+    /// top, but growing to [`PLANE_NEAR_SIZE`] near the ground.
+    pub fn plane_depth(&self, y: f32) -> f32 {
+        self.depth_up_to(y, PLANE_NEAR_SIZE)
+    }
+
+    fn depth_up_to(&self, y: f32, near_size: f32) -> f32 {
+        let near_y = Balloon::standing_y(*self);
+        let near = if near_y > 0.0 {
+            (y / near_y).clamp(0.0, 1.0)
+        } else {
+            1.0
+        };
+        self.scale() * (OBJECT_SIZE + (near_size - OBJECT_SIZE) * near)
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct World {
     pub bounds: Bounds,
     pub player: Player,
     pub planes: Vec<Plane>,
-    /// The obstacles of level 1.
+    /// The obstacles of level 1: balloons in the air, huts on the ground.
     pub balloons: Balloons,
+    pub huts: Huts,
     /// The obstacles at the beach.
     pub gulls: Gulls,
     pub weather: Weather,
@@ -209,6 +298,7 @@ impl World {
             player,
             planes: Vec::new(),
             balloons: Balloons::new(seed),
+            huts: Huts::new(seed),
             gulls: Gulls::new(seed),
             weather: Weather::new(seed),
             mix: Mix::SILENT,
@@ -244,6 +334,14 @@ impl World {
         self.ticks * SCORE_PER_SECOND / ticks_per_second
     }
 
+    /// Steering toward a finger at `target_y` (screen px), from where the
+    /// plane is now. Eases off within [`TOUCH_EASE_DISTANCE`], measured at
+    /// [`DESIGN_HEIGHT`] like every other size.
+    pub fn steer_toward(&self, target_y: f32) -> f32 {
+        let scale = self.bounds.scale();
+        steer_toward(target_y / scale, self.player.pos.y / scale)
+    }
+
     /// What happened in the last tick. Read it after every `tick`:
     /// the next one starts a new list.
     pub fn events(&self) -> &[Event] {
@@ -263,6 +361,7 @@ impl World {
     /// Deterministic: same inputs, same output, every time.
     pub fn tick(&mut self, input: &Input) {
         let Bounds { width, height } = self.bounds;
+        let scale = self.bounds.scale();
         self.events.clear();
 
         // Game over: everything stands still and the sound fades out.
@@ -286,16 +385,20 @@ impl World {
                 }
                 self.player.safe_ticks = SAFE_TICKS;
             }
-            CRASH_FALL_SPEED
+            CRASH_FALL_SPEED * scale
         } else {
             self.player.safe_ticks = self.player.safe_ticks.saturating_sub(1);
             self.player.steer = input.steer();
-            input.steer() * PLAYER_CLIMB_SPEED
+            input.steer() * PLAYER_CLIMB_SPEED * scale
         };
+        // The plane is small up high and big down low (depth), so it
+        // reaches each edge with its size there.
+        let top = PLAYER_HALF_HEIGHT * self.bounds.plane_depth(0.0);
+        let bottom = height - PLAYER_HALF_HEIGHT * self.bounds.plane_depth(height);
         let p = &mut self.player.pos;
         let y = p.y + fall * TICK_SECONDS;
-        p.y = if height > 2.0 * PLAYER_HALF_HEIGHT {
-            y.clamp(PLAYER_HALF_HEIGHT, height - PLAYER_HALF_HEIGHT)
+        p.y = if bottom > top {
+            y.clamp(top, bottom)
         } else {
             height / 2.0 // too small to fly in; never panic in clamp
         };
@@ -326,22 +429,29 @@ impl World {
         let levels = self.levels();
         let coast = levels.level == 1 && levels.fade == 0.0;
         let plane_y = self.player.pos.y;
-        (self.balloons).tick(self.bounds, coast, plane_y, &mut self.events);
+        let pads: Vec<f32> = self.balloons.pads.iter().map(|p| p.x).collect();
+        self.huts.tick(self.bounds, coast, &pads);
+        let huts: Vec<f32> = self.huts.list.iter().map(|h| h.x).collect();
+        let events = &mut self.events;
+        (self.balloons).tick(self.bounds, coast, plane_y, &huts, events);
         let beach = levels.level == BEACH_LEVEL && levels.fade == 0.0;
         self.gulls.tick(self.bounds, beach, &mut self.events);
 
-        // Crash: the player's plane newly touches another plane, a balloon
-        // or a gull.
-        // It costs a life; a crashed or safe plane cannot crash.
+        // Crash: the plane as drawn newly overlaps another plane, a
+        // balloon, a launch pad, a hut or a gull as drawn. It costs a
+        // life; a crashed or safe plane cannot crash.
+        let bounds = self.bounds;
+        let me = self.player.shape(bounds);
+        let hits = |them: &[Poly]| any_overlap(&me, them);
+        let touching = (self.planes.iter()).any(|m| {
+            let r = PLANE_RADIUS * bounds.depth(m.pos.y);
+            me.iter().any(|part| part.overlaps_circle(m.pos, r))
+        }) || (self.gulls.list.iter())
+            .any(|g| hits(&g.shape(bounds.depth(g.pos.y))))
+            || (self.balloons.list.iter()).any(|b| hits(&b.shape(b.size(bounds))))
+            || (self.balloons.pads.iter()).any(|p| hits(&p.shape(bounds)))
+            || (self.huts.list.iter()).any(|h| hits(&h.shape(bounds)));
         let player = &mut self.player;
-        let near = |pos: Vec2, radius: f32| {
-            let reach = radius + PLAYER_HIT_RADIUS;
-            let (dx, dy) = (pos.x - player.pos.x, pos.y - player.pos.y);
-            dx * dx + dy * dy < reach * reach
-        };
-        let touching = self.planes.iter().any(|m| near(m.pos, PLANE_RADIUS))
-            || self.gulls.list.iter().any(|g| near(g.pos, GULL_RADIUS))
-            || (self.balloons.list.iter()).any(|b| b.touches(player.pos, PLAYER_HIT_RADIUS));
         if touching && !player.touching && !player.is_crashed() && !player.is_safe() {
             player.crash_ticks = CRASH_TICKS;
             self.lives = self.lives.saturating_sub(1);
@@ -403,20 +513,34 @@ mod tests {
         assert_eq!(w.player.pos, Vec2::new(100.0 * PLAYER_X_FRACTION, 25.0));
     }
 
-    /// A big world with a plane parked `gap` px to the right of the player.
+    /// A phone-sized world (scale 1) with a plane parked `gap` px to the
+    /// right of the player.
     fn world_with_plane_ahead(gap: f32) -> World {
         let mut w = World::new(Bounds {
             width: 800.0,
-            height: 400.0,
+            height: DESIGN_HEIGHT,
         });
         let p = w.player.pos;
         w.spawn_plane("m", Vec2::new(p.x + gap, p.y), Vec2::new(0.0, 0.0));
         w
     }
 
+    /// How close another plane at the player's starting height may come:
+    /// it touches the tip of the player's nose.
+    fn mid_height_reach() -> f32 {
+        let b = World::new(Bounds {
+            width: 800.0,
+            height: DESIGN_HEIGHT,
+        })
+        .bounds;
+        let y = DESIGN_HEIGHT / 2.0;
+        PLANE_RADIUS * b.depth(y) + PLANE_NOSE[1].0 * b.plane_depth(y)
+    }
+
     #[test]
     fn touching_another_plane_is_a_crash() {
-        let mut w = world_with_plane_ahead(PLANE_RADIUS + PLAYER_HIT_RADIUS - 1.0);
+        let reach = mid_height_reach();
+        let mut w = world_with_plane_ahead(reach - 1.0);
         w.tick(&Input::NONE);
         assert_eq!(w.events(), [Event::Crash]);
         assert!(w.player.is_crashed());
@@ -425,7 +549,8 @@ mod tests {
 
     #[test]
     fn a_near_miss_is_not_a_crash() {
-        let mut w = world_with_plane_ahead(PLANE_RADIUS + PLAYER_HIT_RADIUS + 1.0);
+        let reach = mid_height_reach();
+        let mut w = world_with_plane_ahead(reach + 1.0);
         for _ in 0..100 {
             w.tick(&Input::NONE);
             assert_eq!(w.events(), []);
@@ -766,6 +891,80 @@ mod tests {
     }
 
     #[test]
+    fn flying_low_into_a_hut_is_a_crash_and_flying_over_is_not() {
+        let fly = |steer: f32| {
+            let mut w = World::with_seed(PHONE, 2);
+            w.lives = u32::MAX;
+            let mut crashes = 0;
+            for _ in 0..(20.0 / TICK_SECONDS) as u32 {
+                w.balloons.list.clear(); // only the huts here
+                w.tick(&Input::new(steer));
+                crashes += w.events().iter().filter(|e| **e == Event::Crash).count();
+            }
+            assert!(!w.huts.list.is_empty() || crashes > 0, "huts came");
+            crashes
+        };
+        assert!(fly(1.0) > 0, "low over the grass");
+        assert_eq!(fly(-1.0), 0, "high in the sky");
+    }
+
+    #[test]
+    fn skimming_over_a_hut_is_no_crash_but_touching_it_is() {
+        let hut = Hut {
+            x: 400.0,
+            width: 110.0,
+            height: 95.0,
+            style: 0,
+        };
+        let (_, ridge, _, _) = hut.rect(PHONE);
+        // The wing tip is the plane's lowest point: put it right over the
+        // ridge, then just above and just into it.
+        let plane_over = |gap: f32| {
+            // Find the height where the wing tip is `gap` above the ridge.
+            let mut y = ridge - 60.0;
+            loop {
+                let size = PHONE.plane_depth(y);
+                let (tx, ty) = PLANE_WING[2];
+                if y + ty * size >= ridge - gap {
+                    return Player::at(Vec2::new(400.0 - tx * size, y));
+                }
+                y += 0.05;
+            }
+        };
+        let touches = |p: Player| any_overlap(&p.shape(PHONE), &hut.shape(PHONE));
+        assert!(!touches(plane_over(1.5)), "a near miss is a miss");
+        assert!(touches(plane_over(-1.5)), "a touch is a crash");
+        // Flying low beside the hut, in the empty corner by the roof: free.
+        let corner = Player::at(Vec2::new(400.0 - 110.0 / 2.0 - 40.0, ridge + 20.0));
+        assert!(!touches(corner));
+    }
+
+    #[test]
+    fn flying_into_a_launch_pad_is_a_crash() {
+        let mut w = World::with_seed(PHONE, 2);
+        w.huts.list.clear();
+        w.balloons.list.clear();
+        let x = w.player.pos.x;
+        w.balloons.pads.push(Pad { x });
+        w.player.pos.y = Pad::top(PHONE) - 2.0; // skimming the deck
+        w.tick(&Input::NONE);
+        assert!(w.events().contains(&Event::Crash));
+        assert_eq!(w.lives, LIVES - 1);
+    }
+
+    #[test]
+    fn no_huts_or_pads_at_the_beach() {
+        let mut w = World::with_seed(PHONE, 3);
+        w.lives = u32::MAX;
+        new_levels(&mut w, LEVEL_SECONDS + 15.0);
+        assert_eq!(w.levels().level, BEACH_LEVEL);
+        for _ in 0..(40.0 / TICK_SECONDS) as u32 {
+            w.tick(&Input::NONE);
+            assert!(w.huts.list.is_empty() && w.balloons.pads.is_empty());
+        }
+    }
+
+    #[test]
     fn no_gulls_in_level_1() {
         let mut w = world();
         new_levels(&mut w, LEVEL_SECONDS - 0.1);
@@ -800,7 +999,7 @@ mod tests {
     fn full_dive_moves_player_down_by_speed_times_dt() {
         let mut w = world();
         w.tick(&Input::new(1.0));
-        let expected = 25.0 + PLAYER_CLIMB_SPEED * TICK_SECONDS;
+        let expected = 25.0 + PLAYER_CLIMB_SPEED * w.bounds.scale() * TICK_SECONDS;
         assert!(
             (w.player.pos.y - expected).abs() < 1e-4,
             "y = {}",
@@ -812,7 +1011,7 @@ mod tests {
     fn half_climb_moves_player_up_at_half_speed() {
         let mut w = world();
         w.tick(&Input::new(-0.5));
-        let expected = 25.0 - 0.5 * PLAYER_CLIMB_SPEED * TICK_SECONDS;
+        let expected = 25.0 - 0.5 * PLAYER_CLIMB_SPEED * w.bounds.scale() * TICK_SECONDS;
         assert!(
             (w.player.pos.y - expected).abs() < 1e-4,
             "y = {}",
@@ -825,14 +1024,19 @@ mod tests {
         let mut w = world();
         for _ in 0..600 {
             w.balloons.list.clear(); // only the edges here
+            w.huts.list.clear();
             w.tick(&Input::new(-1.0));
         }
-        assert_eq!(w.player.pos.y, PLAYER_HALF_HEIGHT);
+        // Small at the top, big at the bottom.
+        let top = PLAYER_HALF_HEIGHT * w.bounds.size();
+        assert_eq!(w.player.pos.y, top);
         for _ in 0..600 {
             w.balloons.list.clear();
+            w.huts.list.clear();
             w.tick(&Input::new(1.0));
         }
-        assert_eq!(w.player.pos.y, 50.0 - PLAYER_HALF_HEIGHT);
+        let bottom = PLAYER_HALF_HEIGHT * w.bounds.scale() * PLANE_NEAR_SIZE;
+        assert_eq!(w.player.pos.y, 50.0 - bottom);
     }
 
     #[test]
@@ -845,7 +1049,8 @@ mod tests {
         let mut last = w.player.pos.y;
         for _ in 0..600 {
             w.balloons.list.clear(); // only the steering here
-            let steer = steer_toward(target, w.player.pos.y);
+            w.huts.list.clear();
+            let steer = w.steer_toward(target);
             w.tick(&Input::new(steer));
             let y = w.player.pos.y;
             assert!(
@@ -862,23 +1067,132 @@ mod tests {
         let mut w = world();
         w.bounds = Bounds {
             width: 400.0,
-            height: 40.0,
-        }; // e.g. phone rotated
+            height: 20.0,
+        }; // e.g. phone rotated; the plane was at 25, below the new edge
         w.tick(&Input::NONE);
+        let half = PLAYER_HALF_HEIGHT * w.bounds.scale() * PLANE_NEAR_SIZE; // down low
         assert_eq!(
             w.player.pos,
-            Vec2::new(400.0 * PLAYER_X_FRACTION, 40.0 - PLAYER_HALF_HEIGHT)
+            Vec2::new(400.0 * PLAYER_X_FRACTION, 20.0 - half)
         );
     }
 
     #[test]
-    fn screen_shorter_than_the_plane_centres_it_instead_of_crashing() {
+    fn the_plane_is_small_up_high_and_big_down_low_like_the_balloons() {
+        let w = World::new(PHONE);
+        let b = w.bounds;
+        assert_eq!(b.depth(0.0), PHONE.size(), "smallest at the very top");
+        assert_eq!(b.plane_depth(0.0), PHONE.size());
+        assert_eq!(b.depth(0.95 * PHONE.height), PHONE.scale());
+        assert_eq!(
+            b.plane_depth(0.95 * PHONE.height),
+            PHONE.scale() * PLANE_NEAR_SIZE
+        );
+        // Shrinking all the way up, without a flat part.
+        let near_y = Balloon::standing_y(PHONE);
+        for i in 1..=10 {
+            let (hi, lo) = (near_y * (i - 1) as f32 / 10.0, near_y * i as f32 / 10.0);
+            assert!(b.depth(hi) < b.depth(lo), "{hi} vs {lo}");
+            assert!(b.plane_depth(hi) < b.plane_depth(lo));
+            assert!(
+                b.plane_depth(lo) >= b.depth(lo),
+                "plane at least balloon size"
+            );
+        }
+        // Balloons follow the same rule.
+        for y in [50.0, 200.0, 260.0, 320.0, 380.0] {
+            let b = Balloon {
+                pos: Vec2::new(400.0, y),
+                vel: Vec2::new(0.0, 0.0),
+                colour: 0,
+                way: BalloonWay::AtPlane,
+                takeoff: None,
+                touchdown: None,
+            };
+            assert_eq!(b.size(PHONE), w.bounds.depth(y));
+        }
+        // A plane parked low hits from further away than one up high.
+        let reach_at = |y: f32| {
+            let mut w = World::new(PHONE);
+            w.player.pos.y = y;
+            let mut gap = 0.0;
+            loop {
+                let mut t = w.clone();
+                t.planes = vec![];
+                let p = t.player.pos;
+                t.spawn_plane("m", Vec2::new(p.x + gap, p.y), Vec2::new(0.0, 0.0));
+                t.tick(&Input::NONE);
+                if !t.events().contains(&Event::Crash) {
+                    return gap;
+                }
+                gap += 1.0;
+            }
+        };
+        assert!(reach_at(PHONE.height - 20.0) > reach_at(60.0));
+    }
+
+    #[test]
+    fn a_screen_with_no_height_centres_the_plane_instead_of_crashing() {
+        // The plane shrinks with the screen, so only a screen of (almost)
+        // no height is too small to fly in, e.g. while a window opens.
         let mut w = World::new(Bounds {
             width: 100.0,
-            height: 10.0,
+            height: 0.0,
         });
         w.tick(&Input::new(1.0));
-        assert_eq!(w.player.pos.y, 5.0);
+        assert_eq!(w.player.pos.y, 0.0);
+    }
+
+    #[test]
+    fn plane_and_obstacles_keep_their_size_relative_to_the_screen() {
+        let phone = Bounds {
+            width: 844.0,
+            height: DESIGN_HEIGHT,
+        };
+        let computer = Bounds {
+            width: 1440.0,
+            height: 900.0,
+        };
+        assert_eq!(phone.scale(), 1.0);
+        let s = computer.scale();
+        assert!((s - 900.0 / 390.0).abs() < 1e-6);
+        // One second of full climb crosses the same share of the screen.
+        let share = |b: Bounds| {
+            let mut w = World::new(b);
+            for _ in 0..30 {
+                w.tick(&Input::new(-1.0));
+            }
+            (b.height / 2.0 - w.player.pos.y) / b.height
+        };
+        assert!((share(phone) - share(computer)).abs() < 1e-4);
+        // A balloon touches at the same share of the screen.
+        let balloon = |b: Bounds| Balloon {
+            pos: Vec2::new(500.0, b.height / 2.0),
+            vel: Vec2::new(0.0, 0.0),
+            colour: 0,
+            way: BalloonWay::AtPlane,
+            takeoff: None,
+            touchdown: None,
+        };
+        let mut shares = Vec::new();
+        for b in [phone, computer] {
+            // The plane's nose tip meets the envelope's side.
+            let y = b.height / 2.0;
+            let reach = PLANE_NOSE[1].0 * b.plane_depth(y) + BALLOON_RADIUS * balloon(b).size(b);
+            let touches = |gap: f32| {
+                let me = Player::at(Vec2::new(500.0 - gap, y)).shape(b);
+                any_overlap(&me, &balloon(b).shape(balloon(b).size(b)))
+            };
+            assert!(touches(reach - 1.0) && !touches(reach + 1.0));
+            shares.push(reach / b.height);
+        }
+        assert!((shares[0] - shares[1]).abs() < 1e-4);
+        // A finger pulls the plane over the same share of the screen.
+        for b in [phone, computer] {
+            let w = World::new(b);
+            let ease = TOUCH_EASE_DISTANCE * b.scale();
+            assert!((w.steer_toward(w.player.pos.y + ease / 2.0) - 0.5).abs() < 1e-5);
+        }
     }
 
     #[test]
