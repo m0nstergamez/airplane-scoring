@@ -7,7 +7,7 @@
 //! press; `web/index.html` resumes audio on that gesture (the JS glue's
 //! own unlock misses iPhones; see docs/README.md).
 
-use airplane_scoring_core::{Event, Mix, CRASH_VOLUME, NEW_LEVEL_VOLUME};
+use airplane_scoring_core::{Event, Mix, CRASH_VOLUME, GULL_CALL_VOLUME, NEW_LEVEL_VOLUME};
 use macroquad::audio::{load_sound, play_sound, set_sound_volume, PlaySoundParams, Sound};
 use macroquad::experimental::coroutines::{start_coroutine, Coroutine};
 
@@ -21,6 +21,7 @@ struct Sounds {
     thunder: Sound,
     crash: Sound,
     new_level: Sound,
+    gull_call: Sound,
 }
 
 impl Sounds {
@@ -45,6 +46,7 @@ impl Sounds {
             thunder: file("thunder").await?,
             crash: file("crash").await?,
             new_level: file("new-level").await?,
+            gull_call: file("gull-call").await?,
         })
     }
 
@@ -102,6 +104,7 @@ impl Audio {
             set_sound_volume(&s.thunder, 0.0);
             set_sound_volume(&s.crash, 0.0);
             set_sound_volume(&s.new_level, 0.0);
+            set_sound_volume(&s.gull_call, 0.0);
         }
         self.muted = muted;
     }
@@ -116,6 +119,7 @@ impl Audio {
             Event::Crash => (&s.crash, CRASH_VOLUME),
             Event::Thunder { volume } => (&s.thunder, volume),
             Event::NewLevel { .. } => (&s.new_level, NEW_LEVEL_VOLUME),
+            Event::GullCall => (&s.gull_call, GULL_CALL_VOLUME),
             Event::Lightning { .. } => return, // seen, not heard
         };
         play_sound(

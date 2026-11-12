@@ -95,7 +95,11 @@ impl Weather {
     }
 
     /// Advance by one fixed step. New lightning and thunder go to `events`.
-    pub fn tick(&mut self, events: &mut Vec<Event>) {
+    /// `max_rain` (0..1) caps the rain: the beach is always dry, so at
+    /// the beach it is 0, and during a fade it follows the landscape. With
+    /// it at 0 there is no thunderstorm, and thunder still on its way is
+    /// dropped. Dry and rain spells keep their timing underneath.
+    pub fn tick(&mut self, events: &mut Vec<Event>, max_rain: f32) {
         // Rain spells and dry spells take turns.
         self.spell_ticks -= 1;
         if self.spell_ticks == 0 {
@@ -111,7 +115,11 @@ impl Weather {
             self.rain,
             self.rain_target,
             RAIN_CHANGE_PER_SECOND * TICK_SECONDS,
-        );
+        )
+        .min(max_rain.max(0.0));
+        if max_rain <= 0.0 {
+            self.thunder.clear();
+        }
 
         // Wind follows the rain, with gusts on top.
         self.gust_ticks -= 1;
@@ -165,7 +173,7 @@ mod tests {
         let mut log = Vec::new();
         let mut events = Vec::new();
         for i in 0..n {
-            w.tick(&mut events);
+            w.tick(&mut events, 1.0);
             log.extend(events.drain(..).map(|e| (i, w.rain, e)));
         }
         log
@@ -187,7 +195,7 @@ mod tests {
             let mut events = Vec::new();
             let (mut wet, mut dry_again) = (false, false);
             for _ in 0..3 * MINUTE {
-                w.tick(&mut events);
+                w.tick(&mut events, 1.0);
                 wet |= w.rain >= RAIN_PEAK.0;
                 dry_again |= wet && w.rain == 0.0;
             }
@@ -201,7 +209,7 @@ mod tests {
         let mut events = Vec::new();
         let (mut rain, mut wind) = (w.rain, w.wind);
         for _ in 0..5 * MINUTE {
-            w.tick(&mut events);
+            w.tick(&mut events, 1.0);
             assert!((0.0..=1.0).contains(&w.rain), "rain {}", w.rain);
             assert!((0.0..=1.0).contains(&w.wind), "wind {}", w.wind);
             assert!((0.0..=1.0).contains(&w.flash), "flash {}", w.flash);
@@ -217,7 +225,7 @@ mod tests {
         let mut events = Vec::new();
         let (mut dry, mut storm) = (Vec::new(), Vec::new());
         for _ in 0..10 * MINUTE {
-            w.tick(&mut events);
+            w.tick(&mut events, 1.0);
             if w.rain == 0.0 {
                 dry.push(w.wind);
             } else if w.is_storm() {
@@ -248,7 +256,7 @@ mod tests {
         let mut w = Weather::new(1);
         let mut events = Vec::new();
         while events.is_empty() {
-            w.tick(&mut events);
+            w.tick(&mut events, 1.0);
         }
         let Event::Lightning { distance } = events[0] else {
             panic!("first event should be lightning: {events:?}");
@@ -256,7 +264,7 @@ mod tests {
         assert!((w.flash - (1.0 - 0.5 * distance)).abs() < 1e-6);
         // Run past the flash, but not into the next strike.
         for _ in 0..ticks(FLASH_SECONDS) + 1 {
-            w.tick(&mut events);
+            w.tick(&mut events, 1.0);
         }
         assert_eq!(w.flash, 0.0);
     }
@@ -281,7 +289,7 @@ mod tests {
                     heard += 1;
                 }
                 Event::Crash => panic!("weather cannot crash a plane"),
-                Event::NewLevel { .. } => panic!("weather does not change levels"),
+                Event::NewLevel { .. } | Event::GullCall => panic!("not weather"),
             }
         }
         assert!(heard > 3, "only {heard} thunders");
@@ -299,5 +307,32 @@ mod tests {
         assert_eq!(a, b);
         assert_eq!(la, lb);
         assert!(a != c || la != lc);
+    }
+
+    #[test]
+    fn no_rain_and_no_storm_when_rain_is_not_allowed() {
+        let mut w = Weather::new(2);
+        let mut events = Vec::new();
+        for _ in 0..10 * MINUTE {
+            w.tick(&mut events, 0.0);
+            assert_eq!(w.rain, 0.0);
+            assert!(!w.is_storm());
+        }
+        assert!(events.is_empty(), "{events:?}");
+    }
+
+    #[test]
+    fn capped_rain_follows_the_cap_and_comes_back_without_a_jump() {
+        let mut w = Weather::new(2);
+        let mut events = Vec::new();
+        // Find a heavy shower.
+        while w.rain < 0.5 {
+            w.tick(&mut events, 1.0);
+        }
+        w.tick(&mut events, 0.2);
+        assert!(w.rain <= 0.2);
+        let before = w.rain;
+        w.tick(&mut events, 1.0);
+        assert!(w.rain - before <= RAIN_CHANGE_PER_SECOND * TICK_SECONDS + 1e-6);
     }
 }

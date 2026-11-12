@@ -76,15 +76,15 @@ Maustaste gedrückt.
 Du fliegst einer Küste entlang: Hinter deinem Flugzeug zieht die
 Landschaft vorbei. Bei Regen wird sie dunkler.
 
-Das Wetter ändert sich, während du fliegst. Am Anfang ist es trocken.
+Das Wetter ändert sich, während du fliegst (am Strand ist es immer
+trocken). Am Anfang ist es trocken.
 Nach einer Weile setzt Regen ein, wird stärker und lässt wieder nach.
 Starker Regen ist ein **Gewitter**: Blitze erhellen den Himmel, und der
 Donner folgt. Je weiter weg der Blitz, desto später und leiser der Donner.
 
-Im Moment ist der Himmel leer, also gibt es noch keinen Zusammenstoss.
-Sobald dir etwas im Weg ist und du es berührst, gibt es einen
-**Zusammenstoss**: Dein Flugzeug raucht, fällt und lässt sich einen
-Moment lang (1,5 Sekunden) nicht steuern. Danach fliegst du wieder.
+Berührst du eine Möwe (Level 2), gibt es einen **Zusammenstoss**: Dein
+Flugzeug raucht, fällt und lässt sich einen Moment lang (1,5 Sekunden)
+nicht steuern. Danach fliegst du wieder.
 
 ## Levels
 
@@ -94,6 +94,10 @@ zuerst die Küste (Level 1), dann einen Strand bei Sonnenuntergang
 langsam über der alten, und in der Mitte des Bildschirms steht «Level 2».
 Nach dem letzten Level beginnt wieder Level 1.
 
+Am Strand fliegen **Möwen** herum: von vorne, von hinten und vom Sand
+aus nach oben. Flieg nicht in sie hinein. Viele rufen, wenn sie
+auftauchen; Möwen von hinten rufen immer, also hör gut hin.
+
 ## Ton
 
 | Du hörst | Wann |
@@ -102,8 +106,9 @@ Nach dem letzten Level beginnt wieder Level 1.
 | Wind | Immer. Lauter bei Regen, in Böen und wenn du sinkst. |
 | Regen | Solange es regnet. Je stärker der Regen, desto lauter. |
 | Donner | Einen Moment nach jedem Blitz. |
-| Zusammenstoss | Wenn du etwas berührst (noch gibt es nichts). |
-| Wellen und Möwen | Am Strand (Level 2). Sie werden mit der Landschaft ein- und ausgeblendet. |
+| Zusammenstoss | Wenn du eine Möwe berührst. |
+| Wellen | Am Strand (Level 2). Sie werden mit der Landschaft ein- und ausgeblendet. |
+| Möwe | Wenn eine Möwe auftaucht. Möwen von hinten rufen immer. |
 | Melodie | Wenn ein neues Level beginnt. |
 
 Browser erlauben Ton erst, nachdem du die Seite berührt hast. Auf dem

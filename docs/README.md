@@ -140,6 +140,19 @@ that isn't code here. Keep entries short and dated.
   `BEACH_VOLUME` times `LevelView::presence(BEACH_LEVEL)`, so it fades
   with the landscape. Both made by `make-sounds.py`; checked as numbers
   (seamless loop, two swells per loop) and listened to locally: good.
+- Gulls at the beach (core `gulls.rs`): the first obstacles. While level 2
+  is fully on screen a gull appears every 1.2–2.8 s (first after 2.5 s,
+  while "Level 2" shows): 45 % from the right, 25 % from behind (slower,
+  always calling, so you hear them coming), 30 % up from the sand. They
+  bob while flapping; touching one is the usual crash. Seeded with their
+  own stream, so they do not change the weather. The gull calls moved
+  out of `beach.wav` into `gull-call.wav`, played on `Event::GullCall`,
+  so every call belongs to a visible gull. Gulls were checked in
+  screenshots with them spawning on screen (local change, not committed).
+- No rain at the beach: `Weather::tick` takes `max_rain` = how much of
+  level 1 is on screen; at 0 there is no storm and pending thunder is
+  dropped. Spells keep their timing underneath, so level 1 gets its
+  weather back. Reason: rain does not fit the sunset mood.
 
 ## Concepts
 

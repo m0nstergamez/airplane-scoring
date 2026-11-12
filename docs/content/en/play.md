@@ -74,15 +74,14 @@ On a computer, hold down the mouse button instead.
 You fly along a coast: the landscape slides past behind your plane. In
 rain it gets darker.
 
-The weather changes while you fly. It starts dry. After a while rain
+The weather changes while you fly (at the beach it is always dry). It
+starts dry. After a while rain
 sets in, gets heavier and fades again. Heavy rain is a **thunderstorm**:
 lightning lights up the sky, and the thunder follows. The further away
 the lightning, the later and quieter the thunder.
 
-For now the sky is empty, so you cannot crash yet. Once there is
-something in your way and you touch it, you **crash**: your plane
-smokes, falls and ignores the controls for a moment (1.5 seconds). Then
-you fly again.
+If you touch a gull (level 2), you **crash**: your plane smokes, falls
+and ignores the controls for a moment (1.5 seconds). Then you fly again.
 
 ## Levels
 
@@ -92,6 +91,10 @@ level the next landscape slowly appears over the old one, and "Level 2"
 shows in the middle of the screen. After the last level, level 1 starts
 again.
 
+At the beach, **gulls** fly around: from the front, from behind and up
+from the sand. Do not fly into them. You hear many of them call when
+they appear; gulls from behind always call, so listen out.
+
 ## Sound
 
 | You hear | When |
@@ -100,8 +103,9 @@ again.
 | Wind | Always. Louder in rain, in gusts and when you dive. |
 | Rain | While it rains. Louder the harder it rains. |
 | Thunder | A moment after each lightning. |
-| Crash | When you touch something (nothing to touch yet). |
-| Waves and gulls | At the beach (level 2). They fade in and out with the landscape. |
+| Crash | When you touch a gull. |
+| Waves | At the beach (level 2). They fade in and out with the landscape. |
+| Gull | When a gull appears. Gulls from behind always call. |
 | Tune | When a new level begins. |
 
 Browsers only allow sound after you have touched the page. On a phone

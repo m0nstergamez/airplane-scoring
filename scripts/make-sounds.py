@@ -164,8 +164,9 @@ def crash(seed, seconds):
 
 def beach(seed, seconds):
     """Beach (level 2): waves rolling onto the sand, two per loop, the
-    second one smaller, and gulls calling now and then. Each wave swells
-    slowly, breaks bright and washes out; between them the sea whispers."""
+    second one smaller. Each wave swells slowly, breaks bright and washes
+    out; between them the sea whispers. The gulls are their own sound
+    (gull-call.wav): each one calls when it appears on screen."""
     rng = random.Random(seed)
     waves = [(0.0, 1.0), (seconds / 2, 0.7)]  # (start in s, strength)
 
@@ -182,26 +183,30 @@ def beach(seed, seconds):
         xs = highpass(lowpass(lowpass(src + src, hz), hz), 70.0)
         return [x * e for x, e in zip(xs, env)]
 
-    sea = normalise(looped(make, seconds), 1.0)
+    return looped(make, seconds)
 
-    def gull(pitch, length):
-        """One "kee-ow": up, then down, with a few overtones."""
-        out, phase = [], 0.0
-        for i in range(int(length * RATE)):
-            t = i / length / RATE  # 0..1 through the call
-            hz = pitch * (1.0 + 0.35 * math.sin(math.pi * t) - 0.25 * t)
-            phase += 2 * math.pi * hz / RATE
-            tone = math.sin(phase) + 0.5 * math.sin(2 * phase) + 0.25 * math.sin(3 * phase)
-            out.append(tone * math.sin(math.pi * t) ** 0.6)
-        return out
 
-    calls = [(1.1, 1250.0, 0.30), (1.5, 1300.0, 0.26), (1.85, 1200.0, 0.34),
-             (5.4, 1100.0, 0.32), (5.8, 1150.0, 0.28)]  # (at s, pitch Hz, length s)
-    for at, pitch, length in calls:
+def gull(pitch, length):
+    """One "kee-ow": up, then down, with a few overtones."""
+    out, phase = [], 0.0
+    for i in range(int(length * RATE)):
+        t = i / length / RATE  # 0..1 through the call
+        hz = pitch * (1.0 + 0.35 * math.sin(math.pi * t) - 0.25 * t)
+        phase += 2 * math.pi * hz / RATE
+        tone = math.sin(phase) + 0.5 * math.sin(2 * phase) + 0.25 * math.sin(3 * phase)
+        out.append(tone * math.sin(math.pi * t) ** 0.6)
+    return out
+
+
+def gull_call(seconds):
+    """A gull calling as it appears: three "kee-ow"s, the same calls that
+    the first version of the beach loop had."""
+    out = [0.0] * int(seconds * RATE)
+    for at, pitch, length in [(0.0, 1250.0, 0.30), (0.4, 1300.0, 0.26), (0.75, 1200.0, 0.34)]:
         start = round(at * RATE)
         for j, x in enumerate(gull(pitch, length)):
-            sea[(start + j) % len(sea)] += 0.22 * x
-    return sea
+            out[start + j] += x
+    return out
 
 
 def new_level(seconds):
@@ -227,4 +232,5 @@ if __name__ == "__main__":
     write("thunder.wav", thunder(5, 3.5), 0.9)
     write("crash.wav", crash(6, 1.2), 0.9)
     write("beach.wav", beach(7, 8.0), 0.8)
+    write("gull-call.wav", gull_call(1.15), 0.8)
     write("new-level.wav", new_level(1.3), 0.8)

@@ -23,6 +23,9 @@ pub const BEACH_LEVEL: u32 = 2;
 pub const BEACH_VOLUME: f32 = 0.5;
 /// Volume of the short tune when a new level begins.
 pub const NEW_LEVEL_VOLUME: f32 = 0.8;
+/// Volume of a gull's call as it appears (as loud as the calls in the
+/// first beach loop, a bit more so you hear gulls from behind).
+pub const GULL_CALL_VOLUME: f32 = 0.25;
 /// A full dive adds this much wind: the plane is faster.
 pub const DIVE_WIND: f32 = 0.25;
 /// Volumes move at most this much per second (silent to full in 0.25 s),

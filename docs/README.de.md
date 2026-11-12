@@ -144,6 +144,21 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
   `LevelView::presence(BEACH_LEVEL)` ist, also mit der Landschaft
   ein- und ausblendet. Beide erzeugt `make-sounds.py`; als Zahlen geprüft
   (nahtlose Schleife, zwei Wellen pro Schleife) und lokal angehört: gut.
+- Möwen am Strand (core `gulls.rs`): die ersten Hindernisse. Solange
+  Level 2 ganz zu sehen ist, taucht alle 1.2–2.8 s eine Möwe auf (die
+  erste nach 2.5 s, während «Level 2» steht): 45 % von rechts, 25 % von
+  hinten (langsamer und rufen immer, damit man sie kommen hört), 30 % vom
+  Sand aus nach oben. Sie wippen beim Flügelschlagen; eine berühren ist
+  der übliche Zusammenstoss. Mit eigenem Zufallsstrom, damit sie das
+  Wetter nicht verändern. Die Möwenrufe sind aus `beach.wav` in
+  `gull-call.wav` gewandert und spielen bei `Event::GullCall`, also
+  gehört jeder Ruf zu einer sichtbaren Möwe. Die Möwen wurden auf
+  Screenshots geprüft, bei denen sie im Bild starteten (lokale Änderung,
+  nicht committet).
+- Kein Regen am Strand: `Weather::tick` bekommt `max_rain` = wie viel von
+  Level 1 zu sehen ist; bei 0 gibt es kein Gewitter, und Donner unterwegs
+  fällt weg. Die Phasen laufen darunter weiter, also hat Level 1 sein
+  Wetter wieder. Grund: Regen passt nicht zur Sonnenuntergangsstimmung.
 
 ## Konzepte
 
