@@ -26,7 +26,7 @@ short **meaning**.
 | Finger | finger | `pointer` | Steering by touching the screen |
 | Taste | key | `steer_from_keys` | Keyboard key (↑/W, ↓/S) |
 | Spielerin / Spieler (kurz: Spieler:in) | player | — | Person playing. In running text «Spielerin oder Spieler», in short labels «Spieler:in» |
-| Hindernis | obstacle | `Balloons`, `Gulls` | Something you must not fly into; touching it is a crash. So far: hot-air balloons in level 1, gulls in level 2 |
+| Hindernis | obstacle | `Balloons`, `Pad`, `Huts`, `Gulls` | Something you must not fly into; touching it is a crash. So far: hot-air balloons, launch pads and huts in level 1, gulls in level 2 |
 | Leben | life, lives | `World.lives`, `LIVES` | Crashes you can afford; shown as small planes at the top right |
 | geschützt (blinken) | safe (blinking) | `Player::is_safe`, `SAFE_SECONDS` | After a crash the plane blinks and cannot lose another life |
 | Game over | game over | `Event::GameOver`, `World::is_over` | The last life is gone; the flight ends. On-screen label, stays English |
@@ -56,7 +56,9 @@ short **meaning**.
 | Lautsprecher-Knopf | speaker button | `#mute` | Button at the top right for sound on/off |
 | Ereignis | event | `Event` | Something that happened in one tick |
 | Wellen | waves | `beach.wav` | Sea sound at the beach (level 2) |
-| Heissluftballon | hot-air balloon | `Balloon`, `BalloonWay` | Level 1's obstacle: drifts left while rising, coming at the plane's height, or sinking to land; envelope and basket both count |
+| Heissluftballon | hot-air balloon | `Balloon`, `BalloonWay` | Level 1's obstacle: drifts left while taking off from a launch pad, landing on one, coming at the plane's height, or sinking past; the four ways take turns; envelope and basket both count |
+| Startrampe | launch pad | `Pad` | Flat deck in the grass where balloons take off and land; an obstacle |
+| Hütte | hut | `Hut`, `Huts` | Big wooden hut in level 1's foreground, at the bottom of the screen; an obstacle |
 | Brenner | burner | `Event::BalloonBurner`, `balloon-burner.wav` | The roar of a balloon's gas flame, heard as it appears |
 | Möwe | gull | `Gull`, `gull-call.wav` | Sea bird at the beach: an obstacle; many call when they appear |
 | Melodie | tune | `Event::NewLevel`, `new-level.wav` | Short rising tune when a new level begins |
@@ -67,6 +69,10 @@ short **meaning**.
 | Deutsch | English | In code | Meaning |
 |---|---|---|---|
 | Level | level | `art/levels/levelN` | One part of the game with its own landscape. «das Level», plural «die Levels» |
+| Massstab | scale | `Bounds::scale`, `DESIGN_HEIGHT` | How much bigger everything is than on a phone (screen height / 390); keeps plane, obstacles and speeds in proportion to the landscape |
+| Objektgrösse | object size | `OBJECT_SIZE`, `Bounds::size` | How big the plane and obstacles are drawn and hit, relative to the first design (0.41), up in the sky; not the huts and pads, which belong to the landscape |
+| Trefferform | hit shape | `Poly`, `Player::shape` | The drawn outline used for crashes; only a real overlap counts |
+| Tiefe | depth | `Bounds::depth`, `Bounds::plane_depth` | What flies is smallest at the top (far away) and grows steadily down to the huts; the plane grows the most |
 | Hintergrund | background | `crates/game/src/scenery.rs` | The landscape behind the plane |
 | Landschaft | landscape | `Scenery` | What the background shows |
 | Vorlage (Foto) | photo (to trace) | `art/levels/levelN/photo.jpg` | The photo a background is drawn from; never committed |

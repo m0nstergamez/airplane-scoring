@@ -198,6 +198,65 @@ that isn't code here. Keep entries short and dated.
   rain, empty for now; `LevelView::rain_room` caps the weather with it,
   replacing the beach-only cap. The weather keeps running, ready for a
   later level.
+- Same proportions on every screen: the landscape was scaled to the
+  screen height, but the plane, obstacles, hit boxes and speeds were fixed
+  px. On a 900 px high computer window the plane looked tiny and the game
+  was easier than on a phone. Now every px constant is for a phone in
+  landscape (`DESIGN_HEIGHT` = 390) and core multiplies it by
+  `Bounds::scale` (height / 390): moves, hit tests, spawns, the finger's
+  easing (`World::steer_toward`) and the scroll distance. The game crate
+  draws everything (plane, gulls, balloons, score, lives, texts) at the
+  same scale. Checked with screenshots at 844×390 and 1440×900 side by
+  side. A screen is never too small to fly in any more, except one of no
+  height. The speaker button stays a fixed 44 px (HTML).
+- More for level 1, after playing it: wooden huts in the foreground grass
+  (core `huts.rs`, 3 looks, one every 4–7 s, low: only the bottom quarter
+  of the screen; hit box down to the screen edge like the dropped
+  towers). Rising balloons now stand on a launch pad (`Pad`), slide in
+  with it and take off at 60–85 % of the screen width; the burner roars
+  at take-off. Pads are flat and harmless; huts and pads wait for each
+  other so they never overlap. The plane and obstacles are 20 % smaller
+  (`OBJECT_SIZE` = 0.8 via `Bounds::size`; speeds unchanged) for more room
+  to dodge. Checked in screenshots.
+- Level 1 round three, after playing: flying into a launch pad costs a
+  life (hit box down to the screen edge, like huts). Balloons also land
+  on pads: a landing balloon comes in high right above its pad (no
+  drift) and sinks so it touches down at 30–55 % of the screen width,
+  then slides off with it. Four ways now (take off, land, at the plane,
+  sink past), dealt as shuffled rounds of four and never the same way
+  twice in a row: playing showed long runs of pad take-offs after the
+  first balloons, which random picks allow. Plane and obstacles another
+  20 % smaller (`OBJECT_SIZE` 0.8 → 0.64). Checked in screenshots.
+- Plane and flying obstacles another 20 % smaller (`OBJECT_SIZE` 0.64 →
+  0.512). Huts made really big and moved to the front so they read as
+  foreground: 96–124 × 80–104 px standing at 98 % of the screen height,
+  scaled with `Bounds::scale` only (they are landscape, not flying
+  objects), and drawn in front of pads and balloons.
+- Another 20 % smaller (`OBJECT_SIZE` 0.512 → 0.41). With big huts in
+  front, tiny balloons on the pads looked wrong, so the game got depth
+  (`Bounds::depth(y)`): plane, balloons and gulls are `OBJECT_SIZE` from
+  `BALLOON_FAR_HEIGHT` (55 % of the height) up and grow linearly to full
+  size at a balloon standing on a pad. Launch pads moved to the
+  foreground with the huts (same ground line, `Bounds::scale`). The plane
+  follows the same rule, as asked: hit box included, so low flying is
+  riskier. Screenshots: small plane up high, big on the ground, a big
+  balloon on its pad.
+- Depth tuned after playing: no flat part any more. Sizes shrink
+  steadily over the whole height, from full size at a balloon on its pad
+  to `OBJECT_SIZE` at the very top (`BALLOON_FAR_HEIGHT` removed), so the
+  plane keeps getting smaller all the way up. The plane grows more near
+  the ground than the balloons: up to `PLANE_NEAR_SIZE` = 1.5
+  (`Bounds::plane_depth`); balloons stay at 1 there, as liked.
+- Crashes only on a real touch, after a life was lost a hair away from a
+  hut. Before, the plane was a circle (reaching above and below its thin
+  fuselage), huts and pads were boxes reaching down to the screen edge
+  (including the empty corners beside the roof), balloons and gulls were
+  circles. Now core has convex polygons (`shape.rs`, separating axis
+  test) with the very points the game draws: plane fuselage, nose, wing,
+  tail, cockpit; hut walls, roof triangle and eaves; pad deck and legs;
+  balloon envelope (16-corner ellipse), taper, mouth, ropes, basket, rim;
+  gull body, head, beak and the flapping wings. `PLAYER_HIT_RADIUS` and
+  `GULL_RADIUS` are gone. Tests probe near misses with 2 px squares.
 
 ## Concepts
 

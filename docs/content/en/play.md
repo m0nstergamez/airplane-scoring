@@ -81,8 +81,9 @@ again. Heavy rain is a **thunderstorm**: lightning lights up the sky,
 and the thunder follows. The further away the lightning, the later and
 quieter the thunder.
 
-If you touch a hot-air balloon (level 1) or a gull (level 2), you
-**crash**: your plane smokes, falls
+If you touch a hot-air balloon, a launch pad or a hut (level 1) or a
+gull (level 2), you **crash**. Only a real touch counts: flying past very
+closely, or through the gap beside a roof, is fine. In a crash your plane smokes, falls
 and ignores the controls for a moment (1.5 seconds). Then you fly again.
 
 ## Score and lives
@@ -95,7 +96,7 @@ small plane per life shows how many you have left. Each crash costs a life: its 
 blinks for a moment.
 
 When you fly again after a crash, your plane **blinks** for 2 seconds.
-While it blinks you are safe: a balloon or a gull costs no life then. So you do not
+While it blinks you are safe: nothing you touch costs a life then. So you do not
 lose two lives to the same flock of gulls.
 
 With the last life your plane falls, then **"Game over"** shows on the
@@ -112,11 +113,26 @@ shows in the middle of the screen. After the last level, level 1 starts
 again.
 
 On the coast, **hot-air balloons** float by now and then. They come
-slowly from the right and drift left with the wind: some rise from
-below, some come straight at you at your height, and some sink from
-above because they want to land. Fly over or under them, and mind the
-basket too. When a balloon appears, you hear its burner
-roar.
+slowly from the right and take turns in four ways: one stands on a
+**launch pad** in the grass and takes off as it comes into view, one
+comes down from the sky and lands on a launch pad, one comes straight at
+you at your height, and one sinks slowly past from above. Within every
+four balloons each way comes once, so you never know which is next. Fly
+over or under them, and mind the basket too. When a balloon appears or
+takes off, you hear its burner roar. Flying into a launch pad costs a
+life too.
+
+Big wooden **huts** stand now and then right at the front, at the
+bottom of the screen, together with the launch pads. Only if you fly
+close to the ground do you have to climb over them. You
+cannot slip underneath.
+
+The game has **depth**: the higher something flies, the further away it
+is and the smaller it looks. Up in the sky your plane and the balloons
+are small; down near the huts they are big. A balloon on its launch pad
+is big and shrinks all the way as it rises. Your plane grows even more
+when you fly low, and so does the room it takes, so low flying is
+riskier.
 
 At the beach, **gulls** fly around: from the front, from behind and up
 from the sand. Do not fly into them. You hear many of them call when
@@ -130,8 +146,8 @@ they appear; gulls from behind always call, so listen out.
 | Wind | Always. Louder in rain, in gusts and when you dive. |
 | Rain | While it rains (only in later levels). Louder the harder it rains. |
 | Thunder | A moment after each lightning (only in later levels). |
-| Crash | When you touch a balloon or a gull. |
-| Burner | When a hot-air balloon appears (level 1). |
+| Crash | When you touch a balloon, a launch pad, a hut or a gull. |
+| Burner | When a hot-air balloon appears or takes off (level 1). |
 | Waves | At the beach (level 2). They fade in and out with the landscape. |
 | Gull | When a gull appears. Gulls from behind always call. |
 | Tune | When a new level begins. |

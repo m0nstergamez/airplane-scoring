@@ -210,6 +210,73 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
   denen es regnen darf, im Moment leer; `LevelView::rain_room` begrenzt
   das Wetter damit und ersetzt die Begrenzung nur für den Strand. Das
   Wetter läuft weiter, bereit für ein späteres Level.
+- Gleiche Proportionen auf jedem Bildschirm: Die Landschaft war auf die
+  Bildschirmhöhe skaliert, Flugzeug, Hindernisse, Trefferflächen und
+  Geschwindigkeiten aber in festen Pixeln. Auf einem 900 px hohen
+  Computerfenster wirkte das Flugzeug winzig, und das Spiel war leichter
+  als auf dem Handy. Jetzt gilt jede Pixel-Konstante für ein Handy quer
+  (`DESIGN_HEIGHT` = 390), und core multipliziert sie mit `Bounds::scale`
+  (Höhe / 390): Bewegung, Treffer, Auftauchen, das Abbremsen beim Finger
+  (`World::steer_toward`) und die Scroll-Distanz. Das game-Crate zeichnet
+  alles (Flugzeug, Möwen, Ballone, Score, Leben, Texte) im selben
+  Massstab. Geprüft mit Screenshots in 844×390 und 1440×900
+  nebeneinander. Ein Bildschirm ist zum Fliegen nie mehr zu klein, ausser
+  er hat gar keine Höhe. Der Lautsprecher-Knopf bleibt fest 44 px (HTML).
+- Mehr für Level 1, nach dem Ausprobieren: Holzhütten in der Wiese vorne
+  (core `huts.rs`, 3 Arten, alle 4–7 s eine, niedrig: nur im untersten
+  Viertel des Bildschirms; Trefferfläche bis zum unteren Rand wie bei
+  den verworfenen Türmen). Steigende Ballone stehen jetzt auf einer
+  Startrampe (`Pad`), kommen mit ihr herein und heben bei 60–85 % der
+  Bildschirmbreite ab; der Brenner faucht beim Abheben. Rampen sind flach
+  und harmlos; Hütten und Rampen warten aufeinander, damit sie sich nie
+  überlappen. Flugzeug und Hindernisse sind 20 % kleiner
+  (`OBJECT_SIZE` = 0.8 über `Bounds::size`; Geschwindigkeiten gleich),
+  damit mehr Platz zum Ausweichen bleibt. Geprüft mit Screenshots.
+- Level 1, dritte Runde, nach dem Ausprobieren: In eine Startrampe zu
+  fliegen kostet ein Leben (Trefferfläche bis zum unteren Rand, wie bei
+  Hütten). Ballone landen auch auf Rampen: Ein landender Ballon kommt
+  hoch genau über seiner Rampe herein (ohne Wind) und sinkt so, dass er
+  bei 30–55 % der Bildschirmbreite aufsetzt; dann zieht er mit ihr
+  davon. Jetzt vier Arten (abheben, landen, auf Flugzeughöhe, vorbei
+  sinken), verteilt in gemischten Vierer-Runden und nie zweimal dieselbe
+  Art hintereinander: Beim Spielen kamen nach den ersten Ballonen lange
+  nur Starts von der Rampe, was eine reine Zufallswahl zulässt. Flugzeug
+  und Hindernisse nochmals 20 % kleiner (`OBJECT_SIZE` 0.8 → 0.64).
+  Geprüft mit Screenshots.
+- Flugzeug und fliegende Hindernisse nochmals 20 % kleiner
+  (`OBJECT_SIZE` 0.64 → 0.512). Hütten wirklich gross gemacht und nach
+  vorne gerückt, damit sie als Vordergrund wirken: 96–124 × 80–104 px,
+  stehend auf 98 % der Bildschirmhöhe, skaliert nur mit `Bounds::scale`
+  (sie gehören zur Landschaft, nicht zu dem, was fliegt), und vor Rampen
+  und Ballonen gezeichnet.
+- Nochmals 20 % kleiner (`OBJECT_SIZE` 0.512 → 0.41). Mit grossen Hütten
+  vorne wirkten winzige Ballone auf den Rampen falsch, darum hat das
+  Spiel jetzt Tiefe (`Bounds::depth(y)`): Flugzeug, Ballone und Möwen
+  sind ab `BALLOON_FAR_HEIGHT` (55 % der Höhe) aufwärts `OBJECT_SIZE`
+  gross und wachsen gleichmässig bis zur vollen Grösse eines Ballons auf
+  der Rampe. Die Startrampen sind mit den Hütten in den Vordergrund
+  gerückt (gleiche Bodenlinie, `Bounds::scale`). Das Flugzeug folgt wie
+  gewünscht derselben Regel, samt Trefferfläche, darum ist tief fliegen
+  riskanter. Screenshots: kleines Flugzeug oben, grosses am Boden, ein
+  grosser Ballon auf seiner Rampe.
+- Tiefe nach dem Ausprobieren angepasst: kein flacher Teil mehr. Die
+  Grössen nehmen über die ganze Höhe gleichmässig ab, von voller Grösse
+  bei einem Ballon auf der Rampe bis `OBJECT_SIZE` ganz oben
+  (`BALLOON_FAR_HEIGHT` entfernt), so wird das Flugzeug bis ganz oben
+  immer kleiner. Das Flugzeug wächst nahe am Boden stärker als die
+  Ballone: bis `PLANE_NEAR_SIZE` = 1.5 (`Bounds::plane_depth`); die
+  Ballone bleiben dort bei 1, wie es gefiel.
+- Zusammenstoss nur noch bei echter Berührung, nachdem ein Leben haarscharf
+  neben einer Hütte verloren ging. Vorher war das Flugzeug ein Kreis (der
+  über und unter den schmalen Rumpf reichte), Hütten und Rampen waren
+  Rechtecke bis zum unteren Rand (samt den leeren Ecken neben dem Dach),
+  Ballone und Möwen Kreise. Jetzt hat core konvexe Vielecke (`shape.rs`,
+  Trennachsen-Test) mit genau den Punkten, die das Spiel zeichnet:
+  Flugzeug-Rumpf, Nase, Flügel, Heck, Cockpit; Hüttenwände, Dachdreieck
+  und Traufe; Rampendeck und Beine; Ballonhülle (Ellipse mit 16 Ecken),
+  Verjüngung, Öffnung, Seile, Korb, Rand; Möwenkörper, Kopf, Schnabel und
+  die schlagenden Flügel. `PLAYER_HIT_RADIUS` und `GULL_RADIUS` sind weg.
+  Tests prüfen knappe Vorbeiflüge mit 2-px-Quadraten.
 
 ## Konzepte
 

@@ -141,11 +141,30 @@ flowchart LR
   underneath for later levels.
 - **Hot-air balloons** (`crates/core/src/balloons.rs`) are level 1's
   obstacles: big, slow and rare, since level 1 is the easiest level.
-  Each one rises, comes level at the plane's height, or sinks to land
-  (`BalloonWay`, shares `BALLOON_RISING` and `BALLOON_AT_PLANE`).
-  Core spawns them (seeded), moves them and checks the crash against the
-  envelope and the basket; each new one sends a `BalloonBurner` event for
-  its sound.
+  Each one takes off from a launch pad (`Pad`: it slides in standing on
+  it and lifts off at `TAKEOFF_AT`), lands on one (touching down at
+  `TOUCHDOWN_AT`), comes level at the plane's height, or sinks past
+  (`BalloonWay`). The ways take turns: a shuffled round of all four,
+  never the same way twice in a row. Launch pads are obstacles too. Core spawns them (seeded), moves them and checks
+  the crash against the envelope and the basket; a `BalloonBurner` event
+  plays its sound as it appears or takes off.
+- **Huts** (`crates/core/src/huts.rs`) stand big in level 1's foreground
+  grass at the bottom of the screen, rare, sliding with the landscape.
+  They belong to the landscape, so they grow with `Bounds::scale` but not
+  with `OBJECT_SIZE`; so do the launch pads, which lie next to them.
+  Huts and launch pads wait for each other, so a pad never lies on a hut.
+- **Depth** (`Bounds::depth(y)`): what flies (balloons, gulls) is
+  smallest (`OBJECT_SIZE`) at the top of the screen and grows steadily
+  all the way down to full size at a balloon standing on a pad. The
+  plane follows `Bounds::plane_depth(y)`: as small at the top, growing to
+  `PLANE_NEAR_SIZE` (1.5) near the ground. Drawing and crashes use the
+  same factor, so a plane flying low is bigger and easier to hit.
+- **Crashes use the drawn shapes** (`crates/core/src/shape.rs`): the
+  plane (`Player::shape`: fuselage, nose, wing, tail, cockpit) and each
+  obstacle (`Hut::shape`, `Pad::shape`, `Balloon::shape`,
+  `Gull::shape`) are a few convex polygons with the same points the
+  game crate draws. Only a real overlap is a crash; a near miss, or the
+  empty corner beside a roof, is not.
 - **Gulls** (`crates/core/src/gulls.rs`) are the beach's obstacles. Core
   decides when and where they appear (seeded, like the weather), moves
   them and checks the crash; a gull that calls sends a `GullCall` event,
@@ -266,10 +285,16 @@ Make the plane climb and dive faster:
 4. Run `scripts/check.sh`. If a test fails, read its message: tests
    describe how the game should behave.
 
-More numbers you can try:
+More numbers you can try. Sizes and speeds in pixels are for a phone
+in landscape (`DESIGN_HEIGHT`, 390 px high); on a bigger screen the game
+multiplies them by `Bounds::scale` (screen height / 390), so everything
+keeps its size relative to the landscape:
 
 | Constant | File | Meaning |
 |---|---|---|
+| `DESIGN_HEIGHT` | `crates/core/src/lib.rs` | the screen height all pixel sizes and speeds are made for |
+| `PLANE_NEAR_SIZE` | `crates/core/src/lib.rs` | how big the plane gets near the ground (1 = first design) |
+| `OBJECT_SIZE` | `crates/core/src/lib.rs` | how big the plane and obstacles are drawn and hit (1 = first design, now 0.41): the size up high; smaller leaves more room |
 | `PLAYER_CLIMB_SPEED` | `crates/core/src/lib.rs` | climb/dive speed (pixels per second) |
 | `PLAYER_X_FRACTION` | `crates/core/src/lib.rs` | where the plane sits (0.2 = 20 % from the left) |
 | `TILT_FULL_DEG` | `crates/core/src/tilt.rs` | how far to turn the phone for full speed |
@@ -288,6 +313,8 @@ More numbers you can try:
 | `GULL_SPEED` | `crates/core/src/gulls.rs` | how fast gulls fly (pixels per second) |
 | `BALLOON_GAP_SECONDS` | `crates/core/src/balloons.rs` | shortest and longest time between two balloons |
 | `BALLOON_RISE` | `crates/core/src/balloons.rs` | how fast balloons rise (pixels per second) |
+| `HUT_GAP_SECONDS` | `crates/core/src/huts.rs` | shortest and longest time between two huts |
+| `HUT_HEIGHT` | `crates/core/src/huts.rs` | lowest and highest hut (pixels) |
 | `SCROLL_SPEED` | `crates/core/src/scenery.rs` | how fast the landscape slides past (pixels per second) |
 | `LEVEL_SECONDS` | `crates/core/src/level.rs` | how long one level lasts (seconds) |
 | `LEVEL_FADE_SECONDS` | `crates/core/src/level.rs` | how long the next landscape takes to fade in |

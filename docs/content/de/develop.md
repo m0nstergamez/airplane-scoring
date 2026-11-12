@@ -142,11 +142,35 @@ flowchart LR
   läuft für spätere Levels darunter weiter.
 - **Heissluftballone** (`crates/core/src/balloons.rs`) sind die
   Hindernisse von Level 1: gross, langsam und selten, weil Level 1 das
-  einfachste Level ist. Jeder steigt, kommt waagrecht auf der Höhe des
-  Flugzeugs oder sinkt zum Landen (`BalloonWay`, Anteile `BALLOON_RISING`
-  und `BALLOON_AT_PLANE`). core lässt sie auftauchen (mit Startwert), bewegt
-  sie und prüft den Zusammenstoss mit Hülle und Korb; jeder neue schickt
-  ein Ereignis `BalloonBurner` für seinen Ton.
+  einfachste Level ist. Jeder hebt von einer Startrampe ab (`Pad`: er
+  kommt darauf stehend herein und hebt bei `TAKEOFF_AT` ab), landet auf
+  einer (Aufsetzen bei `TOUCHDOWN_AT`), kommt waagrecht auf der Höhe des
+  Flugzeugs oder sinkt vorbei (`BalloonWay`). Die Arten wechseln sich
+  ab: eine gemischte Runde aus allen vier, nie zweimal dieselbe Art
+  hintereinander. Auch Startrampen sind Hindernisse. core
+  lässt sie auftauchen (mit Startwert), bewegt sie und prüft den
+  Zusammenstoss mit Hülle und Korb; ein Ereignis `BalloonBurner` spielt
+  seinen Ton, wenn er auftaucht oder abhebt.
+- **Hütten** (`crates/core/src/huts.rs`) stehen gross im Vordergrund von
+  Level 1, am unteren Bildschirmrand, selten, und ziehen mit der
+  Landschaft vorbei. Sie gehören zur Landschaft, darum wachsen sie mit
+  `Bounds::scale`, aber nicht mit `OBJECT_SIZE`; ebenso die Startrampen,
+  die neben ihnen liegen. Hütten und Startrampen warten aufeinander, so
+  liegt nie eine Rampe auf einer Hütte.
+- **Tiefe** (`Bounds::depth(y)`): Was fliegt (Ballone, Möwen), ist ganz
+  oben am kleinsten (`OBJECT_SIZE`) und wächst über die ganze Höhe
+  gleichmässig bis zur vollen Grösse eines Ballons auf der Startrampe.
+  Das Flugzeug folgt `Bounds::plane_depth(y)`: oben gleich klein, nahe am
+  Boden bis `PLANE_NEAR_SIZE` (1.5) gross. Zeichnen und Zusammenstösse
+  nutzen denselben Faktor, darum ist ein tief fliegendes Flugzeug
+  grösser und leichter zu treffen.
+- **Zusammenstösse nutzen die gezeichneten Formen**
+  (`crates/core/src/shape.rs`): Das Flugzeug (`Player::shape`: Rumpf,
+  Nase, Flügel, Heck, Cockpit) und jedes Hindernis (`Hut::shape`,
+  `Pad::shape`, `Balloon::shape`, `Gull::shape`) sind ein paar konvexe
+  Vielecke mit denselben Punkten, die das game-Crate zeichnet. Nur eine
+  echte Überlappung ist ein Zusammenstoss; ein knappes Vorbeifliegen
+  oder die leere Ecke neben einem Dach nicht.
 - **Möwen** (`crates/core/src/gulls.rs`) sind die Hindernisse am Strand.
   core entscheidet, wann und wo sie auftauchen (mit Startwert, wie das
   Wetter), bewegt sie und prüft den Zusammenstoss; eine Möwe, die ruft,
@@ -270,10 +294,17 @@ Lass das Flugzeug schneller steigen und sinken:
 4. Starte `scripts/check.sh`. Schlägt ein Test fehl, lies seine Meldung:
    Tests beschreiben, wie sich das Spiel verhalten soll.
 
-Weitere Zahlen zum Ausprobieren:
+Weitere Zahlen zum Ausprobieren. Grössen und Geschwindigkeiten in Pixeln
+gelten für ein Handy quer (`DESIGN_HEIGHT`, 390 Pixel hoch); auf einem
+grösseren Bildschirm multipliziert das Spiel sie mit `Bounds::scale`
+(Bildschirmhöhe / 390), so behält alles seine Grösse im Verhältnis zur
+Landschaft:
 
 | Konstante | Datei | Bedeutung |
 |---|---|---|
+| `DESIGN_HEIGHT` | `crates/core/src/lib.rs` | die Bildschirmhöhe, für die alle Grössen und Geschwindigkeiten in Pixeln gemacht sind |
+| `PLANE_NEAR_SIZE` | `crates/core/src/lib.rs` | wie gross das Flugzeug nahe am Boden wird (1 = erster Entwurf) |
+| `OBJECT_SIZE` | `crates/core/src/lib.rs` | wie gross Flugzeug und Hindernisse gezeichnet und getroffen werden (1 = erster Entwurf, jetzt 0.41): die Grösse oben am Himmel; kleiner gibt mehr Platz |
 | `PLAYER_CLIMB_SPEED` | `crates/core/src/lib.rs` | Steig-/Sinkgeschwindigkeit (Pixel pro Sekunde) |
 | `PLAYER_X_FRACTION` | `crates/core/src/lib.rs` | wo das Flugzeug steht (0.2 = 20 % von links) |
 | `TILT_FULL_DEG` | `crates/core/src/tilt.rs` | wie weit du das Handy für volle Geschwindigkeit drehst |
@@ -292,6 +323,8 @@ Weitere Zahlen zum Ausprobieren:
 | `GULL_SPEED` | `crates/core/src/gulls.rs` | wie schnell Möwen fliegen (Pixel pro Sekunde) |
 | `BALLOON_GAP_SECONDS` | `crates/core/src/balloons.rs` | kürzeste und längste Zeit zwischen zwei Ballonen |
 | `BALLOON_RISE` | `crates/core/src/balloons.rs` | wie schnell Ballone steigen (Pixel pro Sekunde) |
+| `HUT_GAP_SECONDS` | `crates/core/src/huts.rs` | kürzeste und längste Zeit zwischen zwei Hütten |
+| `HUT_HEIGHT` | `crates/core/src/huts.rs` | niedrigste und höchste Hütte (Pixel) |
 | `SCROLL_SPEED` | `crates/core/src/scenery.rs` | wie schnell die Landschaft vorbeizieht (Pixel pro Sekunde) |
 | `LEVEL_SECONDS` | `crates/core/src/level.rs` | wie lange ein Level dauert (Sekunden) |
 | `LEVEL_FADE_SECONDS` | `crates/core/src/level.rs` | wie lange die nächste Landschaft zum Einblenden braucht |

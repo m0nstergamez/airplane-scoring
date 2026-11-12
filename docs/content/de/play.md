@@ -83,9 +83,11 @@ und lässt wieder nach. Starker Regen ist ein **Gewitter**: Blitze
 erhellen den Himmel, und der Donner folgt. Je weiter weg der Blitz,
 desto später und leiser der Donner.
 
-Berührst du einen Heissluftballon (Level 1) oder eine Möwe (Level 2),
-gibt es einen **Zusammenstoss**: Dein
-Flugzeug raucht, fällt und lässt sich einen Moment lang (1,5 Sekunden)
+Berührst du einen Heissluftballon, eine Startrampe oder eine Hütte
+(Level 1) oder eine Möwe (Level 2), gibt es einen **Zusammenstoss**.
+Nur eine echte Berührung zählt: Ganz knapp vorbeifliegen oder durch die
+Lücke neben einem Dach ist erlaubt. Beim Zusammenstoss
+raucht dein Flugzeug, fällt und lässt sich einen Moment lang (1,5 Sekunden)
 nicht steuern. Danach fliegst du wieder.
 
 ## Punkte und Leben
@@ -99,8 +101,8 @@ Leben ein kleines Flugzeug, wie viele du noch hast. Jeder Zusammenstoss kostet e
 wird grau und blinkt kurz.
 
 Fliegst du nach einem Zusammenstoss wieder, **blinkt** dein Flugzeug
-2 Sekunden lang. Solange es blinkt, bist du geschützt: Ein Ballon oder eine
-Möwe kostet dann kein Leben. So verlierst du nicht zwei Leben an derselben
+2 Sekunden lang. Solange es blinkt, bist du geschützt: Was du
+dann berührst, kostet kein Leben. So verlierst du nicht zwei Leben an derselben
 Möwengruppe.
 
 Beim letzten Leben fällt dein Flugzeug, dann steht **«Game over»** auf dem
@@ -117,11 +119,27 @@ langsam über der alten, und in der Mitte des Bildschirms steht «Level 2».
 Nach dem letzten Level beginnt wieder Level 1.
 
 An der Küste fahren ab und zu **Heissluftballone**. Sie kommen langsam
-von rechts und treiben mit dem Wind nach links: manche steigen von unten
-auf, manche kommen dir genau auf deiner Höhe entgegen, und manche sinken
-von oben herab, weil sie landen wollen. Flieg über oder unter ihnen
-durch, und pass auch auf den Korb auf. Wenn ein Ballon
-auftaucht, hörst du seinen Brenner fauchen.
+von rechts und wechseln sich auf vier Arten ab: Einer steht auf einer
+**Startrampe** in der Wiese und hebt ab, sobald er ins Bild kommt, einer
+kommt vom Himmel herab und landet auf einer Startrampe, einer kommt dir
+genau auf deiner Höhe entgegen, und einer sinkt langsam von oben herab
+an dir vorbei. Unter je vier Ballonen kommt jede Art einmal, du weisst
+also nie, welche als Nächstes kommt. Flieg über oder unter ihnen durch,
+und pass auch auf den Korb auf. Wenn ein Ballon auftaucht oder abhebt,
+hörst du seinen Brenner fauchen. Auch in eine Startrampe zu fliegen
+kostet ein Leben.
+
+Ganz vorne, am unteren Bildschirmrand, stehen ab und zu grosse
+**Hütten** aus Holz, zusammen mit den Startrampen. Nur wenn du nahe am
+Boden fliegst, musst du über sie steigen.
+Unten durch kommst du nicht.
+
+Das Spiel hat **Tiefe**: Je höher etwas fliegt, desto weiter weg ist es
+und desto kleiner sieht es aus. Oben am Himmel sind dein Flugzeug und
+die Ballone klein, unten bei den Hütten gross. Ein Ballon auf seiner
+Startrampe ist gross und wird beim Aufsteigen bis ganz oben immer
+kleiner. Dein Flugzeug wird sogar noch grösser, wenn du tief fliegst,
+und braucht dann mehr Platz. Tief fliegen ist darum riskanter.
 
 Am Strand fliegen **Möwen** herum: von vorne, von hinten und vom Sand
 aus nach oben. Flieg nicht in sie hinein. Viele rufen, wenn sie
@@ -135,8 +153,8 @@ auftauchen; Möwen von hinten rufen immer, also hör gut hin.
 | Wind | Immer. Lauter bei Regen, in Böen und wenn du sinkst. |
 | Regen | Solange es regnet (erst in späteren Levels). Je stärker der Regen, desto lauter. |
 | Donner | Einen Moment nach jedem Blitz (erst in späteren Levels). |
-| Zusammenstoss | Wenn du einen Ballon oder eine Möwe berührst. |
-| Brenner | Wenn ein Heissluftballon auftaucht (Level 1). |
+| Zusammenstoss | Wenn du einen Ballon, eine Startrampe, eine Hütte oder eine Möwe berührst. |
+| Brenner | Wenn ein Heissluftballon auftaucht oder abhebt (Level 1). |
 | Wellen | Am Strand (Level 2). Sie werden mit der Landschaft ein- und ausgeblendet. |
 | Möwe | Wenn eine Möwe auftaucht. Möwen von hinten rufen immer. |
 | Melodie | Wenn ein neues Level beginnt. |

@@ -2,9 +2,10 @@
 //! This file should only: read input, call `World::tick`, draw state.
 
 use airplane_scoring_core::{
-    background_x, pick_steer, scroll_distance, start_level, steer_from_keys, steer_toward, Balloon,
-    Bounds, Clock, Event, Gull, Input, Tilt, World, BALLOON_RADIUS, BASKET_BELOW, LIVES,
-    PLANE_RADIUS, TICK_SECONDS,
+    background_x, pick_steer, scroll_distance, start_level, steer_from_keys, Balloon, Bounds,
+    Clock, Event, Gull, Hut, Input, Pad, Tilt, World, BALLOON_RADIUS, BASKET_BELOW, HUT_EAVES,
+    HUT_INSET, LIVES, PAD_HEIGHT, PAD_WIDTH, PLANE_COCKPIT, PLANE_FUSELAGE, PLANE_NOSE,
+    PLANE_RADIUS, PLANE_TAIL, PLANE_WING, TICK_SECONDS,
 };
 use macroquad::prelude::*;
 
@@ -71,7 +72,7 @@ async fn main() {
         for _ in 0..clock.ticks_for(get_frame_time(), page_js::started()) {
             // Recomputed each step: steering toward a finger depends on where
             // the plane is now.
-            let pointer = pointer_y.map(|y| steer_toward(y, world.player.pos.y));
+            let pointer = pointer_y.map(|y| world.steer_toward(y));
             let tilted = gravity.and_then(|(gx, gy)| tilt.update(gx, gy));
             world.tick(&Input::new(pick_steer(pointer, keys, tilted)));
             for &event in world.events() {
@@ -95,7 +96,12 @@ async fn main() {
         ));
         scenery.update();
         let levels = world.levels();
-        let distance = scroll_distance(world.ticks);
+        // Core counts the distance at phone size; the picture is scaled to
+        // the screen height, so the distance is too.
+        let scale = world.bounds.scale();
+        let distance = scroll_distance(world.ticks) * scale as f64;
+        // Sizes of what flies come from core's depth (`Bounds::depth`):
+        // small up high, big down low, matching the hit boxes.
         let mut landscape = false;
         for (level, alpha) in [(levels.level, 1.0), (levels.next, levels.fade)] {
             if alpha > 0.0 {
@@ -115,17 +121,27 @@ async fn main() {
         }
 
         for m in &world.planes {
-            draw_circle(m.pos.x, m.pos.y, PLANE_RADIUS, LIME);
+            let size = world.bounds.depth(m.pos.y);
+            draw_circle(m.pos.x, m.pos.y, PLANE_RADIUS * size, LIME);
             draw_circle(m.pos.x - 8.0, m.pos.y - 6.0, 4.0, BLACK);
             draw_circle(m.pos.x + 8.0, m.pos.y - 6.0, 4.0, BLACK);
         }
 
+        // Launch pads and balloons, then the huts in the foreground in
+        // front of them, then what flies.
+        for pad in &world.balloons.pads {
+            draw_pad(pad, world.bounds);
+        }
         for balloon in &world.balloons.list {
-            draw_balloon(balloon);
+            // Big near the ground, small up high (core's `Balloon::size`).
+            draw_balloon(balloon, balloon.size(world.bounds));
+        }
+        for hut in &world.huts.list {
+            draw_hut(hut, world.bounds);
         }
 
         for gull in &world.gulls.list {
-            draw_gull(gull);
+            draw_gull(gull, world.bounds.depth(gull.pos.y));
         }
 
         // A safe plane blinks (5 times a second), on real time so it
@@ -135,10 +151,12 @@ async fn main() {
             draw_player(
                 world.player.pos.x,
                 world.player.pos.y,
+                // Small up high, big down low, like the balloons.
+                world.bounds.plane_depth(world.player.pos.y),
                 world.player.is_crashed().then_some(world.ticks),
             );
         }
-        draw_rain(rain, world.weather.wind, world.ticks);
+        draw_rain(rain, world.weather.wind, world.ticks, scale);
 
         // Lightning lights the whole sky; a crash flashes red.
         let (w, h) = (screen_width(), screen_height());
@@ -161,7 +179,7 @@ async fn main() {
         // "Level N" at the start of each level.
         if levels.banner > 0.0 {
             let text = format!("Level {}", levels.level);
-            let size = 72.0;
+            let size = 72.0 * scale;
             let dims = measure_text(&text, None, size as u16, 1.0);
             draw_text_on_landscape(
                 &text,
@@ -189,9 +207,9 @@ async fn main() {
                 },
                 world.ticks
             ),
-            12.0,
-            screen_height() - 12.0,
-            20.0,
+            12.0 * scale,
+            screen_height() - 12.0 * scale,
+            20.0 * scale,
             Color::from_rgba(235, 235, 225, 255),
         );
 
@@ -224,14 +242,15 @@ fn restart_pressed() -> bool {
 
 /// The score, top centre, all game long.
 fn draw_score(world: &World) {
+    let scale = world.bounds.scale();
     let text = format!("Score {}", world.score());
-    let size = 40.0;
+    let size = 40.0 * scale;
     let dims = measure_text(&text, None, size as u16, 1.0);
     let colour = Color::from_rgba(255, 244, 214, 255);
     draw_text_on_landscape(
         &text,
         (screen_width() - dims.width) / 2.0,
-        40.0,
+        40.0 * scale,
         size,
         colour,
     );
@@ -241,14 +260,16 @@ fn draw_score(world: &World) {
 /// lives are grey; the one just lost blinks while the plane is crashed or
 /// safe.
 fn draw_lives(world: &World) {
-    let (w, h) = (screen_width(), screen_height());
-    let scale = (h / 390.0).clamp(0.6, 1.2) * 0.6;
+    let w = screen_width();
+    let scale = world.bounds.scale() * 0.6;
     let step = 64.0 * scale;
     // The speaker button (web/index.html) is 44 px wide, 8 px from the
     // edge, and moves in for a phone's notch at the side; keep clear of both.
     let right = w - (w * 0.06).max(8.0) - 44.0 - 16.0 - 30.0 * scale;
     let left = right - (LIVES - 1) as f32 * step;
-    let y = 30.0;
+    // Level with the speaker button (centre 30 px from the top), but
+    // never cut off at the top.
+    let y = (8.0 + 22.0_f32).max(6.0 + 20.0 * scale);
     let just_lost = world.player.is_crashed() || world.player.is_safe();
     let blink = ((get_time() * 4.0) as u64).is_multiple_of(2);
     for i in 0..LIVES {
@@ -278,7 +299,9 @@ fn draw_lives(world: &World) {
 fn draw_game_over(world: &World) {
     let (w, h) = (screen_width(), screen_height());
     draw_rectangle(0.0, 0.0, w, h, Color::new(0.08, 0.09, 0.12, 0.6));
+    let s = world.bounds.scale();
     let centred = |text: &str, y: f32, size: f32, colour: Color| {
+        let size = size * s;
         let dims = measure_text(text, None, size as u16, 1.0);
         draw_text_on_landscape(text, (w - dims.width) / 2.0, y, size, colour);
     };
@@ -290,14 +313,14 @@ fn draw_game_over(world: &World) {
     );
     centred(
         &format!("Score {}", world.score()),
-        h * 0.4 + 52.0,
+        h * 0.4 + 52.0 * s,
         32.0,
         WHITE,
     );
     if world.can_restart() {
         centred(
             "Tap or click to fly again",
-            h * 0.4 + 100.0,
+            h * 0.4 + 100.0 * s,
             28.0,
             Color::from_rgba(160, 200, 255, 255),
         );
@@ -333,7 +356,7 @@ fn pointer_y() -> Option<f32> {
 /// Rain streaks. Where each one is follows from its number and the tick
 /// count alone, so there is no state to keep; heavier rain shows more of
 /// them and wind slants them.
-fn draw_rain(rain: f32, wind: f32, ticks: u64) {
+fn draw_rain(rain: f32, wind: f32, ticks: u64, scale: f32) {
     let (w, h) = (screen_width() as f64, screen_height() as f64);
     let seconds = ticks as f64 * TICK_SECONDS as f64;
     let count = (rain as f64 * w * h / 2000.0) as u32;
@@ -343,20 +366,107 @@ fn draw_rain(rain: f32, wind: f32, ticks: u64) {
         // Two fixed pseudo-random numbers in 0..1 per streak.
         let a = (i.wrapping_mul(2_654_435_761) >> 8) as f64 / (1 << 24) as f64;
         let b = (i.wrapping_mul(40_503).wrapping_add(977) % 4096) as f64 / 4096.0;
-        let fall = 620.0 + 260.0 * b;
+        let fall = (620.0 + 260.0 * b) * scale as f64;
         let y = ((b * h + seconds * fall) % (h + 40.0)) as f32 - 20.0;
         let x = ((a * w - seconds * fall * slant as f64).rem_euclid(w + 40.0)) as f32 - 20.0;
-        let len = 10.0 + 8.0 * b as f32;
-        draw_line(x, y, x - len * slant, y + len, 1.5, colour);
+        let len = (10.0 + 8.0 * b as f32) * scale;
+        draw_line(x, y, x - len * slant, y + len, 1.5 * scale, colour);
     }
+}
+
+/// A wooden beach hut: plank walls, a gable roof with a little overhang,
+/// a door and a window. Fills core's `Hut::rect` (roof ridge to ground).
+fn draw_hut(hut: &Hut, bounds: Bounds) {
+    let (l, top, r, ground) = hut.rect(bounds);
+    let s = bounds.scale();
+    let (w, h) = (r - l, ground - top);
+    let (wall, plank, door) = match hut.style {
+        0 => (
+            Color::from_rgba(150, 104, 66, 255),
+            Color::from_rgba(120, 80, 50, 255),
+            Color::from_rgba(184, 58, 48, 255),
+        ),
+        1 => (
+            Color::from_rgba(236, 236, 228, 255),
+            Color::from_rgba(70, 130, 190, 255),
+            Color::from_rgba(52, 104, 168, 255),
+        ),
+        _ => (
+            Color::from_rgba(232, 204, 120, 255),
+            Color::from_rgba(196, 164, 86, 255),
+            Color::from_rgba(70, 128, 88, 255),
+        ),
+    };
+    let roof = Color::from_rgba(92, 62, 48, 255);
+    // Same proportions as core's `Hut::shape`, which crashes use.
+    let eaves = top + h * HUT_EAVES;
+    let inset = w * HUT_INSET;
+    // Walls with vertical planks.
+    draw_rectangle(l + inset, eaves, w - 2.0 * inset, ground - eaves, wall);
+    let planks = 5;
+    for i in 1..planks {
+        let x = l + inset + (w - 2.0 * inset) * i as f32 / planks as f32;
+        draw_line(x, eaves, x, ground, 1.5 * s, plank);
+    }
+    // Gable roof, a bit wider than the walls.
+    draw_triangle(
+        vec2(l, eaves),
+        vec2(r, eaves),
+        vec2((l + r) / 2.0, top),
+        roof,
+    );
+    draw_rectangle(l, eaves - 1.5 * s, w, 3.0 * s, roof);
+    // Door and a small window.
+    let door_w = w * 0.26;
+    draw_rectangle(l + w * 0.2, ground - h * 0.42, door_w, h * 0.42, door);
+    let win = w * 0.18;
+    draw_rectangle(
+        l + w * 0.6,
+        eaves + h * 0.12,
+        win,
+        win,
+        Color::from_rgba(52, 62, 76, 255),
+    );
+    draw_rectangle_lines(l + w * 0.6, eaves + h * 0.12, win, win, 1.5 * s, plank);
+}
+
+/// A balloon launch pad: a flat wooden deck on the grass with a yellow
+/// ring where the basket stands.
+fn draw_pad(pad: &Pad, bounds: Bounds) {
+    let s = bounds.scale();
+    let (w, h) = (PAD_WIDTH * s, PAD_HEIGHT * s);
+    let top = Pad::top(bounds);
+    let l = pad.x - w / 2.0;
+    draw_rectangle(l, top, w, h, Color::from_rgba(120, 92, 64, 255));
+    draw_rectangle(l, top, w, h * 0.4, Color::from_rgba(176, 144, 104, 255));
+    // Little legs into the grass.
+    for x in [l + 4.0 * s, l + w - 7.0 * s] {
+        draw_rectangle(
+            x,
+            top + h,
+            3.0 * s,
+            4.0 * s,
+            Color::from_rgba(90, 68, 48, 255),
+        );
+    }
+    draw_ellipse_lines(
+        pad.x,
+        top + h * 0.2,
+        16.0 * s,
+        2.5 * s,
+        0.0,
+        1.5 * s,
+        YELLOW,
+    );
 }
 
 /// A hot-air balloon: a striped envelope tapering to the burner, ropes
 /// and a wicker basket. Sizes match core's `BALLOON_RADIUS`, `BASKET_BELOW`
-/// and `BASKET_RADIUS`.
-fn draw_balloon(balloon: &Balloon) {
+/// and `BASKET_RADIUS`, times `scale` (core's `Balloon::size`).
+fn draw_balloon(balloon: &Balloon, scale: f32) {
     let (x, y) = (balloon.pos.x, balloon.pos.y);
-    let r = BALLOON_RADIUS;
+    let s = scale;
+    let r = BALLOON_RADIUS * s;
     let (main, stripe) = match balloon.colour {
         0 => (
             Color::from_rgba(214, 64, 52, 255),
@@ -375,48 +485,40 @@ fn draw_balloon(balloon: &Balloon) {
             Color::from_rgba(246, 232, 190, 255),
         ),
     };
-    let basket_y = y + BASKET_BELOW;
+    let basket_y = y + BASKET_BELOW * s;
     let neck_y = y + r * 1.15;
     // Ropes from the envelope's mouth to the basket.
     let rope = Color::from_rgba(70, 56, 44, 255);
-    draw_line(x - 7.0, neck_y, x - 7.0, basket_y - 6.0, 1.5, rope);
-    draw_line(x + 7.0, neck_y, x + 7.0, basket_y - 6.0, 1.5, rope);
-    // Envelope: round top, tapering down to the mouth.
-    draw_triangle(
-        vec2(x - r * 0.93, y + r * 0.35),
-        vec2(x + r * 0.93, y + r * 0.35),
-        vec2(x, neck_y + 4.0),
-        main,
-    );
-    draw_ellipse(x, y, r, r * 1.05, 0.0, main);
-    // Stripes: narrower ellipses and the matching wedges below them.
-    for (w, colour) in [(0.62, stripe), (0.3, main)] {
+    for side in [-1.0, 1.0] {
+        let rx = x + side * 7.0 * s;
+        draw_line(rx, neck_y, rx, basket_y - 6.0 * s, 1.5 * s, rope);
+    }
+    // Envelope: round top, tapering down to the mouth; stripes are
+    // narrower copies on top.
+    for (w, colour) in [(1.0, main), (0.62, stripe), (0.3, main)] {
         draw_ellipse(x, y, r * w, r * 1.05, 0.0, colour);
         draw_triangle(
             vec2(x - r * w * 0.93, y + r * 0.35),
             vec2(x + r * w * 0.93, y + r * 0.35),
-            vec2(x, neck_y + 4.0),
+            vec2(x, neck_y + 4.0 * s),
             colour,
         );
     }
     // Mouth, basket and its rim.
-    draw_rectangle(
-        x - 8.0,
-        neck_y,
-        16.0,
-        4.0,
-        Color::from_rgba(60, 50, 44, 255),
-    );
-    draw_rectangle(
-        x - 8.0,
-        basket_y - 6.0,
+    let rect = |dx: f32, dy: f32, w: f32, h: f32, colour: Color| {
+        draw_rectangle(x + dx * s, dy, w * s, h * s, colour);
+    };
+    rect(-8.0, neck_y, 16.0, 4.0, Color::from_rgba(60, 50, 44, 255));
+    rect(
+        -8.0,
+        basket_y - 6.0 * s,
         16.0,
         13.0,
         Color::from_rgba(150, 102, 56, 255),
     );
-    draw_rectangle(
-        x - 9.0,
-        basket_y - 7.0,
+    rect(
+        -9.0,
+        basket_y - 7.0 * s,
         18.0,
         3.0,
         Color::from_rgba(104, 68, 36, 255),
@@ -424,44 +526,41 @@ fn draw_balloon(balloon: &Balloon) {
 }
 
 /// A gull seen from the side, centred on its position, facing where it
-/// flies. The wings beat; their size matches core's `GULL_RADIUS`.
-fn draw_gull(gull: &Gull) {
+/// flies. The wings beat; their size matches core's `GULL_RADIUS`, times
+/// the screen's `scale`.
+fn draw_gull(gull: &Gull, scale: f32) {
     let (x, y) = (gull.pos.x, gull.pos.y);
-    let dir = if gull.vel.x < 0.0 { -1.0 } else { 1.0 }; // -1 = facing left
-    let beat = (gull.age as f32 * TICK_SECONDS * std::f32::consts::TAU * 3.0).sin();
-    let tip_y = y - 4.0 - 9.0 * beat; // wing tips up and down
+    let dir = gull.facing(); // -1 = facing left
+                             // A point (dx, dy) design px from the gull's centre.
+    let p = |dx: f32, dy: f32| vec2(x + dx * scale, y + dy * scale);
     let wing = Color::from_rgba(120, 128, 140, 255);
     let tip = Color::from_rgba(40, 42, 48, 255);
     let body = Color::from_rgba(250, 250, 246, 255);
     // Wings: a soft "M", shoulder to bend to tip, on both sides.
     for side in [-1.0_f32, 1.0] {
-        let bend = vec2(x + side * 8.0, y - 3.0 - 4.0 * beat);
-        let end = vec2(x + side * 17.0, tip_y);
-        draw_line(x, y, bend.x, bend.y, 4.0, wing);
-        draw_line(bend.x, bend.y, end.x, end.y, 3.0, wing);
-        draw_line(
-            end.x - side * 3.0,
-            end.y + (bend.y - end.y) * 0.3,
-            end.x,
-            end.y,
-            3.0,
-            tip,
-        );
+        // Where core puts the wing for crashes (`Gull::shape`).
+        let ((bx, by), (ex, ey)) = gull.wing(side);
+        let (bend, end) = (p(bx, by), p(ex, ey));
+        draw_line(x, y, bend.x, bend.y, 4.0 * scale, wing);
+        draw_line(bend.x, bend.y, end.x, end.y, 3.0 * scale, wing);
+        let from = vec2(end.x - side * 3.0 * scale, end.y + (bend.y - end.y) * 0.3);
+        draw_line(from.x, from.y, end.x, end.y, 3.0 * scale, tip);
     }
     // Body, head and a yellow beak towards the flight direction.
-    draw_ellipse(x, y, 9.0, 4.0, 0.0, body);
-    draw_circle(x + dir * 8.0, y - 2.0, 3.5, body);
+    draw_ellipse(x, y, 9.0 * scale, 4.0 * scale, 0.0, body);
+    let head = p(dir * 8.0, -2.0);
+    draw_circle(head.x, head.y, 3.5 * scale, body);
     draw_triangle(
-        vec2(x + dir * 11.0, y - 3.0),
-        vec2(x + dir * 16.0, y - 1.5),
-        vec2(x + dir * 11.0, y - 0.5),
+        p(dir * 11.0, -3.0),
+        p(dir * 16.0, -1.5),
+        p(dir * 11.0, -0.5),
         Color::from_rgba(240, 180, 40, 255),
     );
 }
 
-/// Side view of a small plane flying right, centred on (x, y).
-/// `crashed`: the tick count while the plane is out of control.
-fn draw_player(x: f32, y: f32, crashed: Option<u64>) {
+/// Side view of a small plane flying right, centred on (x, y), at the
+/// screen's `scale`. `crashed`: the tick count while it is out of control.
+fn draw_player(x: f32, y: f32, scale: f32, crashed: Option<u64>) {
     let mut body = WHITE_PLANE;
     let mut accent = BLUE_PLANE;
     if let Some(ticks) = crashed {
@@ -471,28 +570,31 @@ fn draw_player(x: f32, y: f32, crashed: Option<u64>) {
         for i in 0..4u64 {
             let age = ((ticks + i * 5) % 20) as f32 / 20.0;
             draw_circle(
-                x - 20.0 - 26.0 * age,
-                y - 8.0 - 22.0 * age,
-                4.0 + 7.0 * age,
+                x - (20.0 + 26.0 * age) * scale,
+                y - (8.0 + 22.0 * age) * scale,
+                (4.0 + 7.0 * age) * scale,
                 Color::new(0.6, 0.6, 0.62, 0.6 * (1.0 - age)),
             );
         }
     }
-    draw_plane(x, y, 1.0, body, accent);
+    draw_plane(x, y, scale, body, accent);
 }
 
 /// The plane's shape, flying right, centred on (x, y), `scale` times its
-/// size in the game (for the lives, top right).
+/// size on a phone (the player's plane, and the lives top right).
 fn draw_plane(x: f32, y: f32, scale: f32, body: Color, accent: Color) {
-    let p = |dx: f32, dy: f32| vec2(x + dx * scale, y + dy * scale);
-    // fuselage
-    let corner = p(-26.0, -5.0);
-    draw_rectangle(corner.x, corner.y, 44.0 * scale, 10.0 * scale, body);
-    draw_triangle(p(18.0, -5.0), p(30.0, 0.0), p(18.0, 5.0), body);
-    // wing and tail fin
-    draw_triangle(p(-6.0, 0.0), p(6.0, 0.0), p(-10.0, 16.0), accent);
-    draw_triangle(p(-26.0, -5.0), p(-18.0, -5.0), p(-28.0, -18.0), accent);
-    // cockpit
-    let c = p(10.0, -3.0);
-    draw_circle(c.x, c.y, 3.5 * scale, accent);
+    // The same parts core uses for crashes (`Player::shape`).
+    let p = |(dx, dy): (f32, f32)| vec2(x + dx * scale, y + dy * scale);
+    let [a, b, c, d] = PLANE_FUSELAGE.map(p);
+    draw_triangle(a, b, c, body);
+    draw_triangle(a, c, d, body);
+    let [a, b, c] = PLANE_NOSE.map(p);
+    draw_triangle(a, b, c, body);
+    let [a, b, c] = PLANE_WING.map(p);
+    draw_triangle(a, b, c, accent);
+    let [a, b, c] = PLANE_TAIL.map(p);
+    draw_triangle(a, b, c, accent);
+    let (centre, r) = PLANE_COCKPIT;
+    let c = p(centre);
+    draw_circle(c.x, c.y, r * scale, accent);
 }
