@@ -291,9 +291,9 @@ Im Browser des Handys erinnert dich das Hauptmenü rechts daran («Play it
 like an app!»); sobald das Spiel vom Home-Bildschirm läuft, ist der
 Hinweis weg.
 
-Die App ist immer die neueste Version: Sie lädt das Spiel bei jedem
-Öffnen aus dem Internet, darum kommt jedes Update von selbst mit (schliess
-die App ganz und öffne sie wieder, dann hast du es sofort). Auf dem
+Die App hält sich selbst aktuell: Immer wenn sie aufgeht oder
+zurückkommt, fragt sie, ob eine neuere Version da ist, und lädt sie im
+Hauptmenü von selbst (nie mitten in einem Flug). Auf dem
 iPhone hat die App eigene Bestzeiten und freigeschaltete Levels, getrennt
 von Safari, darum beginnt sie bei Level 1.
 

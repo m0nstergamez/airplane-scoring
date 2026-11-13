@@ -634,7 +634,28 @@ that isn't code here. Keep entries short and dated.
   0.5 s, and calls the bundle's resize when the canvas does not match
   its size on screen (whole pixels, so 125 % on Windows does not trigger
   it). Checked by forcing a stale 1000×1400 canvas: back to 2532×1170
-  (844×390 @3) within a second.
+  (844×390 @3) within a second. (PR #39 was merged before this commit
+  was pushed, so it reached `main` only with the next PR.)
+- The home-screen app stayed on an old version while Safari had the new
+  one, reported. GitHub Pages sends `max-age=600`, but iOS keeps an
+  installed app's files longer and often only wakes the app instead of
+  loading it. Now CI stamps each build (`scripts/stamp-build.sh` after
+  `build-web.sh`): the commit goes into `<meta name="build">`, into
+  `?v=` on the bundle and the wasm, and into `web/version.txt`
+  (gitignored). The page fetches `version.txt` with `no-store` when it
+  opens, comes back or gets focus, and every minute; on the main menu a
+  newer build is loaded under `?v=<commit>`, a new address no cache
+  holds. Once per build per session, so it cannot loop. Local builds
+  keep `__BUILD__` and skip it. Checked by stamping an old build next to
+  a newer `version.txt` (it moved to `?v=` once) and an equal one (it
+  stayed).
+- The home-screen tip was covered by the buttons on an iPhone, reported:
+  its room was a guess (half the screen minus 170 px), and iOS Safari
+  enlarges text in landscape. Now `text-size-adjust: 100%`, and a page
+  script measures the free room beside the buttons for both tips (and
+  the QR code below the right one), sets their width (`border-box`) and
+  hides a tip below 120 px. Checked with buttons enlarged on purpose at
+  844×390 and 667×320, and as is at 568×280 and 844×390.
 
 ## Concepts
 
