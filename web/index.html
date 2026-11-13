@@ -153,6 +153,22 @@
       background: rgba(20, 24, 31, 0.7); border: 1px solid rgba(255, 210, 90, 0.75);
     }
     #start .calibrate-tip strong:first-of-type { color: #ffd65a; }
+    /* "Add to Home Screen" for phones, right of the menu buttons, half way
+       down. Only in the browser (not once it runs as an app), only on the
+       home panel. Its twin on the left is the calibration tip. */
+    #start .home-tip {
+      position: absolute; right: calc(16px + env(safe-area-inset-right)); top: 50%;
+      transform: translateY(-50%); max-width: calc(50% - 170px);
+      text-align: left; font-size: 12px; line-height: 1.35; opacity: 1;
+      padding: 6px 10px; border-radius: 10px;
+      background: rgba(20, 24, 31, 0.7); border: 1px solid rgba(120, 180, 255, 0.75);
+    }
+    #start .home-tip strong:first-of-type { color: #9cc8ff; }
+    #start .home-tip .share { width: 1.1em; height: 1.1em; vertical-align: -0.2em; }
+    #start .home-tip[hidden],
+    #start .home-tip:not([data-os="ios"]) .ios,
+    #start .home-tip[data-os="ios"] .other,
+    #start:not(:has([data-panel="home"].shown)) .home-tip { display: none; }
     /* While a level note shows, the tip box gives way: the note widens
        the panel into the tip's corner (seen on a big iPhone, 932x430). */
     #start:has(.map-note:not(:empty)) .calibrate-tip { display: none; }
@@ -224,6 +240,7 @@
       #start .node { width: 70px; height: 70px; }
       #start .path { width: 56px; margin-bottom: 24px; }
       #start .calibrate-tip { max-width: calc(50% - 150px); font-size: 11px; padding: 5px 8px; bottom: 6px; }
+      #start .home-tip { max-width: calc(50% - 150px); font-size: 11px; padding: 5px 8px; top: 42%; }
       #start .map-note { font-size: 13px; padding: 5px 10px; }
       #start .node .done { width: 24px; height: 24px; font-size: 14px; line-height: 18px; }
       #start figure img { width: 56px; height: 56px; padding: 5px; }
@@ -357,6 +374,7 @@
       <button type="button" data-go="options">Options</button>
     </div>
     <small class="phone calibrate-tip">Steer like a steering wheel, tip forward for speed, or drag your finger.<br><strong>Calibration matters!</strong> Hold the phone the way you will fly <em>before</em> you tap a level. Drifting? Pause (&#9776;), then <strong>Calibrate</strong>.</small>
+    <small class="phone home-tip" hidden><strong>Play it like an app!</strong><br><span class="ios">In Safari tap Share <svg class="share" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label="(the square with an arrow)"><path d="M12 3v12M8 7l4-4 4 4"/><path d="M7 11H5v10h14V11h-2"/></svg>, then <strong>Add to Home Screen</strong>.</span><span class="other">Open the browser menu (&#8942;), then <strong>Add to Home screen</strong>.</span> It opens full screen, without the browser bars.</small>
     <div class="panel" data-panel="levels">
       <h2 id="map-title">Choose a level</h2>
       <div class="map">
@@ -416,6 +434,20 @@
       <figcaption><span class="computer">Fly on your phone:<br>scan with the camera</span><span class="phone">Friends scan this</span><span class="url">m0nstergamez.github.io/airplane-scoring</span></figcaption>
     </figure>
   </div>
+  <script>
+    // "Add to Home Screen" tip: only in the browser, not once the game
+    // runs from the home screen; iPhones and iPads get Safari's steps.
+    (() => {
+      const tip = document.querySelector(".home-tip");
+      const app = navigator.standalone === true
+        || matchMedia("(display-mode: standalone), (display-mode: fullscreen)").matches;
+      if (!tip || app) return;
+      const ios = /iPhone|iPad|iPod/.test(navigator.userAgent)
+        || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+      tip.dataset.os = ios ? "ios" : "other";
+      tip.hidden = false;
+    })();
+  </script>
   <script>
     // Audio unlock for iOS. Must run before mq_js_bundle.js.
     // The bundle's own unlock resumes its AudioContext on the *first*

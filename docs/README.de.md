@@ -674,6 +674,20 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
   das Feld breiter); der Tipp weicht einem Hinweis jetzt auf jeder Grösse,
   nicht nur auf niedrigen Bildschirmen.
 
+## 2026-11-14
+
+- Hinweis «Add to Home Screen» im Hauptmenü, gewünscht: Handys im
+  Browser sehen rechts auf halber Höhe «Play it like an app!» (der
+  Zwilling des Kalibrierungs-Tipps links). iPhones und iPads bekommen
+  die Schritte für Safari (Teilen, dann Zum Home-Bildschirm), andere
+  Handys das Browser-Menü. Versteckt, sobald das Spiel vom
+  Home-Bildschirm läuft (`navigator.standalone` oder `display-mode`
+  standalone/fullscreen), und ausserhalb des Home-Felds. Updates kommen
+  von selbst in die App auf dem Home-Bildschirm: Es gibt keinen Service
+  Worker, darum lädt sie bei jedem Öffnen den neuesten Build von GitHub
+  Pages (Pages speichert etwa 10 Minuten zwischen). Geprüft bei 568×280
+  bis 932×430 (Text für iOS und Android) und am Computer (kein Hinweis).
+
 ## Konzepte
 
 ### Kippen: vom Sensor zur Steuerung
