@@ -4,6 +4,8 @@
 /// Fixed simulation step in seconds. The renderer accumulates frame time
 /// and calls `tick` zero or more times per frame.
 pub const TICK_SECONDS: f32 = 1.0 / 60.0;
+/// Ticks in one second, for counting whole seconds.
+const TICKS_PER_SECOND: u64 = 60;
 
 mod airport;
 mod balloons;
@@ -733,12 +735,18 @@ impl World {
         self.is_over() && self.over_ticks as f32 * TICK_SECONDS >= RESTART_WAIT_SECONDS
     }
 
-    /// Full seconds flown in this flight (shown as a clock, see
-    /// [`clock_text`]). Stands still at "Level complete" and game over,
-    /// since time stands still then.
+    /// Full seconds flown in this flight, all levels together (the game
+    /// speeds up with them, see [`World::speed`]). Stands still at "Level
+    /// complete" and game over, since time stands still then.
     pub fn seconds_flown(&self) -> u64 {
-        let ticks_per_second = (1.0 / TICK_SECONDS).round() as u64;
-        self.ticks / ticks_per_second
+        self.ticks / TICKS_PER_SECOND
+    }
+
+    /// Full seconds flown in the level now: the clock on screen (see
+    /// [`clock_text`]) and the time for its best times. Starts again at
+    /// 0:00 with every level; stands still like [`World::seconds_flown`].
+    pub fn seconds_in_level(&self) -> u64 {
+        self.level_ticks / TICKS_PER_SECOND
     }
 
     /// Steering toward a finger at `target_y` (screen px), from where the
@@ -1829,6 +1837,29 @@ mod tests {
     }
 
     #[test]
+    fn the_clock_starts_again_with_every_level() {
+        let mut w = World::with_seed(PHONE, 2);
+        w.lives = u32::MAX;
+        while w.level_complete().is_none() {
+            w.balloons.list.clear();
+            w.tick(&Input::NONE);
+        }
+        let (in_level, flown) = (w.seconds_in_level(), w.seconds_flown());
+        assert!(in_level >= 60, "a whole level: {in_level}");
+        assert_eq!(in_level, flown, "the first level is the whole flight");
+        w.go_on();
+        while w.countdown().is_some() || w.level_complete().is_some() {
+            w.tick(&Input::NONE);
+        }
+        assert_eq!(w.seconds_in_level(), 0, "level 2 starts at 0:00");
+        for _ in 0..5 * 60 {
+            w.tick(&Input::NONE);
+        }
+        assert_eq!(w.seconds_in_level(), 5);
+        assert_eq!(w.seconds_flown(), flown + 5, "the speed-up goes on");
+    }
+
+    #[test]
     fn the_flight_time_counts_whole_seconds() {
         let mut w = world_with_plane_ahead(300.0);
         assert_eq!(w.seconds_flown(), 0);
@@ -2112,6 +2143,8 @@ mod tests {
         w.lives = u32::MAX;
         let mut events = Vec::new();
         while w.landing.is_none() {
+            // Balloons come at the plane even up there: out of the way.
+            w.balloons.list.clear();
             w.tick(&Input::new(-1.0)); // even flying high, the autopilot comes
             events.extend_from_slice(w.events());
         }

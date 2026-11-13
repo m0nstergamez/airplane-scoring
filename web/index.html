@@ -153,6 +153,9 @@
       background: rgba(20, 24, 31, 0.7); border: 1px solid rgba(255, 210, 90, 0.75);
     }
     #start .calibrate-tip strong:first-of-type { color: #ffd65a; }
+    /* While a level note shows, the tip box gives way: the note widens
+       the panel into the tip's corner (seen on a big iPhone, 932x430). */
+    #start:has(.map-note:not(:empty)) .calibrate-tip { display: none; }
     #start .keys {
       position: absolute; left: 20px; bottom: 14px; margin: 0; padding: 10px 14px; list-style: none;
       font-weight: 400; font-size: 15px; line-height: 1.9; text-align: left;
@@ -223,8 +226,6 @@
       #start .calibrate-tip { max-width: calc(50% - 150px); font-size: 11px; padding: 5px 8px; bottom: 6px; }
       #start .map-note { font-size: 13px; padding: 5px 10px; }
       #start .node .done { width: 24px; height: 24px; font-size: 14px; line-height: 18px; }
-      /* While a note shows, the tip box gives way (no room for both). */
-      #start:has(.map-note:not(:empty)) .calibrate-tip { display: none; }
       #start figure img { width: 56px; height: 56px; padding: 5px; }
     }
     /* Tiny (under 300 px high): smaller still. */
@@ -377,7 +378,7 @@
       <div class="guide">
         <section>
           <h3>The goal</h3>
-          <p>Fly as long as you can: the clock at the top counts your time in minutes and seconds. Dodge what is in your way: hot-air balloons, launch pads and huts on the coast; gulls and lifeguard towers at the beach. You have <strong>3 lives</strong>; each crash costs one.</p>
+          <p>Fly as long as you can: the clock at the top counts your time in this level, in minutes and seconds, from 0:00 in every level. Dodge what is in your way: hot-air balloons, launch pads and huts on the coast; gulls and lifeguard towers at the beach. You have <strong>3 lives</strong>; each crash costs one.</p>
           <p>At the end of a level the autopilot <strong>lands</strong> on a runway: level complete! That unlocks the next level. Each level keeps your <strong>5 best times</strong>.</p>
         </section>
         <section>
@@ -585,10 +586,14 @@
     };
     renderMap();
     // The old highscores (points) are gone: forget them.
-    try { localStorage.removeItem("airplane-scoring.highscores"); } catch (_) { /* private mode */ }
-    // Each level's best times, in seconds: { "1": [125, 98, ...], "2": [...] }.
+    // So are the old best times, which counted whole flights across
+    // levels: a time now counts one level only.
+    for (const old of ["airplane-scoring.highscores", "airplane-scoring.best-times"]) {
+      try { localStorage.removeItem(old); } catch (_) { /* private mode */ }
+    }
+    // Each level's best times, in seconds: { "1": [65, 48, ...], "2": [...] }.
     // Just numbers, kept in this browser only (core decides which count).
-    const BEST_KEY = "airplane-scoring.best-times";
+    const BEST_KEY = "airplane-scoring.level-times";
     let bestTimes = {};
     try {
       const stored = JSON.parse(localStorage.getItem(BEST_KEY) || "{}");

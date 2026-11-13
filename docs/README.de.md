@@ -632,6 +632,48 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
   Level, und viele Korrekturen für Handy und Computer. Tag `v0.2.0` und
   ein GitHub-Release folgen, sobald das gemergt ist.
 
+## 2026-11-13
+
+- Ballone kommen auf das Flugzeug zu, wo immer es fliegt, gewünscht: Wer
+  in Level 1 ganz oben flog, wich jedem Ballon aus. Jetzt startet auch
+  `Sinking` auf der Höhe des Flugzeugs (kam vorher aus dem oberen
+  Himmel), so kommt die Hälfte aller Ballone auf das Flugzeug zu
+  (`AtPlane`, `Sinking`), die andere Hälfte hebt weiter von Startrampen
+  ab und landet darauf. `Balloon::at_plane_y` lässt sie so hoch kommen,
+  wie das Flugzeug fliegen kann: Dort oben sind sie klein, darum fällt
+  der alte Rand für volle Grösse oben weg. Ballone in der Luft sind
+  schneller: `BALLOON_DRIFT` 15–40 px/s zusätzlich zur Landschaft (vorher
+  0–20). Test: `flying_right_at_the_top_is_no_hiding_place`.
+- Mehr Ballone, gewünscht nach dem Ausprobieren: `BALLOON_GAP_SECONDS`
+  3–5 s (vorher 5–8). Mit mehr Ballonen könnte ein schneller einen
+  langsamen vor sich einholen, darum wird der Wind eines neuen Ballons
+  so begrenzt, dass er `BALLOON_APART` (4.5 Radien) hinter jedem Ballon
+  bleibt, bis dieser weg ist (in 5 Minuten blieb der Wind im Schnitt bei
+  26 px/s, nie unter 15).
+- Die Uhr zählt pro Level, gewünscht: Nach «Next level» lief die Zeit ab
+  1:10 weiter. `World::seconds_in_level` (aus `level_ticks`) ist die
+  Zeit auf dem Bildschirm und in den Bestzeiten, ab 0:00 in jedem Level;
+  `seconds_flown` zählt weiter den ganzen Flug, für das Schnellerwerden.
+  Test: `the_clock_starts_again_with_every_level`.
+- «Level complete» zeigt auch die Bestzeiten des Levels, gewünscht: Die
+  Zeit wird bei `Event::LevelComplete` eingetragen (und beim Verlassen
+  von dort nicht nochmals), die Tabelle zeichnet `draw_best_times` für
+  beide Anzeigen, die Knöpfe sind nach unten gerückt, und die Uhr oben
+  verschwindet dort (der Titel deckte sie zu). Bestzeiten gelten jetzt
+  für das Level, in dem der Flug war, nicht für das Start-Level; die alte
+  Tabelle (`airplane-scoring.best-times`, ganze Flüge über Levels) fällt
+  weg zugunsten von `airplane-scoring.level-times`. Geprüft mit lokal
+  auf 4 s gekürzten Levels bei 844×390 und 667×320.
+- Fehlersuche auf allen Geräten, gewünscht. `scripts/shot.sh` hat jetzt
+  `DPR=` (Pixeldichte). Geprüft: Start und Spiel auf einem Retina-MacBook
+  (1440×900 @2), einem HP-Laptop (1366×768), Windows mit 125 % und 150 %,
+  Full HD und Ultrawide; dazu Start, How to play, Levelkarte und
+  Pausenmenü auf Handys von 568×280 bis 932×430 @3. Gefunden: Auf einem
+  grossen iPhone (932×430) deckte der Kalibrierungs-Tipp den Back-Knopf
+  der Levelkarte zu, solange ein Level-Hinweis stand (der Hinweis macht
+  das Feld breiter); der Tipp weicht einem Hinweis jetzt auf jeder Grösse,
+  nicht nur auf niedrigen Bildschirmen.
+
 ## Konzepte
 
 ### Kippen: vom Sensor zur Steuerung

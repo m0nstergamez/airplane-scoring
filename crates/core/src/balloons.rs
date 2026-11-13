@@ -2,7 +2,9 @@
 //! big, slow and rare. Each comes in from the right and drifts left with
 //! the landscape, in one of four ways ([`BalloonWay`]): taking off from a
 //! launch pad, landing on one, coming in level at the plane's height, or
-//! sinking past from the upper sky. The ways take turns: every four
+//! sinking slowly from the plane's height. So half of them come at the
+//! plane wherever it flies (even right at the top), the other half take
+//! off and land. The ways take turns: every four
 //! balloons bring each way once, in a random order, never the same way
 //! twice in a row. You see a balloon coming for seconds and can fly over or
 //! under it. Fly into a balloon or a launch pad and you crash.
@@ -32,13 +34,13 @@ pub const BASKET_RADIUS: f32 = 7.0;
 /// How far the basket's bottom is below its centre, in px (as drawn).
 pub const BASKET_HALF: f32 = 7.0;
 /// Time between two balloons, shortest and longest, in seconds.
-pub const BALLOON_GAP_SECONDS: (f32, f32) = (5.0, 8.0);
+pub const BALLOON_GAP_SECONDS: (f32, f32) = (3.0, 5.0);
 /// No balloon in the first seconds of level 1, while "Level 1" shows.
 pub const FIRST_BALLOON_SECONDS: f32 = 2.5;
 /// How fast a balloon rises or sinks past, slowest and fastest, in px per
 /// second.
 pub const BALLOON_RISE: (f32, f32) = (8.0, 25.0);
-/// Where a balloon from above comes in (the upper sky), as a fraction of
+/// Where a landing balloon comes in (the upper sky), as a fraction of
 /// the screen height from the top.
 pub const BALLOON_HIGH: (f32, f32) = (0.1, 0.3);
 /// How many colour patterns there are (the game crate draws them).
@@ -61,8 +63,11 @@ pub const TAKEOFF_AT: (f32, f32) = (0.6, 0.85);
 /// fraction of the screen width from the left.
 pub const TOUCHDOWN_AT: (f32, f32) = (0.3, 0.55);
 
-/// The wind pushes a balloon left a little faster than the landscape.
-const DRIFT: (f32, f32) = (0.0, 20.0);
+/// The wind pushes a balloon in the air left faster than the landscape,
+/// slowest and fastest, in px per second.
+pub const BALLOON_DRIFT: (f32, f32) = (15.0, 40.0);
+/// Two balloons stay at least this many envelope radii apart.
+const BALLOON_APART: f32 = 4.5;
 /// Balloons start and are dropped this far outside the screen, in px.
 const MARGIN: f32 = 2.0 * BALLOON_RADIUS; // at full size
 
@@ -75,7 +80,8 @@ pub enum BalloonWay {
     AtPlane,
     /// From the upper sky down onto a launch pad, staying above it.
     Landing,
-    /// From the upper sky, sinking slowly as it drifts past.
+    /// From the plane's height when it appeared, sinking slowly as it
+    /// drifts past.
     Sinking,
 }
 
@@ -241,6 +247,17 @@ impl Balloon {
         Pad::top(bounds) - (BASKET_BELOW + BASKET_HALF) * bounds.scale()
     }
 
+    /// Where a balloon coming at the plane (flying at `plane_y`) has its
+    /// centre: the plane's height, but the whole balloon on screen. High up
+    /// it is small, so it can come as high as the plane can fly; low down
+    /// it is kept whole at full size, to be safe.
+    pub fn at_plane_y(bounds: Bounds, plane_y: f32) -> f32 {
+        let s = bounds.scale();
+        let top = BALLOON_RADIUS * bounds.depth(BALLOON_RADIUS * s);
+        let lowest = (bounds.height - (BASKET_BELOW + BASKET_RADIUS) * s).max(top);
+        plane_y.clamp(top, lowest)
+    }
+
     fn gone(&self, bounds: Bounds) -> bool {
         let size = self.size(bounds);
         let margin = MARGIN * size;
@@ -374,7 +391,17 @@ impl Balloons {
         self.last = Some(way);
 
         let r = &mut self.rng;
-        let drift = r.range(DRIFT.0, DRIFT.1) * s;
+        // Never so fast that it catches up with a balloon ahead before
+        // that one is gone: they stay apart.
+        let keep = BALLOON_APART * BALLOON_RADIUS * s;
+        let catch_up = (self.list.iter().filter(|b| !b.is_burst()))
+            .map(|b| {
+                let ahead_speed = (-b.vel.x).max(ground_speed);
+                let seconds = (b.pos.x + MARGIN * s).max(0.0) / ahead_speed;
+                ahead_speed - ground_speed + (x - b.pos.x - keep).max(0.0) / seconds.max(0.1)
+            })
+            .fold(f32::MAX, f32::min);
+        let drift = (r.range(BALLOON_DRIFT.0, BALLOON_DRIFT.1) * s).min(catch_up.max(0.0));
         let speed = r.range(BALLOON_RISE.0, BALLOON_RISE.1) * s;
         let colour = (r.unit() * BALLOON_COLOURS as f32) as u32 % BALLOON_COLOURS;
         let h = bounds.height;
@@ -390,11 +417,7 @@ impl Balloons {
                 self.pads.push(Pad { x });
             }
             BalloonWay::AtPlane => {
-                // The plane's height, but the whole balloon on screen.
-                // (At full size, to be safe: it may be big down there.)
-                let top = BALLOON_RADIUS * s;
-                let lowest = (h - (BASKET_BELOW + BASKET_RADIUS) * s).max(top);
-                balloon.pos.y = plane_y.clamp(top, lowest);
+                balloon.pos.y = Balloon::at_plane_y(bounds, plane_y);
                 events.push(Event::BalloonBurner);
             }
             BalloonWay::Landing => {
@@ -411,7 +434,7 @@ impl Balloons {
                 events.push(Event::BalloonBurner);
             }
             BalloonWay::Sinking => {
-                balloon.pos.y = r.range(BALLOON_HIGH.0, BALLOON_HIGH.1) * h;
+                balloon.pos.y = Balloon::at_plane_y(bounds, plane_y);
                 balloon.vel.y = speed;
                 events.push(Event::BalloonBurner);
             }
@@ -503,13 +526,13 @@ mod tests {
                 );
             }
         }
-        // One every 5–8 s over two minutes (the first after 2.5 s).
-        assert!((14..=24).contains(&spawned), "{spawned}");
-        assert!(most <= 3, "{most} at once");
+        // One every 3–5 s over two minutes (the first after 2.5 s).
+        assert!((23..=40).contains(&spawned), "{spawned}");
+        assert!(most <= 5, "{most} at once");
     }
 
     #[test]
-    fn balloons_take_off_come_at_the_plane_land_or_sink_past() {
+    fn balloons_take_off_land_or_come_at_the_plane() {
         let mut b = Balloons::new(5);
         let mut seen = Vec::new();
         let size = PHONE.scale();
@@ -540,13 +563,21 @@ mod tests {
                     assert!(b.pads.iter().any(|p| p.x == new.pos.x), "its pad");
                 }
                 BalloonWay::Sinking => {
-                    let (lo, hi) = BALLOON_HIGH;
-                    assert!((lo..=hi).contains(&y) && new.vel.y > 0.0);
+                    assert!(new.pos.y == PLANE_Y && new.vel.y > 0.0);
                     assert!(new.vel.y <= BALLOON_RISE.1, "slowly");
                 }
             }
-            // Slower than a gull: in view for many seconds.
-            assert!(-new.vel.x <= SCROLL_SPEED + DRIFT.1, "{:?}", new.vel);
+            // In the air faster than the landscape, but slower than a
+            // gull: in view for many seconds.
+            // (Slower only so as not to catch up with one ahead.)
+            if !new.way.uses_pad() {
+                assert!(-new.vel.x >= SCROLL_SPEED, "{:?}", new.vel);
+            }
+            assert!(
+                -new.vel.x <= SCROLL_SPEED + BALLOON_DRIFT.1,
+                "{:?}",
+                new.vel
+            );
             assert!(new.colour < BALLOON_COLOURS);
         }
         for way in BalloonWay::ALL {
@@ -709,12 +740,46 @@ mod tests {
     }
 
     #[test]
+    fn flying_right_at_the_top_is_no_hiding_place() {
+        // As high as the plane can fly (see `World::tick`).
+        let plane_y = crate::PLAYER_HALF_HEIGHT * PHONE.plane_depth(0.0);
+        let mut b = Balloons::new(5);
+        let mut came = 0;
+        for _ in 0..ticks(120.0) {
+            b.tick(PHONE, true, plane_y, &[], &mut Vec::new());
+            let Some(new) = b
+                .list
+                .last()
+                .filter(|n| n.pos.x == PHONE.width + MARGIN * PHONE.scale())
+            else {
+                continue;
+            };
+            if !new.way.uses_pad() {
+                came += 1;
+                let size = new.size(PHONE);
+                let (top, bottom) = (new.pos.y - BALLOON_RADIUS * size, new.basket(size).y);
+                assert!(
+                    (top..=bottom).contains(&plane_y),
+                    "{plane_y} {top} {bottom}"
+                );
+            }
+        }
+        assert!(came >= 6, "half of them come at the plane: {came}");
+    }
+
+    #[test]
     fn a_balloon_at_the_plane_stays_whole_on_screen() {
         for plane_y in [0.0, PHONE.height] {
             let mut b = Balloons::new(5);
             for _ in 0..ticks(240.0) {
                 b.tick(PHONE, true, plane_y, &[], &mut Vec::new());
-                for n in b.list.iter().filter(|n| n.way == BalloonWay::AtPlane) {
+                // Level ones all the way, sinking ones as they come in.
+                let start = PHONE.width + MARGIN * PHONE.scale();
+                let at_plane = |n: &&Balloon| {
+                    n.way == BalloonWay::AtPlane
+                        || (n.way == BalloonWay::Sinking && n.pos.x == start)
+                };
+                for n in b.list.iter().filter(at_plane) {
                     let size = n.size(PHONE);
                     assert!(n.pos.y - BALLOON_RADIUS * size >= 0.0);
                     assert!(n.basket(size).y + BASKET_RADIUS * size <= PHONE.height);

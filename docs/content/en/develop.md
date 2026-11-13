@@ -148,7 +148,7 @@ flowchart LR
   Each one takes off from a launch pad (`Pad`: it slides in standing on
   it and lifts off at `TAKEOFF_AT`), lands on one (touching down at
   `TOUCHDOWN_AT`), comes level at the plane's height, or sinks past
-  (`BalloonWay`). The ways take turns: a shuffled round of all four,
+  from it (`BalloonWay`; `Balloon::at_plane_y`, up to the very top). The ways take turns: a shuffled round of all four,
   never the same way twice in a row. Launch pads are obstacles too. Core spawns them (seeded), moves them and checks
   the crash against the envelope and the basket; a `BalloonBurner` event
   plays its sound as it appears or takes off.
@@ -192,9 +192,10 @@ flowchart LR
   `World::explosion_progress` over the crash time), then `Event::GameOver` fires and
   `World::tick` stands still (`World::is_over`). The game crate only draws
   it and, once `World::can_restart` says so, starts a new `World` on a tap.
-  The flight time (`World::seconds_flown`, shown by `clock_text` as
-  "m:ss") follows from the ticks flown, so it stops with them at game
-  over.
+  The time on screen (`World::seconds_in_level`, shown by `clock_text`
+  as "m:ss") follows from the ticks flown in this level, so it stops
+  with them at game over and starts at 0:00 in every level;
+  `World::seconds_flown` counts the whole flight for the speed-up.
 - **Weather is random but repeatable:** `World::with_seed` takes a seed;
   the same seed gives the same rain and the same lightning, so tests can
   replay it.
