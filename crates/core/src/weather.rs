@@ -290,6 +290,8 @@ mod tests {
                 }
                 Event::Crash => panic!("weather cannot crash a plane"),
                 Event::NewLevel { .. }
+                | Event::MainWheelsTouch
+                | Event::NoseWheelTouch
                 | Event::GullCall
                 | Event::BalloonBurner
                 | Event::BalloonBurst

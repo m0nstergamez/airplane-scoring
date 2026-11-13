@@ -177,6 +177,19 @@ flowchart LR
   first. `Tower::parts` places legs, ladder,
   platform, cabin and roof; crashes (`Tower::shape`) and drawing both use
   it.
+- **The town** (`crates/core/src/city.rs`, level 3, `CITY_LEVEL`)
+  sends high-rises and tower cranes, one every 3–5 s
+  (`CITY_GAP_SECONDS`) with at least `CITY_ROOM` (140 px) of free ground
+  between them; `CRANE_SHARE` (40 %) are cranes, never two in a row.
+  A `HighRise` stands at the front (walls, stair house, antenna): fly
+  over it. A `Crane` has its mast far back (drawn, never hit); its jib
+  runs along the top (`JIB_TOP`), and a load hangs on a cable
+  (`LOAD_AT`): fly under it. So neither the top nor the bottom is safe.
+  `parts` places everything; crashes (`shape`) and drawing use it.
+  `HELI_SHARE` (35 %) of the high-rises have a `Heli`: it takes off once
+  its high-rise is at `HELI_TAKEOFF_AT` and climbs away back and up, or
+  lands by `HELI_TOUCHDOWN_AT` (its sink rate allows for the game's
+  speed). Its place is kept relative to the roof, so it slides with it.
 - **Gulls** (`crates/core/src/gulls.rs`) are the beach's obstacles. Core
   decides when and where they appear (seeded, like the weather), moves
   them and checks the crash; a gull that calls sends a `GullCall` event,
@@ -341,6 +354,8 @@ keeps its size relative to the landscape:
 | `TOWER_GAP_SECONDS` | `crates/core/src/towers.rs` | shortest and longest time between two lifeguard towers |
 | `TOWER_HEIGHT` | `crates/core/src/towers.rs` | lowest and highest lifeguard tower (pixels) |
 | `BALLOON_GAP_SECONDS` | `crates/core/src/balloons.rs` | shortest and longest time between two balloons |
+| `CITY_GAP_SECONDS` | `crates/core/src/city.rs` | shortest and longest time between two high-rises or cranes |
+| `CRANE_SHARE` | `crates/core/src/city.rs` | how likely the next one is a crane (0 to 1) |
 | `BALLOON_RISE` | `crates/core/src/balloons.rs` | how fast balloons rise (pixels per second) |
 | `HUT_GAP_SECONDS` | `crates/core/src/huts.rs` | shortest and longest time between two huts |
 | `HUT_HEIGHT` | `crates/core/src/huts.rs` | lowest and highest hut (pixels) |

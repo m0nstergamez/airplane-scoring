@@ -178,6 +178,7 @@ impl Audio {
                 None => return,
             },
             Event::GameOver => return, // the crash was the sound
+            Event::MainWheelsTouch | Event::NoseWheelTouch => return, // seen: tyre smoke
         };
         play_sound(
             sound,

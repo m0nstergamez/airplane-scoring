@@ -656,6 +656,65 @@ that isn't code here. Keep entries short and dated.
   the QR code below the right one), sets their width (`border-box`) and
   hides a tip below 120 px. Checked with buttons enlarged on purpose at
   844×390 and 667×320, and as is at 568×280 and 844×390.
+- Level 3, a town at night, asked for with the user's photo (night sky,
+  black hills, a town's lights, a crane and a lit high-rise). Background
+  `art/levels/level3/background.svg`: sky with stars and a planet, hills,
+  low buildings with lit windows, a bush slope lit orange; the photo's
+  crane and high-rise became the obstacles instead of scenery. Its many
+  small lights were placed by a short seeded script (not kept). Seam
+  check: 0 %.
+- Its obstacles, chosen by the user from four ideas (cranes, drones,
+  high-rises, bats): high-rises and tower cranes (core `city.rs`). Both
+  standing on the ground would have left the top safe again (the
+  complaint about level 1), so the crane's mast stands far back (drawn,
+  never hit) and its jib runs along the top with a load on a cable: fly
+  under the load, over the high-rises. One every 3–5 s, 40 % cranes,
+  never two cranes in a row, at least 140 px of free ground between
+  them (the counter-jib reaches far right, so the next one waits for
+  it). Rare and one at a time, after the rejected level-1 towers.
+  `LEVEL_COUNT` 3; tests that assumed two levels now expect
+  1 → 2 → 3 → 1. Tests: `the_town_stands_only_in_level_3`,
+  `right_at_the_top_a_crane_jib_is_in_the_way`,
+  `under_a_cranes_load_is_the_way_through` and the `city.rs` tests.
+  The jib passes under the lives and speaker button at the top; kept,
+  since it has to be at the very top. Level map: "3 Town".
+- Helicopters on some high-rises, asked for "as a cool detail": 35 % of
+  the high-rises have one that takes off (rotor spins up once its
+  high-rise is 80–95 % across, then it climbs away back and up) or
+  lands (from above the screen, touching down by 55–70 % across). To
+  stay fair it is in the air only far ahead of the plane: a test over
+  six seeds checks a flying helicopter never comes within 150 px of the
+  plane's x; near the plane it is parked (part of the high-rise's
+  shape) or gone. Checked in screenshots with every high-rise given one
+  locally.
+- Bug hunt on phone and PC, asked for. Checked the level map with the
+  level 3 note at 568×280 to 932×430 (@3) and on computers (1280×720
+  @1.5, 1366×768, 1440×900 @2), and level 3 in flight at 568×280 and
+  1366×768. Found: with three levels the map is wider, and on computers
+  the menu's plane reached into the "1 Coast" circle; it now steps
+  aside on the level map, as it does for How to play.
+- Landings with tyre smoke, asked for: until now the plane touched down
+  flat, both wheels at once. Now it touches down on the main wheels
+  nose up (`FLARE_PITCH`, -0.1 rad) and lowers the nose over
+  `NOSE_DOWN_SECONDS` (0.7 s) with the main wheels kept on the runway
+  (`runway_y_at`, using the drawn gear: `MAIN_WHEEL_X`, `NOSE_WHEEL_X`,
+  `STRUT_REACH`, `WHEEL_RADIUS`, now shared with the game). Each
+  touchdown fires `Event::MainWheelsTouch` / `Event::NoseWheelTouch` and
+  leaves a `TyreSmoke` puff that stays on the ground and fades over
+  1.6 s. No sound yet. Checked with levels shortened locally to 4 s.
+- Lit runways in levels 2 and 3 (`RUNWAY_LIT_LEVELS`), asked for: hard to
+  see in the dusk and the dark. Edge lights every 30 px, centre-line
+  lights between the dashes (sparkling a little), green threshold and
+  red end lights, each with a glow.
+- A golden "NEW" on level 3 in the level map, asked for: a badge on its
+  stop (outside the round picture, so a locked, grey level keeps it
+  gold), with a soft pulsing glow (none with reduced motion). It goes
+  once that level has been flown on this device or completed
+  (`airplane-scoring.flown` in local storage). Found while checking it:
+  on the level map the calibration tip kept the width measured on the
+  main menu and covered "1 Coast" and Back on phones (since the tips
+  were measured, PR #40); the tips now measure against whichever panel
+  shows.
 
 ## Concepts
 

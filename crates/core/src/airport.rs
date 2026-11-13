@@ -38,6 +38,40 @@ pub const GEAR_RETRACT_SECONDS: f32 = 1.0;
 /// How far below the plane's centre its wheels touch the runway, in px at
 /// size 1 (the drawn landing gear).
 pub const WHEELS_BELOW: f32 = 16.0;
+/// The landing gear as drawn, in px at size 1: the main wheels' and the
+/// nose wheel's x from the plane's centre (back is negative), how far
+/// down the struts reach, and the wheels' radius. A strut's reach plus
+/// its wheel is [`WHEELS_BELOW`].
+pub const MAIN_WHEEL_X: f32 = -6.0;
+pub const NOSE_WHEEL_X: f32 = 14.0;
+pub const STRUT_REACH: f32 = 13.0;
+pub const WHEEL_RADIUS: f32 = 3.0;
+/// A landing touches down on the main wheels with the nose up this much
+/// (radians, negative = nose up), then lowers the nose onto its wheel
+/// over [`NOSE_DOWN_SECONDS`].
+pub const FLARE_PITCH: f32 = -0.1;
+pub const NOSE_DOWN_SECONDS: f32 = 0.7;
+/// Each touchdown leaves a puff of tyre smoke that lasts this long.
+pub const TYRE_SMOKE_SECONDS: f32 = 1.6;
+/// The levels whose runways are lit (dark ones: sunset and night).
+pub const RUNWAY_LIT_LEVELS: &[u32] = &[2, 3];
+
+/// A puff of smoke from tyres meeting the runway. It stays where it was
+/// on the ground (slides off with the landscape) and grows and fades.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct TyreSmoke {
+    /// Where the wheel touched, in screen px.
+    pub pos: crate::Vec2,
+    /// Ticks since then.
+    pub ticks: u32,
+}
+
+impl TyreSmoke {
+    /// How far through its life it is: 0 just now, 1 gone.
+    pub fn progress(&self) -> f32 {
+        (self.ticks as f32 * crate::TICK_SECONDS / TYRE_SMOKE_SECONDS).min(1.0)
+    }
+}
 
 /// The airport. `x` is where the runway starts, in screen px.
 #[derive(Debug, Clone, Copy, PartialEq)]
