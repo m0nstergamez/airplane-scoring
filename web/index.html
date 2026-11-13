@@ -499,6 +499,34 @@
   </script>
   <script src="mq_js_bundle.js"></script>
   <script>
+    // Keep the picture undistorted. The bundle sizes the canvas only on
+    // "resize" (`window.onresize`). Run from the home screen, iOS often
+    // sends that event while turning the phone, before the page has its
+    // new size: the canvas keeps the old shape and the game is stretched.
+    // So check again a little later, and every half second: when the
+    // canvas matches its size on screen, the bundle's resize does nothing.
+    (() => {
+      const canvas = document.getElementById("glcanvas");
+      const fit = () => {
+        // Only once the game runs (the bundle's resize calls into it).
+        if (typeof wasm_exports === "undefined" || !wasm_exports || typeof window.onresize !== "function") return;
+        const dpr = typeof dpi_scale === "function" ? dpi_scale() : 1;
+        // Whole pixels: with a fractional ratio (Windows at 125 %) the
+        // canvas is a little smaller, which is fine.
+        const wrong = canvas.width !== Math.floor(canvas.clientWidth * dpr)
+          || canvas.height !== Math.floor(canvas.clientHeight * dpr);
+        if (wrong) window.onresize();
+      };
+      const soon = () => { for (const ms of [50, 250, 600, 1200]) setTimeout(fit, ms); };
+      addEventListener("orientationchange", soon);
+      addEventListener("resize", soon);
+      addEventListener("pageshow", soon);
+      document.addEventListener("visibilitychange", soon);
+      if (window.visualViewport) visualViewport.addEventListener("resize", soon);
+      setInterval(fit, 500);
+    })();
+  </script>
+  <script>
     // Tilt plugin: keeps the latest gravity sample for the Rust side
     // (crates/game/src/tilt_js.rs). Steering maths lives in core (Tilt).
     const tilt = { has: 0, gx: 0, gy: 0, gz: 0, epoch: 0 };

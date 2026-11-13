@@ -625,6 +625,16 @@ that isn't code here. Keep entries short and dated.
   worker, so it loads the newest build from GitHub Pages on every open
   (Pages caches for about 10 minutes). Checked at 568×280 to 932×430
   (iOS and Android text) and on a computer (no tip).
+- Stretched picture in the home-screen app, reported: the vendored bundle
+  sizes the canvas only on `window.onresize`, and iOS (above all a
+  home-screen app) sends `resize` while turning, before the page has its
+  new size, so the canvas kept the old shape. A page script after the
+  bundle checks again 50 ms to 1.2 s after `resize`, `orientationchange`,
+  `visualViewport` resize, `pageshow` and `visibilitychange`, and every
+  0.5 s, and calls the bundle's resize when the canvas does not match
+  its size on screen (whole pixels, so 125 % on Windows does not trigger
+  it). Checked by forcing a stale 1000×1400 canvas: back to 2532×1170
+  (844×390 @3) within a second.
 
 ## Concepts
 

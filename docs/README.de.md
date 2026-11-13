@@ -687,6 +687,18 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
   Worker, darum lädt sie bei jedem Öffnen den neuesten Build von GitHub
   Pages (Pages speichert etwa 10 Minuten zwischen). Geprüft bei 568×280
   bis 932×430 (Text für iOS und Android) und am Computer (kein Hinweis).
+- Verzerrtes Bild in der App auf dem Home-Bildschirm, gemeldet: Das
+  vendorte Bundle passt die Grösse des Canvas nur bei `window.onresize`
+  an, und iOS (vor allem als App auf dem Home-Bildschirm) schickt
+  `resize` beim Drehen, bevor die Seite ihre neue Grösse hat, darum
+  behielt der Canvas die alte Form. Ein Seiten-Skript nach dem Bundle
+  prüft 50 ms bis 1.2 s nach `resize`, `orientationchange`,
+  `visualViewport`-Resize, `pageshow` und `visibilitychange` nochmals,
+  dazu alle 0.5 s, und ruft das Resize des Bundles auf, wenn der Canvas
+  nicht zu seiner Grösse auf dem Bildschirm passt (ganze Pixel, damit
+  125 % unter Windows es nicht auslöst). Geprüft mit einem absichtlich
+  veralteten Canvas von 1000×1400: nach unter einer Sekunde wieder
+  2532×1170 (844×390 @3).
 
 ## Konzepte
 
