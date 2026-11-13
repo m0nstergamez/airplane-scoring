@@ -39,8 +39,8 @@ async fn main() {
 
     let mut world = new_world();
     let mut flight = page_js::new_flight();
-    // The level's best times and where the last flight landed in them,
-    // for "Game over".
+    // The level's best times and where the last time landed in them, for
+    // "Level complete" and "Game over".
     let mut result: Option<FlightResult> = None;
 
     let mut clock = Clock::default();
@@ -78,9 +78,10 @@ async fn main() {
         // fresh flight ready for the next "Tap to fly".
         if page_js::new_flight() != flight {
             flight = page_js::new_flight();
-            // Leaving a flight (Menu, Restart) still counts its time, like
-            // a game over does (that one is in the table already).
-            if !world.is_over() {
+            // Leaving a flight (Menu, Restart) still counts the level's
+            // time, like a game over does (that one, and a completed
+            // level's, are in the table already).
+            if !world.is_over() && world.level_complete().is_none() {
                 record_time(&world);
             }
             world = new_world();
@@ -93,7 +94,10 @@ async fn main() {
         let playing = page_js::started();
         if playing && world.level_complete().is_some() {
             match pressed_level_end_button(&world) {
-                Some(LevelEndChoice::Next) => world.go_on(),
+                Some(LevelEndChoice::Next) => {
+                    world.go_on();
+                    result = None;
+                }
                 Some(LevelEndChoice::Menu) => page_js::show_menu(),
                 None => {}
             }
@@ -122,6 +126,7 @@ async fn main() {
                 }
                 if let Event::LevelComplete { level } = event {
                     page_js::level_complete(level); // unlocks the next level
+                    result = Some(record_time(&world));
                 }
                 if event == Event::GameOver {
                     result = Some(record_time(&world));
@@ -289,17 +294,18 @@ async fn main() {
         draw_lives(&world);
         if world.is_over() {
             draw_game_over(&world, result.as_ref()); // shows the time itself
-        } else {
+        } else if world.level_complete().is_none() {
+            // ("Level complete" shows the time itself, too.)
             draw_time(&world);
         }
-        draw_level_end(&world);
+        draw_level_end(&world, result.as_ref());
 
         next_frame().await
     }
 }
 
-/// A finished flight's time in its level's best times (the level it
-/// started in): core ranks it, the page keeps the table.
+/// The time flown in the level now, in that level's best times: core
+/// ranks it, the page keeps the table.
 struct FlightResult {
     level: u32,
     times: BestTimes,
@@ -307,9 +313,9 @@ struct FlightResult {
 }
 
 fn record_time(world: &World) -> FlightResult {
-    let level = start_level(world.start_level as i32);
+    let level = world.levels().level;
     let mut times = BestTimes::from_seconds(page_js::load_best_times(level, BEST_TIMES_COUNT));
-    let placed = times.add(world.seconds_flown());
+    let placed = times.add(world.seconds_in_level());
     if placed.is_some() {
         page_js::save_best_times(level, BEST_TIMES_COUNT, times.list());
     }
@@ -356,7 +362,8 @@ fn level_end_buttons(world: &World) -> [(Rect, &'static str, LevelEndChoice); 2]
     let (w, h) = (screen_width(), screen_height());
     let s = world.bounds.scale();
     let (bw, bh, gap) = (170.0 * s, 44.0 * s, 20.0 * s);
-    let y = h * 0.36 + 72.0 * s;
+    // At the bottom, under the best times.
+    let y = h - bh - 14.0 * s;
     let left = (w - 2.0 * bw - gap) / 2.0;
     [
         (
@@ -393,7 +400,7 @@ fn pressed_level_end_button(world: &World) -> Option<LevelEndChoice> {
 
 /// The end of a level: "Level N complete" with the time after the
 /// landing, then the next level's number and a 3, 2, 1 countdown.
-fn draw_level_end(world: &World) {
+fn draw_level_end(world: &World, result: Option<&FlightResult>) {
     let (w, h) = (screen_width(), screen_height());
     let s = world.bounds.scale();
     let centred = |text: &str, y: f32, size: f32, colour: Color| {
@@ -403,14 +410,15 @@ fn draw_level_end(world: &World) {
     };
     let gold = Color::from_rgba(255, 220, 90, 255);
     if let Some(level) = world.level_complete() {
-        draw_rectangle(0.0, 0.0, w, h, Color::new(0.08, 0.09, 0.12, 0.45));
-        centred(&format!("Level {level} complete"), h * 0.36, 56.0, gold);
-        centred(
-            &format!("Time {}", clock_text(world.seconds_flown())),
-            h * 0.36 + 44.0 * s,
-            30.0,
-            WHITE,
-        );
+        draw_rectangle(0.0, 0.0, w, h, Color::new(0.08, 0.09, 0.12, 0.55));
+        let mut y = h * 0.17;
+        centred(&format!("Level {level} complete"), y, 44.0, gold);
+        y += 38.0 * s;
+        let time = format!("Time {}", clock_text(world.seconds_in_level()));
+        centred(&time, y, 30.0, WHITE);
+        if let Some(r) = result {
+            draw_best_times(r, y, s, &centred);
+        }
         for (rect, label, choice) in level_end_buttons(world) {
             let fill = match choice {
                 LevelEndChoice::Next => Color::from_rgba(31, 111, 235, 255),
@@ -524,7 +532,7 @@ fn draw_warning(world: &World) {
 /// The flight time (minutes and seconds), top centre, all game long.
 fn draw_time(world: &World) {
     let scale = world.bounds.scale();
-    let text = format!("Time {}", clock_text(world.seconds_flown()));
+    let text = format!("Time {}", clock_text(world.seconds_in_level()));
     let size = 40.0 * scale;
     let dims = measure_text(&text, None, size as u16, 1.0);
     let colour = Color::from_rgba(255, 244, 214, 255);
@@ -592,39 +600,13 @@ fn draw_game_over(world: &World, result: Option<&FlightResult>) {
     centred("Game over", y, 60.0, gold);
     y += 40.0 * s;
     centred(
-        &format!("Time {}", clock_text(world.seconds_flown())),
+        &format!("Time {}", clock_text(world.seconds_in_level())),
         y,
         32.0,
         WHITE,
     );
     if let Some(r) = result {
-        if r.placed.is_some_and(|p| p.record) {
-            y += 30.0 * s;
-            // Blinks, to celebrate.
-            let on = ((get_time() * 3.0) as u64).is_multiple_of(2);
-            let colour = if on {
-                gold
-            } else {
-                Color::from_rgba(255, 150, 60, 255)
-            };
-            centred("New best time!", y, 26.0, colour);
-        }
-        // This level's best times, this flight highlighted.
-        y += 32.0 * s;
-        let label = format!("Best times  Level {}", r.level);
-        centred(&label, y, 22.0, Color::from_rgba(200, 210, 225, 255));
-        let mine = r.placed.map(|p| p.place);
-        for (i, &seconds) in r.times.list().iter().enumerate() {
-            y += 22.0 * s;
-            let colour = if mine == Some(i) {
-                gold
-            } else {
-                Color::from_rgba(235, 235, 225, 255)
-            };
-            let marker = if mine == Some(i) { "  <" } else { "" };
-            let text = format!("{}.  {}{}", i + 1, clock_text(seconds), marker);
-            centred(&text, y, 22.0, colour);
-        }
+        draw_best_times(r, y, s, &centred);
     }
     if world.can_restart() {
         centred(
@@ -633,6 +615,40 @@ fn draw_game_over(world: &World, result: Option<&FlightResult>) {
             26.0,
             Color::from_rgba(160, 200, 255, 255),
         );
+    }
+}
+
+/// Under the time on "Level complete" and "Game over" (`y`: its line):
+/// "New best time!" if it is one, then the level's best times with this
+/// one marked. `centred` draws a line of text across the middle.
+fn draw_best_times(r: &FlightResult, mut y: f32, s: f32, centred: &dyn Fn(&str, f32, f32, Color)) {
+    let gold = Color::from_rgba(255, 220, 90, 255);
+    if r.placed.is_some_and(|p| p.record) {
+        y += 30.0 * s;
+        // Blinks, to celebrate.
+        let on = ((get_time() * 3.0) as u64).is_multiple_of(2);
+        let colour = if on {
+            gold
+        } else {
+            Color::from_rgba(255, 150, 60, 255)
+        };
+        centred("New best time!", y, 26.0, colour);
+    }
+    // This level's best times, this flight highlighted.
+    y += 32.0 * s;
+    let label = format!("Best times  Level {}", r.level);
+    centred(&label, y, 22.0, Color::from_rgba(200, 210, 225, 255));
+    let mine = r.placed.map(|p| p.place);
+    for (i, &seconds) in r.times.list().iter().enumerate() {
+        y += 22.0 * s;
+        let colour = if mine == Some(i) {
+            gold
+        } else {
+            Color::from_rgba(235, 235, 225, 255)
+        };
+        let marker = if mine == Some(i) { "  <" } else { "" };
+        let text = format!("{}.  {}{}", i + 1, clock_text(seconds), marker);
+        centred(&text, y, 22.0, colour);
     }
 }
 

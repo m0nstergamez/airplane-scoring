@@ -37,8 +37,8 @@ short **meaning**.
 | Explosion | explosion | `Event::Explosion`, `explosion.wav` | The plane blowing up when the last life goes |
 | geschützt (blinken) | safe (blinking) | `Player::is_safe`, `SAFE_SECONDS` | After a crash the plane blinks and cannot lose another life |
 | Game over | game over | `Event::GameOver`, `World::is_over` | The last life is gone; the flight ends. On-screen label, stays English |
-| Bestzeiten | best times | `BestTimes`, `BEST_TIMES_COUNT` | The 5 longest flights per level (the level chosen on the map), shown at game over. On-screen labels «Best times», «New best time!» stay English |
-| Flugzeit, Zeit | flight time, time | `World::seconds_flown`, `clock_text` | How long this flight has lasted, in minutes and seconds («2:05»); shown at the top centre, at «Level complete» and at game over. On-screen label «Time» stays English |
+| Bestzeiten | best times | `BestTimes`, `BEST_TIMES_COUNT` | The 5 longest times per level (time in that level), shown at «Level complete» and game over. On-screen labels «Best times», «New best time!» stay English |
+| Flugzeit, Zeit | flight time, time | `World::seconds_in_level`, `World::seconds_flown`, `clock_text` | How long you have flown in this level, in minutes and seconds («1:05»), from 0:00 in every level (`seconds_flown`: the whole flight); shown at the top centre, at «Level complete» and at game over. On-screen label «Time» stays English |
 
 ## Weather and sound
 
@@ -64,7 +64,7 @@ short **meaning**.
 | Lautsprecher-Knopf | speaker button | `#mute` | Button at the top right for sound on/off |
 | Ereignis | event | `Event` | Something that happened in one tick |
 | Wellen | waves | `beach.wav` | Sea sound at the beach (level 2) |
-| Heissluftballon | hot-air balloon | `Balloon`, `BalloonWay` | Level 1's obstacle: drifts left while taking off from a launch pad, landing on one, coming at the plane's height, or sinking past; the four ways take turns; envelope and basket both count |
+| Heissluftballon | hot-air balloon | `Balloon`, `BalloonWay` | Level 1's obstacle: drifts left while taking off from a launch pad, landing on one, coming at the plane's height, or sinking past from it; the four ways take turns; envelope and basket both count |
 | Startrampe | launch pad | `Pad` | Flat deck in the grass where balloons take off and land; an obstacle |
 | Menü, Pause | menu, pause | `#menu`, `page_started` | The pause menu (button top left, Esc, P): Continue, Restart, Calibrate, Options, Menu. Labels stay English |
 | Hauptmenü | main menu | `#start` | The start page: title, plane, Tap to fly, Levels, Options |

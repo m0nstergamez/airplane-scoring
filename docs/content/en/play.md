@@ -157,8 +157,9 @@ you slowly return to normal speed.
 
 ## Time and lives
 
-At the top centre is your **time**: how long you have been flying, in
-minutes and seconds ("Time 2:05"). The longer you last, the better.
+At the top centre is your **time**: how long you have been flying in
+this level, in minutes and seconds ("Time 1:05"). Every new level starts
+again at 0:00. The longer you last, the better.
 With every second the game gets a tiny bit **faster**: the landscape
 and everything in it come by quicker (after a minute about 12 %, at
 most 50 % faster).
@@ -181,10 +182,11 @@ screen, together with your time. After a short
 moment "Tap or click to fly again" appears: tap, click or press Enter,
 and a new flight starts in the same level with 3 lives.
 
-Under the time, **"Best times"** lists the 5 longest flights in the
-level you chose, in minutes and seconds; this flight is marked with a
+Under the time, **"Best times"** lists the 5 longest times in this
+level, in minutes and seconds; this time is marked with a
 "<" when it made the list, and "New best time!" blinks when it beat
-them all. Each level has its own list. A flight you leave with **Menu**
+them all. Each level has its own list, and "Level complete" shows it
+too. A flight you leave with **Menu**
 or **Restart** counts too. The times stay only in this browser: nothing
 goes online, and friends on their phones have their own lists.
 
@@ -195,7 +197,8 @@ beach at sunset (level 2). After about a minute of flying, a level ends
 with a **landing**: no new obstacles come, a runway appears, and the
 autopilot takes over. Speed warnings stay off while it flies, and the
 speed settles back by itself. The gear comes down, the plane touches down,
-brakes and stops: "Level 1 complete" shows with your time and two
+brakes and stops: "Level 1 complete" shows with your time, the
+level's best times and two
 buttons. **Next level** (or Enter) starts the next level: its landscape
 appears, it counts 3, 2, 1, and you take off from its runway. **Menu**
 goes to the main menu. After the last level,
@@ -205,7 +208,8 @@ On the coast, **hot-air balloons** float by now and then. They come
 slowly from the right and take turns in four ways: one stands on a
 **launch pad** in the grass and takes off as it comes into view, one
 comes down from the sky and lands on a launch pad, one comes straight at
-you at your height, and one sinks slowly past from above. Within every
+you at your height, and one sinks slowly past from your height. So
+flying right at the top does not keep you out of their way. Within every
 four balloons each way comes once, so you never know which is next. Fly
 over or under them, and mind the basket too. When a balloon appears or
 takes off, you hear its burner roar. A balloon you fly into

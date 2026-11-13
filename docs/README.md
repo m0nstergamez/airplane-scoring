@@ -574,6 +574,45 @@ that isn't code here. Keep entries short and dated.
   per level, and many phone and PC fixes. Tag `v0.2.0` and a GitHub
   release follow once this is merged.
 
+## 2026-11-13
+
+- Balloons come at the plane wherever it flies, asked for: flying right
+  at the top dodged every balloon in level 1. Now `Sinking` starts at
+  the plane's height too (it came from the upper sky), so half of all
+  balloons come at the plane (`AtPlane`, `Sinking`) and the other half
+  still take off and land on launch pads. `Balloon::at_plane_y` lets
+  them come as high as the plane can fly: up there they are small, so
+  the old full-size margin at the top is gone. Balloons in the air are
+  faster: `BALLOON_DRIFT` 15–40 px/s on top of the landscape (was
+  0–20). Test: `flying_right_at_the_top_is_no_hiding_place`.
+- More balloons, asked for after trying the above: `BALLOON_GAP_SECONDS`
+  3–5 s (was 5–8). With more of them a fast one could catch up with a
+  slow one ahead, so a new balloon's drift is capped to stay
+  `BALLOON_APART` (4.5 radii) behind every balloon until it is gone
+  (in a 5-minute run the average drift stayed 26 px/s, never under 15).
+- The clock counts per level, asked for: after "Next level" the time
+  went on from 1:10. `World::seconds_in_level` (from `level_ticks`) is
+  the time on screen and in the best times, from 0:00 in every level;
+  `seconds_flown` still counts the whole flight for the speed-up. Test:
+  `the_clock_starts_again_with_every_level`.
+- "Level complete" shows the level's best times too, asked for: the time
+  is recorded at `Event::LevelComplete` (and not again when leaving
+  from there), the table is drawn by `draw_best_times` for both screens,
+  the buttons moved to the bottom and the top clock hides there (the
+  title covered it). Best times are now per level the flight was in,
+  not per start level; the old table (`airplane-scoring.best-times`,
+  whole flights across levels) is dropped for
+  `airplane-scoring.level-times`. Checked with levels shortened locally
+  to 4 s at 844×390 and 667×320.
+- Bug hunt on all platforms, asked for. `scripts/shot.sh` got `DPR=`
+  (device pixel ratio). Checked start and game on a Retina MacBook
+  (1440×900 @2), an HP laptop (1366×768), Windows at 125 % and 150 %,
+  Full HD and ultrawide; and start, How to play, level map and pause
+  menu on phones from 568×280 to 932×430 @3. Found: on a big iPhone
+  (932×430) the calibration tip covered the level map's Back button
+  while a level note showed (the note widens the panel); the tip now
+  gives way to a note on every size, not only on low screens.
+
 ## Concepts
 
 ### Tilt: from sensor to steering

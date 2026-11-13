@@ -165,8 +165,9 @@ kein Gas und bremst nicht, kommst du langsam zurück aufs normale Tempo.
 
 ## Zeit und Leben
 
-Oben in der Mitte steht deine **Zeit**: wie lange du schon fliegst, in
-Minuten und Sekunden («Time 2:05»). Je länger du durchhältst, desto
+Oben in der Mitte steht deine **Zeit**: wie lange du schon in diesem
+Level fliegst, in Minuten und Sekunden («Time 1:05»). Jedes neue Level
+beginnt wieder bei 0:00. Je länger du durchhältst, desto
 besser. Mit jeder Sekunde wird das Spiel ein ganz kleines bisschen
 **schneller**: Die Landschaft und alles darin kommen schneller daher
 (nach einer Minute etwa 12 %, höchstens 50 % schneller).
@@ -192,10 +193,11 @@ Dann steht **«Game over»** auf dem Bildschirm, zusammen mit deiner Zeit. Nach 
 kurzen Moment erscheint «Tap or click to fly again»: Tippe, klicke oder
 drücke Enter, und ein neuer Flug beginnt im selben Level mit 3 Leben.
 
-Unter der Zeit stehen die **«Best times»**: die 5 längsten Flüge im
-gewählten Level, in Minuten und Sekunden; dieser Flug ist mit «<»
-markiert, wenn er in die Liste kam, und «New best time!» blinkt, wenn er
-alle geschlagen hat. Jedes Level hat seine eigene Liste. Ein Flug, den
+Unter der Zeit stehen die **«Best times»**: die 5 längsten Zeiten in
+diesem Level, in Minuten und Sekunden; diese Zeit ist mit «<»
+markiert, wenn sie in die Liste kam, und «New best time!» blinkt, wenn sie
+alle geschlagen hat. Jedes Level hat seine eigene Liste, und auch «Level
+complete» zeigt sie. Ein Flug, den
 du mit **Menu** oder **Restart** verlässt, zählt auch. Die Zeiten
 bleiben nur in diesem Browser: Nichts geht ins Internet, und deine
 Freunde haben auf ihren Handys ihre eigenen Listen.
@@ -209,7 +211,8 @@ Hindernisse mehr, eine Landebahn erscheint, und der Autopilot übernimmt.
 Solange er fliegt, schweigen die Tempo-Warnungen, und das Tempo geht von
 selbst zurück.
 Das Fahrwerk fährt aus, das Flugzeug setzt auf, bremst und steht: «Level
-1 complete» erscheint mit deiner Zeit und zwei Knöpfen. **Next level**
+1 complete» erscheint mit deiner Zeit, den Bestzeiten des Levels und
+zwei Knöpfen. **Next level**
 (oder Enter) startet das nächste Level: Seine Landschaft erscheint, es
 zählt 3, 2, 1, und du startest von seiner Startbahn. **Menu** führt ins
 Hauptmenü. Nach dem letzten Level beginnt wieder
@@ -219,8 +222,9 @@ An der Küste fahren ab und zu **Heissluftballone**. Sie kommen langsam
 von rechts und wechseln sich auf vier Arten ab: Einer steht auf einer
 **Startrampe** in der Wiese und hebt ab, sobald er ins Bild kommt, einer
 kommt vom Himmel herab und landet auf einer Startrampe, einer kommt dir
-genau auf deiner Höhe entgegen, und einer sinkt langsam von oben herab
-an dir vorbei. Unter je vier Ballonen kommt jede Art einmal, du weisst
+genau auf deiner Höhe entgegen, und einer sinkt langsam von deiner Höhe
+aus an dir vorbei. Auch ganz oben bist du also nicht vor ihnen sicher.
+Unter je vier Ballonen kommt jede Art einmal, du weisst
 also nie, welche als Nächstes kommt. Flieg über oder unter ihnen durch,
 und pass auch auf den Korb auf. Wenn ein Ballon auftaucht oder abhebt,
 hörst du seinen Brenner fauchen. Ein Ballon, in den du fliegst,

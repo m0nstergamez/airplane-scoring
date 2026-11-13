@@ -11,6 +11,8 @@
 #                gets "?play" and skips it, so the shot shows the game
 #      LEVEL=2   start the flight in level 2 ("&level=2")
 #      PHONE=1   emulate a touch screen (the page's phone layout)
+#      DPR=2     device pixel ratio (2 = Retina MacBook, 1.25 / 1.5 = Windows
+#                display scaling)
 set -euo pipefail
 cd "$(dirname "$0")/.."
 out="${1:-target/shots/latest.png}"

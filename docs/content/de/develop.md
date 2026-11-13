@@ -149,7 +149,8 @@ flowchart LR
   einfachste Level ist. Jeder hebt von einer Startrampe ab (`Pad`: er
   kommt darauf stehend herein und hebt bei `TAKEOFF_AT` ab), landet auf
   einer (Aufsetzen bei `TOUCHDOWN_AT`), kommt waagrecht auf der Höhe des
-  Flugzeugs oder sinkt vorbei (`BalloonWay`). Die Arten wechseln sich
+  Flugzeugs oder sinkt von dort vorbei (`BalloonWay`;
+  `Balloon::at_plane_y`, bis ganz oben). Die Arten wechseln sich
   ab: eine gemischte Runde aus allen vier, nie zweimal dieselbe Art
   hintereinander. Auch Startrampen sind Hindernisse. core
   lässt sie auftauchen (mit Startwert), bewegt sie und prüft den
@@ -201,9 +202,11 @@ flowchart LR
   `World::explosion_progress` über die Absturzzeit), dann kommt `Event::GameOver`, und `World::tick` steht still
   (`World::is_over`). Das game-Crate zeichnet das nur und startet, sobald
   `World::can_restart` es erlaubt, bei einem Tipp eine neue `World`.
-  Die Flugzeit (`World::seconds_flown`, von `clock_text` als «m:ss»
-  angezeigt) ergibt sich aus den geflogenen Ticks, darum bleibt sie bei
-  «Game over» mit ihnen stehen.
+  Die Zeit auf dem Bildschirm (`World::seconds_in_level`, von
+  `clock_text` als «m:ss» angezeigt) ergibt sich aus den in diesem Level
+  geflogenen Ticks, darum bleibt sie bei «Game over» mit ihnen stehen und
+  beginnt in jedem Level bei 0:00; `World::seconds_flown` zählt den
+  ganzen Flug, für das Schnellerwerden.
 - **Das Wetter ist zufällig, aber wiederholbar:** `World::with_seed`
   bekommt einen Startwert; derselbe Startwert ergibt denselben Regen und
   dieselben Blitze, darum können Tests es nachspielen.

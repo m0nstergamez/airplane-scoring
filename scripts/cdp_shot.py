@@ -196,7 +196,8 @@ def main():
             "Emulation.setDeviceMetricsOverride",
             width=width,
             height=height,
-            deviceScaleFactor=1,
+            # DPR=2: a Retina MacBook; 1.25 / 1.5: Windows display scaling.
+            deviceScaleFactor=float(os.environ.get("DPR", "1")),
             mobile=False,
         )
         dt.call("Page.navigate", url=url)
