@@ -39,6 +39,8 @@ jobs:
           cargo clippy --target wasm32-unknown-unknown -p airplane-scoring -- -D warnings
       - name: Build web
         run: scripts/build-web.sh
+      - name: Stamp the build (installed apps notice updates)
+        run: scripts/stamp-build.sh "$GITHUB_SHA"
       - uses: actions/upload-pages-artifact@v5
         with:
           path: web

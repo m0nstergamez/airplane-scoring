@@ -687,6 +687,41 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
   Worker, darum lädt sie bei jedem Öffnen den neuesten Build von GitHub
   Pages (Pages speichert etwa 10 Minuten zwischen). Geprüft bei 568×280
   bis 932×430 (Text für iOS und Android) und am Computer (kein Hinweis).
+- Verzerrtes Bild in der App auf dem Home-Bildschirm, gemeldet: Das
+  vendorte Bundle passt die Grösse des Canvas nur bei `window.onresize`
+  an, und iOS (vor allem als App auf dem Home-Bildschirm) schickt
+  `resize` beim Drehen, bevor die Seite ihre neue Grösse hat, darum
+  behielt der Canvas die alte Form. Ein Seiten-Skript nach dem Bundle
+  prüft 50 ms bis 1.2 s nach `resize`, `orientationchange`,
+  `visualViewport`-Resize, `pageshow` und `visibilitychange` nochmals,
+  dazu alle 0.5 s, und ruft das Resize des Bundles auf, wenn der Canvas
+  nicht zu seiner Grösse auf dem Bildschirm passt (ganze Pixel, damit
+  125 % unter Windows es nicht auslöst). Geprüft mit einem absichtlich
+  veralteten Canvas von 1000×1400: nach unter einer Sekunde wieder
+  2532×1170 (844×390 @3). (PR #39 wurde gemergt, bevor dieser Commit
+  hochgeladen war, darum kam er erst mit dem nächsten PR in `main`.)
+- Die App auf dem Home-Bildschirm blieb auf einer alten Version, während
+  Safari schon die neue hatte, gemeldet. GitHub Pages schickt
+  `max-age=600`, aber iOS behält die Dateien einer installierten App
+  länger und weckt die App oft nur auf, statt sie zu laden. Jetzt
+  stempelt CI jeden Build (`scripts/stamp-build.sh` nach
+  `build-web.sh`): Der Commit kommt in `<meta name="build">`, in `?v=`
+  beim Bundle und beim wasm und in `web/version.txt` (gitignored). Die
+  Seite holt `version.txt` mit `no-store`, wenn sie aufgeht,
+  zurückkommt oder den Fokus bekommt, und jede Minute; im Hauptmenü wird
+  ein neuerer Build unter `?v=<commit>` geladen, einer neuen Adresse, die
+  kein Zwischenspeicher hat. Einmal pro Build und Sitzung, damit es keine
+  Schleife gibt. Lokale Builds behalten `__BUILD__` und lassen es aus.
+  Geprüft mit einem alten Stempel neben einer neueren `version.txt` (sie
+  wechselte einmal auf `?v=`) und einer gleichen (sie blieb).
+- Der Hinweis zum Home-Bildschirm war auf einem iPhone von den Knöpfen
+  verdeckt, gemeldet: Sein Platz war geschätzt (halber Bildschirm minus
+  170 px), und iOS Safari vergrössert Text im Querformat. Jetzt
+  `text-size-adjust: 100%`, und ein Seiten-Skript misst für beide Tipps
+  den freien Platz neben den Knöpfen (und beim rechten den QR-Code
+  darunter), setzt ihre Breite (`border-box`) und blendet einen Tipp
+  unter 120 px aus. Geprüft mit absichtlich vergrösserten Knöpfen bei
+  844×390 und 667×320 und unverändert bei 568×280 und 844×390.
 
 ## Konzepte
 

@@ -167,7 +167,7 @@ web/qr.svg            QR code to the live game (scripts/make-qr.py)
 web/plane.svg         the plane for the main menu (core's PLANE_* points)
 art/levels/levelN/    background.svg (source) + local photo.* (gitignored)
 .cargo/config.toml    wasm linker flag needed by the audio feature
-scripts/              check.sh, check-docs.sh, check-mermaid.sh, shot.sh, cdp_shot.py, dev.sh, watch.sh, build-web.sh, serve.sh,
+scripts/              check.sh, check-docs.sh, check-mermaid.sh, shot.sh, cdp_shot.py, dev.sh, watch.sh, build-web.sh, stamp-build.sh, serve.sh,
                       docs.sh, vendor-js.sh, make-sounds.py, make-backgrounds.sh, make-qr.py
 docs/                 README.md + README.de.md = project notes (en/de);
                       docs/content/{de,en} = manual;
