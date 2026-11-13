@@ -287,6 +287,15 @@ schaltest du im Menü unter **Options**. Das Spiel merkt sich deine Wahl.
 
 Leg das Spiel auf deinen Home-Bildschirm. Dann öffnet es sich wie eine
 App im Vollbild.
+Im Browser des Handys erinnert dich das Hauptmenü rechts daran («Play it
+like an app!»); sobald das Spiel vom Home-Bildschirm läuft, ist der
+Hinweis weg.
+
+Die App ist immer die neueste Version: Sie lädt das Spiel bei jedem
+Öffnen aus dem Internet, darum kommt jedes Update von selbst mit (schliess
+die App ganz und öffne sie wieder, dann hast du es sofort). Auf dem
+iPhone hat die App eigene Bestzeiten und freigeschaltete Levels, getrennt
+von Safari, darum beginnt sie bei Level 1.
 
 ### iPhone (Safari)
 

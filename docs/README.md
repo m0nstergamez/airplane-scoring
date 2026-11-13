@@ -613,6 +613,19 @@ that isn't code here. Keep entries short and dated.
   while a level note showed (the note widens the panel); the tip now
   gives way to a note on every size, not only on low screens.
 
+## 2026-11-14
+
+- "Add to Home Screen" tip on the main menu, asked for: phones in the
+  browser see "Play it like an app!" on the right, half way down (the
+  calibration tip's twin on the left). iPhones and iPads get Safari's
+  steps (Share, then Add to Home Screen), other phones the browser menu.
+  Hidden once the game runs from the home screen (`navigator.standalone`
+  or `display-mode` standalone/fullscreen) and outside the home panel.
+  Updates reach the home-screen app by themselves: there is no service
+  worker, so it loads the newest build from GitHub Pages on every open
+  (Pages caches for about 10 minutes). Checked at 568×280 to 932×430
+  (iOS and Android text) and on a computer (no tip).
+
 ## Concepts
 
 ### Tilt: from sensor to steering

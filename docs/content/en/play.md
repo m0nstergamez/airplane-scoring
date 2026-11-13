@@ -270,6 +270,15 @@ under **Options**. The game remembers your choice.
 ## Install on your phone
 
 Add the game to your home screen. It then opens full screen like an app.
+In the phone's browser, the main menu reminds you of it on the right
+("Play it like an app!"); once the game runs from the home screen, that
+note is gone.
+
+The app is always the newest version: it loads the game from the
+internet each time it opens, so every update comes along by itself
+(close the app completely and open it again to get it right away). On
+an iPhone the app keeps its own best times and unlocked levels, apart
+from Safari's, so it starts at level 1.
 
 ### iPhone (Safari)
 
