@@ -4,11 +4,11 @@
 use airplane_scoring_core::Vec2 as Vec2Core;
 use airplane_scoring_core::{
     background_x, clock_text, pick_steer, pick_throttle, start_level, steer_from_keys, Airport,
-    Balloon, BestTimes, Bounds, Clock, Event, Gull, Hut, Input, Mix, Pad, Tilt, Tower, Warning,
-    World, AIRSPEED_RANGE, BALLOON_RADIUS, BASKET_BELOW, BEST_TIMES_COUNT, HUT_EAVES, HUT_INSET,
-    LIVES, OVERSPEED_AT, PAD_HEIGHT, PAD_WIDTH, PLANE_COCKPIT, PLANE_FUSELAGE, PLANE_NOSE,
-    PLANE_RADIUS, PLANE_TAIL, PLANE_WING, RUNWAY_HEIGHT, RUNWAY_LENGTH, STALL_AT, TICK_SECONDS,
-    WHEELS_BELOW,
+    Balloon, BestTimes, Bounds, Clock, Crane, Event, Gull, Heli, HeliParts, HighRise, Hut, Input,
+    Mix, Pad, Tilt, Tower, TyreSmoke, Warning, World, AIRSPEED_RANGE, BALLOON_RADIUS, BASKET_BELOW,
+    BEST_TIMES_COUNT, HUT_EAVES, HUT_INSET, LIVES, MAIN_WHEEL_X, NOSE_WHEEL_X, OVERSPEED_AT,
+    PAD_HEIGHT, PAD_WIDTH, PLANE_COCKPIT, PLANE_FUSELAGE, PLANE_NOSE, PLANE_RADIUS, PLANE_TAIL,
+    PLANE_WING, RUNWAY_HEIGHT, RUNWAY_LENGTH, STALL_AT, STRUT_REACH, TICK_SECONDS, WHEEL_RADIUS,
 };
 use macroquad::prelude::*;
 
@@ -207,7 +207,10 @@ async fn main() {
         // Launch pads and balloons, then the huts in the foreground in
         // front of them, then what flies.
         if let Some(airport) = &world.airport {
-            draw_airport(airport, world.bounds, world.ticks);
+            draw_airport(airport, world.bounds, world.ticks, world.runway_lit());
+        }
+        for puff in &world.tyre_smoke {
+            draw_tyre_smoke(puff, world.bounds.scale());
         }
         for pad in &world.balloons.pads {
             draw_pad(pad, world.bounds);
@@ -221,6 +224,13 @@ async fn main() {
         }
         for tower in &world.towers.list {
             draw_tower(tower, world.bounds);
+        }
+        // The town: cranes far back (their jibs up top), high-rises in front.
+        for crane in &world.city.cranes {
+            draw_crane(crane, world.bounds);
+        }
+        for high_rise in &world.city.high_rises {
+            draw_high_rise(high_rise, world.bounds);
         }
 
         for gull in &world.gulls.list {
@@ -807,10 +817,198 @@ fn draw_tower(tower: &Tower, bounds: Bounds) {
     draw_triangle(vec2(a.x, a.y), vec2(b.x, b.y), vec2(c.x, c.y), roof);
 }
 
+/// A red warning light that blinks once a second (on real time).
+fn draw_warning_light(x: f32, y: f32, s: f32, phase: f64) {
+    let on = (get_time() + phase).fract() < 0.5;
+    let red = Color::from_rgba(255, 60, 50, 255);
+    if on {
+        draw_circle(x, y, 7.0 * s, Color::new(1.0, 0.25, 0.2, 0.25));
+        draw_circle(x, y, 2.5 * s, red);
+    } else {
+        draw_circle(x, y, 2.0 * s, Color::from_rgba(110, 30, 28, 255));
+    }
+}
+
+/// A high-rise at night: dark walls with lit windows, a stair house and
+/// an antenna with a blinking red light. Positions from core's
+/// `HighRise::parts`.
+fn draw_high_rise(b: &HighRise, bounds: Bounds) {
+    let p = b.parts(bounds);
+    let s = bounds.scale();
+    let (l, t, w, h) = p.body;
+    let wall = match b.style {
+        0 => Color::from_rgba(44, 50, 66, 255),
+        1 => Color::from_rgba(58, 54, 60, 255),
+        _ => Color::from_rgba(36, 46, 58, 255),
+    };
+    draw_rectangle(l, t, w, h, wall);
+    draw_rectangle_lines(l, t, w, h, 1.5 * s, Color::from_rgba(90, 100, 120, 255));
+    // Windows in a grid; which are lit follows from the building alone.
+    let (cols, rows) = (
+        ((w / (11.0 * s)) as u32).max(2),
+        ((h / (13.0 * s)) as u32).max(2),
+    );
+    let (cw, rh) = (w / cols as f32, h / rows as f32);
+    let seed = (b.width * 997.0 + b.height * 7919.0) as u32;
+    for r in 0..rows {
+        for c in 0..cols {
+            let n = (seed ^ (r * 73_856_093) ^ (c * 19_349_663)).wrapping_mul(2_654_435_761);
+            let lit = (n >> 13) % 10;
+            let colour = match lit {
+                0..=3 => continue, // dark
+                4..=7 => Color::from_rgba(255, 210, 120, 255),
+                8 => Color::from_rgba(255, 235, 190, 255),
+                _ => Color::from_rgba(170, 200, 255, 255),
+            };
+            draw_rectangle(
+                l + c as f32 * cw + 0.25 * cw,
+                t + r as f32 * rh + 0.25 * rh,
+                0.5 * cw,
+                0.45 * rh,
+                colour,
+            );
+        }
+    }
+    let (sl, st, sw, sh) = p.stair_house;
+    draw_rectangle(sl, st, sw, sh, wall);
+    let (a, tip) = p.antenna;
+    draw_line(
+        a.x,
+        a.y,
+        tip.x,
+        tip.y,
+        p.antenna_width,
+        Color::from_rgba(120, 125, 135, 255),
+    );
+    draw_warning_light(tip.x, tip.y, s, b.width as f64 * 0.01);
+    // The helipad: a light circle with an "H" on the roof.
+    let pad = b.pad(bounds);
+    let pad_w = (0.5 * w).min(40.0 * s);
+    draw_rectangle(
+        pad.x - pad_w / 2.0,
+        pad.y - 1.5 * s,
+        pad_w,
+        1.5 * s,
+        Color::from_rgba(230, 230, 210, 255),
+    );
+    if let (Some(heli), Some(hp)) = (b.heli, b.heli_parts(bounds)) {
+        draw_heli(&heli, &hp, s);
+    }
+}
+
+/// A helicopter: body with a window, tail boom, skids and a rotor that
+/// turns while it runs (its span seems to shrink and grow), and a
+/// blinking red light under it. Positions from core's `HeliParts`.
+fn draw_heli(heli: &Heli, p: &HeliParts, s: f32) {
+    let body = Color::from_rgba(210, 60, 50, 255);
+    let dark = Color::from_rgba(40, 40, 46, 255);
+    let (c, hl, hh) = p.body;
+    let (a, b) = p.skids;
+    draw_line(a.x, a.y, b.x, b.y, 2.0 * s, dark);
+    draw_line(a.x + 4.0 * s, a.y, a.x + 4.0 * s, c.y, 1.5 * s, dark);
+    draw_line(b.x - 4.0 * s, b.y, b.x - 4.0 * s, c.y, 1.5 * s, dark);
+    let (t0, t1) = p.tail;
+    draw_line(t0.x, t0.y, t1.x, t1.y, p.tail_width, body);
+    draw_circle(t1.x, t1.y, 4.0 * s, Color::new(0.75, 0.75, 0.8, 0.5));
+    draw_ellipse(c.x, c.y, hl, hh, 0.0, body);
+    draw_ellipse(
+        c.x - 0.45 * hl,
+        c.y - 0.2 * hh,
+        0.4 * hl,
+        0.5 * hh,
+        0.0,
+        Color::from_rgba(170, 210, 240, 255),
+    );
+    let (r0, r1) = p.rotor;
+    let mid = (r0.x + r1.x) / 2.0;
+    draw_line(mid, r0.y, mid, c.y - hh, 2.0 * s, dark);
+    // A turning rotor looks like its span pulsing; a still one is full.
+    let span = if heli.rotor_on() {
+        ((heli.age as f32 * 0.9).sin() * 0.5 + 0.5).max(0.15)
+    } else {
+        1.0
+    };
+    let half = (r1.x - r0.x) / 2.0 * span;
+    let blade = if heli.rotor_on() {
+        Color::new(0.85, 0.85, 0.9, 0.7)
+    } else {
+        dark
+    };
+    draw_line(mid - half, r0.y, mid + half, r0.y, 2.0 * s, blade);
+    if heli.rotor_on() {
+        draw_warning_light(c.x, c.y + hh, s * 0.7, 0.3);
+    }
+}
+
+/// A tower crane: the mast far back in the town (dim, never hit), the
+/// lattice jib along the top, the counterweight, the cable and its load,
+/// a steel beam. Positions from core's `Crane::parts`.
+fn draw_crane(k: &Crane, bounds: Bounds) {
+    let p = k.parts(bounds);
+    let s = bounds.scale();
+    let yellow = Color::from_rgba(230, 180, 60, 255);
+    // The mast, far back: thin and dim.
+    let far = Color::new(0.55, 0.43, 0.18, 0.55);
+    let (top, foot) = p.mast;
+    let half = p.mast_width / 2.0;
+    draw_line(top.x - half, top.y, foot.x - half, foot.y, 1.5 * s, far);
+    draw_line(top.x + half, top.y, foot.x + half, foot.y, 1.5 * s, far);
+    let mut y = top.y;
+    let mut left = true;
+    while y < foot.y {
+        let next = (y + p.mast_width).min(foot.y);
+        let (a, b) = if left { (-half, half) } else { (half, -half) };
+        draw_line(top.x + a, y, top.x + b, next, 1.0 * s, far);
+        (y, left) = (next, !left);
+    }
+    // The cab under the jib.
+    draw_rectangle(
+        top.x - 7.0 * s,
+        top.y,
+        14.0 * s,
+        9.0 * s,
+        Color::from_rgba(200, 160, 60, 255),
+    );
+    // The jib: two chords and zigzag braces.
+    let (jl, jt, jw, jh) = p.jib;
+    draw_rectangle(jl, jt, jw, jh, Color::new(0.9, 0.7, 0.24, 0.18));
+    draw_line(jl, jt, jl + jw, jt, 2.0 * s, yellow);
+    draw_line(jl, jt + jh, jl + jw, jt + jh, 2.0 * s, yellow);
+    let step = jh;
+    let mut x = jl;
+    let mut up = true;
+    while x < jl + jw {
+        let next = (x + step).min(jl + jw);
+        let (y0, y1) = if up { (jt + jh, jt) } else { (jt, jt + jh) };
+        draw_line(x, y0, next, y1, 1.2 * s, yellow);
+        (x, up) = (next, !up);
+    }
+    let (cl, ct, cw, ch) = p.counterweight;
+    draw_rectangle(cl, ct, cw, ch, Color::from_rgba(130, 134, 140, 255));
+    draw_rectangle_lines(cl, ct, cw, ch, 1.0 * s, Color::from_rgba(80, 84, 90, 255));
+    // The cable and the load: a steel beam with its flanges.
+    let (a, b) = p.cable;
+    draw_line(
+        a.x,
+        a.y,
+        b.x,
+        b.y,
+        p.cable_width,
+        Color::from_rgba(190, 195, 205, 255),
+    );
+    let (ll, lt, lw, lh) = p.load;
+    let steel = Color::from_rgba(196, 82, 46, 255);
+    let flange = Color::from_rgba(150, 56, 32, 255);
+    draw_rectangle(ll, lt, lw, lh, steel);
+    draw_rectangle(ll, lt, lw, lh * 0.25, flange);
+    draw_rectangle(ll, lt + lh * 0.75, lw, lh * 0.25, flange);
+    draw_warning_light(jl + 3.0 * s, jt + jh / 2.0, s, k.reach as f64 * 0.01);
+}
+
 /// The airport the flight starts from: a control tower and a windsock by
 /// the start of the runway, and the runway itself, asphalt with threshold
 /// stripes and a dashed centre line. Positions from core's `Airport`.
-fn draw_airport(airport: &Airport, bounds: Bounds, ticks: u64) {
+fn draw_airport(airport: &Airport, bounds: Bounds, ticks: u64, lit: bool) {
     let s = bounds.scale();
     let ground = Airport::ground(bounds);
     let top = Airport::runway_top(bounds);
@@ -887,6 +1085,78 @@ fn draw_airport(airport: &Airport, bounds: Bounds, ticks: u64) {
     while dash < x + len - 20.0 * s {
         draw_rectangle(dash, top + h / 2.0 - 1.0 * s, 20.0 * s, 2.0 * s, WHITE);
         dash += 40.0 * s;
+    }
+    if lit {
+        draw_runway_lights(x, top, len, h, s, ticks);
+    }
+}
+
+/// Runway lights for the dark levels: warm white lights along both edges,
+/// white ones on the centre line between the dashes, green at the start,
+/// red at the end, each with a soft glow; the centre line's lights
+/// sparkle a little.
+fn draw_runway_lights(x: f32, top: f32, len: f32, h: f32, s: f32, ticks: u64) {
+    let light = |lx: f32, ly: f32, colour: Color, r: f32| {
+        draw_circle(
+            lx,
+            ly,
+            r * 3.2 * s,
+            Color::new(colour.r, colour.g, colour.b, 0.18),
+        );
+        draw_circle(lx, ly, r * s, colour);
+    };
+    let edge = Color::from_rgba(255, 226, 160, 255);
+    let mut lx = x + 4.0 * s;
+    while lx < x + len {
+        light(lx, top + 0.8 * s, edge, 1.6);
+        light(lx, top + h - 0.8 * s, edge, 1.6);
+        lx += 30.0 * s;
+    }
+    // Centre line: between the dashes (which start 70 px in, every 40 px).
+    let mut cx = x + 60.0 * s;
+    let mut i = 0u64;
+    while cx < x + len - 10.0 * s {
+        let on = !(ticks / 6 + i).is_multiple_of(9);
+        if on {
+            light(cx, top + h / 2.0, WHITE, 1.3);
+        }
+        cx += 40.0 * s;
+        i += 1;
+    }
+    // Threshold (green) and end (red), across the runway.
+    for k in 0..4 {
+        let ly = top + (1.5 + k as f32 * (h - 3.0) / 3.0 / s) * s;
+        light(x + 1.0 * s, ly, Color::from_rgba(80, 255, 120, 255), 1.6);
+        light(
+            x + len - 1.0 * s,
+            ly,
+            Color::from_rgba(255, 70, 60, 255),
+            1.6,
+        );
+    }
+}
+
+/// A puff of tyre smoke where a wheel touched the runway: a few grey
+/// clouds that grow, rise a little and fade (core's `TyreSmoke`).
+fn draw_tyre_smoke(puff: &TyreSmoke, s: f32) {
+    let t = puff.progress();
+    let fade = (1.0 - t).powi(2);
+    let clouds = [
+        (-5.0, -3.0, 9.0),
+        (-16.0, -5.0, 7.5),
+        (4.0, -2.0, 6.0),
+        (-27.0, -8.0, 6.0),
+        (-10.0, -10.0, 5.5),
+    ];
+    for (i, (dx, dy, r)) in clouds.into_iter().enumerate() {
+        let grow = 0.6 + 2.4 * t.sqrt();
+        let drift = -(10.0 + 5.0 * i as f32) * t; // backwards along the runway
+        draw_circle(
+            puff.pos.x + (dx + drift) * s,
+            puff.pos.y + (dy - 12.0 * t) * s,
+            r * grow * s,
+            Color::new(0.88, 0.88, 0.9, 0.8 * fade),
+        );
     }
 }
 
@@ -1183,9 +1453,9 @@ fn draw_player(x: f32, y: f32, scale: f32, pitch: f32, crashed: Option<u64>, gea
         };
         let dark = Color::from_rgba(40, 42, 48, 255);
         // Folding up: the struts get shorter and the wheels smaller.
-        let wheel_r = 3.0 * gear.max(0.5);
-        let reach = 4.0 + (WHEELS_BELOW - 3.0 - 4.0) * gear;
-        for gx in [-6.0, 14.0] {
+        let wheel_r = WHEEL_RADIUS * gear.max(0.5);
+        let reach = 4.0 + (STRUT_REACH - 4.0) * gear;
+        for gx in [MAIN_WHEEL_X, NOSE_WHEEL_X] {
             let (top, hub) = (p(gx, 4.0), p(gx, reach));
             draw_line(top.x, top.y, hub.x, hub.y, 1.5 * scale, dark);
             draw_circle(hub.x, hub.y, wheel_r * scale, dark);

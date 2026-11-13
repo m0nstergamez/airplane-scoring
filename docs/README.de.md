@@ -722,6 +722,71 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
   darunter), setzt ihre Breite (`border-box`) und blendet einen Tipp
   unter 120 px aus. Geprüft mit absichtlich vergrösserten Knöpfen bei
   844×390 und 667×320 und unverändert bei 568×280 und 844×390.
+- Level 3, eine Stadt bei Nacht, gewünscht mit dem Foto des Nutzers
+  (Nachthimmel, schwarze Hügel, die Lichter einer Stadt, ein Kran und ein
+  beleuchtetes Hochhaus). Hintergrund
+  `art/levels/level3/background.svg`: Himmel mit Sternen und einem
+  Planeten, Hügel, niedrige Häuser mit hellen Fenstern, ein orange
+  beleuchteter Hang mit Büschen; Kran und Hochhaus des Fotos wurden zu
+  Hindernissen statt zu Kulisse. Die vielen kleinen Lichter setzte ein
+  kurzes Skript mit Startwert (nicht behalten). Naht-Prüfung: 0 %.
+- Seine Hindernisse, vom Nutzer aus vier Ideen gewählt (Kräne, Drohnen,
+  Hochhäuser, Fledermäuse): Hochhäuser und Baukräne (core `city.rs`).
+  Stünden beide am Boden, wäre oben wieder sicher (die Klage über
+  Level 1), darum steht der Mast des Krans weit hinten (gezeichnet, nie
+  getroffen), und sein Ausleger läuft oben entlang, mit einer Last am
+  Seil: unter der Last durch, über die Hochhäuser. Alle 3–5 s eins, 40 %
+  Kräne, nie zwei Kräne hintereinander, mindestens 140 px freier Boden
+  dazwischen (der Gegenausleger reicht weit nach rechts, darum wartet
+  das Nächste auf ihn). Selten und eins nach dem anderen, nach den
+  abgelehnten Türmen in Level 1. `LEVEL_COUNT` 3; Tests, die zwei Levels
+  annahmen, erwarten jetzt 1 → 2 → 3 → 1. Tests:
+  `the_town_stands_only_in_level_3`,
+  `right_at_the_top_a_crane_jib_is_in_the_way`,
+  `under_a_cranes_load_is_the_way_through` und die Tests in `city.rs`.
+  Der Ausleger läuft oben unter den Leben und dem Lautsprecher-Knopf
+  durch; so gelassen, weil er ganz oben sein muss. Level-Karte: «3
+  Town».
+- Helikopter auf manchen Hochhäusern, gewünscht «als cooles Detail»:
+  35 % der Hochhäuser haben einen, der abhebt (der Rotor läuft an, wenn
+  sein Hochhaus 80–95 % weit im Bild ist, dann steigt er nach hinten
+  oben weg) oder landet (von oberhalb des Bildschirms, aufgesetzt bis
+  55–70 %). Damit es fair bleibt, ist er nur weit vor dem Flugzeug in der
+  Luft: Ein Test über sechs Startwerte prüft, dass ein fliegender
+  Helikopter dem x des Flugzeugs nie näher als 150 px kommt; in der Nähe
+  des Flugzeugs steht er auf dem Dach (Teil der Form des Hochhauses) oder
+  ist weg. Geprüft in Bildschirmfotos, lokal mit einem Helikopter auf
+  jedem Hochhaus.
+- Fehlersuche auf Handy und PC, gewünscht. Geprüft: die Level-Karte mit
+  dem Hinweis zu Level 3 bei 568×280 bis 932×430 (@3) und an Computern
+  (1280×720 @1.5, 1366×768, 1440×900 @2), und Level 3 im Flug bei
+  568×280 und 1366×768. Gefunden: Mit drei Levels ist die Karte breiter,
+  und an Computern ragte das Flugzeug des Menüs in den Kreis «1 Coast»;
+  auf der Level-Karte tritt es jetzt zur Seite, wie bei How to play.
+- Landungen mit Reifenrauch, gewünscht: Bisher setzte das Flugzeug flach
+  auf, beide Räder zugleich. Jetzt setzt es mit erhobener Nase auf den
+  Hinterrädern auf (`FLARE_PITCH`, -0.1 rad) und senkt die Nase über
+  `NOSE_DOWN_SECONDS` (0.7 s), die Hinterräder bleiben dabei auf der
+  Bahn (`runway_y_at`, nach dem gezeichneten Fahrwerk: `MAIN_WHEEL_X`,
+  `NOSE_WHEEL_X`, `STRUT_REACH`, `WHEEL_RADIUS`, jetzt mit dem Spiel
+  geteilt). Jedes Aufsetzen löst `Event::MainWheelsTouch` /
+  `Event::NoseWheelTouch` aus und hinterlässt eine Wolke `TyreSmoke`, die
+  am Boden bleibt und über 1.6 s verblasst. Noch ohne Ton. Geprüft mit
+  lokal auf 4 s gekürzten Levels.
+- Beleuchtete Bahnen in Level 2 und 3 (`RUNWAY_LIT_LEVELS`), gewünscht:
+  in der Dämmerung und im Dunkeln schlecht zu sehen. Randlichter alle
+  30 px, Mittellinien-Lichter zwischen den Strichen (leicht funkelnd),
+  grüne Schwellen- und rote Endlichter, jedes mit einem Schein.
+- Ein goldenes «NEW» bei Level 3 auf der Level-Karte, gewünscht: ein
+  Abzeichen an seiner Station (ausserhalb des runden Bildes, damit ein
+  gesperrtes, graues Level es golden behält), mit sanft pulsierendem
+  Schein (ohne bei reduzierter Bewegung). Es verschwindet, sobald das
+  Level auf diesem Gerät geflogen oder geschafft ist
+  (`airplane-scoring.flown` im lokalen Speicher). Beim Prüfen gefunden:
+  Auf der Level-Karte behielt der Kalibrierungs-Tipp die im Hauptmenü
+  gemessene Breite und deckte auf Handys «1 Coast» und Back zu (seit die
+  Tipps messen, PR #40); die Tipps messen jetzt am Feld, das gerade
+  sichtbar ist.
 
 ## Konzepte
 

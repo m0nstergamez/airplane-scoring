@@ -184,6 +184,21 @@ flowchart LR
   Hintere werden zuerst gezeichnet. `Tower::parts` legt Beine, Leiter,
   Plattform, Kabine und Dach fest; Zusammenstösse (`Tower::shape`) und
   Zeichnen nutzen beide das.
+- **Die Stadt** (`crates/core/src/city.rs`, Level 3, `CITY_LEVEL`)
+  schickt Hochhäuser und Baukräne, alle 3–5 s eins
+  (`CITY_GAP_SECONDS`), mit mindestens `CITY_ROOM` (140 px) freiem Boden
+  dazwischen; `CRANE_SHARE` (40 %) sind Kräne, nie zwei hintereinander.
+  Ein `HighRise` steht vorne (Mauern, Treppenhaus, Antenne): darüber
+  fliegen. Ein `Crane` hat seinen Mast weit hinten (gezeichnet, nie
+  getroffen); sein Ausleger läuft oben entlang (`JIB_TOP`), und eine
+  Last hängt an einem Seil (`LOAD_AT`): darunter durch. So ist weder oben
+  noch unten sicher. `parts` legt alles fest; Zusammenstösse (`shape`)
+  und Zeichnen nutzen es.
+  `HELI_SHARE` (35 %) der Hochhäuser haben einen `Heli`: Er hebt ab,
+  sobald sein Hochhaus bei `HELI_TAKEOFF_AT` ist, und steigt nach hinten
+  oben weg, oder er landet bis `HELI_TOUCHDOWN_AT` (seine Sinkrate
+  rechnet mit dem Tempo des Spiels). Sein Platz zählt ab dem Dach, so
+  zieht er mit ihm vorbei.
 - **Möwen** (`crates/core/src/gulls.rs`) sind die Hindernisse am Strand.
   core entscheidet, wann und wo sie auftauchen (mit Startwert, wie das
   Wetter), bewegt sie und prüft den Zusammenstoss; eine Möwe, die ruft,
@@ -355,6 +370,8 @@ Landschaft:
 | `TOWER_GAP_SECONDS` | `crates/core/src/towers.rs` | kürzeste und längste Zeit zwischen zwei Strandtürmen |
 | `TOWER_HEIGHT` | `crates/core/src/towers.rs` | niedrigster und höchster Strandturm (Pixel) |
 | `BALLOON_GAP_SECONDS` | `crates/core/src/balloons.rs` | kürzeste und längste Zeit zwischen zwei Ballonen |
+| `CITY_GAP_SECONDS` | `crates/core/src/city.rs` | kürzeste und längste Zeit zwischen zwei Hochhäusern oder Kränen |
+| `CRANE_SHARE` | `crates/core/src/city.rs` | wie wahrscheinlich das Nächste ein Kran ist (0 bis 1) |
 | `BALLOON_RISE` | `crates/core/src/balloons.rs` | wie schnell Ballone steigen (Pixel pro Sekunde) |
 | `HUT_GAP_SECONDS` | `crates/core/src/huts.rs` | kürzeste und längste Zeit zwischen zwei Hütten |
 | `HUT_HEIGHT` | `crates/core/src/huts.rs` | niedrigste und höchste Hütte (Pixel) |

@@ -95,6 +95,7 @@
     }
     #start .node[data-level="1"] { background-image: url(levels/level1.png); }
     #start .node[data-level="2"] { background-image: url(levels/level2.png); }
+    #start .node[data-level="3"] { background-image: url(levels/level3.png); }
     #start .node .lock { display: none; font-size: 34px; }
     #start .node.locked { filter: grayscale(1) brightness(0.55); cursor: default; }
     #start .node.locked .lock { display: block; }
@@ -105,6 +106,24 @@
       font: 800 17px/24px system-ui, sans-serif;
     }
     #start .node.completed .done { display: block; }
+    /* A level that is new in this version: a golden "NEW" on top of its
+       stop (outside the round picture, so it stays gold when locked).
+       Gone once that level has been flown here. */
+    #start .map .stop { position: relative; }
+    #start .stop .new {
+      position: absolute; top: -10px; left: 50%; transform: translateX(-50%) rotate(-6deg);
+      padding: 2px 9px; border-radius: 999px; z-index: 1; pointer-events: none;
+      font: 900 13px/1.3 system-ui, sans-serif; letter-spacing: 0.08em; color: #3a2600;
+      background: linear-gradient(135deg, #fff2a8 0%, #ffd24a 35%, #e0a10e 65%, #ffe27a 100%);
+      border: 1.5px solid #fff6c8; box-shadow: 0 0 10px rgba(255, 200, 60, 0.75), 0 2px 6px rgba(0, 0, 0, 0.5);
+      animation: new-shine 1.6s ease-in-out infinite;
+    }
+    #start .stop .new[hidden] { display: none; }
+    @keyframes new-shine {
+      0%, 100% { box-shadow: 0 0 6px rgba(255, 200, 60, 0.55), 0 2px 6px rgba(0, 0, 0, 0.5); }
+      50% { box-shadow: 0 0 16px rgba(255, 215, 80, 0.95), 0 2px 6px rgba(0, 0, 0, 0.5); }
+    }
+    @media (prefers-reduced-motion: reduce) { #start .stop .new { animation: none; } }
     /* What a tap on a level says (locked, completed, not yet). */
     #start .map-note {
       margin: 0; max-width: 24em; align-self: center; font-weight: 500; font-size: 15px; line-height: 1.35;
@@ -139,6 +158,9 @@
     #start:has(.howto.shown) figure,
     #start:has(.howto.shown) .keys,
     #start:has(.howto.shown) .calibrate-tip { display: none; }
+    /* The level map (three levels wide) reaches the plane on the left:
+       the plane steps aside there too. */
+    #start:has([data-panel="levels"].shown) .hero { display: none; }
     #start .phone-only { display: none; }
     @media (pointer: coarse) {
       #start .phone-only { display: inline; }
@@ -398,6 +420,12 @@
           <button type="button" class="node" data-level="2" aria-label="Level 2: Beach"><span class="lock">&#128274;</span><span class="done" aria-hidden="true">&#10003;</span></button>
           <span class="name">2 Beach</span>
         </div>
+        <div class="path" aria-hidden="true"></div>
+        <div class="stop">
+          <button type="button" class="node" data-level="3" aria-label="Level 3: Town (new)"><span class="lock">&#128274;</span><span class="done" aria-hidden="true">&#10003;</span></button>
+          <span class="name">3 Town</span>
+          <span class="new" data-new-level="3">NEW</span>
+        </div>
       </div>
       <p class="map-note" id="map-note" aria-live="polite"></p>
       <button type="button" data-go="home">Back</button>
@@ -407,7 +435,7 @@
       <div class="guide">
         <section>
           <h3>The goal</h3>
-          <p>Fly as long as you can: the clock at the top counts your time in this level, in minutes and seconds, from 0:00 in every level. Dodge what is in your way: hot-air balloons, launch pads and huts on the coast; gulls and lifeguard towers at the beach. You have <strong>3 lives</strong>; each crash costs one.</p>
+          <p>Fly as long as you can: the clock at the top counts your time in this level, in minutes and seconds, from 0:00 in every level. Dodge what is in your way: hot-air balloons, launch pads and huts on the coast; gulls and lifeguard towers at the beach; in the town at night, fly over the high-rises and under the loads hanging from the cranes (their jibs run along the very top). You have <strong>3 lives</strong>; each crash costs one.</p>
           <p>At the end of a level the autopilot <strong>lands</strong> on a runway: level complete! That unlocks the next level. Each level keeps your <strong>5 best times</strong>.</p>
         </section>
         <section>
@@ -461,12 +489,15 @@
   </script>
   <script>
     // Tips beside the menu buttons (calibration on the left, home screen
-    // on the right) get the room that is really free there, measured:
-    // button widths differ between phones. Too little room: no tip.
+    // on the right) get the room that is really free there, measured
+    // against the panel that shows (menu or level map): button widths
+    // differ between phones. Too little room: no tip.
     (() => {
       const GAP = 12, MIN = 120;
       const place = () => {
-        const shown = [...document.querySelectorAll('#start [data-panel="home"].shown button')]
+        // Whatever panel shows: the menu's buttons, or the level map's
+        // circles and its Back button.
+        const shown = [...document.querySelectorAll("#start .panel.shown button")]
           .map((b) => b.getBoundingClientRect()).filter((r) => r.width > 0);
         if (!shown.length) return;
         const left = Math.min(...shown.map((r) => r.left));
@@ -491,6 +522,7 @@
         }
       };
       addEventListener("resize", () => setTimeout(place, 60));
+      document.getElementById("start").addEventListener("click", () => requestAnimationFrame(place));
       addEventListener("load", place);
       if (document.fonts) document.fonts.ready.then(place);
       setInterval(place, 500);
@@ -703,7 +735,7 @@
     let chosenLevel = requestedLevel; // the level the next flight starts in
     // The level map: level 1 is open; landing a level completes it and
     // opens the next. The completed levels are kept in this browser.
-    const LEVELS = 2;
+    const LEVELS = 3;
     const UNLOCK_KEY = "airplane-scoring.unlocked"; // older versions: highest open level
     const COMPLETED_KEY = "airplane-scoring.completed";
     let completed = [];
@@ -729,6 +761,25 @@
       }
     };
     renderMap();
+    // "NEW" on levels new in this version, until that level is flown here.
+    const NEW_KEY = "airplane-scoring.flown";
+    let flown = [];
+    try {
+      const stored = JSON.parse(localStorage.getItem(NEW_KEY) || "[]");
+      if (Array.isArray(stored)) flown = stored.map(Number);
+    } catch (_) { /* nothing stored, or private mode */ }
+    const renderNew = () => {
+      for (const badge of document.querySelectorAll("#start [data-new-level]")) {
+        badge.hidden = flown.includes(Number(badge.dataset.newLevel)) || isCompleted(Number(badge.dataset.newLevel));
+      }
+    };
+    const markFlown = (n) => {
+      if (flown.includes(n)) return;
+      flown.push(n);
+      try { localStorage.setItem(NEW_KEY, JSON.stringify(flown)); } catch (_) { /* private mode: not kept */ }
+      renderNew();
+    };
+    renderNew();
     // The old highscores (points) are gone: forget them.
     // So are the old best times, which counted whole flights across
     // levels: a time now counts one level only.
@@ -798,6 +849,7 @@
     const fly = async (level = 1) => {
       if (start.classList.contains("gone")) return;
       chosenLevel = level;
+      markFlown(level);
       newFlight += 1; // the game sets up this flight (in the chosen level)
       start.classList.add("gone");
       const ask = isPhone && window.DeviceMotionEvent && DeviceMotionEvent.requestPermission;

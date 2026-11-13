@@ -13,8 +13,10 @@
 
 «Tap to fly» öffnet die **Level-Karte** («Choose a level»): ein rundes
 Bild jeder Landschaft, verbunden mit einer gestrichelten Linie. Tippe
-auf ein Level, um dort zu starten. Level 2 ist zuerst gesperrt (grau mit
-Schloss) und wird frei, sobald du Level 1 geschafft hast; das Spiel
+auf ein Level, um dort zu starten. Level 2 und 3 sind zuerst gesperrt
+(grau mit Schloss); jedes wird frei, sobald du das Level davor geschafft
+hast (ein neues Level trägt ein goldenes **«NEW»**, bis du es geflogen
+bist); das Spiel
 merkt es sich, und ein geschafftes Level bekommt ein grünes Häkchen.
 Tippst du auf ein gesperrtes Level, steht da, welches du zuerst schaffen
 musst. Der Knopf **Levels** im Hauptmenü öffnet dieselbe Karte nur zum
@@ -139,7 +141,8 @@ erhellen den Himmel, und der Donner folgt. Je weiter weg der Blitz,
 desto später und leiser der Donner.
 
 Berührst du einen Heissluftballon, eine Startrampe oder eine Hütte
-(Level 1) oder eine Möwe oder einen Strandturm (Level 2), gibt es einen
+(Level 1), eine Möwe oder einen Strandturm (Level 2) oder ein Hochhaus
+oder einen Kran (Level 3), gibt es einen
 **Zusammenstoss**.
 Nur eine echte Berührung zählt: Ganz knapp vorbeifliegen oder durch die
 Lücke neben einem Dach ist erlaubt. Beim Zusammenstoss
@@ -205,12 +208,15 @@ Freunde haben auf ihren Handys ihre eigenen Listen.
 ## Levels
 
 Jedes **Level** hat seine eigene Landschaft: zuerst die Küste (Level 1),
-dann einen Strand bei Sonnenuntergang (Level 2). Nach etwa einer Minute
+dann einen Strand bei Sonnenuntergang (Level 2), dann eine Stadt bei
+Nacht (Level 3). Nach etwa einer Minute
 Flug endet ein Level mit einer **Landung**: Es kommen keine neuen
 Hindernisse mehr, eine Landebahn erscheint, und der Autopilot übernimmt.
 Solange er fliegt, schweigen die Tempo-Warnungen, und das Tempo geht von
 selbst zurück.
-Das Fahrwerk fährt aus, das Flugzeug setzt auf, bremst und steht: «Level
+Das Fahrwerk fährt aus, das Flugzeug setzt mit noch erhobener Nase auf
+den Hinterrädern auf und senkt dann die Nase auf ihr Rad; jedes Aufsetzen
+gibt eine Wolke **Reifenrauch**. Es bremst und steht: «Level
 1 complete» erscheint mit deiner Zeit, den Bestzeiten des Levels und
 zwei Knöpfen. **Next level**
 (oder Enter) startet das nächste Level: Seine Landschaft erscheint, es
@@ -256,6 +262,29 @@ andere vorne (grösser). Die Türme sind nicht hoch; nur wenn du tief
 fliegst, musst du über sie steigen. Zwischen den
 Beinen ist Luft, aber es ist sehr eng.
 
+In der **Stadt bei Nacht** (Level 3) wechseln sich zwei Dinge ab, eins
+nach dem anderen und mit Platz dazwischen:
+
+Am Strand und in der Stadt (Level 2 und 3) sind die Bahnen
+**beleuchtet**: Lichter an beiden Rändern und auf der Mittellinie, grün
+am Anfang und rot am Ende, damit du sie in der Dämmerung und im Dunkeln
+siehst.
+
+- **Hochhäuser** stehen vorne, mit hellen Fenstern und einem roten
+  Licht auf der Antenne. Flieg über sie; auch die Antenne zählt. Auf
+  manchen steht ein **Helikopter**: Er wirft den Rotor an und fliegt
+  weg, oder er kommt vom Himmel herab und landet, immer solange das
+  Hochhaus noch weit vorne ist. Wenn es bei dir ist, steht der Helikopter
+  auf dem Dach (flieg auch über ihn) oder ist weg.
+- **Baukräne** stehen weit hinten in der Stadt. Ihr langer gelber
+  Ausleger läuft ganz oben am Bildschirm entlang, und an einem Seil
+  hängt ein roter Stahlträger. Flieg **unter** dem Träger durch:
+  Ausleger, Seil und Träger zählen, der Mast weit hinten nicht. Ganz
+  oben fliegen ist hier also kein Ausweg.
+
+Nie kommen zwei Kräne hintereinander: Nach einem Träger, unter dem du
+durch bist, musst du also eher als Nächstes über ein Hochhaus steigen.
+
 ## Ton
 
 | Du hörst | Wann |
@@ -264,7 +293,7 @@ Beinen ist Luft, aber es ist sehr eng.
 | Wind | Immer. Lauter bei Regen, in Böen und wenn du sinkst. |
 | Regen | Solange es regnet (erst in späteren Levels). Je stärker der Regen, desto lauter. |
 | Donner | Einen Moment nach jedem Blitz (erst in späteren Levels). |
-| Zusammenstoss | Wenn du einen Ballon, eine Startrampe, eine Hütte, eine Möwe oder einen Strandturm berührst. |
+| Zusammenstoss | Wenn du einen Ballon, eine Startrampe, eine Hütte, eine Möwe, einen Strandturm, ein Hochhaus oder einen Kran berührst. |
 | Brenner | Wenn ein Heissluftballon auftaucht oder abhebt (Level 1). |
 | Wellen | Am Strand (Level 2). Sie werden mit der Landschaft ein- und ausgeblendet. |
 | Möwe | Wenn eine Möwe auftaucht. Möwen von hinten rufen immer. |

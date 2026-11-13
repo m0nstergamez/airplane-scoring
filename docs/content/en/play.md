@@ -12,8 +12,9 @@
 
 "Tap to fly" opens the **level map** ("Choose a level"): a round picture
 of each landscape, joined by a dashed line. Tap a level to start there.
-Level 2 is locked at first (grey with a padlock) and opens once you have
-completed level 1; the game remembers, and a completed level gets a
+Levels 2 and 3 are locked at first (grey with a padlock); each opens
+once you have completed the level before it (a new level carries a
+golden **"NEW"** until you have flown it); the game remembers, and a completed level gets a
 green tick. Tapping a locked level tells you which level to complete
 first. The **Levels** button in the main menu opens the same map just to
 look: tapping a level there starts nothing but tells you whether you
@@ -134,7 +135,8 @@ and the thunder follows. The further away the lightning, the later and
 quieter the thunder.
 
 If you touch a hot-air balloon, a launch pad or a hut (level 1) or a
-gull or a lifeguard tower (level 2), you **crash**. Only a real touch counts: flying past very
+gull or a lifeguard tower (level 2) or a high-rise or a crane (level 3),
+you **crash**. Only a real touch counts: flying past very
 closely, or through the gap beside a roof, is fine. In a crash your plane smokes, falls
 and ignores the controls for a moment (1.5 seconds). Then you fly again.
 
@@ -193,11 +195,13 @@ goes online, and friends on their phones have their own lists.
 ## Levels
 
 Each **level** has its own landscape: first the coast (level 1), then a
-beach at sunset (level 2). After about a minute of flying, a level ends
+beach at sunset (level 2), then a town at night (level 3). After about a minute of flying, a level ends
 with a **landing**: no new obstacles come, a runway appears, and the
 autopilot takes over. Speed warnings stay off while it flies, and the
-speed settles back by itself. The gear comes down, the plane touches down,
-brakes and stops: "Level 1 complete" shows with your time, the
+speed settles back by itself. The gear comes down, the plane touches down
+on its main wheels with the nose still up, then lowers the nose onto its
+wheel; each touchdown leaves a puff of **tyre smoke**. It brakes and
+stops: "Level 1 complete" shows with your time, the
 level's best times and two
 buttons. **Next level** (or Enter) starts the next level: its landscape
 appears, it counts 3, 2, 1, and you take off from its runway. **Menu**
@@ -240,6 +244,28 @@ front (bigger). They are not tall; only if you fly low do you have to
 climb over them. Between the
 legs is open air, but it is very tight.
 
+In the **town at night** (level 3) two things take turns, one at a
+time with room between them:
+
+At the beach and in the town (levels 2 and 3) the runways are **lit**:
+lights along both edges and on the centre line, green at the start and
+red at the end, so you see them in the dusk and the dark.
+
+- **High-rises** stand at the front, with lit windows and a red light
+  on the antenna. Fly over them; the antenna counts too. Some have a
+  **helicopter** on the roof: it starts its rotor and flies away, or
+  comes down from the sky and lands, always while the high-rise is
+  still far ahead. When it reaches you, the helicopter is parked on the
+  roof (fly over it too) or gone.
+- **Tower cranes** stand far back in the town. Their long yellow jib
+  runs along the very top of the screen, and a red steel beam hangs from
+  it on a cable. Fly **under** the beam: the jib, the cable and the beam
+  count, the mast far back does not. So flying right at the top is no
+  way through here.
+
+Never two cranes come in a row, so after flying under a beam you can
+expect to climb over a high-rise next.
+
 ## Sound
 
 | You hear | When |
@@ -248,7 +274,7 @@ legs is open air, but it is very tight.
 | Wind | Always. Louder in rain, in gusts and when you dive. |
 | Rain | While it rains (only in later levels). Louder the harder it rains. |
 | Thunder | A moment after each lightning (only in later levels). |
-| Crash | When you touch a balloon, a launch pad, a hut, a gull or a lifeguard tower. |
+| Crash | When you touch a balloon, a launch pad, a hut, a gull, a lifeguard tower, a high-rise or a crane. |
 | Burner | When a hot-air balloon appears or takes off (level 1). |
 | Waves | At the beach (level 2). They fade in and out with the landscape. |
 | Gull | When a gull appears. Gulls from behind always call. |

@@ -10,6 +10,7 @@ const TICKS_PER_SECOND: u64 = 60;
 mod airport;
 mod balloons;
 mod best_times;
+mod city;
 mod clock;
 mod gulls;
 mod huts;
@@ -23,9 +24,11 @@ mod tilt;
 mod towers;
 mod weather;
 pub use airport::{
-    Airport, APPROACH_DISTANCE, BRAKE_SECONDS, CLEAR_SECONDS, CLIMB_OUT_SECONDS, CLIMB_OUT_STEER,
-    COUNTDOWN_SECONDS, GEAR_DELAY_SECONDS, GEAR_RETRACT_SECONDS, ROLL_SECONDS, RUNWAY_GROUND,
-    RUNWAY_HEIGHT, RUNWAY_LENGTH, TOUCHDOWN_INTO, WHEELS_BELOW,
+    Airport, TyreSmoke, APPROACH_DISTANCE, BRAKE_SECONDS, CLEAR_SECONDS, CLIMB_OUT_SECONDS,
+    CLIMB_OUT_STEER, COUNTDOWN_SECONDS, FLARE_PITCH, GEAR_DELAY_SECONDS, GEAR_RETRACT_SECONDS,
+    MAIN_WHEEL_X, NOSE_DOWN_SECONDS, NOSE_WHEEL_X, ROLL_SECONDS, RUNWAY_GROUND, RUNWAY_HEIGHT,
+    RUNWAY_LENGTH, RUNWAY_LIT_LEVELS, STRUT_REACH, TOUCHDOWN_INTO, TYRE_SMOKE_SECONDS,
+    WHEELS_BELOW, WHEEL_RADIUS,
 };
 pub use balloons::{
     Balloon, BalloonWay, Balloons, Pad, BALLOON_COLOURS, BALLOON_GAP_SECONDS, BALLOON_HIGH,
@@ -33,6 +36,10 @@ pub use balloons::{
     PAD_GROUND, PAD_HEIGHT, PAD_WIDTH, TAKEOFF_AT, TOUCHDOWN_AT,
 };
 pub use best_times::{BestTimes, Placed, BEST_TIMES_COUNT};
+pub use city::{
+    City, Crane, CraneParts, Heli, HeliParts, HeliState, HighRise, HighRiseParts, CITY_GAP_SECONDS,
+    CITY_LEVEL, CITY_ROOM, CRANE_SHARE, HIGH_RISE_STYLES,
+};
 pub use clock::{Clock, MAX_FRAME_SECONDS};
 pub use gulls::{
     Gull, GullStart, Gulls, FIRST_GULL_SECONDS, GULL_BOB, GULL_CALL_CHANCE, GULL_FROM_LEFT,
@@ -197,6 +204,10 @@ pub const RESTART_WAIT_SECONDS: f32 = 1.0;
 pub enum Event {
     /// The player's plane hit another plane.
     Crash,
+    /// Landing: the main wheels touch the runway (tyre smoke).
+    MainWheelsTouch,
+    /// Landing: the nose wheel comes down onto the runway (tyre smoke).
+    NoseWheelTouch,
     /// Lightning struck. `distance` is 0 (overhead) to 1 (far away).
     Lightning { distance: f32 },
     /// Thunder from an earlier strike arrives. `volume` is 0..1.
@@ -422,6 +433,8 @@ pub struct World {
     /// the sand.
     pub gulls: Gulls,
     pub towers: Towers,
+    /// The obstacles of level 3: high-rises and cranes.
+    pub city: City,
     pub weather: Weather,
     /// Volumes of the looping sounds, eased toward what fits the world now.
     pub mix: Mix,
@@ -441,6 +454,8 @@ pub struct World {
     pub lives: u32,
     /// Where the plane blew up when the last life went; `None` before.
     pub explosion: Option<Vec2>,
+    /// Puffs of tyre smoke from the landing's touchdowns.
+    pub tyre_smoke: Vec<TyreSmoke>,
     /// How far the landscape has slid past, in px at phone size (it
     /// speeds up with the time flown, see [`World::speed`]).
     pub distance: f64,
@@ -477,6 +492,7 @@ impl World {
             huts: Huts::new(seed),
             gulls: Gulls::new(seed),
             towers: Towers::new(seed),
+            city: City::new(seed),
             weather: Weather::new(seed),
             mix: Mix::SILENT,
             ticks: 0,
@@ -487,6 +503,7 @@ impl World {
             go_on: false,
             lives: LIVES,
             explosion: None,
+            tyre_smoke: Vec::new(),
             distance: 0.0,
             airport: None,
             takeoff: None,
@@ -649,6 +666,48 @@ impl World {
     /// Is the takeoff still going (rolling or climbing out on its own)?
     pub fn taking_off(&self) -> bool {
         self.takeoff.is_some()
+    }
+
+    /// The nose-up pitch right after touchdown, lowering to 0 over
+    /// [`NOSE_DOWN_SECONDS`]; 0 otherwise.
+    fn flare_pitch(&self) -> f32 {
+        match self.landing {
+            Some(Landing::Rollout(t)) => {
+                let down = t as f32 * TICK_SECONDS / NOSE_DOWN_SECONDS;
+                FLARE_PITCH * (1.0 - down).max(0.0)
+            }
+            _ => 0.0,
+        }
+    }
+
+    /// Where the plane's centre is with its main wheels on the runway and
+    /// the nose at `pitch` (the gear turns with the plane, as drawn).
+    fn runway_y_at(&self, pitch: f32) -> f32 {
+        let top = Airport::runway_top(self.bounds);
+        let size = self.bounds.plane_depth(top);
+        let (sin, cos) = pitch.sin_cos();
+        let main = MAIN_WHEEL_X * sin + STRUT_REACH * cos + WHEEL_RADIUS;
+        let nose = NOSE_WHEEL_X * sin + STRUT_REACH * cos + WHEEL_RADIUS;
+        top - main.max(nose) * size
+    }
+
+    /// Tyre smoke where the wheel at `wheel_x` (see [`MAIN_WHEEL_X`])
+    /// meets the runway, the plane at `pitch`.
+    fn puff_at(&mut self, wheel_x: f32, pitch: f32) {
+        let top = Airport::runway_top(self.bounds);
+        let size = self.bounds.plane_depth(top);
+        let (sin, cos) = pitch.sin_cos();
+        let x = self.player.pos.x + (wheel_x * cos - STRUT_REACH * sin) * size;
+        self.tyre_smoke.push(TyreSmoke {
+            pos: Vec2::new(x, top),
+            ticks: 0,
+        });
+    }
+
+    /// Are the runway's lights on? In the dark levels
+    /// ([`RUNWAY_LIT_LEVELS`]).
+    pub fn runway_lit(&self) -> bool {
+        RUNWAY_LIT_LEVELS.contains(&self.levels().level)
     }
 
     /// Where the plane's centre is while it stands on the runway.
@@ -938,11 +997,17 @@ impl World {
                     .is_some_and(|a| a.x + TOUCHDOWN_INTO * scale <= self.player.pos.x);
                 if over && self.player.pos.y >= self.runway_y() - 2.0 * scale {
                     self.landing = Some(Landing::Rollout(0));
+                    self.events.push(Event::MainWheelsTouch);
+                    self.puff_at(MAIN_WHEEL_X, FLARE_PITCH);
                 } else {
                     self.landing = Some(Landing::Approach(t + 1));
                 }
             }
             Some(Landing::Rollout(t)) => {
+                if t + 1 == seconds_to_ticks(NOSE_DOWN_SECONDS) {
+                    self.events.push(Event::NoseWheelTouch);
+                    self.puff_at(NOSE_WHEEL_X, 0.0);
+                }
                 if t + 1 >= seconds_to_ticks(BRAKE_SECONDS) {
                     let level = self.levels().level;
                     self.landing = Some(Landing::Complete(0));
@@ -960,9 +1025,12 @@ impl World {
                 Some(Landing::Rollout(_) | Landing::Complete(_))
             );
         if on_ground {
-            let y = self.runway_y();
+            // Just after touchdown the nose is still up and comes down;
+            // the main wheels stay on the runway meanwhile.
+            let pitch = self.flare_pitch();
+            let y = self.runway_y_at(pitch);
             let player = &mut self.player;
-            (player.pos.y, player.vel_y, player.pitch) = (y, 0.0, 0.0);
+            (player.pos.y, player.vel_y, player.pitch) = (y, 0.0, pitch);
         }
         for m in &mut self.planes {
             m.pos.x += m.vel.x * TICK_SECONDS;
@@ -1010,9 +1078,18 @@ impl World {
         let beach = levels.level == BEACH_LEVEL && !runway_in && !clearing;
         self.gulls.tick(self.bounds, beach, &mut self.events);
         self.towers.tick(self.bounds, beach);
+        let town = levels.level == CITY_LEVEL && !runway_in && !clearing;
+        self.city.set_speed(speed);
+        self.city.tick(self.bounds, town);
         // Faster than at the start: everything slides past by the extra
         // too (far towers less, as they move slower); slower while rolling.
         self.distance += (SCROLL_SPEED * speed * TICK_SECONDS) as f64;
+        // Tyre smoke stays on the ground: it slides off with it.
+        for puff in &mut self.tyre_smoke {
+            puff.pos.x -= SCROLL_SPEED * scale * speed * TICK_SECONDS;
+            puff.ticks += 1;
+        }
+        self.tyre_smoke.retain(|p| p.progress() < 1.0);
         if let Some(a) = &mut self.airport {
             a.x -= SCROLL_SPEED * scale * speed * TICK_SECONDS;
         }
@@ -1028,6 +1105,7 @@ impl World {
                 t.x -= extra * t.size(self.bounds) / scale;
             }
             self.gulls.shift(-extra);
+            self.city.shift(-extra);
         }
 
         // Crash: the plane as drawn newly overlaps another plane, a
@@ -1065,7 +1143,9 @@ impl World {
             || !burst.is_empty()
             || (self.balloons.pads.iter()).any(|p| hits(&p.shape(bounds)))
             || (self.huts.list.iter()).any(|h| hits(&h.shape(bounds)))
-            || (self.towers.list.iter()).any(|t| hits(&t.shape(bounds)));
+            || (self.towers.list.iter()).any(|t| hits(&t.shape(bounds)))
+            || (self.city.high_rises.iter()).any(|b| hits(&b.shape(bounds)))
+            || (self.city.cranes.iter()).any(|c| hits(&c.shape(bounds)));
         let player = &mut self.player;
         let hit = touching && !player.touching && open;
         if hit && !player.is_crashed() && !player.is_safe() {
@@ -1164,6 +1244,8 @@ impl World {
         self.huts.list.clear();
         self.gulls.list.clear();
         self.towers.list.clear();
+        self.city.clear();
+        self.tyre_smoke.clear();
         // A fresh start in every level: all lives back (and so no smoke).
         self.lives = self.lives.max(LIVES);
         self.player.airspeed = 1.0;
@@ -1954,7 +2036,7 @@ mod tests {
         let mut w = World::with_seed(PHONE, 1);
         w.lives = u32::MAX; // nothing must end the flight
         let mut seen = Vec::new();
-        for _ in 0..(3.5 * LEVEL_SECONDS / TICK_SECONDS) as u32 {
+        for _ in 0..(5.0 * LEVEL_SECONDS / TICK_SECONDS) as u32 {
             w.go_on();
             w.tick(&Input::NONE);
             for e in w.events() {
@@ -1965,10 +2047,18 @@ mod tests {
                 }
             }
         }
-        // Level 1 landed, level 2 begins; landed, level 1 again.
+        // Level 1 landed, level 2 begins; landed, level 3; landed, level
+        // 1 again.
         assert_eq!(
-            &seen[..4],
-            [("done", 1), ("new", 2), ("done", 2), ("new", 1)]
+            &seen[..6],
+            [
+                ("done", 1),
+                ("new", 2),
+                ("done", 2),
+                ("new", 3),
+                ("done", 3),
+                ("new", 1)
+            ]
         );
     }
 
@@ -2016,7 +2106,68 @@ mod tests {
             w.huts.list.clear();
             w.gulls.list.clear();
             w.towers.list.clear();
+            w.city.clear();
             w.tick(&Input::with_throttle(0.0, gas));
+        }
+    }
+
+    #[test]
+    fn the_main_wheels_touch_down_first_then_the_nose_wheel_with_tyre_smoke() {
+        let mut w = World::with_seed(PHONE, 3);
+        until_approach(&mut w, 0.0);
+        let mut seen = Vec::new();
+        let mut nose_up = false;
+        while !w.level_complete().is_some() {
+            w.tick(&Input::NONE);
+            for e in w.events() {
+                if matches!(e, Event::MainWheelsTouch | Event::NoseWheelTouch) {
+                    seen.push((*e, w.ticks, w.tyre_smoke.len()));
+                }
+            }
+            if w.rolling_out() {
+                // The main wheels stay on the runway while the nose comes
+                // down.
+                let size = PHONE.plane_depth(Airport::runway_top(PHONE));
+                let (sin, cos) = w.player.pitch.sin_cos();
+                let main =
+                    w.player.pos.y + (MAIN_WHEEL_X * sin + STRUT_REACH * cos + WHEEL_RADIUS) * size;
+                assert!((main - Airport::runway_top(PHONE)).abs() < 0.01, "{main}");
+                nose_up |= w.player.pitch < -0.05;
+            }
+        }
+        assert!(nose_up, "touches down nose up");
+        assert_eq!(w.player.pitch, 0.0, "the nose is down by the stop");
+        let kinds: Vec<Event> = seen.iter().map(|s| s.0).collect();
+        assert_eq!(kinds, [Event::MainWheelsTouch, Event::NoseWheelTouch]);
+        let gap = (seen[1].1 - seen[0].1) as f32 * TICK_SECONDS;
+        assert!((gap - NOSE_DOWN_SECONDS).abs() < 0.05, "{gap}");
+        assert_eq!((seen[0].2, seen[1].2), (1, 2), "a puff for each");
+        // The puffs are gone after a while.
+        assert!(w.tyre_smoke.is_empty());
+    }
+
+    #[test]
+    fn tyre_smoke_stays_on_the_ground_and_fades() {
+        let mut w = World::with_seed(PHONE, 3);
+        until_approach(&mut w, 0.0);
+        while w.tyre_smoke.is_empty() {
+            w.tick(&Input::NONE);
+        }
+        let first = w.tyre_smoke[0];
+        assert!(first.pos.x < w.player.pos.x, "behind the plane's centre");
+        assert_eq!(first.pos.y, Airport::runway_top(PHONE));
+        w.tick(&Input::NONE);
+        let later = w.tyre_smoke[0];
+        assert!(later.pos.x < first.pos.x, "slides off with the ground");
+        assert!(later.progress() > first.progress());
+    }
+
+    #[test]
+    fn the_runways_are_lit_at_sunset_and_at_night() {
+        for (level, lit) in [(1, false), (BEACH_LEVEL, true), (CITY_LEVEL, true)] {
+            let mut w = world();
+            w.start_level = level;
+            assert_eq!(w.runway_lit(), lit, "level {level}");
         }
     }
 
@@ -2045,7 +2196,7 @@ mod tests {
 
     #[test]
     fn no_obstacles_come_while_the_autopilot_takes_off() {
-        for level in [1, BEACH_LEVEL] {
+        for level in [1, BEACH_LEVEL, CITY_LEVEL] {
             let mut w = World::with_seed(PHONE, 7);
             w.start_level = level;
             let mut w = w.with_takeoff();
@@ -2054,7 +2205,9 @@ mod tests {
                     w.gulls.list.is_empty()
                         && w.towers.list.is_empty()
                         && w.balloons.list.is_empty()
-                        && w.huts.list.is_empty(),
+                        && w.huts.list.is_empty()
+                        && w.city.high_rises.is_empty()
+                        && w.city.cranes.is_empty(),
                     "level {level}: an obstacle during the takeoff"
                 );
                 w.tick(&Input::NONE);
@@ -2195,11 +2348,11 @@ mod tests {
     }
 
     #[test]
-    fn a_flight_started_in_level_2_moves_on_to_level_1() {
+    fn a_flight_started_in_the_last_level_moves_on_to_level_1() {
         let mut w = world();
-        w.start_level = 2;
-        w.lives = u32::MAX; // gulls must not end the flight
-        assert_eq!(w.levels().level, 2);
+        w.start_level = LEVEL_COUNT;
+        w.lives = u32::MAX; // the town must not end the flight
+        assert_eq!(w.levels().level, LEVEL_COUNT);
         let seen = new_levels(&mut w, 1.5 * LEVEL_SECONDS);
         assert_eq!(seen.iter().map(|&(_, l)| l).collect::<Vec<_>>(), [1]);
     }
@@ -2433,6 +2586,83 @@ mod tests {
     }
 
     #[test]
+    fn the_town_stands_only_in_level_3() {
+        let mut w = World::with_seed(PHONE, 5);
+        w.lives = u32::MAX;
+        for _ in 0..((2.0 * LEVEL_SECONDS + 20.0) / TICK_SECONDS) as u32 {
+            w.go_on();
+            w.tick(&Input::NONE);
+            let town = !w.city.high_rises.is_empty() || !w.city.cranes.is_empty();
+            if w.levels().level != CITY_LEVEL {
+                assert!(!town, "level {}", w.levels().level);
+            }
+        }
+        let mut w = World::with_seed(PHONE, 5);
+        w.start_level = CITY_LEVEL;
+        let mut w = w.with_takeoff();
+        let mut both = (false, false);
+        for _ in 0..(40.0 / TICK_SECONDS) as u32 {
+            w.lives = LIVES;
+            w.tick(&Input::NONE);
+            both.0 |= !w.city.high_rises.is_empty();
+            both.1 |= !w.city.cranes.is_empty();
+        }
+        assert_eq!(both, (true, true), "high-rises and cranes in the town");
+    }
+
+    /// The town with one crane in the plane's way, the plane at `y`.
+    fn crane_ahead(y: f32) -> World {
+        let mut w = World::with_seed(PHONE, 5);
+        w.start_level = CITY_LEVEL;
+        let mut w = w.with_takeoff();
+        while w.hands_off() {
+            w.tick(&Input::NONE);
+        }
+        w.city.clear();
+        let reach = 200.0;
+        w.city.cranes.push(Crane {
+            // The load hangs 150 px ahead of the plane.
+            x: w.player.pos.x + 150.0 + reach - 16.0,
+            reach,
+            load_width: 90.0,
+            load_at: 0.45,
+        });
+        w.player.pos.y = y;
+        w.player.vel_y = 0.0;
+        w
+    }
+
+    #[test]
+    fn right_at_the_top_a_crane_jib_is_in_the_way() {
+        let top = PLAYER_HALF_HEIGHT * PHONE.plane_depth(0.0);
+        let mut w = crane_ahead(top);
+        let lives = w.lives;
+        for _ in 0..(3.0 / TICK_SECONDS) as u32 {
+            w.player.pos.y = top; // hug the top
+            w.tick(&Input::new(-1.0));
+        }
+        assert_eq!(w.lives, lives - 1, "the jib");
+    }
+
+    #[test]
+    fn under_a_cranes_load_is_the_way_through() {
+        let probe = crane_ahead(0.0);
+        let under = probe.city.cranes[0].load_bottom(PHONE) + 0.15 * PHONE.height;
+        let mut w = crane_ahead(under);
+        let lives = w.lives;
+        for _ in 0..(6.0 / TICK_SECONDS) as u32 {
+            w.player.pos.y = under;
+            w.player.vel_y = 0.0;
+            w.tick(&Input::NONE);
+        }
+        assert_eq!(w.lives, lives, "no crash under the load");
+        let passed = |w: &World| {
+            (w.city.cranes.first()).is_none_or(|c| c.parts(PHONE).cable.0.x < w.player.pos.x)
+        };
+        assert!(passed(&w), "flew past the load");
+    }
+
+    #[test]
     fn no_gulls_in_level_1() {
         let mut w = world();
         new_levels(&mut w, LEVEL_SECONDS - 0.1);
@@ -2464,6 +2694,8 @@ mod tests {
                         Event::Takeoff
                         | Event::GearUp
                         | Event::GearDown
+                        | Event::MainWheelsTouch
+                        | Event::NoseWheelTouch
                         | Event::LevelComplete { .. } => {}
                     }
                 }

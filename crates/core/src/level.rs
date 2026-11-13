@@ -9,7 +9,7 @@
 use crate::TICK_SECONDS;
 
 /// How many levels exist (`web/levels/level1.png` … `levelN.png`).
-pub const LEVEL_COUNT: u32 = 2;
+pub const LEVEL_COUNT: u32 = 3;
 
 /// How long one level lasts, in seconds of flying.
 pub const LEVEL_SECONDS: f32 = 60.0;
@@ -152,7 +152,7 @@ mod tests {
     #[test]
     fn level_2_starts_after_level_seconds() {
         let v = level_view(at(LEVEL_SECONDS), 1);
-        assert_eq!((v.level, v.next, v.fade), (2, 1, 0.0));
+        assert_eq!((v.level, v.next, v.fade), (2, 3, 0.0));
     }
 
     #[test]
@@ -175,8 +175,15 @@ mod tests {
     #[test]
     fn a_flight_can_start_in_level_2() {
         let v = level_view(0, 2);
-        assert_eq!((v.level, v.next), (2, 1));
-        assert_eq!(level_view(at(LEVEL_SECONDS), 2).level, 1);
+        assert_eq!((v.level, v.next), (2, 3));
+        assert_eq!(level_view(at(LEVEL_SECONDS), 2).level, 3);
+    }
+
+    #[test]
+    fn after_the_last_level_a_flight_goes_on_in_level_1() {
+        let v = level_view(0, LEVEL_COUNT);
+        assert_eq!((v.level, v.next), (LEVEL_COUNT, 1));
+        assert_eq!(level_view(at(LEVEL_SECONDS), LEVEL_COUNT).level, 1);
     }
 
     #[test]
