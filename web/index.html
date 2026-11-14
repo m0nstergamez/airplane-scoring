@@ -768,6 +768,7 @@
     let flying = params.has("play");
     let paused = false; // the menu is open or counting down
     let newFlight = 0; // bumped by "Menu": the game starts a fresh flight
+    let restarts = 0; // bumped by "Restart": the same level again
     let chosenLevel = requestedLevel; // the level the next flight starts in
     // The level map: level 1 is open; landing a level completes it and
     // opens the next. The completed levels are kept in this browser.
@@ -835,10 +836,11 @@
     } catch (_) { /* nothing stored, or private mode */ }
     miniquad_add_plugin({
       name: "page",
-      version: 6, // must match page_crate_version() in page_js.rs
+      version: 7, // must match page_crate_version() in page_js.rs
       register_plugin: (importObject) => {
         importObject.env.page_started = () => (flying && !paused ? 1 : 0);
         importObject.env.page_new_flight = () => newFlight;
+        importObject.env.page_restart = () => restarts;
         importObject.env.page_level = () => chosenLevel;
         importObject.env.page_show_menu = () => toStart();
         importObject.env.page_best_time = (level, i) => {
@@ -973,7 +975,7 @@
     };
     const closeMenu = (fresh = false) => {
       menu.classList.remove("open");
-      if (fresh) newFlight += 1; // Restart: a new flight from the airport
+      if (fresh) restarts += 1; // Restart: this level again, from the airport
       let n = 3;
       countdown.textContent = n;
       countdown.classList.add("on");

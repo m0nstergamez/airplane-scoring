@@ -116,7 +116,8 @@ Spiel, das unscharf dahinter zu sehen ist:
 
 - **Continue:** zurück ins Spiel. Ein Countdown zählt 3, 2, 1; erst bei 0
   geht es weiter, damit du bereit bist.
-- **Restart:** ein neuer Flug vom Flughafen, nach demselben Countdown.
+- **Restart:** ein neuer Flug vom Flughafen im Level, in dem du gerade
+  bist, nach demselben Countdown.
 - **Calibrate** (nur auf dem Handy): Wie du das Handy jetzt hältst, gilt
   ab sofort als «gerade», fürs Steuern und fürs Gas.
 - **Options:** Musik (die Melodien) und Geräusche (alles andere)
@@ -197,7 +198,8 @@ herumfliegende Trümmer und eine Rauchwolke, mit einem lauten Knall, und
 der Bildschirm **wackelt**.
 Dann steht **«Game over»** auf dem Bildschirm, mit den Bestzeiten des Levels (ein «Game over» bekommt keine Zeit). Nach einem
 kurzen Moment erscheint «Tap or click to fly again»: Tippe, klicke oder
-drücke Enter, und ein neuer Flug beginnt im selben Level mit 3 Leben.
+drücke Enter, und ein neuer Flug beginnt im selben Level mit 3 Leben (auch wenn du
+den Flug in einem früheren Level begonnen hast).
 
 Nur ein **geschafftes** Level bekommt eine Zeit. «Level complete» zeigt
 sie mit Millisekunden («Time 1:02.483»), und darunter stehen die

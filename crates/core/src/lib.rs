@@ -576,6 +576,13 @@ impl World {
         }
     }
 
+    /// Where "fly again" after a game over (or the pause menu's Restart)
+    /// begins: the level the plane is in, not the one the flight started
+    /// in, so a player who reached level 4 does not start over at level 1.
+    pub fn restart_level(&self) -> u32 {
+        self.levels().level
+    }
+
     /// "Level N complete" is showing: the level just done.
     pub fn level_complete(&self) -> Option<u32> {
         match self.landing {
@@ -2177,6 +2184,20 @@ mod tests {
             }
         }
         seen
+    }
+
+    #[test]
+    fn a_restart_begins_in_the_level_the_plane_is_in() {
+        for start in 1..=LEVEL_COUNT {
+            let mut w = World::with_seed(PHONE, 1);
+            w.lives = u32::MAX;
+            w.start_level = start;
+            assert_eq!(w.restart_level(), start);
+            let seen = new_levels(&mut w, 1.6 * LEVEL_SECONDS);
+            let reached = seen.last().map(|&(_, l)| l).expect("a next level");
+            assert_ne!(reached, start);
+            assert_eq!(w.restart_level(), reached, "from level {start}");
+        }
     }
 
     #[test]

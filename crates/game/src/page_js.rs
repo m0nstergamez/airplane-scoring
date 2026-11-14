@@ -14,6 +14,7 @@ mod imp {
         fn page_started() -> i32;
         fn page_level() -> i32;
         fn page_new_flight() -> u32;
+        fn page_restart() -> u32;
         fn page_show_menu();
         fn page_level_complete(level: u32);
         fn page_best_time(level: u32, i: u32) -> f64;
@@ -23,7 +24,7 @@ mod imp {
     /// miniquad checks this against the JS plugin's `version`.
     #[no_mangle]
     pub extern "C" fn page_crate_version() -> u32 {
-        6
+        7
     }
 
     /// A level's stored best times, in milliseconds (0 = none).
@@ -62,6 +63,13 @@ mod imp {
         unsafe { page_new_flight() }
     }
 
+    /// Bumped by the pause menu's "Restart": fly the level the plane is
+    /// in again, from the airport.
+    pub fn restart() -> u32 {
+        // SAFETY: plain getter provided by the page's plugin; no pointers.
+        unsafe { page_restart() }
+    }
+
     pub fn started() -> bool {
         // SAFETY: plain getter provided by the page's plugin; no pointers.
         unsafe { page_started() != 0 }
@@ -84,6 +92,10 @@ mod imp {
     }
 
     pub fn new_flight() -> u32 {
+        0
+    }
+
+    pub fn restart() -> u32 {
         0
     }
 
@@ -110,6 +122,6 @@ mod imp {
 }
 
 pub use imp::{
-    level_complete, load_best_times, new_flight, requested_level, save_best_times, show_menu,
-    started,
+    level_complete, load_best_times, new_flight, requested_level, restart, save_best_times,
+    show_menu, started,
 };

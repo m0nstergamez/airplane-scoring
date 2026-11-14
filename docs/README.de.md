@@ -1061,6 +1061,12 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
     gibt es. Das Meta-Tag `board-api` bleibt in den Quellen leer, damit
     lokale Builds nichts werten; CI setzt den Server bei Fly ein, wenn es
     die Seite veröffentlicht (`scripts/set-board-api.sh`, auch für die Stage).
+- «Game over» in Level 4 startete den neuen Flug in Level 1, gemeldet:
+  der Neustart nahm das Level, in dem der Flug begann (die Wahl auf der
+  Karte), darum traf es jedes Level, das man mit «Next level» erreicht.
+  Jetzt entscheidet `World::restart_level` (das Level, in dem das
+  Flugzeug ist), getestet von jedem Startlevel aus. «Restart» im
+  Pausenmenü tut dasselbe; es hat einen eigenen Zähler (`page_restart`), weil «Menu» weiter im Level der Karte startet.
 
 ## Konzepte
 

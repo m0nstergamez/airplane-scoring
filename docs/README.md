@@ -955,6 +955,12 @@ that isn't code here. Keep entries short and dated.
     exist. The `board-api` meta tag stays empty in the source, so local
     builds rank nothing; CI sets the Fly server when it publishes the
     page (`scripts/set-board-api.sh`, also used by the stage).
+- Game over in level 4 started the new flight in level 1, reported: the
+  restart took the level the flight began in (the map's choice), so it
+  hit every level reached with "Next level". `World::restart_level` (the
+  level the plane is in) now decides it, tested from every start level.
+  The pause menu's Restart does the same; it has its own counter
+  (`page_restart`), as "Menu" still starts in the map's level.
 
 ## Concepts
 
