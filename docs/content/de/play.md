@@ -294,7 +294,9 @@ am Anfang und rot am Ende, damit du sie in der Dämmerung und im Dunkeln
 siehst.
 
 Beim **Sonnenaufgang** (Level 4) fliegst du der tiefen Sonne entgegen,
-über einen dunklen Wald und ein Tal im Morgendunst:
+über einen dunklen Wald und ein Tal im Morgendunst. Weit hinten stehen
+Hochhäuser, schwarz vor der Sonne (nie bei einer Bahn); sie sind nur
+Kulisse, du fliegst vor ihnen durch:
 
 - **Gänse** kommen dir in einem **V** entgegen, schnell, alle paar
   Sekunden. Jede Schar ruft, wenn sie kommt, nie zweimal gleich

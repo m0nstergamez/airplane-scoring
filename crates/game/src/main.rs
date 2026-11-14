@@ -4,12 +4,13 @@
 use airplane_scoring_core::Vec2 as Vec2Core;
 use airplane_scoring_core::{
     background_x, best_time_text, clock_text, has_next_level, pick_steer, pick_throttle,
-    start_level, steer_from_keys, Airport, Balloon, BestTimes, Bounds, Clock, Crane, Event, Goose,
-    Gull, HeliParts, HighRise, Hut, Input, Mix, Pad, Steam, Tilt, Tower, TyreSmoke, Warning, World,
-    Wreck, AIRSPEED_RANGE, BALLOON_RADIUS, BASKET_BELOW, BEST_TIMES_COUNT, HUT_EAVES, HUT_INSET,
-    LIVES, MAIN_WHEEL_X, NOSE_WHEEL_X, OVERSPEED_AT, PAD_HEIGHT, PAD_WIDTH, PLANE_COCKPIT,
-    PLANE_FUSELAGE, PLANE_NOSE, PLANE_RADIUS, PLANE_TAIL, PLANE_WING, RUNWAY_HEIGHT, RUNWAY_LENGTH,
-    STALL_AT, STRUT_REACH, SUNRISE_LEVEL, SUN_AT, SUN_RADIUS, TICK_SECONDS, WHEEL_RADIUS,
+    start_level, steer_from_keys, Airport, Balloon, BestTimes, Bounds, Clock, Crane, Event,
+    FarHighRise, Goose, Gull, HeliParts, HighRise, Hut, Input, Mix, Pad, Steam, Tilt, Tower,
+    TyreSmoke, Warning, World, Wreck, AIRSPEED_RANGE, BALLOON_RADIUS, BASKET_BELOW,
+    BEST_TIMES_COUNT, HUT_EAVES, HUT_INSET, LIVES, MAIN_WHEEL_X, NOSE_WHEEL_X, OVERSPEED_AT,
+    PAD_HEIGHT, PAD_WIDTH, PLANE_COCKPIT, PLANE_FUSELAGE, PLANE_NOSE, PLANE_RADIUS, PLANE_TAIL,
+    PLANE_WING, RUNWAY_HEIGHT, RUNWAY_LENGTH, STALL_AT, STRUT_REACH, SUNRISE_LEVEL, SUN_AT,
+    SUN_RADIUS, TICK_SECONDS, WHEEL_RADIUS,
 };
 use macroquad::prelude::*;
 
@@ -199,6 +200,10 @@ async fn main() {
         // The low sun of the sunrise, fixed in the sky ahead.
         if levels.level == SUNRISE_LEVEL {
             draw_sun(world.bounds, world.ticks);
+        }
+        // High-rises far back in the valley, black against the sun.
+        for b in &world.sunrise.high_rises {
+            draw_far_high_rise(b, world.bounds);
         }
 
         for m in &world.planes {
@@ -1090,6 +1095,59 @@ fn draw_sun(bounds: Bounds, ticks: u64) {
     }
     draw_circle(x, y, r, Color::from_rgba(255, 236, 170, 255));
     draw_circle(x, y, r * 0.75, Color::from_rgba(255, 250, 225, 255));
+}
+
+/// A high-rise far back at sunrise (core's `FarHighRise`), like the one
+/// in the photo: a dark silhouette with a flat roof that overhangs, a
+/// stair house and a mast on it, dim windows, and the sun's light along
+/// its roof and right edge.
+fn draw_far_high_rise(b: &FarHighRise, bounds: Bounds) {
+    let s = bounds.scale();
+    let (l, t, w, h) = b.rect(bounds);
+    let dark = Color::from_rgba(26, 16, 10, 255);
+    let rim = Color::from_rgba(246, 160, 64, 150);
+    draw_rectangle(l, t, w, h, dark);
+    // The roof slab, wider than the walls, and the stair house on it.
+    let (sl, sr) = b.span(bounds);
+    draw_rectangle(sl, t - 6.0 * s, sr - sl, 6.0 * s, dark);
+    let (hw, hh) = (0.47 * w, 22.0 * s);
+    let hl = l + 0.33 * w;
+    draw_rectangle(hl, t - 6.0 * s - hh, hw, hh, dark);
+    let mast = hl + hw * 0.5;
+    draw_line(
+        mast,
+        t - 6.0 * s - hh,
+        mast,
+        t - 6.0 * s - hh - 26.0 * s,
+        3.0 * s,
+        dark,
+    );
+    draw_line(sl, t, sr, t, 2.0 * s, rim);
+    draw_line(
+        l + w,
+        t,
+        l + w,
+        t + h,
+        2.0 * s,
+        Color::new(0.96, 0.63, 0.25, 0.3),
+    );
+    // Windows: a dim grid, a few lit.
+    let (ww, wh) = (12.0 * s, 6.0 * s);
+    let cols = ((w / (22.0 * s)) as i32).max(3);
+    let rows = ((h / (34.0 * s)) as i32).max(1);
+    for row in 0..rows {
+        for col in 0..cols {
+            let x = l + (col as f32 + 0.5) * w / cols as f32 - ww / 2.0;
+            let y = t + 20.0 * s + row as f32 * 34.0 * s;
+            let on = (col * 5 + row * 3 + b.width as i32) % 7 == 0;
+            let colour = if on {
+                Color::from_rgba(255, 190, 110, 200)
+            } else {
+                Color::from_rgba(58, 36, 20, 255)
+            };
+            draw_rectangle(x, y, ww, wh, colour);
+        }
+    }
 }
 
 /// The sun's glare (core's `Sunrise::glare`, 0..1): the screen washes out

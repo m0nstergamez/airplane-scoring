@@ -275,7 +275,9 @@ lights along both edges and on the centre line, green at the start and
 red at the end, so you see them in the dusk and the dark.
 
 At **sunrise** (level 4) you fly toward the low sun, over a dark forest
-and a valley in the morning haze:
+and a valley in the morning haze. High-rises stand far back, black
+against the sun (never by a runway); they are only scenery, you fly in
+front of them:
 
 - **Geese** come at you in a **V**, fast, every few seconds. Each flock
   calls as it comes, never twice the same way in a row: honking, far

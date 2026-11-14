@@ -212,7 +212,9 @@ flowchart LR
   von `GOOSE_CALLS` Rufen, nie zweimal derselbe hintereinander). Jedes
   `Steam` ist ein kleines Haus (`house_shape`, fest) mit einer Säule aus
   seinem Kamin; in der Säule wird das Flugzeug nach oben gedrückt
-  (`STEAM_LIFT`, `Event::SteamHiss`), ohne Leben zu verlieren. `Sunrise::glare` (0..1, alle 10–16 s für `GLARE_SECONDS`)
+  (`STEAM_LIFT`, `Event::SteamHiss`), ohne Leben zu verlieren.
+  `FarHighRise`s stehen weit hinten als Kulisse (nicht getroffen); wie
+  alles andere kommen sie nur, solange keine Bahn im Bild ist. `Sunrise::glare` (0..1, alle 10–16 s für `GLARE_SECONDS`)
   sagt dem Spiel, wie stark es den Bildschirm ins Licht der Sonne
   taucht, die es bei `SUN_AT` zeichnet.
 - **Möwen** (`crates/core/src/gulls.rs`) sind die Hindernisse am Strand.

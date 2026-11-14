@@ -88,6 +88,7 @@ short **meaning**.
 | Sonnenaufgang | sunrise | `Sunrise`, `SUNRISE_LEVEL` | Level 4: flying toward the low sun over a forest and a hazy valley |
 | Gans, V | goose, V | `Goose` | Level 4: geese come at the plane in a V aimed at its height; an obstacle, knocked down when hit |
 | Dampf, Dampfsäule | steam, column of steam | `Steam`, `STEAM_LIFT` | Level 4: rises from a house's chimney in the valley; throws the plane up, costs no life |
+| Hochhaus im Hintergrund | far high-rise | `FarHighRise` | Level 4: a high-rise far back, black against the sun; scenery, not an obstacle; never by a runway |
 | Haus, Kamin | house, chimney | `Steam::house_parts`, `HOUSE_WIDTH`, `CHIMNEY` | Level 4: small houses in the valley with a chimney the steam rises from; an obstacle |
 | Blendung | glare | `Sunrise::glare`, `SUN_AT` | Level 4: the low sun blinds you for a moment; the screen washes out |
 | Wrack | wreck | `Wreck` | A helicopter the plane flew into: it falls, burning, and is no obstacle any more |

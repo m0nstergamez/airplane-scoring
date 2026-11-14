@@ -67,8 +67,8 @@ pub use sound::{
     STEAM_VOLUME, TAKEOFF_VOLUME, VOICE_VOLUME, WARNING_VOLUME, WIND_VOLUME,
 };
 pub use sunrise::{
-    Goose, HouseParts, Steam, Sunrise, GLARE_SECONDS, GOOSE_CALLS, GOOSE_GAP_SECONDS, STEAM_LIFT,
-    SUNRISE_LEVEL, SUN_AT, SUN_RADIUS,
+    FarHighRise, Goose, HouseParts, Steam, Sunrise, GLARE_SECONDS, GOOSE_CALLS, GOOSE_GAP_SECONDS,
+    STEAM_LIFT, SUNRISE_LEVEL, SUN_AT, SUN_RADIUS,
 };
 pub use tilt::{
     Tilt, LEAN_DEAD_ZONE_DEG, LEAN_FULL_DEG, TILT_DEAD_ZONE_DEG, TILT_FULL_DEG, TILT_MIN_GRAVITY,
@@ -2795,6 +2795,28 @@ mod tests {
             seen.1 |= !w.sunrise.steam.is_empty();
         }
         assert_eq!(seen, (true, true), "geese and steam at sunrise");
+    }
+
+    #[test]
+    fn at_sunrise_high_rises_stand_far_back_but_never_by_a_runway() {
+        let mut w = World::with_seed(PHONE, 7);
+        w.start_level = SUNRISE_LEVEL;
+        let mut w = w.with_takeoff();
+        let mut seen = 0;
+        while w.level_complete().is_none() {
+            w.lives = LIVES;
+            w.sunrise.geese.clear();
+            w.sunrise.steam.clear();
+            w.tick(&Input::NONE);
+            seen = seen.max(w.sunrise.high_rises.len());
+            let Some(a) = w.airport else { continue };
+            let (from, to) = (a.x, a.x + RUNWAY_LENGTH * PHONE.scale());
+            for b in &w.sunrise.high_rises {
+                let (l, r) = b.span(PHONE);
+                assert!(r < from || l > to, "a high-rise by the runway");
+            }
+        }
+        assert!(seen > 0, "there are high-rises at sunrise");
     }
 
     #[test]

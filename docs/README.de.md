@@ -842,6 +842,10 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
   - Blendung alle 10–16 s für 2.5 s taucht den Bildschirm in warmes
     Licht, gezeichnet als viele schwache Ringe, damit sie keine Ränder
     hat.
+  - Das Hochhaus ist zurück, gewünscht (nur nicht bei der Bahn): vom
+    Spiel als `FarHighRise` weit hinten gezeichnet, schwarz vor der
+    Sonne, als Kulisse. Es kommt nur, solange keine Bahn im Bild ist,
+    steht also nie bei einer (über ein ganzes Level getestet).
   - Neue Töne aus `scripts/make-sounds.py`: `goose-honk.wav` (Rufe mit
     starken ungeraden Obertönen, wie ein Rohrblatt) und `steam.wav`.
   - Das goldene «NEW» ist auf der Level-Karte zu Level 4 gewandert.

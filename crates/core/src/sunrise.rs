@@ -12,6 +12,10 @@
 //!   up ([`STEAM_LIFT`]), so you have to catch it again. The house is
 //!   small (smaller than the town's high-rises) but solid: flying into it
 //!   is a crash.
+//! * **High-rises** stand far back in the valley, black against the
+//!   sun, like the one in the photo. They are scenery, not obstacles
+//!   (the plane flies in front of them), and like everything else they
+//!   only come while no runway is on screen, so none stands by a runway.
 //! * **Glare**: now and then the low sun ahead blinds you for a moment
 //!   ([`GLARE_SECONDS`]); the game washes the screen in its light.
 //!
@@ -77,6 +81,14 @@ pub const CHIMNEY: (f32, f32) = (9.0, 16.0);
 /// How hard the warm air throws the plane up while it is in a column,
 /// in px per second, each second (at scale 1).
 pub const STEAM_LIFT: f32 = 900.0;
+
+/// High-rises far back: time between two, shortest and longest, and the
+/// first, in seconds; width in px; their roof, as a fraction of the screen
+/// height from the top (they stand on the ground line).
+pub const FAR_HIGH_RISE_GAP_SECONDS: (f32, f32) = (7.0, 12.0);
+pub const FIRST_FAR_HIGH_RISE_SECONDS: f32 = 1.5;
+pub const FAR_HIGH_RISE_WIDTH: (f32, f32) = (90.0, 130.0);
+pub const FAR_HIGH_RISE_TOP: (f32, f32) = (0.5, 0.6);
 
 /// Time between two glares, shortest and longest, and the first one, in
 /// seconds; how long one lasts, and how long it takes to come and go.
@@ -267,6 +279,32 @@ impl Steam {
     }
 }
 
+/// A high-rise far back in the valley, in silhouette (scenery).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct FarHighRise {
+    /// Its middle on screen, in px.
+    pub x: f32,
+    /// Its width in px at scale 1.
+    pub width: f32,
+    /// Its roof, as a fraction of the screen height from the top.
+    pub top: f32,
+}
+
+impl FarHighRise {
+    /// Its walls: left, top, width, height, in px (down to the ground).
+    pub fn rect(&self, bounds: Bounds) -> (f32, f32, f32, f32) {
+        let w = self.width * bounds.scale();
+        let top = self.top * bounds.height;
+        (self.x - w / 2.0, top, w, STEAM_GROUND * bounds.height - top)
+    }
+
+    /// Its leftmost and rightmost x, with the roof's overhang, in px.
+    pub fn span(&self, bounds: Bounds) -> (f32, f32) {
+        let w = self.width * bounds.scale() * 1.2;
+        (self.x - w / 2.0, self.x + w / 2.0)
+    }
+}
+
 /// The morning's geese, steam and glare.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Sunrise {
@@ -274,10 +312,13 @@ pub struct Sunrise {
     pub geese: Vec<Goose>,
     /// The columns of steam on screen.
     pub steam: Vec<Steam>,
+    /// High-rises far back (scenery), oldest first.
+    pub high_rises: Vec<FarHighRise>,
     /// Ticks into the glare now; `None` between glares.
     glare: Option<u32>,
     next_goose: u32,
     next_steam: u32,
+    next_high_rise: u32,
     next_glare: u32,
     /// The last flock's call, so the next one sounds different.
     last_call: u8,
@@ -289,9 +330,11 @@ impl Sunrise {
         Self {
             geese: Vec::new(),
             steam: Vec::new(),
+            high_rises: Vec::new(),
             glare: None,
             next_goose: ticks(FIRST_GOOSE_SECONDS),
             next_steam: ticks(FIRST_STEAM_SECONDS),
+            next_high_rise: ticks(FIRST_FAR_HIGH_RISE_SECONDS),
             next_glare: ticks(FIRST_GLARE_SECONDS),
             last_call: 0,
             // Its own stream, so the morning does not change other things.
@@ -303,6 +346,7 @@ impl Sunrise {
     pub fn clear(&mut self) {
         self.geese.clear();
         self.steam.clear();
+        self.high_rises.clear();
         self.glare = None;
     }
 
@@ -310,6 +354,7 @@ impl Sunrise {
     pub fn shift(&mut self, dx: f32) {
         self.geese.iter_mut().for_each(|g| g.pos.x += dx);
         self.steam.iter_mut().for_each(|c| c.x += dx);
+        self.high_rises.iter_mut().for_each(|b| b.x += dx);
     }
 
     /// How strong the glare is now: 0 = none, 1 = full, fading in and
@@ -342,6 +387,10 @@ impl Sunrise {
             c.age += 1;
         }
         self.steam.retain(|c| c.right(bounds) > -MARGIN * s);
+        for b in &mut self.high_rises {
+            b.x += dx;
+        }
+        self.high_rises.retain(|b| b.span(bounds).1 > -MARGIN * s);
         if let Some(t) = &mut self.glare {
             *t += 1;
             if *t >= ticks(GLARE_SECONDS) {
@@ -352,6 +401,7 @@ impl Sunrise {
         if !active {
             self.next_goose = ticks(FIRST_GOOSE_SECONDS);
             self.next_steam = ticks(FIRST_STEAM_SECONDS);
+            self.next_high_rise = ticks(FIRST_FAR_HIGH_RISE_SECONDS);
             self.next_glare = ticks(FIRST_GLARE_SECONDS);
             self.glare = None;
             return;
@@ -382,6 +432,18 @@ impl Sunrise {
                 age: 0,
             });
             self.next_steam = ticks(r.range(STEAM_GAP_SECONDS.0, STEAM_GAP_SECONDS.1));
+        }
+        self.next_high_rise -= 1;
+        if self.next_high_rise == 0 {
+            let r = &mut self.rng;
+            let width = r.range(FAR_HIGH_RISE_WIDTH.0, FAR_HIGH_RISE_WIDTH.1);
+            self.high_rises.push(FarHighRise {
+                x: bounds.width + width * s,
+                width,
+                top: r.range(FAR_HIGH_RISE_TOP.0, FAR_HIGH_RISE_TOP.1),
+            });
+            let gap = r.range(FAR_HIGH_RISE_GAP_SECONDS.0, FAR_HIGH_RISE_GAP_SECONDS.1);
+            self.next_high_rise = ticks(gap);
         }
         self.next_glare -= 1;
         if self.next_glare == 0 {

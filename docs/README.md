@@ -772,6 +772,10 @@ that isn't code here. Keep entries short and dated.
     the flocks call in four ways (`GOOSE_CALLS`: honking, far off,
     chattering, a crow), never the same twice in a row, since one call
     over and over got on your nerves.
+  - The high-rise came back, asked for (only not by the runway): drawn
+    by the game as `FarHighRise` far back, black against the sun, as
+    scenery. It only comes while no runway is on screen, so it never
+    stands by one (tested over a whole level).
 
 ## Concepts
 
