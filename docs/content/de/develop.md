@@ -221,7 +221,8 @@ flowchart LR
 - **Der Herbstwald** (`crates/core/src/forest.rs`, Level 5,
   `FOREST_LEVEL`): Gruppen von einer bis drei `Fir`s (`FIR_GROUP`), jede
   anders hoch, mit `FOREST_ROOM` zwischen den Gruppen; ein `Buzzard`
-  gleitet heran, kreist `BUZZARD_CIRCLE_SECONDS` lang und stösst dorthin
+  kommt von vorn, oben oder unten (`BuzzardFrom`, nie von hinten) alle
+  3.5–12 s, kreist vor dem Flugzeug `BUZZARD_CIRCLE_SECONDS` lang und stösst dorthin
   herab, wo das Flugzeug dann ist (`Event::BuzzardCry`), abgeschossen,
   wenn getroffen; `Gust`s drücken das Flugzeug nach unten (`GUST_PUSH`,
   schwächer als Steigen, `Event::LeafRustle`), ohne Leben zu verlieren;

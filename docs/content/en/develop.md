@@ -210,8 +210,9 @@ flowchart LR
   wash the screen in the light of the sun, which it draws at `SUN_AT`.
 - **The autumn forest** (`crates/core/src/forest.rs`, level 5,
   `FOREST_LEVEL`): groups of one to three `Fir`s (`FIR_GROUP`), each its
-  own height, with `FOREST_ROOM` between groups; a `Buzzard` glides in,
-  circles for `BUZZARD_CIRCLE_SECONDS` and dives at where the plane is
+  own height, with `FOREST_ROOM` between groups; a `Buzzard` comes in from ahead,
+  above or below (`BuzzardFrom`, never from behind) every 3.5–12 s,
+  circles ahead of the plane for `BUZZARD_CIRCLE_SECONDS` and dives at where the plane is
   then (`Event::BuzzardCry`), knocked down when hit; `Gust`s press the
   plane down (`GUST_PUSH`, weaker than climbing, `Event::LeafRustle`),
   no life lost; `Forest::fog` (0..1) tells the game how much to veil the

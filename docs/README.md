@@ -817,6 +817,10 @@ that isn't code here. Keep entries short and dated.
     (`scripts/serve.sh`) kept Python's default backlog of 5, and the page
     loads every picture and sound at once, so macOS reset a connection
     now and then. It now allows 64 (three full checks in a row passed).
+  - The buzzard came too regularly and always from ahead, asked for:
+    now every 3.5–12 s (was 6–9 s), and from ahead, from above or up out
+    of the trees (`BuzzardFrom`), never from behind: it always circles
+    ahead of the plane before it dives (tested over ten minutes).
 
 ## Concepts
 

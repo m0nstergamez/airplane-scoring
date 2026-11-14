@@ -45,7 +45,8 @@ pub use city::{
 };
 pub use clock::{Clock, MAX_FRAME_SECONDS};
 pub use forest::{
-    Buzzard, BuzzardState, Fir, FirParts, Forest, Gust, BUZZARD_SIZE, FOREST_LEVEL, GUST_PUSH,
+    Buzzard, BuzzardFrom, BuzzardState, Fir, FirParts, Forest, Gust, BUZZARD_SIZE, FOREST_LEVEL,
+    GUST_PUSH,
 };
 pub use gulls::{
     Gull, GullStart, Gulls, FIRST_GULL_SECONDS, GULL_BOB, GULL_CALL_CHANCE, GULL_FROM_LEFT,

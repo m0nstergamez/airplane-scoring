@@ -300,7 +300,8 @@ hill and the orange crowns of the valley:
 - **Firs** stand tall, alone or two or three together, each its own
   height. Fly over them; branches and trunk count. There is always a gap
   between two groups to come down into.
-- A **buzzard** glides in high up from the right and circles for a
+- A **buzzard** comes at odd times, from ahead, from above or up out of
+  the trees, but never from behind. It circles ahead of you for a
   moment, so you see it coming. Then it cries and dives straight at
   where you are. Get out of its way: if it hits you, you lose a life and
   it tumbles down.

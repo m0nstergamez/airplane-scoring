@@ -321,8 +321,9 @@ Hügel und die orangen Baumkronen im Tal:
 - **Tannen** stehen hoch, allein oder zu zweit oder zu dritt, jede
   anders hoch. Flieg über sie; Äste und Stamm zählen. Zwischen zwei
   Gruppen bleibt immer eine Lücke, in die du hinunter kannst.
-- Ein **Bussard** gleitet oben von rechts heran und kreist einen
-  Moment, damit du ihn kommen siehst. Dann schreit er und stösst
+- Ein **Bussard** kommt unregelmässig, von vorn, von oben oder aus den
+  Bäumen herauf, aber nie von hinten. Er kreist einen Moment vor dir,
+  damit du ihn kommen siehst. Dann schreit er und stösst
   geradewegs dorthin herab, wo du bist. Weich ihm aus: Trifft er dich,
   verlierst du ein Leben, und er stürzt ab.
 - **Böen** voller Herbstlaub fegen vom Himmel herab. Sie kosten kein

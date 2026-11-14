@@ -894,6 +894,10 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
     und die Seite lädt alle Bilder und Töne auf einmal, also brach macOS
     ab und zu eine Verbindung ab. Jetzt sind 64 erlaubt (drei volle
     Prüfungen nacheinander liefen durch).
+  - Der Bussard kam zu regelmässig und immer von vorn, gewünscht: jetzt
+    alle 3.5–12 s (vorher 6–9 s), und von vorn, von oben oder aus den
+    Bäumen herauf (`BuzzardFrom`), nie von hinten: Er kreist immer vor
+    dem Flugzeug, bevor er herabstösst (über zehn Minuten getestet).
   - Neue Töne aus `scripts/make-sounds.py`: `goose-honk.wav` (Rufe mit
     starken ungeraden Obertönen, wie ein Rohrblatt) und `steam.wav`.
   - Das goldene «NEW» ist auf der Level-Karte zu Level 4 gewandert.

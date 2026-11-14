@@ -5,7 +5,9 @@
 //!   ([`FIR_GROUP`]), each its own height. They are solid: fly over them.
 //!   A group waits until the last one has moved in by [`FOREST_ROOM`], so
 //!   there is always a gap to come down into.
-//! * A **buzzard** glides in high up from the right, circles for a moment
+//! * A **buzzard** comes in from ahead, from above or up out of the trees
+//!   ([`BuzzardFrom`]), never from behind, at irregular times
+//!   ([`BUZZARD_GAP_SECONDS`]). It circles ahead of the plane for a moment
 //!   ([`BUZZARD_CIRCLE_SECONDS`]), so you see it coming, then cries and
 //!   dives straight at where the plane is then. Fly into it and you crash;
 //!   it is knocked down and tumbles to the ground.
@@ -48,7 +50,9 @@ pub const FOREST_ROOM: f32 = 120.0;
 /// Time between two buzzards, shortest and longest, and the first, in
 /// seconds; how long one circles before it dives; how fast it glides in
 /// and dives, in px per second.
-pub const BUZZARD_GAP_SECONDS: (f32, f32) = (6.0, 9.0);
+/// (A wide range, so it comes at irregular times: now and then two close
+/// together, now and then a long quiet.)
+pub const BUZZARD_GAP_SECONDS: (f32, f32) = (3.5, 12.0);
 pub const FIRST_BUZZARD_SECONDS: f32 = 5.0;
 pub const BUZZARD_CIRCLE_SECONDS: f32 = 1.6;
 pub const BUZZARD_GLIDE: f32 = 220.0;
@@ -159,10 +163,22 @@ impl Fir {
     }
 }
 
+/// Where a buzzard comes from. Never from behind: it always circles
+/// ahead of the plane before it dives.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum BuzzardFrom {
+    /// Gliding in from the right.
+    Ahead,
+    /// Dropping in from the top of the screen.
+    Above,
+    /// Rising up out of the trees.
+    Below,
+}
+
 /// What a buzzard is doing.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum BuzzardState {
-    /// Gliding in from the right to where it circles.
+    /// Flying in (see [`BuzzardFrom`]) to where it circles.
     Gliding,
     /// Circling round `centre` for this many ticks so far.
     Circling { centre: Vec2, ticks: u32 },
@@ -180,6 +196,8 @@ pub struct Buzzard {
     pub state: BuzzardState,
     /// Where it will circle, on screen, in px.
     pub circle_at: Vec2,
+    /// Where it came from.
+    pub from: BuzzardFrom,
     /// Ticks since it appeared (for the wing beat).
     pub age: u32,
 }
@@ -200,7 +218,16 @@ impl Buzzard {
     pub fn heading(&self) -> f32 {
         match self.state {
             BuzzardState::Diving { vel } | BuzzardState::Down { vel, .. } => vel.y.atan2(vel.x),
-            _ => std::f32::consts::PI,
+            // Flying in: toward where it will circle.
+            BuzzardState::Gliding => {
+                let (dx, dy) = (self.circle_at.x - self.pos.x, self.circle_at.y - self.pos.y);
+                if dx.abs() + dy.abs() < 1.0 {
+                    std::f32::consts::PI
+                } else {
+                    dy.atan2(dx)
+                }
+            }
+            BuzzardState::Circling { .. } => std::f32::consts::PI,
         }
     }
 
@@ -400,10 +427,21 @@ impl Forest {
                 r.range(BUZZARD_CIRCLE_AT.0 .0, BUZZARD_CIRCLE_AT.0 .1) * w,
                 r.range(BUZZARD_CIRCLE_AT.1 .0, BUZZARD_CIRCLE_AT.1 .1) * h,
             );
+            let from = match (r.unit() * 3.0) as u32 {
+                0 => BuzzardFrom::Ahead,
+                1 => BuzzardFrom::Above,
+                _ => BuzzardFrom::Below,
+            };
+            let pos = match from {
+                BuzzardFrom::Ahead => Vec2::new(w + MARGIN * s, at.y),
+                BuzzardFrom::Above => Vec2::new(at.x + r.range(-0.1, 0.15) * w, -MARGIN * s),
+                BuzzardFrom::Below => Vec2::new(at.x + r.range(-0.1, 0.15) * w, h + MARGIN * s),
+            };
             self.buzzards.push(Buzzard {
-                pos: Vec2::new(w + MARGIN * s, at.y),
+                pos,
                 state: BuzzardState::Gliding,
                 circle_at: at,
+                from,
                 age: 0,
             });
             self.next_buzzard = ticks(r.range(BUZZARD_GAP_SECONDS.0, BUZZARD_GAP_SECONDS.1));
@@ -433,10 +471,21 @@ impl Forest {
         let s = bounds.scale();
         match b.state {
             BuzzardState::Gliding => {
-                b.pos.x -= BUZZARD_GLIDE * s * TICK_SECONDS;
-                if b.pos.x <= b.circle_at.x + BUZZARD_CIRCLE_RADIUS * s {
-                    let centre = Vec2::new(b.pos.x - BUZZARD_CIRCLE_RADIUS * s, b.pos.y);
-                    b.state = BuzzardState::Circling { centre, ticks: 0 };
+                // Straight to the circle's right-hand point, then round.
+                let r = BUZZARD_CIRCLE_RADIUS * s;
+                let target = Vec2::new(b.circle_at.x + r, b.circle_at.y);
+                let (dx, dy) = (target.x - b.pos.x, target.y - b.pos.y);
+                let len = (dx * dx + dy * dy).sqrt();
+                let step = BUZZARD_GLIDE * s * TICK_SECONDS;
+                if len <= step {
+                    b.pos = target;
+                    b.state = BuzzardState::Circling {
+                        centre: b.circle_at,
+                        ticks: 0,
+                    };
+                } else {
+                    b.pos.x += dx / len * step;
+                    b.pos.y += dy / len * step;
                 }
                 false
             }
@@ -594,15 +643,17 @@ mod tests {
         let mut f = Forest::new(4);
         let mut events = run(&mut f, FIRST_BUZZARD_SECONDS + 0.05, true);
         assert_eq!(f.buzzards.len(), 1);
-        assert!(f.buzzards[0].pos.x > PHONE.width, "from off the right");
+        let p = f.buzzards[0].pos;
+        let off = p.x > PHONE.width || p.y < 0.0 || p.y > PHONE.height;
+        assert!(off, "from off the screen");
         let mut circled = false;
         while !f.buzzards[0].is_diving() {
             circled |= matches!(f.buzzards[0].state, BuzzardState::Circling { .. });
             events.extend(run(&mut f, 1.0 / 60.0, true));
-            assert!(
-                f.buzzards[0].pos.y < 0.45 * PHONE.height,
-                "up high until the dive"
-            );
+            if matches!(f.buzzards[0].state, BuzzardState::Circling { .. }) {
+                let y = f.buzzards[0].pos.y;
+                assert!(y < 0.45 * PHONE.height, "it circles up high: {y}");
+            }
         }
         assert!(circled, "it circles before it dives");
         assert!(events.contains(&Event::BuzzardCry), "a cry as it dives");
@@ -615,6 +666,51 @@ mod tests {
         let cos = (vel.x * to_plane.x + vel.y * to_plane.y)
             / ((vel.x.hypot(vel.y)) * to_plane.x.hypot(to_plane.y));
         assert!(cos > 0.99, "aimed at the plane: {cos}");
+    }
+
+    #[test]
+    fn buzzards_come_from_ahead_above_and_below_never_from_behind() {
+        let mut f = Forest::new(7);
+        let mut froms = Vec::new();
+        let mut starts = Vec::new();
+        let mut last = 0u32;
+        let mut gaps = Vec::new();
+        for tick in 0..ticks(600.0) {
+            let before = f.buzzards.len();
+            f.tick(PHONE, true, PLANE, &mut Vec::new());
+            if f.buzzards.len() > before {
+                let b = *f.buzzards.last().unwrap();
+                froms.push(b.from);
+                starts.push(b.pos);
+                if last > 0 {
+                    gaps.push((tick - last) as f32 * TICK_SECONDS);
+                }
+                last = tick;
+            }
+            for b in &f.buzzards {
+                if !b.is_down() && !b.is_diving() {
+                    assert!(
+                        b.pos.x > PLANE.x + 100.0,
+                        "always ahead of the plane: {b:?}"
+                    );
+                }
+            }
+        }
+        for from in [BuzzardFrom::Ahead, BuzzardFrom::Above, BuzzardFrom::Below] {
+            assert!(froms.contains(&from), "{from:?}");
+        }
+        for (from, p) in froms.iter().zip(&starts) {
+            match from {
+                BuzzardFrom::Ahead => assert!(p.x > PHONE.width),
+                BuzzardFrom::Above => assert!(p.y < 0.0),
+                BuzzardFrom::Below => assert!(p.y > PHONE.height),
+            }
+        }
+        // Irregular: sometimes soon after the last, sometimes long after.
+        let (min, max) = gaps
+            .iter()
+            .fold((f32::MAX, 0.0f32), |(a, b), &g| (a.min(g), b.max(g)));
+        assert!(min < 5.0 && max > 10.0, "{min} .. {max}");
     }
 
     #[test]
