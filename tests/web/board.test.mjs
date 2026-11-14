@@ -1,6 +1,6 @@
 // Tests for web/board.js, the page's side of the leaderboard, against a
 // fake server. Node's own test runner, no packages:
-//   node --test tests/web/
+//   node --test tests/web/*.test.mjs
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";

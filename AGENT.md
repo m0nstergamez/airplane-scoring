@@ -41,7 +41,7 @@ Prefer `cargo doc` output and the vendored crate source in
 ## The verification loop
 `scripts/check.sh` runs all of it in order (~10 s when incremental):
 1. `cargo test -p airplane-scoring-core` — fast, no engine. Must stay green.
-2. `node --test tests/web/` — the page's leaderboard script
+2. `node --test tests/web/*.test.mjs` — the page's leaderboard script
    (`web/board.js`) against a fake server. Page logic that can live
    outside the DOM goes into such a file, with tests.
 3. `cargo fmt --all --check`, `cargo clippy --workspace --all-targets -- -D warnings`

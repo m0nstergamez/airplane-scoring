@@ -33,7 +33,7 @@ rustup target add wasm32-unknown-unknown
 | Alle Prüfungen laufen lassen | `scripts/check.sh` |
 | Schnelle Prüfungen | `scripts/check.sh --fast` |
 | Prüfen, dass wasm und nativ gleich fliegen | `scripts/check-determinism.sh` |
-| Das Bestenlisten-Skript der Seite testen | `node --test tests/web/` |
+| Das Bestenlisten-Skript der Seite testen | `node --test tests/web/*.test.mjs` |
 | Tondateien neu erzeugen | `scripts/make-sounds.py` |
 | Level-Hintergründe neu erzeugen | `scripts/make-backgrounds.sh` |
 | Den Server der Bestenliste starten | `cargo run -p airplane-scoring-server` |

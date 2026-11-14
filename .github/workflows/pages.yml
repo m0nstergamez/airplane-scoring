@@ -28,7 +28,7 @@ jobs:
       - name: Core tests
         run: cargo test -p airplane-scoring-core
       - name: Page script tests (web/board.js)
-        run: node --test tests/web/
+        run: node --test tests/web/*.test.mjs
       - name: Leaderboard server tests
         run: cargo test -p airplane-scoring-server
       - name: Install wasmtime

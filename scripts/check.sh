@@ -11,7 +11,7 @@ cargo test -q -p airplane-scoring-core
 
 step "2/7 page script tests (web/board.js, Node)"
 if command -v node >/dev/null; then
-  node --test tests/web/
+  node --test tests/web/*.test.mjs
 else
   echo "(skipped: no node found)"
 fi

@@ -33,7 +33,7 @@ rustup target add wasm32-unknown-unknown
 | Run all checks | `scripts/check.sh` |
 | Quick checks | `scripts/check.sh --fast` |
 | Check wasm and native fly the same | `scripts/check-determinism.sh` |
-| Test the page's leaderboard script | `node --test tests/web/` |
+| Test the page's leaderboard script | `node --test tests/web/*.test.mjs` |
 | Make the sound files again | `scripts/make-sounds.py` |
 | Make the level backgrounds again | `scripts/make-backgrounds.sh` |
 | Run the leaderboard server | `cargo run -p airplane-scoring-server` |
