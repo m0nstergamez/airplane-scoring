@@ -4,13 +4,13 @@
 use airplane_scoring_core::Vec2 as Vec2Core;
 use airplane_scoring_core::{
     background_x, best_time_text, clock_text, has_next_level, pick_steer, pick_throttle,
-    start_level, steer_from_keys, Airport, Balloon, BestTimes, Bounds, Clock, Crane, Event,
-    FarHighRise, Goose, Gull, HeliParts, HighRise, Hut, Input, Mix, Pad, Steam, Tilt, Tower,
-    TyreSmoke, Warning, World, Wreck, AIRSPEED_RANGE, BALLOON_RADIUS, BASKET_BELOW,
-    BEST_TIMES_COUNT, GOOSE_BODY, HUT_EAVES, HUT_INSET, LIVES, MAIN_WHEEL_X, NOSE_WHEEL_X,
-    OVERSPEED_AT, PAD_HEIGHT, PAD_WIDTH, PLANE_COCKPIT, PLANE_FUSELAGE, PLANE_NOSE, PLANE_RADIUS,
-    PLANE_TAIL, PLANE_WING, RUNWAY_HEIGHT, RUNWAY_LENGTH, STALL_AT, STRUT_REACH, SUNRISE_LEVEL,
-    SUN_AT, SUN_RADIUS, TICK_SECONDS, WHEEL_RADIUS,
+    start_level, steer_from_keys, Airport, Balloon, BestTimes, Bounds, Buzzard, Clock, Crane,
+    Event, FarHighRise, Fir, Goose, Gull, Gust, HeliParts, HighRise, Hut, Input, Mix, Pad, Steam,
+    Tilt, Tower, TyreSmoke, Warning, World, Wreck, AIRSPEED_RANGE, BALLOON_RADIUS, BASKET_BELOW,
+    BEST_TIMES_COUNT, BUZZARD_SIZE, GOOSE_BODY, HUT_EAVES, HUT_INSET, LIVES, MAIN_WHEEL_X,
+    NOSE_WHEEL_X, OVERSPEED_AT, PAD_HEIGHT, PAD_WIDTH, PLANE_COCKPIT, PLANE_FUSELAGE, PLANE_NOSE,
+    PLANE_RADIUS, PLANE_TAIL, PLANE_WING, RUNWAY_HEIGHT, RUNWAY_LENGTH, STALL_AT, STRUT_REACH,
+    SUNRISE_LEVEL, SUN_AT, SUN_RADIUS, TICK_SECONDS, WHEEL_RADIUS,
 };
 use macroquad::prelude::*;
 
@@ -260,6 +260,16 @@ async fn main() {
         for goose in &world.sunrise.geese {
             draw_goose(goose, s);
         }
+        // The forest: firs on the ground, gusts of leaves, buzzards.
+        for fir in &world.forest.firs {
+            draw_fir(fir, world.bounds);
+        }
+        for gust in &world.forest.gusts {
+            draw_gust(gust, world.bounds);
+        }
+        for buzzard in &world.forest.buzzards {
+            draw_buzzard(buzzard, s);
+        }
 
         // A safe plane blinks (5 times a second), on real time so it
         // also blinks smoothly between ticks.
@@ -290,6 +300,7 @@ async fn main() {
         }
         draw_rain(rain, world.weather.wind, world.ticks, scale);
         draw_glare(world.sunrise.glare(), world.bounds);
+        draw_fog(world.forest.fog(), world.bounds, world.ticks);
 
         set_default_camera(); // flashes and the time do not shake
                               // Lightning lights the whole sky; a crash flashes red.
@@ -1138,6 +1149,170 @@ fn draw_far_high_rise(b: &FarHighRise, bounds: Bounds) {
                 Color::from_rgba(58, 36, 20, 255)
             };
             draw_rectangle(x, y, ww, wh, colour);
+        }
+    }
+}
+
+/// A tall fir (core's `Fir::parts`): three tiers of dark green branches,
+/// each with a lighter edge where the light catches it, and the trunk.
+fn draw_fir(f: &Fir, bounds: Bounds) {
+    let s = bounds.scale();
+    let p = f.parts(bounds);
+    let (l, t, w, h) = p.trunk;
+    draw_rectangle(l, t, w, h, Color::from_rgba(70, 48, 32, 255));
+    for (i, (a, b, c)) in p.tiers.iter().enumerate() {
+        let shade = [
+            Color::from_rgba(36, 66, 48, 255),
+            Color::from_rgba(32, 60, 44, 255),
+            Color::from_rgba(28, 54, 40, 255),
+        ][i];
+        draw_triangle(vec2(a.x, a.y), vec2(b.x, b.y), vec2(c.x, c.y), shade);
+        // The lit left side and a ragged hem of twigs.
+        draw_line(
+            a.x,
+            a.y,
+            b.x,
+            b.y,
+            1.5 * s,
+            Color::new(0.45, 0.6, 0.42, 0.6),
+        );
+        let steps = 6;
+        for k in 0..steps {
+            let x = b.x + (c.x - b.x) * (k as f32 + 0.5) / steps as f32;
+            draw_triangle(
+                vec2(x - 3.0 * s, b.y - 0.5),
+                vec2(x + 3.0 * s, b.y - 0.5),
+                vec2(x, b.y + 3.0 * s),
+                shade,
+            );
+        }
+    }
+}
+
+/// A gust of leaves (core's `Gust::rect`): orange, yellow and brown leaves
+/// tumbling down and round through the band, and faint streaks of air.
+fn draw_gust(g: &Gust, bounds: Bounds) {
+    let s = bounds.scale();
+    let (l, t, w, h) = g.rect(bounds);
+    let time = g.age as f32 * TICK_SECONDS;
+    let colours = [
+        Color::from_rgba(214, 130, 40, 230),
+        Color::from_rgba(236, 184, 64, 230),
+        Color::from_rgba(150, 82, 34, 230),
+        Color::from_rgba(196, 70, 36, 230),
+    ];
+    // Streaks of air, pointing down.
+    for k in 0..5 {
+        let x = l + w * (0.15 + 0.17 * k as f32);
+        let y = t + (time * 260.0 * s + k as f32 * 70.0 * s) % h;
+        draw_line(
+            x,
+            y,
+            x - 6.0 * s,
+            y + 38.0 * s,
+            1.5 * s,
+            Color::new(1.0, 1.0, 1.0, 0.25),
+        );
+    }
+    // A faint veil of stirred-up air shows where the gust is.
+    draw_rectangle(l, t, w, h, Color::new(0.85, 0.7, 0.45, 0.08));
+    let count = ((h / (8.0 * s)) as i32).max(10);
+    for k in 0..count {
+        let seed = k as f32 * 12.9898;
+        let phase = (seed.sin() * 43758.547).fract().abs();
+        // Falling through the band, swirling side to side.
+        let y = t + ((phase * h) + time * 150.0 * s) % h;
+        let x = l + w * 0.5 + (time * 3.0 + phase * std::f32::consts::TAU).sin() * w * 0.4;
+        let spin = time * 5.0 + phase * 10.0;
+        let colour = colours[k as usize % colours.len()];
+        draw_ellipse(x, y, 6.0 * s, 3.0 * s, spin.to_degrees(), colour);
+    }
+}
+
+/// A buzzard (core's `Buzzard::shape`): broad brown wings with pale
+/// patches and dark tips, a banded tail; along its dive while it dives,
+/// tumbling when struck.
+fn draw_buzzard(b: &Buzzard, s: f32) {
+    let (span, body) = (BUZZARD_SIZE.0 * s, BUZZARD_SIZE.1 * s);
+    let a = b.heading() + b.tumble();
+    let along = vec2(a.cos(), a.sin());
+    let across = vec2(-along.y, along.x);
+    let p = vec2(b.pos.x, b.pos.y);
+    let at = |u: f32, v: f32| p + along * u + across * v;
+    // Wings beat slowly while it glides and circles, folded back in the dive.
+    let beat = if b.is_diving() {
+        -0.5
+    } else {
+        (b.age as f32 * TICK_SECONDS * 6.0).sin() * 0.35
+    };
+    let brown = Color::from_rgba(110, 72, 42, 255);
+    let pale = Color::from_rgba(214, 190, 150, 255);
+    let dark = Color::from_rgba(40, 28, 20, 255);
+    for side in [-1.0f32, 1.0] {
+        let mid = at(-body * 0.1 + beat * body, side * span * 0.55);
+        let tip = at(-body * 0.4 + beat * body * 1.6, side * span);
+        draw_triangle(at(body * 0.4, 0.0), at(-body * 0.5, 0.0), mid, brown);
+        draw_triangle(at(body * 0.1, 0.0), mid, tip, brown);
+        draw_line(
+            mid.x,
+            mid.y,
+            (mid.x + tip.x) / 2.0,
+            (mid.y + tip.y) / 2.0,
+            3.0 * s,
+            pale,
+        );
+        draw_circle(tip.x, tip.y, 2.5 * s, dark);
+    }
+    // Tail with dark bands, body, head with a hooked beak.
+    let tail0 = at(-body * 0.6, 0.0);
+    let tail1 = at(-body * 1.3, 0.0);
+    draw_line(tail0.x, tail0.y, tail1.x, tail1.y, 6.0 * s, brown);
+    let band = at(-body * 1.1, 0.0);
+    draw_circle(band.x, band.y, 2.5 * s, dark);
+    draw_ellipse(
+        p.x,
+        p.y,
+        body * 0.8,
+        body * 0.4,
+        a.to_degrees(),
+        Color::from_rgba(126, 86, 52, 255),
+    );
+    let head = at(body * 0.8, 0.0);
+    draw_circle(head.x, head.y, 3.5 * s, Color::from_rgba(150, 110, 70, 255));
+    let beak = at(body * 1.15, body * 0.1);
+    draw_line(
+        head.x,
+        head.y,
+        beak.x,
+        beak.y,
+        2.0 * s,
+        Color::from_rgba(230, 190, 60, 255),
+    );
+}
+
+/// A bank of fog (core's `Forest::fog`, 0..1): a pale grey veil over
+/// everything, thicker in a few slow drifting bands.
+fn draw_fog(fog: f32, bounds: Bounds, ticks: u64) {
+    if fog <= 0.0 {
+        return;
+    }
+    let (w, h) = (bounds.width, bounds.height);
+    let veil = Color::new(0.86, 0.88, 0.88, 0.5 * fog);
+    draw_rectangle(0.0, 0.0, w, h, veil);
+    let drift = ticks as f32 * TICK_SECONDS * 30.0 * bounds.scale();
+    for k in 0..4 {
+        let y = h * (0.2 + 0.2 * k as f32);
+        let x = -((drift * (1.0 + 0.3 * k as f32)) % w);
+        for copy in 0..2 {
+            let x = x + copy as f32 * w;
+            draw_ellipse(
+                x + w * 0.5,
+                y,
+                w * 0.45,
+                h * 0.09,
+                0.0,
+                Color::new(0.9, 0.92, 0.92, 0.18 * fog),
+            );
         }
     }
 }

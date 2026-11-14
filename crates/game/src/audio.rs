@@ -8,9 +8,9 @@
 //! own unlock misses iPhones; see docs/README.md).
 
 use airplane_scoring_core::{
-    Event, Mix, BALLOON_BURNER_VOLUME, BALLOON_BURST_VOLUME, CRASH_VOLUME, EXPLOSION_VOLUME,
-    GEAR_VOLUME, GOOSE_CALLS, GOOSE_HONK_VOLUME, GULL_CALL_VOLUME, NEW_LEVEL_VOLUME, STEAM_VOLUME,
-    TAKEOFF_VOLUME, VOICE_VOLUME,
+    Event, Mix, BALLOON_BURNER_VOLUME, BALLOON_BURST_VOLUME, BUZZARD_VOLUME, CRASH_VOLUME,
+    EXPLOSION_VOLUME, GEAR_VOLUME, GOOSE_CALLS, GOOSE_HONK_VOLUME, GULL_CALL_VOLUME, LEAVES_VOLUME,
+    NEW_LEVEL_VOLUME, STEAM_VOLUME, TAKEOFF_VOLUME, VOICE_VOLUME,
 };
 use macroquad::audio::{load_sound, play_sound, set_sound_volume, PlaySoundParams, Sound};
 use macroquad::experimental::coroutines::{start_coroutine, Coroutine};
@@ -29,6 +29,8 @@ struct Sounds {
     /// A flock's calls, one per `Event::GooseHonk { call }`.
     goose_calls: [Sound; GOOSE_CALLS as usize],
     steam: Sound,
+    buzzard: Sound,
+    leaves: Sound,
     burner: Sound,
     explosion: Sound,
     overspeed_alarm: Sound,
@@ -72,6 +74,8 @@ impl Sounds {
                 file("crow").await?,
             ],
             steam: file("steam").await?,
+            buzzard: file("buzzard").await?,
+            leaves: file("leaves").await?,
             burner: file("balloon-burner").await?,
             explosion: file("explosion").await?,
             overspeed_alarm: file("warning-overspeed").await?,
@@ -152,6 +156,8 @@ impl Audio {
                 set_sound_volume(call, 0.0);
             }
             set_sound_volume(&s.steam, 0.0);
+            set_sound_volume(&s.buzzard, 0.0);
+            set_sound_volume(&s.leaves, 0.0);
             set_sound_volume(&s.burner, 0.0);
             set_sound_volume(&s.explosion, 0.0);
             set_sound_volume(&s.takeoff, 0.0);
@@ -183,6 +189,8 @@ impl Audio {
                 (&s.goose_calls[i], GOOSE_HONK_VOLUME)
             }
             Event::SteamHiss => (&s.steam, STEAM_VOLUME),
+            Event::BuzzardCry => (&s.buzzard, BUZZARD_VOLUME),
+            Event::LeafRustle => (&s.leaves, LEAVES_VOLUME),
             Event::BalloonBurner => (&s.burner, BALLOON_BURNER_VOLUME),
             Event::BalloonBurst | Event::HeliCrash => (&s.explosion, BALLOON_BURST_VOLUME),
             Event::Lightning { .. } => return, // seen, not heard

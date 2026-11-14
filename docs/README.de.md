@@ -867,6 +867,27 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
     gezeichnet; die Blendung zeichnet weniger Ringe (günstiger auf
     Handys); die Spielanleitung und das Wörterbuch nennen die Hochhäuser
     und Häuser von Level 4.
+- Level 5, Herbstwald, nach unserem eigenen Foto (ein dunkler Nadelwald
+  auf einem Hügel, darunter Laubbäume und Dächer im Dunst). Hindernisse
+  aus Vorschlägen gewählt: hohe Tannen, ein herabstossender Bussard,
+  Laubböen und Nebel.
+  - Die hohe Tanne vom Foto wurde zum Hindernis; Tannen kommen zu einer
+    bis drei, jede anders hoch, mit `FOREST_ROOM` zwischen den Gruppen.
+  - Der Bussard kreist (`BUZZARD_CIRCLE_SECONDS`), bevor er herabstösst,
+    damit es fair ist; er kreist unter der Uhr und den Leben, nicht
+    darauf.
+  - Böen sind das Gegenteil vom Dampf in Level 4: Sie drücken das
+    Flugzeug nach unten (`GUST_PUSH` 700, schwächer als Steigen).
+  - Die Baumkronen im Hintergrund gehen pro Schicht nur einmal über die
+    Naht, allein in einer «-edge-art»-Gruppe: Kronen, die sich an der
+    Naht überlappten, fielen bei der Nahtprüfung durch (1.6 %).
+  - Neue Töne `buzzard.wav` und `leaves.wav`; die Level-Karte hat eine
+    fünfte Station, und das goldene NEW ist dorthin gewandert; der Test
+    der Level-Reihenfolge funktioniert jetzt mit jedem `LEVEL_COUNT`.
+  - Beim Prüfen gefunden: Mit fünf Stationen reichte die Level-Karte auf
+    einem kleinen iPhone (667×320) unter den QR-Code; auf niedrigen
+    Bildschirmen versteckt sich der QR-Code jetzt, solange die Karte
+    sichtbar ist (im Hauptmenü bleibt er).
   - Neue Töne aus `scripts/make-sounds.py`: `goose-honk.wav` (Rufe mit
     starken ungeraden Obertönen, wie ein Rohrblatt) und `steam.wav`.
   - Das goldene «NEW» ist auf der Level-Karte zu Level 4 gewandert.

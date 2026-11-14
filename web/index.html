@@ -97,6 +97,7 @@
     #start .node[data-level="2"] { background-image: url(levels/level2.png); }
     #start .node[data-level="3"] { background-image: url(levels/level3.png); }
     #start .node[data-level="4"] { background-image: url(levels/level4.png); }
+    #start .node[data-level="5"] { background-image: url(levels/level5.png); }
     #start .node .lock { display: none; font-size: 34px; }
     #start .node.locked { filter: grayscale(1) brightness(0.55); cursor: default; }
     #start .node.locked .lock { display: block; }
@@ -278,6 +279,9 @@
       #start .map-note { font-size: 13px; padding: 5px 10px; }
       #start .node .done { width: 24px; height: 24px; font-size: 14px; line-height: 18px; }
       #start figure img { width: 56px; height: 56px; padding: 5px; }
+      /* The level map is as wide as the screen here: the QR code would
+         cover the last stop, so it waits in the main menu. */
+      #start:has(.panel[data-panel="levels"].shown) figure { display: none; }
     }
     /* Tiny (under 300 px high): smaller still. */
     @media (max-height: 300px) {
@@ -428,9 +432,14 @@
         </div>
         <div class="path" aria-hidden="true"></div>
         <div class="stop">
-          <button type="button" class="node" data-level="4" aria-label="Level 4: Sunrise (new)"><span class="lock">&#128274;</span><span class="done" aria-hidden="true">&#10003;</span></button>
+          <button type="button" class="node" data-level="4" aria-label="Level 4: Sunrise"><span class="lock">&#128274;</span><span class="done" aria-hidden="true">&#10003;</span></button>
           <span class="name">4 Sunrise</span>
-          <span class="new" data-new-level="4">NEW</span>
+        </div>
+        <div class="path" aria-hidden="true"></div>
+        <div class="stop">
+          <button type="button" class="node" data-level="5" aria-label="Level 5: Forest (new)"><span class="lock">&#128274;</span><span class="done" aria-hidden="true">&#10003;</span></button>
+          <span class="name">5 Forest</span>
+          <span class="new" data-new-level="5">NEW</span>
         </div>
       </div>
       <p class="map-note" id="map-note" aria-live="polite"></p>
@@ -441,7 +450,7 @@
       <div class="guide">
         <section>
           <h3>The goal</h3>
-          <p>Fly each level as fast as you can: every level is the same distance, and more throttle gets you there sooner. The clock at the top counts your time in this level, from 0:00 in every level; the bar under it shows how far it is to the landing. Dodge what is in your way: hot-air balloons, launch pads and huts on the coast; gulls and lifeguard towers at the beach; in the town at night, fly over the high-rises and the cranes, and dodge the helicopters that fly at you at your height; at sunrise, fly over or under the geese that come in a V, fly over the high-rises and the houses, and mind the steam from their chimneys (it throws you up) and the low sun that blinds you now and then. You have <strong>3 lives</strong>; each crash costs one.</p>
+          <p>Fly each level as fast as you can: every level is the same distance, and more throttle gets you there sooner. The clock at the top counts your time in this level, from 0:00 in every level; the bar under it shows how far it is to the landing. Dodge what is in your way: hot-air balloons, launch pads and huts on the coast; gulls and lifeguard towers at the beach; in the town at night, fly over the high-rises and the cranes, and dodge the helicopters that fly at you at your height; at sunrise, fly over or under the geese that come in a V, fly over the high-rises and the houses, and mind the steam from their chimneys (it throws you up) and the low sun that blinds you now and then; in the autumn forest, fly over the tall firs, watch out for the buzzard that circles and then dives at you, and fight the gusts of leaves that press you down and the fog. You have <strong>3 lives</strong>; each crash costs one.</p>
           <p>At the end of a level the autopilot <strong>lands</strong> on a runway: level complete! That unlocks the next level (after the last one, more are coming). Each level keeps your <strong>5 fastest times</strong>, with milliseconds; only a completed level gets a time.</p>
         </section>
         <section>
@@ -741,7 +750,7 @@
     let chosenLevel = requestedLevel; // the level the next flight starts in
     // The level map: level 1 is open; landing a level completes it and
     // opens the next. The completed levels are kept in this browser.
-    const LEVELS = 4;
+    const LEVELS = 5;
     const UNLOCK_KEY = "airplane-scoring.unlocked"; // older versions: highest open level
     const COMPLETED_KEY = "airplane-scoring.completed";
     let completed = [];

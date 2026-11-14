@@ -288,6 +288,45 @@ def crow(seed, seconds):
     return out
 
 
+def buzzard_cry(seed, seconds):
+    """A buzzard's "hiiieh" as it dives (level 5): a high, thin whistle
+    that slides down, with a little rasp, and a shorter echo of it."""
+    rng = random.Random(seed)
+    n = int(seconds * RATE)
+    out = [0.0] * n
+    for at, length, gain in [(0.0, 0.55, 1.0), (0.62, 0.35, 0.55)]:
+        start, phase = round(at * RATE), 0.0
+        rasp = lowpass(noise(rng, int(length * RATE)), 3000.0)
+        for j in range(int(length * RATE)):
+            t = j / RATE / length
+            hz = 2300.0 - 900.0 * t ** 1.4 + 40.0 * math.sin(2 * math.pi * 28.0 * j / RATE)
+            phase += 2 * math.pi * hz / RATE
+            tone = math.sin(phase) + 0.3 * math.sin(2 * phase) + 0.12 * math.sin(3 * phase)
+            env = min(1.0, t * 10.0) * (1.0 - t) ** 0.8
+            if start + j < n:
+                out[start + j] += gain * env * tone * (0.85 + 0.6 * abs(rasp[j]))
+    return out
+
+
+def leaf_rustle(seed, seconds):
+    """A gust full of leaves (level 5): a whoosh of air with dry leaves
+    crackling and tumbling in it."""
+    rng = random.Random(seed)
+    n = int(seconds * RATE)
+    src = noise(rng, n)
+    whoosh = lowpass(highpass(src, 300.0), 1500.0)
+    out = []
+    crackle = 0.0
+    for i in range(n):
+        t = i / RATE
+        env = math.sin(math.pi * min(1.0, t / seconds)) ** 0.7
+        if rng.random() < 0.004:
+            crackle = rng.uniform(0.4, 1.0)
+        crackle *= 0.985
+        out.append(env * (0.8 * whoosh[i] + crackle * rng.uniform(-1.0, 1.0) * 0.35))
+    return out
+
+
 def steam_hiss(seed, seconds):
     """Flying into a column of steam (level 4): a soft rushing hiss that
     swells and fades, with a low buffet under it."""
@@ -516,6 +555,8 @@ if __name__ == "__main__":
     write("goose-far.wav", goose_far(1.15), 0.7)
     write("goose-chatter.wav", goose_chatter(1.0), 0.7)
     write("crow.wav", crow(15, 0.9), 0.7)
+    write("buzzard.wav", buzzard_cry(16, 1.05), 0.7)
+    write("leaves.wav", leaf_rustle(17, 1.1), 0.7)
     write("steam.wav", steam_hiss(13, 1.0), 0.7)
     write("explosion.wav", explosion(9, 2.5), 0.95)
     write("runway-rumble.wav", runway_rumble(10, 2.0), 0.85)

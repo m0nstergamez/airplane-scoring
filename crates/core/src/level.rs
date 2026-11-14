@@ -9,7 +9,7 @@
 use crate::TICK_SECONDS;
 
 /// How many levels exist (`web/levels/level1.png` … `levelN.png`).
-pub const LEVEL_COUNT: u32 = 4;
+pub const LEVEL_COUNT: u32 = 5;
 
 /// About how long one level lasts at cruising speed, in seconds of
 /// flying. The level itself is a distance ([`LEVEL_DISTANCE`]): more

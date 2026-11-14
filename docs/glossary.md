@@ -26,7 +26,7 @@ short **meaning**.
 | Finger | finger | `pointer` | Steering by touching the screen |
 | Taste | key | `steer_from_keys` | Keyboard key (↑/W, ↓/S) |
 | Spielerin / Spieler (kurz: Spieler:in) | player | — | Person playing. In running text «Spielerin oder Spieler», in short labels «Spieler:in» |
-| Hindernis | obstacle | `Balloons`, `Pad`, `Huts`, `Gulls`, `Towers`, `City`, `Sunrise` | Something you must not fly into; touching it is a crash. So far: hot-air balloons, launch pads and huts in level 1, gulls and lifeguard towers in level 2, high-rises, cranes and helicopters in level 3, geese, houses and high-rises in level 4 |
+| Hindernis | obstacle | `Balloons`, `Pad`, `Huts`, `Gulls`, `Towers`, `City`, `Sunrise`, `Forest` | Something you must not fly into; touching it is a crash. So far: hot-air balloons, launch pads and huts in level 1, gulls and lifeguard towers in level 2, high-rises, cranes and helicopters in level 3, geese, houses and high-rises in level 4, firs and buzzards in level 5 |
 | Leben | life, lives | `World.lives`, `LIVES` | Crashes you can afford; shown as small planes at the top right |
 | Rauchfahne | smoke trail | `World::smoke`, `DAMAGE_SMOKE` | Smoke behind a damaged plane; thicker with every life lost |
 | Fluggeschwindigkeit | airspeed | `Player::airspeed`, `Input::throttle` | How fast you fly yourself: gas (→/D, tip forward) and brake (←/A, tip back) |
@@ -91,6 +91,11 @@ short **meaning**.
 | Hochhaus im Tal | valley high-rise | `FarHighRise` | Level 4: a high-rise in the valley, black against the sun; an obstacle (fly over it); never by a runway |
 | Haus, Kamin | house, chimney | `Steam::house_parts`, `HOUSE_WIDTH`, `CHIMNEY` | Level 4: small houses in the valley with a chimney the steam rises from; an obstacle |
 | Blendung | glare | `Sunrise::glare`, `SUN_AT` | Level 4: the low sun blinds you for a moment; the screen washes out |
+| Herbstwald | autumn forest | `Forest`, `FOREST_LEVEL` | Level 5: a dark forest on the hill and orange autumn crowns in the valley |
+| Tanne | fir | `Fir`, `FIR_GROUP` | Level 5: tall firs, alone or in groups, each its own height; an obstacle, fly over it |
+| Bussard | buzzard | `Buzzard`, `BuzzardState` | Level 5: circles, then cries and dives at the plane; an obstacle, knocked down when hit |
+| Böe, Laubwirbel | gust (of leaves) | `Gust`, `GUST_PUSH` | Level 5: presses the plane down, costs no life |
+| Nebel, Nebelbank | fog, bank of fog | `Forest::fog` | Level 5: now and then the screen is veiled for a few seconds |
 | Wrack | wreck | `Wreck` | A helicopter the plane flew into: it falls, burning, and is no obstacle any more |
 | Ausleger | jib | `Crane`, `JIB_TOP` | The crane's long arm, on top of its mast |
 | Mast | mast | `Crane`, `MAST_WIDTH` | The crane's lattice tower, from the jib down to the ground; it counts as a hit |

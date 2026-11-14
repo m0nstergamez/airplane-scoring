@@ -136,7 +136,7 @@ quieter the thunder.
 
 If you touch a hot-air balloon, a launch pad or a hut (level 1) or a
 gull or a lifeguard tower (level 2) or a high-rise, a crane or a
-helicopter (level 3) or a goose, a house or a high-rise (level 4), you **crash**. Only a real touch counts: flying past very
+helicopter (level 3), a goose, a house or a high-rise (level 4) or a fir or a buzzard (level 5), you **crash**. Only a real touch counts: flying past very
 closely, or through the gap beside a roof, is fine. In a crash your plane smokes, falls
 and ignores the controls for a moment (1.5 seconds). Then you fly again.
 
@@ -201,7 +201,7 @@ their own lists.
 
 Each **level** has its own landscape: first the coast (level 1), then a
 beach at sunset (level 2), then a town at night (level 3), then a
-sunrise (level 4). After its distance (about a minute at cruising speed), a level ends
+sunrise (level 4), then an autumn forest (level 5). After its distance (about a minute at cruising speed), a level ends
 with a **landing**: no new obstacles come, a runway appears, and the
 autopilot takes over. Speed warnings stay off while it flies, and the
 speed settles back by itself. The gear comes down, the plane touches down
@@ -211,7 +211,7 @@ stops: "Level 1 complete" shows with your time, the
 level's best times and two
 buttons. **Next level** (or Enter) starts the next level: its landscape
 appears, it counts 3, 2, 1, and you take off from its runway. **Menu**
-goes to the main menu. The last level (level 4 for now) has no **Next
+goes to the main menu. The last level (level 5 for now) has no **Next
 level**: it says "No more levels yet, new ones are coming!" in its place,
 next to **Menu** (Enter too).
 
@@ -294,6 +294,22 @@ and a valley in the morning haze:
 - Now and then the low sun **blinds** you for a moment: the screen
   washes out in its light, and you see what comes less well.
 
+In the **autumn forest** (level 5) you fly over a dark forest on the
+hill and the orange crowns of the valley:
+
+- **Firs** stand tall, alone or two or three together, each its own
+  height. Fly over them; branches and trunk count. There is always a gap
+  between two groups to come down into.
+- A **buzzard** glides in high up from the right and circles for a
+  moment, so you see it coming. Then it cries and dives straight at
+  where you are. Get out of its way: if it hits you, you lose a life and
+  it tumbles down.
+- **Gusts** full of autumn leaves sweep down from the sky. They cost no
+  life, but they press your plane down with a rustle, maybe onto a fir.
+  Climb out of them.
+- Now and then a bank of **fog** drifts over, and you see less for a
+  few seconds.
+
 ## Sound
 
 | You hear | When |
@@ -302,12 +318,14 @@ and a valley in the morning haze:
 | Wind | Always. Louder in rain, in gusts and when you dive. |
 | Rain | While it rains (only in later levels). Louder the harder it rains. |
 | Thunder | A moment after each lightning (only in later levels). |
-| Crash | When you touch a balloon, a launch pad, a hut, a gull, a lifeguard tower, a high-rise, a crane, a goose or a house. |
+| Crash | When you touch a balloon, a launch pad, a hut, a gull, a lifeguard tower, a high-rise, a crane, a goose, a house, a fir or a buzzard. |
 | Burner | When a hot-air balloon appears or takes off (level 1). |
 | Waves | At the beach (level 2). They fade in and out with the landscape. |
 | Gull | When a gull appears. Gulls from behind always call. |
 | Geese | When a V of geese appears (level 4): honking, far-off calls, chattering or a crow, never the same twice in a row. |
 | Steam | When you fly into steam (level 4): a rushing hiss. |
+| Buzzard | When a buzzard starts its dive (level 5): a high, falling cry. |
+| Leaves | When you fly into a gust (level 5): rustling leaves. |
 | Tune | When you have landed and a level is complete. |
 | Takeoff | Rolling down the runway: the engine spools up and the wheels rumble until the plane lifts off. |
 | Gear | Just after lift-off: a whir while the wheels fold up, then a clunk. |
