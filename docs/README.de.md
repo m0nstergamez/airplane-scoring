@@ -907,6 +907,13 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
     Zweigsaum einer Tanne bleibt in ihrer Trefferform; ein mitcommitteter
     Python-Cache (`scripts/__pycache__`) ist weg und wird ignoriert; der
     Test für Level 5 fliegt durch alle Levels und zurück in Level 1.
+  - Mit main zusammengeführt nach der Bestenliste im Internet (PR #45):
+    `sin`, `cos`, `atan2` des Waldes kommen jetzt wie im übrigen Core aus
+    `libm`, damit ein Flug in Level 5 auf dem Server gleich nachfliegt
+    (der Schutztest `core_maths_is_the_same_in_wasm_and_native` hat es
+    gefunden). Der Server und die Bestenlisten-Seite nehmen die Zahl der
+    Levels aus dem Core und der Karte, also hat Level 5 eine eigene
+    Liste.
   - Neue Töne aus `scripts/make-sounds.py`: `goose-honk.wav` (Rufe mit
     starken ungeraden Obertönen, wie ein Rohrblatt) und `steam.wav`.
   - Das goldene «NEW» ist auf der Level-Karte zu Level 4 gewandert.
@@ -918,6 +925,90 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
     (`GOOSE_CALLS`: Schnattern, von weiter weg, Geplapper, eine Krähe),
     nie zweimal gleich hintereinander, weil immer derselbe Ruf genervt
     hat.
+- Bestenliste im Internet, aus einem Prototyp (zwei Patches und ein Plan
+  von ausserhalb dieses Repos), an das heutige Spiel angepasst. Der
+  Prototyp bewertete den längsten ganzen Flug; da die Bestzeiten nur
+  geschaffte Levels zählen, fiel die Wahl stattdessen auf **das
+  schnellste geschaffte Level**: eine Liste pro Level, jede Person einmal
+  mit ihrer schnellsten Zeit, dieselbe Regel wie bei den Bestzeiten.
+  - Nichts, was die Seite sagt, wird geglaubt. Der Server
+    (`crates/server`, Axum und SQLite) gibt pro Flug einen Startwert aus;
+    das Spiel schreibt jede Eingabe auf (`core::replay`, Steuerung und
+    Gas für jeden Flug auf 1/127 gerundet, mit oder ohne Wertung) und
+    schickt das Replay bei jedem «Level complete»; der Server fliegt es
+    mit demselben core nach und liest `millis_in_level` jedes gelandeten
+    Levels selbst ab. Ein Run zählt jedes Level einmal; ein «Game over»
+    oder Verlassen schickt nichts.
+  - Ein Replay darf nicht weniger echte Zeit gebraucht haben, als es
+    geflogen ist (seit der Startwert ausgegeben wurde). «Next level» nach
+    dem letzten Level wird abgelehnt: core allein würde wieder bei
+    Level 1 beginnen.
+  - Pilotinnen und Piloten sind anonym: ein zufälliges Token, im Browser
+    gespeichert, auf dem Server nur als Hash. Kein Fingerprinting (braucht
+    nach Schweizer und EU-Datenschutz wohl eine Einwilligung; nicht mit
+    einer Juristin oder einem Juristen geprüft).
+  - Im Spiel: «World rank ...» unter der Zeit bei «Level complete», dann
+    «World rank 3 of 120» oder «Not counted online»; ein Knopf
+    Leaderboard und eine Tafel im Hauptmenü (passt auf Handys von 568×280
+    bis 844×390). Aus, solange das Meta-Tag `board-api` leer ist.
+  - Replays müssen im Browser (wasm) und auf dem Server (nativ) Bit für
+    Bit gleich fliegen. `sin`, `cos` und `exp` in core kommen jetzt aus
+    der reinen Rust-Crate `libm` (über macroquad schon im Build) statt
+    aus std, das nativ die Mathe-Bibliothek des Systems nutzt. Geprüft:
+    32 Demo-Flüge (alle vier Start-Levels, vier Bildschirmgrössen) nativ
+    auf Apple Silicon und in wasm (wasmtime) gleich, und wasm fliegt
+    genau wie vor der Änderung. Der Flügelschlag der Gänse aus Level 4
+    kam mit dem Merge von main und nutzt ebenfalls `libm`.
+  - Die Tests nutzen einen Demo-Piloten, der auf einer Kopie der Welt
+    vorausschaut; er landet Level 1 bei jedem getesteten Startwert. Die
+    Regel zum letzten Level wird ohne ihn getestet (Level 4 mit ihm zu
+    landen dauerte 2 s, die Gänse lassen ihn dauernd suchen). Die
+    Server-Tests laufen in `scripts/check.sh` und im CI.
+  - Noch nicht gemacht: Deployment (Fly.io, `fly.toml`), Replays
+    aufbewahren, Rate-Limits, kürzere Gültigkeit der Startwerte,
+    Wiederherstellungscodes, Namensfilter, eine Prüfung im CI, dass wasm
+    und nativ gleich fliegen. Grundsätzlich nicht verhindert: ein Bot,
+    der in Echtzeit fliegt.
+- Eine Stage für die Bestenliste, gewünscht, in einer OrbStack-VM:
+  `scripts/stage.sh`. Eine Maschine `stage` (amd64 Debian bookworm, wie
+  die x86-Maschinen bei Fly und die Basis des Images) betreibt Docker mit
+  dem echten Image aus dem `Dockerfile` und liefert eine Kopie von `web/`
+  aus, deren `board-api` auf sie zeigt. Spiel unter
+  http://localhost:8180, API unter :8187: OrbStack leitet die Ports der
+  Maschine zum Mac weiter, und Chrome löste (anders als `curl`)
+  `stage.orb.local` nicht auf; andere Ports als `dev.sh`, damit beides
+  läuft. `e2e` prüft CORS, Anmeldung, Umbenennen, einen Startwert, ein zu
+  frühes Replay (abgelehnt), dann ein Replay von Level 1, das core als
+  wasm32-wasip1 macht (neues Beispiel `demo_replay`, mit wasmtime), nach
+  der echten Zeit geschickt: Der x86-64-Server las dieselbe Zeit ab
+  (60617 ms) und gab einen Rang. Erster Image-Build: etwa 2 Minuten.
+  Nicht abgedeckt: https, also keine Handys (Kippen braucht eine sichere
+  Seite).
+- Code-Review von PR #45, Befunde 1 bis 7 behoben (8 und 9 wurden Specs
+  in `docs/specs/`):
+  - Ein nach «Game over» (oder aus dem Pausenmenü) neu gestarteter Flug
+    zählte nie: Das Board wurde zurückgesetzt, nachdem es schon nach
+    einem Startwert geschaut hatte, und das Flugzeug tickte im selben
+    Frame. `Board::frame` läuft jetzt direkt vor den Ticks.
+  - Das Board nimmt einen Startwert erst, wenn der Flug begonnen hat,
+    nicht im Menü (jeder Levelwechsel dort verbrauchte einen Run).
+  - Fünf `f32::sin_cos` in core (Form des Flugzeugs, gedrehte Polygone,
+    Höhe der Bahn, Reifenrauch) waren noch aus std: jetzt
+    `libm::sincosf`. Ein Test in core durchsucht die Quellen von core
+    nach Mathe aus std, damit das nicht wieder hineinrutscht.
+  - Seltsame Fenstergrössen (etwa kurz 1200×140) liessen den Server den
+    ganzen Flug ablehnen. Die Welt nutzt jetzt `replay::playable_bounds`,
+    die Grösse in das verschoben, was ein Replay annimmt; echte
+    Bildschirme bleiben gleich.
+  - Der Status der Seite war ein Zähler für alle Levels und Flüge: jetzt
+    pro Level des Flugs. Ein Replay meldet bei 401 keine neue Pilotin
+    mehr an (sein Run gehört der alten).
+  - Ein Replay, das nicht länger ist als das letzte seines Runs, bekommt
+    409, bevor es nachgeflogen wird (`replay::steps_of` zählt seine Ticks
+    billig); nachgeflogen wird eines pro CPU gleichzeitig, nach 5 s 503
+    mit `Retry-After`.
+  - `GET /health` für die Prüfung von Fly, statt alle 30 s eine Abfrage
+    der Liste.
 
 ## Konzepte
 

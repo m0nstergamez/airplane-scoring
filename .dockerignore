@@ -1,0 +1,6 @@
+# Only the Rust sources go into the server image (see Dockerfile).
+*
+!Cargo.toml
+!Cargo.lock
+!.cargo
+!crates

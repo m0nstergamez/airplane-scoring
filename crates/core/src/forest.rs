@@ -217,14 +217,16 @@ impl Buzzard {
     /// its dive; otherwise level, to the left.
     pub fn heading(&self) -> f32 {
         match self.state {
-            BuzzardState::Diving { vel } | BuzzardState::Down { vel, .. } => vel.y.atan2(vel.x),
+            BuzzardState::Diving { vel } | BuzzardState::Down { vel, .. } => {
+                libm::atan2f(vel.y, vel.x)
+            }
             // Flying in: toward where it will circle.
             BuzzardState::Gliding => {
                 let (dx, dy) = (self.circle_at.x - self.pos.x, self.circle_at.y - self.pos.y);
                 if dx.abs() + dy.abs() < 1.0 {
                     std::f32::consts::PI
                 } else {
-                    dy.atan2(dx)
+                    libm::atan2f(dy, dx)
                 }
             }
             BuzzardState::Circling { .. } => std::f32::consts::PI,
@@ -256,7 +258,7 @@ impl Buzzard {
     pub fn shape(&self, scale: f32) -> Vec<Poly> {
         let (span, body) = (BUZZARD_SIZE.0 * scale, BUZZARD_SIZE.1 * scale);
         let a = self.heading() + self.tumble();
-        let along = Vec2::new(a.cos(), a.sin());
+        let along = Vec2::new(libm::cosf(a), libm::sinf(a));
         let across = Vec2::new(-along.y, along.x);
         let p = self.pos;
         let at = |u: f32, v: f32| {
@@ -489,7 +491,7 @@ impl Forest {
                 let t = t + 1;
                 let a = t as f32 * TICK_SECONDS * std::f32::consts::TAU / BUZZARD_CIRCLE_SECONDS;
                 let r = BUZZARD_CIRCLE_RADIUS * s;
-                b.pos = Vec2::new(centre.x + r * a.cos(), centre.y - r * a.sin());
+                b.pos = Vec2::new(centre.x + r * libm::cosf(a), centre.y - r * libm::sinf(a));
                 if t >= ticks(BUZZARD_CIRCLE_SECONDS) {
                     let (dx, dy) = (plane.x - b.pos.x, plane.y - b.pos.y);
                     let len = (dx * dx + dy * dy).sqrt().max(1.0);
@@ -660,7 +662,7 @@ mod tests {
         };
         let to_plane = Vec2::new(PLANE.x - b.pos.x, PLANE.y - b.pos.y);
         let cos = (vel.x * to_plane.x + vel.y * to_plane.y)
-            / ((vel.x.hypot(vel.y)) * to_plane.x.hypot(to_plane.y));
+            / (libm::hypotf(vel.x, vel.y) * libm::hypotf(to_plane.x, to_plane.y));
         assert!(cos > 0.99, "aimed at the plane: {cos}");
     }
 

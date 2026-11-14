@@ -205,9 +205,10 @@ sie mit Millisekunden («Time 1:02.483»), und darunter stehen die
 ist mit «<» markiert, wenn sie in die Liste kam, und «New best time!»
 blinkt, wenn sie alle geschlagen hat. Jedes Level hat seine eigene
 Liste. Ein «Game over» oder ein Flug, den du mit **Menu** oder
-**Restart** verlässt, zählt keine Zeit. Die Zeiten bleiben nur in diesem
-Browser: Nichts geht ins Internet, und deine Freunde haben auf ihren
-Handys ihre eigenen Listen.
+**Restart** verlässt, zählt keine Zeit. Die Bestzeiten bleiben nur in
+diesem Browser, und deine Freunde haben auf ihren Handys ihre eigenen
+Listen. Die **Bestenliste** (unten) vergleicht deine Zeiten mit allen
+anderen.
 
 ## Levels
 
@@ -331,6 +332,29 @@ Hügel und die orangen Baumkronen im Tal:
   auf eine Tanne. Steig aus ihnen heraus.
 - Ab und zu zieht eine **Nebelbank** vorbei, und du siehst ein paar
   Sekunden lang weniger.
+
+## Bestenliste
+
+Ist das Spiel mit einem Server für die Bestenliste verbunden, hat das
+Hauptmenü einen fünften Knopf, **Leaderboard**. Er zeigt die
+schnellsten Pilotinnen und Piloten jedes Levels: eine Zeile pro Person,
+mit ihrer schnellsten Zeit. Deine eigene Zeile ist golden. Unter den
+Listen kannst du **Your name** ändern (1 bis 16 Buchstaben, Ziffern,
+Leerzeichen, `-` oder `_`).
+
+Du brauchst kein Konto. Beim ersten Mal holt das Spiel einen geheimen
+Schlüssel vom Server und behält ihn in diesem Browser. Löschst du die
+Daten des Browsers oder spielst auf einem anderen Handy, fängst du als
+neue Pilotin oder neuer Pilot an.
+
+Bei «Level complete» zeigt eine Zeile unter der Zeit, wo diese Zeit
+steht: «World rank ...», solange der Server sie prüft, dann «World rank
+3 of 120». Der Server fliegt deinen Flug nach, bevor er ihn zählt; so
+kommen nur echte Flüge auf die Liste. «Not counted online» heisst: Der
+Server war nicht erreichbar oder hat den Flug nicht angenommen; in
+deinen Bestzeiten auf diesem Gerät steht er trotzdem. Wie bei den
+Bestzeiten zählen ein «Game over» oder ein verlassener Flug nichts. Ohne
+Internet beim Start eines Flugs zählt dieser Flug nicht online.
 
 ## Ton
 

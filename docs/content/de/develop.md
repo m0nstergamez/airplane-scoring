@@ -34,6 +34,8 @@ rustup target add wasm32-unknown-unknown
 | Schnelle Prüfungen | `scripts/check.sh --fast` |
 | Tondateien neu erzeugen | `scripts/make-sounds.py` |
 | Level-Hintergründe neu erzeugen | `scripts/make-backgrounds.sh` |
+| Den Server der Bestenliste starten | `cargo run -p airplane-scoring-server` |
+| Gegen ihn spielen | `scripts/dev.sh`, dann <http://localhost:8080/?board=http://localhost:8787> öffnen |
 
 `scripts/dev.sh` läuft weiter: Jedes Mal, wenn du eine Datei speicherst,
 wird das Spiel neu gebaut und die Seite im Browser lädt sich von selbst neu:
@@ -51,6 +53,7 @@ flowchart LR
 |---|---|
 | `crates/core` | Die **Regeln** des Spiels: Bewegung, Steuerung, Kippen, Wetter, Zusammenstösse, Lautstärken, Scrollen. Keine Grafik, keine Tondateien. Alles hier hat Tests. |
 | `crates/game` | Zeichnet das Spiel, spielt die Töne ab und liest Tasten, Finger und Sensoren. Keine Regeln. |
+| `crates/server` | Die Bestenliste im Internet: verteilt Startwerte, fliegt Replays mit `core` nach und behält die schnellsten Zeiten. Gehört nicht zur Webseite. |
 | `web` | Die Webseite, die das Spiel lädt, die Tondateien in `web/sounds` und die Level-Hintergründe in `web/levels`. |
 | `art` | Zeichnungen, aus denen das Spiel gemacht ist: ein Ordner pro Level in `art/levels`. |
 | `scripts` | Hilfsbefehle (bauen, starten, prüfen). |
@@ -341,6 +344,84 @@ direkt in einem Level zu starten, häng `?level=2` an die Adresse
 flowchart LR
     T["Start"] --> F["Fliegen,<br/>LEVEL_SECONDS"] --> A["Anflug:<br/>Autopilot, Fahrwerk aus"] --> R["Aufsetzen,<br/>Ausrollen"] --> C["Level complete"] --> N["Nächstes Level:<br/>Countdown 3-2-1"] --> T
 ```
+
+### Bestenliste
+
+Die Bestenliste im Internet bewertet dasselbe wie die Bestzeiten: die
+Zeit eines geschafften Levels, die schnellste zuerst, eine Liste pro
+Level. Dem Spiel kann man keine Zeit glauben (jede Webseite lässt sich
+verändern), darum nimmt der Server nie eine an. Er gibt für jeden Flug
+einen **Startwert** aus; das Spiel schreibt jede Eingabe auf
+(`crates/core/src/replay.rs`, das **Replay**); bei «Level complete»
+fliegt der Server dieses Replay mit demselben `core` nach und liest die
+Zeit selbst ab. Das geht, weil `World::tick` deterministisch ist:
+gleicher Startwert, gleiche Eingaben, gleicher Flug.
+
+```mermaid
+sequenceDiagram
+    participant P as web/index.html (Board-Plugin)
+    participant G as Spiel (board.rs)
+    participant S as Server (crates/server)
+    P->>S: POST /v1/runs (Start-Level)
+    S-->>P: Run-ID und Startwert
+    G->>P: nimmt den Startwert vor dem ersten Tick
+    Note over G: jeder Tick: die Eingabe wird aufgeschrieben
+    G->>P: Level complete: das Replay bis hier
+    P->>S: POST /v1/runs/{id}/replay
+    S->>S: fliegt es mit core nach, prüft die Zeit, die es hatte
+    S-->>P: Level, Zeit, Rang
+    P-->>G: World rank 3 of 120
+```
+
+Pilotinnen und Piloten sind anonym: Der Server gibt jedem Browser einen
+geheimen Schlüssel (Token) und behält nur dessen Hash. Die Bestenliste
+ist aus, solange das Meta-Tag `board-api` in `web/index.html` leer ist;
+dann läuft das Spiel wie bisher. Jede Änderung an `core`, die einen Flug
+anders verlaufen lässt, ändert auch die Replays: Der Server muss mit
+demselben `core` laufen wie das veröffentlichte Spiel.
+
+Die Einstellungen des Servers kommen aus der Umgebung: `PORT` (8787),
+`DB_PATH` (`leaderboard.sqlite`, eine SQLite-Datei) und
+`ALLOWED_ORIGINS` (die Seiten, die ihn aufrufen dürfen, durch Kommas
+getrennt). GitHub Pages liefert nur Dateien aus, darum läuft der Server
+anderswo.
+
+Bevor er online geht, prüft die **Stage** die ganze Kette auf deinem Mac:
+eine [OrbStack](https://orbstack.dev/)-Linux-Maschine namens `stage`
+(amd64, wie die Maschinen bei Fly) startet das echte Server-Image aus
+dem `Dockerfile` und liefert das Spiel aus, mit `board-api` auf sie
+gerichtet. So macht das wasm des Browsers die Replays, und ein
+x86-64-Linux-Server fliegt sie nach, wie im Betrieb. Sie braucht
+OrbStack; `e2e` braucht zusätzlich [wasmtime](https://wasmtime.dev/).
+
+| Was | Befehl |
+|---|---|
+| Stage anlegen, bauen und starten | `scripts/stage.sh up`, dann <http://localhost:8180> öffnen |
+| Automatisch prüfen (etwa eine Minute) | `scripts/stage.sh e2e` |
+| Das Protokoll des Servers | `scripts/stage.sh logs` |
+| Ihre Datenbank leeren | `scripts/stage.sh reset` |
+| Anhalten / Maschine entfernen | `scripts/stage.sh down` / `scripts/stage.sh delete` |
+
+`e2e` meldet eine Pilotin an, holt einen Startwert, lässt den
+Demo-Piloten von core (als wasm gebaut) Level 1 landen, wartet, bis so
+viel echte Zeit vergangen ist, und prüft, dass der Server dieselbe Zeit
+abliest und sie in die Liste einträgt. Nach einer Änderung an `core`,
+`crates/server` oder der Seite wieder `up` starten.
+
+Dann geht der Server online, zum Beispiel bei [Fly.io](https://fly.io/) (`Dockerfile`,
+`fly.toml`; nicht gratis). So kommt er einmalig dorthin:
+
+1. Installiere `flyctl` und melde dich an (`fly auth login`).
+2. Ändere `app` in `fly.toml` auf einen Namen, den noch niemand hat.
+3. Prüfe die Region mit `fly platform regions` (`fra` in `fly.toml`).
+4. Starte `fly launch --no-deploy --copy-config` und sag nein zu Datenbanken.
+5. Starte `fly volumes create leaderboard_data --size 1 --region fra`.
+6. Starte `fly deploy`, dann `fly scale count 1`: Eine zweite Maschine
+   hätte ihre eigene, leere Datenbank.
+7. Trag `https://<app>.fly.dev` ins Meta-Tag `board-api` ein und öffne
+   einen Pull Request.
+
+Nach einer Änderung an `core` oder `crates/server` wieder `fly deploy`.
 
 ### Zuerst der Test
 
