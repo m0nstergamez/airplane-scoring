@@ -41,13 +41,14 @@ async fn main() {
     let mut audio = audio::Audio::start();
     let mut scenery = scenery::Scenery::start();
 
-    let mut world = new_world();
+    let mut world = new_world(start_level(page_js::requested_level()));
     // The online leaderboard: one per flight, like the world.
     let mut board = board::Board::default();
     // Test builds only: core's demo pilot flies (see autopilot.rs).
     let mut autopilot = autopilot::Autopilot::default();
     autopilot.new_flight();
     let mut flight = page_js::new_flight();
+    let mut restarts = page_js::restart();
     // The level's best times and where the last time landed in them, for
     // "Level complete" and "Game over".
     let mut result: Option<FlightResult> = None;
@@ -77,13 +78,30 @@ async fn main() {
             sound_js::toggle_mute();
         }
 
-        // The menu's "Menu" button went back to the start screen: get a
-        // fresh flight ready for the next "Tap to fly".
-        if page_js::new_flight() != flight {
-            flight = page_js::new_flight();
-            // Leaving a flight (Menu, Restart) counts no time: only a
-            // completed level goes into the best times (and online).
-            world = new_world();
+        // A new flight, and in which level. Leaving a flight counts no
+        // time: only a completed level goes into the best times (and
+        // online).
+        // - The menu's "Menu" button went back to the start screen: get a
+        //   flight ready for the next "Tap to fly", in the map's level.
+        // - Game over (a tap, click or Enter) or the pause menu's Restart:
+        //   the level the plane is in, not the one the flight began in.
+        let playing = page_js::started();
+        let (menu, restart) = (page_js::new_flight(), page_js::restart());
+        let mut fresh = None;
+        if menu != flight {
+            flight = menu;
+            fresh = Some(start_level(page_js::requested_level()));
+        }
+        if restart != restarts
+            || (playing
+                && world.can_restart()
+                && (restart_pressed() || autopilot.wants_restart(&world)))
+        {
+            restarts = restart;
+            fresh = Some(world.restart_level());
+        }
+        if let Some(level) = fresh {
+            world = new_world(level);
             board = board::Board::default();
             autopilot.new_flight();
             crash_flash = 0.0;
@@ -93,7 +111,6 @@ async fn main() {
         // "Level complete": the buttons Next level and Menu (Enter: next;
         // after the last level only Menu).
         // Not while paused: a key pressed in the pause menu is not for them.
-        let playing = page_js::started();
         if playing && world.level_complete().is_some() {
             match pressed_level_end_button(&world) {
                 Some(LevelEndChoice::Next) => {
@@ -104,16 +121,6 @@ async fn main() {
                 Some(LevelEndChoice::Menu) => page_js::show_menu(),
                 None => {}
             }
-        }
-
-        // Game over: a tap, click or Enter starts a new flight.
-        if playing && world.can_restart() && (restart_pressed() || autopilot.wants_restart(&world))
-        {
-            world = new_world();
-            board = board::Board::default();
-            autopilot.new_flight();
-            crash_flash = 0.0;
-            result = None;
         }
 
         // Keep the logical bounds in sync with the canvas (browser resizes).
@@ -411,8 +418,9 @@ fn record_time(world: &World) -> FlightResult {
     r
 }
 
-/// A new flight: full lives, level 1 (or `?level=`), fresh weather.
-fn new_world() -> World {
+/// A new flight in `level` (a valid one, see `start_level`): full lives,
+/// fresh weather.
+fn new_world(level: u32) -> World {
     // The seed decides the weather; the clock makes every flight different.
     let seed = (macroquad::miniquad::date::now() * 1000.0) as u64;
     let mut world = World::with_seed(
@@ -422,7 +430,7 @@ fn new_world() -> World {
         },
         seed,
     );
-    world.start_level = start_level(page_js::requested_level());
+    world.start_level = level;
     // Every flight starts from the airport (core skips it in level 2).
     world.with_takeoff()
 }

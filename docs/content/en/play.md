@@ -110,7 +110,8 @@ with the game blurred behind:
 
 - **Continue:** back to the game. A countdown counts 3, 2, 1; the game
   goes on only at 0, so you are ready.
-- **Restart:** a new flight from the airport, after the same countdown.
+- **Restart:** a new flight from the airport in the level you are in,
+  after the same countdown.
 - **Calibrate** (phone only): the way you hold the phone now counts as
   "level" from now on, for steering and for gas.
 - **Options:** switch music (the tunes) and sounds (everything else) on
@@ -186,7 +187,8 @@ With the last life your plane **explodes**: a fireball, flying debris
 and a cloud of smoke, with a big bang, and the screen **shakes**. Then **"Game over"** shows on the
 screen, with the level's best times (a game over gets no time). After a short
 moment "Tap or click to fly again" appears: tap, click or press Enter,
-and a new flight starts in the same level with 3 lives.
+and a new flight starts in the same level with 3 lives (even if the
+flight began in an earlier level).
 
 Only a **completed** level gets a time. "Level complete" shows it with
 milliseconds ("Time 1:02.483"), and under it **"Best times"** lists the
