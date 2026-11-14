@@ -53,8 +53,8 @@ pub use input::{
     pick_steer, pick_throttle, steer_from_keys, steer_toward, Input, TOUCH_EASE_DISTANCE,
 };
 pub use level::{
-    level_view, start_level, LevelView, LEVEL_BANNER_SECONDS, LEVEL_COUNT, LEVEL_FADE_SECONDS,
-    LEVEL_SECONDS, RAINY_LEVELS,
+    has_next_level, level_view, start_level, LevelView, LEVEL_BANNER_SECONDS, LEVEL_COUNT,
+    LEVEL_FADE_SECONDS, LEVEL_SECONDS, RAINY_LEVELS,
 };
 pub use scenery::{background_x, scroll_distance, SCROLL_SPEED};
 pub use shape::{any_overlap, Poly};

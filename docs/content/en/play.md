@@ -205,8 +205,9 @@ stops: "Level 1 complete" shows with your time, the
 level's best times and two
 buttons. **Next level** (or Enter) starts the next level: its landscape
 appears, it counts 3, 2, 1, and you take off from its runway. **Menu**
-goes to the main menu. After the last level,
-level 1 starts again.
+goes to the main menu. The last level (level 3 for now) has no **Next
+level**: it says "No more levels yet, new ones are coming!" in its place,
+next to **Menu** (Enter too).
 
 On the coast, **hot-air balloons** float by now and then. They come
 slowly from the right and take turns in four ways: one stands on a

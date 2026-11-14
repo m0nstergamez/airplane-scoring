@@ -787,6 +787,12 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
   gemessene Breite und deckte auf Handys «1 Coast» und Back zu (seit die
   Tipps messen, PR #40); die Tipps messen jetzt am Feld, das gerade
   sichtbar ist.
+- Das letzte Level endet ohne «Next level», gewünscht: Es führte nur
+  zurück zu Level 1. Wo der Knopf war, steht jetzt in einem ruhigen,
+  golden umrandeten Feld «No more levels yet, new ones are coming!»,
+  neben «Menu» (auch Enter).
+  Das entscheidet der Core (`has_next_level`), ein neues Level 4 bringt
+  den Knopf also von selbst zurück.
 
 ## Konzepte
 
