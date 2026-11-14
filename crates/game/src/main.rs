@@ -3,12 +3,13 @@
 
 use airplane_scoring_core::Vec2 as Vec2Core;
 use airplane_scoring_core::{
-    background_x, clock_text, pick_steer, pick_throttle, start_level, steer_from_keys, Airport,
-    Balloon, BestTimes, Bounds, Clock, Crane, Event, Gull, Heli, HeliParts, HighRise, Hut, Input,
-    Mix, Pad, Tilt, Tower, TyreSmoke, Warning, World, AIRSPEED_RANGE, BALLOON_RADIUS, BASKET_BELOW,
-    BEST_TIMES_COUNT, HUT_EAVES, HUT_INSET, LIVES, MAIN_WHEEL_X, NOSE_WHEEL_X, OVERSPEED_AT,
-    PAD_HEIGHT, PAD_WIDTH, PLANE_COCKPIT, PLANE_FUSELAGE, PLANE_NOSE, PLANE_RADIUS, PLANE_TAIL,
-    PLANE_WING, RUNWAY_HEIGHT, RUNWAY_LENGTH, STALL_AT, STRUT_REACH, TICK_SECONDS, WHEEL_RADIUS,
+    background_x, clock_text, has_next_level, pick_steer, pick_throttle, start_level,
+    steer_from_keys, Airport, Balloon, BestTimes, Bounds, Clock, Crane, Event, Gull, Heli,
+    HeliParts, HighRise, Hut, Input, Mix, Pad, Tilt, Tower, TyreSmoke, Warning, World,
+    AIRSPEED_RANGE, BALLOON_RADIUS, BASKET_BELOW, BEST_TIMES_COUNT, HUT_EAVES, HUT_INSET, LIVES,
+    MAIN_WHEEL_X, NOSE_WHEEL_X, OVERSPEED_AT, PAD_HEIGHT, PAD_WIDTH, PLANE_COCKPIT, PLANE_FUSELAGE,
+    PLANE_NOSE, PLANE_RADIUS, PLANE_TAIL, PLANE_WING, RUNWAY_HEIGHT, RUNWAY_LENGTH, STALL_AT,
+    STRUT_REACH, TICK_SECONDS, WHEEL_RADIUS,
 };
 use macroquad::prelude::*;
 
@@ -89,7 +90,8 @@ async fn main() {
             result = None;
         }
 
-        // "Level complete": the buttons Next level and Menu (Enter: next).
+        // "Level complete": the buttons Next level and Menu (Enter: next;
+        // after the last level only Menu).
         // Not while paused: a key pressed in the pause menu is not for them.
         let playing = page_js::started();
         if playing && world.level_complete().is_some() {
@@ -367,15 +369,27 @@ enum LevelEndChoice {
     Menu,
 }
 
-/// The two buttons under "Level complete": where they are and what they do.
-fn level_end_buttons(world: &World) -> [(Rect, &'static str, LevelEndChoice); 2] {
+/// Is the level just completed the last one? Then there is no "Next
+/// level" button, only a note that more levels are coming, and "Menu".
+fn last_level_done(world: &World) -> bool {
+    world.level_complete().is_some_and(|l| !has_next_level(l))
+}
+
+/// The buttons under "Level complete": where they are and what they do.
+/// After the last level only "Menu"; where "Next level" would be is the
+/// note `NO_MORE_LEVELS` (see `no_more_levels_box`).
+fn level_end_buttons(world: &World) -> Vec<(Rect, &'static str, LevelEndChoice)> {
     let (w, h) = (screen_width(), screen_height());
     let s = world.bounds.scale();
     let (bw, bh, gap) = (170.0 * s, 44.0 * s, 20.0 * s);
     // At the bottom, under the best times.
     let y = h - bh - 14.0 * s;
     let left = (w - 2.0 * bw - gap) / 2.0;
-    [
+    if last_level_done(world) {
+        let menu = Rect::new(left + bw + gap, y, bw, bh);
+        return vec![(menu, "Menu", LevelEndChoice::Menu)];
+    }
+    vec![
         (
             Rect::new(left, y, bw, bh),
             "Next level",
@@ -389,10 +403,23 @@ fn level_end_buttons(world: &World) -> [(Rect, &'static str, LevelEndChoice); 2]
     ]
 }
 
+/// Shown after the last level where the "Next level" button would be.
+const NO_MORE_LEVELS: [&str; 2] = ["No more levels yet,", "new ones are coming!"];
+
+/// Where "Next level" would be: left of "Menu", same size.
+fn no_more_levels_box(world: &World) -> Rect {
+    let menu = level_end_buttons(world)[0].0;
+    let gap = 20.0 * world.bounds.scale();
+    Rect::new(menu.x - gap - menu.w, menu.y, menu.w, menu.h)
+}
+
 /// A tap or click on one of the level-end buttons this frame (or Enter
-/// for the next level).
+/// for the next level; after the last level for the menu).
 fn pressed_level_end_button(world: &World) -> Option<LevelEndChoice> {
     if is_key_pressed(KeyCode::Enter) || is_key_pressed(KeyCode::Space) {
+        if last_level_done(world) {
+            return Some(LevelEndChoice::Menu);
+        }
         return Some(LevelEndChoice::Next);
     }
     let dpi = macroquad::miniquad::window::dpi_scale();
@@ -448,6 +475,28 @@ fn draw_level_end(world: &World, result: Option<&FlightResult>) {
             let x = rect.x + (rect.w - dims.width) / 2.0;
             let y = rect.y + (rect.h + dims.offset_y) / 2.0;
             draw_text(label, x, y, size, WHITE);
+        }
+        if last_level_done(world) {
+            // A quiet box (no button colour, it does nothing) with the note.
+            let r = no_more_levels_box(world);
+            draw_rectangle(r.x, r.y, r.w, r.h, Color::new(0.08, 0.09, 0.12, 0.6));
+            draw_rectangle_lines(
+                r.x,
+                r.y,
+                r.w,
+                r.h,
+                1.5 * s,
+                Color::new(1.0, 0.86, 0.35, 0.5),
+            );
+            let size = 17.0 * s;
+            let line_gap = 17.0 * s;
+            for (i, line) in NO_MORE_LEVELS.iter().enumerate() {
+                let dims = measure_text(line, None, size as u16, 1.0);
+                let x = r.x + (r.w - dims.width) / 2.0;
+                let y =
+                    r.y + r.h / 2.0 - line_gap / 2.0 + dims.offset_y / 2.0 + i as f32 * line_gap;
+                draw_text(line, x, y, size, gold);
+            }
         }
     } else if let Some(n) = world.countdown() {
         centred(

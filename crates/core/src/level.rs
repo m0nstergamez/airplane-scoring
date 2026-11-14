@@ -83,6 +83,12 @@ pub fn start_level(requested: i32) -> u32 {
     }
 }
 
+/// Is there a level after `level`? Not after the last one: "Level
+/// complete" then offers only "Menu" (more levels are still to come).
+pub fn has_next_level(level: u32) -> bool {
+    level < LEVEL_COUNT
+}
+
 /// The levels on screen after `ticks` ticks, when the flight started in
 /// level `start` (1 ..= [`LEVEL_COUNT`]; anything else counts as 1).
 pub fn level_view(ticks: u64, start: u32) -> LevelView {
@@ -226,6 +232,14 @@ mod tests {
         // Fading back to level 1 at the end of level 2.
         let back = level_view(at(2.0 * LEVEL_SECONDS - LEVEL_FADE_SECONDS / 2.0), 1);
         assert!((back.presence(2) - 0.5).abs() < 0.01);
+    }
+
+    #[test]
+    fn only_the_last_level_has_no_next_level() {
+        for level in 1..LEVEL_COUNT {
+            assert!(has_next_level(level), "{level}");
+        }
+        assert!(!has_next_level(LEVEL_COUNT));
     }
 
     #[test]

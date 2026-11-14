@@ -715,6 +715,12 @@ that isn't code here. Keep entries short and dated.
   main menu and covered "1 Coast" and Back on phones (since the tips
   were measured, PR #40); the tips now measure against whichever panel
   shows.
+- The last level ends without "Next level", asked for: it only led back
+  to level 1. Where that button was, a quiet gold-framed box now says
+  "No more levels yet, new ones are coming!", next to "Menu" (Enter
+  too). Core
+  decides it (`has_next_level`), so a new level 4 brings the button
+  back by itself.
 
 ## Concepts
 

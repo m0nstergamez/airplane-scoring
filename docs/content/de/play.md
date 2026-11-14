@@ -221,8 +221,9 @@ gibt eine Wolke **Reifenrauch**. Es bremst und steht: «Level
 zwei Knöpfen. **Next level**
 (oder Enter) startet das nächste Level: Seine Landschaft erscheint, es
 zählt 3, 2, 1, und du startest von seiner Startbahn. **Menu** führt ins
-Hauptmenü. Nach dem letzten Level beginnt wieder
-Level 1.
+Hauptmenü. Das letzte Level (zurzeit Level 3) hat kein **Next level**:
+Dort steht an seiner Stelle «No more levels yet, new ones are coming!»,
+neben **Menu** (auch mit Enter).
 
 An der Küste fahren ab und zu **Heissluftballone**. Sie kommen langsam
 von rechts und wechseln sich auf vier Arten ab: Einer steht auf einer
