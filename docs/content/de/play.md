@@ -141,8 +141,8 @@ erhellen den Himmel, und der Donner folgt. Je weiter weg der Blitz,
 desto später und leiser der Donner.
 
 Berührst du einen Heissluftballon, eine Startrampe oder eine Hütte
-(Level 1), eine Möwe oder einen Strandturm (Level 2) oder ein Hochhaus
-oder einen Kran (Level 3), gibt es einen
+(Level 1), eine Möwe oder einen Strandturm (Level 2) oder ein Hochhaus,
+einen Kran oder einen Helikopter (Level 3), gibt es einen
 **Zusammenstoss**.
 Nur eine echte Berührung zählt: Ganz knapp vorbeifliegen oder durch die
 Lücke neben einem Dach ist erlaubt. Beim Zusammenstoss
@@ -277,14 +277,17 @@ siehst.
   weg, oder er kommt vom Himmel herab und landet, immer solange das
   Hochhaus noch weit vorne ist. Wenn es bei dir ist, steht der Helikopter
   auf dem Dach (flieg auch über ihn) oder ist weg.
-- **Baukräne** stehen weit hinten in der Stadt. Ihr langer gelber
-  Ausleger läuft ganz oben am Bildschirm entlang, und an einem Seil
-  hängt ein roter Stahlträger. Flieg **unter** dem Träger durch:
-  Ausleger, Seil und Träger zählen, der Mast weit hinten nicht. Ganz
-  oben fliegen ist hier also kein Ausweg.
-
-Nie kommen zwei Kräne hintereinander: Nach einem Träger, unter dem du
-durch bist, musst du also eher als Nächstes über ein Hochhaus steigen.
+- **Baukräne** stehen am Boden. Ein gelber Gittermast trägt den langen
+  Ausleger, und an einem Seil hängt ein roter Stahlträger. Flieg
+  **über** den Kran: Alles zählt, bis hinunter zum Fuss des Masts.
+  Spätestens nach zwei Hochhäusern kommt ein Kran, nie zwei
+  hintereinander.
+- **Helikopter** fliegen dir alle paar Sekunden von rechts entgegen, auf
+  deiner Höhe, bis ganz oben am Bildschirm (aber immer über den
+  Häusern). Ganz oben fliegen ist hier also kein Ausweg. Weich ihnen
+  aus: Fliegst du in einen Helikopter, ob er steht oder fliegt,
+  explodiert er mit einem Knall und stürzt ab, und du verlierst ein
+  Leben.
 
 ## Ton
 

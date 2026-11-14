@@ -721,6 +721,21 @@ that isn't code here. Keep entries short and dated.
   too). Core
   decides it (`has_next_level`), so a new level 4 brings the button
   back by itself.
+- Level 3 reworked, asked for after flying it on a phone: the crane's
+  mast could be flown through, flying into a helicopter did nothing
+  special, and sometimes no crane came at all.
+  - Cranes now stand on the ground, and all of them counts, mast too: fly
+    over them (`JIB_TOP` 0.36–0.5). A solid mast under a jib at the very
+    top would have closed the whole screen, so the jib came down.
+  - To keep the top from being a safe place again, a `FlyingHeli` comes
+    at the plane every 5–8 s at its height (no lower than
+    `FLYING_HELI_LOWEST`, above the town), like the balloons in level 1.
+  - A helicopter the plane flies into (flying or parked on a roof)
+    explodes and falls as a burning `Wreck`; `Event::HeliCrash` plays the
+    explosion sound. It costs a life like any crash.
+  - A crane comes at the latest after `HIGH_RISES_IN_A_ROW` (2)
+    high-rises; before, chance alone could leave out cranes for a long
+    time.
 
 ## Concepts
 

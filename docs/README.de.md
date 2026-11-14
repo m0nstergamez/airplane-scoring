@@ -793,6 +793,23 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
   neben «Menu» (auch Enter).
   Das entscheidet der Core (`has_next_level`), ein neues Level 4 bringt
   den Knopf also von selbst zurück.
+- Level 3 überarbeitet, gewünscht nach einem Flug auf dem Handy: Durch
+  den Mast der Kräne konnte man durchfliegen, ein Helikopter tat beim
+  Hineinfliegen nichts Besonderes, und manchmal kam gar kein Kran.
+  - Kräne stehen jetzt am Boden, und alles an ihnen zählt, auch der Mast:
+    darüber fliegen (`JIB_TOP` 0.36–0.5). Ein fester Mast unter einem
+    Ausleger ganz oben hätte den ganzen Bildschirm gesperrt, darum kam
+    der Ausleger herunter.
+  - Damit ganz oben nicht wieder ein sicherer Platz ist, kommt alle
+    5–8 s ein `FlyingHeli` dem Flugzeug auf seiner Höhe entgegen (nie
+    tiefer als `FLYING_HELI_LOWEST`, über der Stadt), wie die Ballone in
+    Level 1.
+  - Ein Helikopter, in den das Flugzeug fliegt (fliegend oder auf einem
+    Dach parkiert), explodiert und stürzt als brennendes `Wreck` ab;
+    `Event::HeliCrash` spielt den Explosionston. Es kostet ein Leben wie
+    jeder Zusammenstoss.
+  - Spätestens nach `HIGH_RISES_IN_A_ROW` (2) Hochhäusern kommt ein
+    Kran; vorher konnte der Zufall lange keine Kräne bringen.
 
 ## Konzepte
 

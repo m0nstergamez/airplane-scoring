@@ -37,8 +37,9 @@ pub use balloons::{
 };
 pub use best_times::{BestTimes, Placed, BEST_TIMES_COUNT};
 pub use city::{
-    City, Crane, CraneParts, Heli, HeliParts, HeliState, HighRise, HighRiseParts, CITY_GAP_SECONDS,
-    CITY_LEVEL, CITY_ROOM, CRANE_SHARE, HIGH_RISE_STYLES,
+    City, Crane, CraneParts, FlyingHeli, Heli, HeliParts, HeliState, HighRise, HighRiseParts,
+    Wreck, CITY_GAP_SECONDS, CITY_LEVEL, CITY_ROOM, CRANE_SHARE, FLYING_HELI_LOWEST,
+    HIGH_RISES_IN_A_ROW, HIGH_RISE_STYLES,
 };
 pub use clock::{Clock, MAX_FRAME_SECONDS};
 pub use gulls::{
@@ -225,6 +226,8 @@ pub enum Event {
     BalloonBurner,
     /// The plane flew into a balloon: it explodes (a bang) and falls.
     BalloonBurst,
+    /// The plane flew into a helicopter: it explodes (a bang) and falls.
+    HeliCrash,
     /// The last life is gone: the plane has fallen and the flight is over.
     GameOver,
     /// The last life is gone: the plane explodes (instead of a crash).
@@ -1080,7 +1083,7 @@ impl World {
         self.towers.tick(self.bounds, beach);
         let town = levels.level == CITY_LEVEL && !runway_in && !clearing;
         self.city.set_speed(speed);
-        self.city.tick(self.bounds, town);
+        self.city.tick(self.bounds, town, plane_y);
         // Faster than at the start: everything slides past by the extra
         // too (far towers less, as they move slower); slower while rolling.
         self.distance += (SCROLL_SPEED * speed * TICK_SECONDS) as f64;
@@ -1136,11 +1139,29 @@ impl World {
         } else {
             Vec::new()
         };
+        // Helicopters too (parked on a roof or flying): one the plane
+        // flies into crashes and burns.
+        let (roof_helis, flyers): (Vec<usize>, Vec<usize>) = if open {
+            (
+                (self.city.high_rises.iter().enumerate())
+                    .filter(|(_, b)| hits(&b.heli_shape(bounds)))
+                    .map(|(i, _)| i)
+                    .collect(),
+                (self.city.flyers.iter().enumerate())
+                    .filter(|(_, f)| hits(&f.shape(bounds)))
+                    .map(|(i, _)| i)
+                    .collect(),
+            )
+        } else {
+            (Vec::new(), Vec::new())
+        };
         let touching = (self.planes.iter()).any(|m| {
             let r = PLANE_RADIUS * bounds.depth(m.pos.y);
             me.iter().any(|part| part.overlaps_circle(m.pos, r))
         }) || !struck.is_empty()
             || !burst.is_empty()
+            || !roof_helis.is_empty()
+            || !flyers.is_empty()
             || (self.balloons.pads.iter()).any(|p| hits(&p.shape(bounds)))
             || (self.huts.list.iter()).any(|h| hits(&h.shape(bounds)))
             || (self.towers.list.iter()).any(|t| hits(&t.shape(bounds)))
@@ -1172,6 +1193,15 @@ impl World {
         }
         if !burst.is_empty() {
             self.events.push(Event::BalloonBurst);
+        }
+        for &i in &roof_helis {
+            self.city.down_roof_heli(i, bounds);
+        }
+        for &i in flyers.iter().rev() {
+            self.city.down_flyer(i, bounds);
+        }
+        if !roof_helis.is_empty() || !flyers.is_empty() {
+            self.events.push(Event::HeliCrash);
         }
 
         // Rain (and storms) only where a rainy level shows; none yet.
@@ -2610,7 +2640,8 @@ mod tests {
         assert_eq!(both, (true, true), "high-rises and cranes in the town");
     }
 
-    /// The town with one crane in the plane's way, the plane at `y`.
+    /// The town with one crane in the plane's way (its mast 150 px ahead),
+    /// the plane at `y`.
     fn crane_ahead(y: f32) -> World {
         let mut w = World::with_seed(PHONE, 5);
         w.start_level = CITY_LEVEL;
@@ -2619,47 +2650,97 @@ mod tests {
             w.tick(&Input::NONE);
         }
         w.city.clear();
-        let reach = 200.0;
         w.city.cranes.push(Crane {
-            // The load hangs 150 px ahead of the plane.
-            x: w.player.pos.x + 150.0 + reach - 16.0,
-            reach,
+            x: w.player.pos.x + 150.0,
+            reach: 200.0,
             load_width: 90.0,
-            load_at: 0.45,
+            jib_at: 0.42,
+            load_drop: 40.0,
         });
         w.player.pos.y = y;
         w.player.vel_y = 0.0;
         w
     }
 
-    #[test]
-    fn right_at_the_top_a_crane_jib_is_in_the_way() {
-        let top = PLAYER_HALF_HEIGHT * PHONE.plane_depth(0.0);
-        let mut w = crane_ahead(top);
+    /// Fly level at `y` for `seconds` with no flying helicopters; the
+    /// lives lost.
+    fn hold(w: &mut World, y: f32, seconds: f32) -> u32 {
         let lives = w.lives;
-        for _ in 0..(3.0 / TICK_SECONDS) as u32 {
-            w.player.pos.y = top; // hug the top
-            w.tick(&Input::new(-1.0));
-        }
-        assert_eq!(w.lives, lives - 1, "the jib");
-    }
-
-    #[test]
-    fn under_a_cranes_load_is_the_way_through() {
-        let probe = crane_ahead(0.0);
-        let under = probe.city.cranes[0].load_bottom(PHONE) + 0.15 * PHONE.height;
-        let mut w = crane_ahead(under);
-        let lives = w.lives;
-        for _ in 0..(6.0 / TICK_SECONDS) as u32 {
-            w.player.pos.y = under;
+        for _ in 0..(seconds / TICK_SECONDS) as u32 {
+            w.city.flyers.clear();
+            w.player.pos.y = y;
             w.player.vel_y = 0.0;
             w.tick(&Input::NONE);
         }
-        assert_eq!(w.lives, lives, "no crash under the load");
-        let passed = |w: &World| {
-            (w.city.cranes.first()).is_none_or(|c| c.parts(PHONE).cable.0.x < w.player.pos.x)
-        };
-        assert!(passed(&w), "flew past the load");
+        lives - w.lives
+    }
+
+    #[test]
+    fn low_down_a_cranes_mast_is_in_the_way() {
+        let low = 0.8 * PHONE.height;
+        let mut w = crane_ahead(low);
+        assert_eq!(hold(&mut w, low, 3.0), 1, "the mast");
+    }
+
+    #[test]
+    fn over_a_crane_is_the_way_through() {
+        let probe = crane_ahead(0.0);
+        let over = probe.city.cranes[0].top(PHONE) - 0.1 * PHONE.height;
+        let mut w = crane_ahead(over);
+        assert_eq!(hold(&mut w, over, 3.0), 0, "no crash over the crane");
+        let mast = (w.city.cranes.iter().map(|c| c.parts(PHONE).mast.0.x)).fold(f32::MAX, f32::min);
+        assert!(mast < w.player.pos.x, "flew past the mast");
+    }
+
+    #[test]
+    fn right_at_the_top_helicopters_come_at_you_and_crash() {
+        let mut w = World::with_seed(PHONE, 5);
+        w.start_level = CITY_LEVEL;
+        let mut w = w.with_takeoff();
+        while w.hands_off() {
+            w.tick(&Input::NONE);
+        }
+        let top = PLAYER_HALF_HEIGHT * PHONE.plane_depth(0.0);
+        let mut crashes = 0;
+        for _ in 0..(40.0 / TICK_SECONDS) as u32 {
+            w.lives = LIVES;
+            w.player.pos.y = top; // hug the top
+            w.player.vel_y = 0.0;
+            w.tick(&Input::NONE);
+            if w.events().contains(&Event::HeliCrash) {
+                crashes += 1;
+                assert!(w.events().contains(&Event::Crash), "costs a life");
+                assert!(!w.city.wrecks.is_empty(), "it falls, burning");
+            }
+        }
+        assert!(crashes >= 3, "{crashes}");
+    }
+
+    #[test]
+    fn flying_into_a_parked_helicopter_crashes_it() {
+        let mut w = crane_ahead(0.0);
+        w.city.clear();
+        w.city.high_rises.push(HighRise {
+            x: w.player.pos.x + 200.0,
+            width: 80.0,
+            height: 0.4,
+            style: 0,
+            heli: Some(Heli {
+                off: Vec2::new(0.0, -10.0),
+                state: HeliState::Landed(0),
+                age: 0,
+            }),
+        });
+        let heli_y = w.city.high_rises[0].heli_parts(PHONE).unwrap().body.0.y;
+        let mut events = Vec::new();
+        for _ in 0..(4.0 / TICK_SECONDS) as u32 {
+            w.city.flyers.clear();
+            w.player.pos.y = heli_y;
+            w.player.vel_y = 0.0;
+            w.tick(&Input::NONE);
+            events.extend_from_slice(w.events());
+        }
+        assert!(events.contains(&Event::HeliCrash), "{events:?}");
     }
 
     #[test]
@@ -2686,7 +2767,8 @@ mod tests {
                         | Event::NewLevel { .. }
                         | Event::GullCall
                         | Event::BalloonBurner
-                        | Event::BalloonBurst => {}
+                        | Event::BalloonBurst
+                        | Event::HeliCrash => {}
                         Event::GameOver => panic!("lives cannot run out"),
                         Event::Explosion => panic!("lives cannot run out"),
                         Event::Overspeed | Event::PullUp => panic!("no throttle given"),

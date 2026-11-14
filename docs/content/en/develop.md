@@ -180,12 +180,18 @@ flowchart LR
 - **The town** (`crates/core/src/city.rs`, level 3, `CITY_LEVEL`)
   sends high-rises and tower cranes, one every 3–5 s
   (`CITY_GAP_SECONDS`) with at least `CITY_ROOM` (140 px) of free ground
-  between them; `CRANE_SHARE` (40 %) are cranes, never two in a row.
+  between them; `CRANE_SHARE` (40 %) are cranes, never two in a row and
+  at the latest after `HIGH_RISES_IN_A_ROW` (2) high-rises.
   A `HighRise` stands at the front (walls, stair house, antenna): fly
-  over it. A `Crane` has its mast far back (drawn, never hit); its jib
-  runs along the top (`JIB_TOP`), and a load hangs on a cable
-  (`LOAD_AT`): fly under it. So neither the top nor the bottom is safe.
-  `parts` places everything; crashes (`shape`) and drawing use it.
+  over it. A `Crane` stands on the ground too: its mast runs from the
+  jib (`JIB_TOP`) down to the ground, a load hangs on a cable
+  (`LOAD_DROP`), and all of it is hit: fly over it. Every 5–8 s a
+  `FlyingHeli` comes at the plane at its height, never lower than
+  `FLYING_HELI_LOWEST` (above the town), so the top is not safe either.
+  `parts` places everything; crashes (`shape`) and drawing use it. A
+  helicopter the plane hits (flying or parked, `heli_shape`) becomes a
+  falling, burning `Wreck` (`WRECK_SECONDS`) and sends
+  `Event::HeliCrash` (the explosion sound).
   `HELI_SHARE` (35 %) of the high-rises have a `Heli`: it takes off once
   its high-rise is at `HELI_TAKEOFF_AT` and climbs away back and up, or
   lands by `HELI_TOUCHDOWN_AT` (its sink rate allows for the game's

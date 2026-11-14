@@ -4,12 +4,12 @@
 use airplane_scoring_core::Vec2 as Vec2Core;
 use airplane_scoring_core::{
     background_x, clock_text, has_next_level, pick_steer, pick_throttle, start_level,
-    steer_from_keys, Airport, Balloon, BestTimes, Bounds, Clock, Crane, Event, Gull, Heli,
-    HeliParts, HighRise, Hut, Input, Mix, Pad, Tilt, Tower, TyreSmoke, Warning, World,
-    AIRSPEED_RANGE, BALLOON_RADIUS, BASKET_BELOW, BEST_TIMES_COUNT, HUT_EAVES, HUT_INSET, LIVES,
-    MAIN_WHEEL_X, NOSE_WHEEL_X, OVERSPEED_AT, PAD_HEIGHT, PAD_WIDTH, PLANE_COCKPIT, PLANE_FUSELAGE,
-    PLANE_NOSE, PLANE_RADIUS, PLANE_TAIL, PLANE_WING, RUNWAY_HEIGHT, RUNWAY_LENGTH, STALL_AT,
-    STRUT_REACH, TICK_SECONDS, WHEEL_RADIUS,
+    steer_from_keys, Airport, Balloon, BestTimes, Bounds, Clock, Crane, Event, Gull, HeliParts,
+    HighRise, Hut, Input, Mix, Pad, Tilt, Tower, TyreSmoke, Warning, World, Wreck, AIRSPEED_RANGE,
+    BALLOON_RADIUS, BASKET_BELOW, BEST_TIMES_COUNT, HUT_EAVES, HUT_INSET, LIVES, MAIN_WHEEL_X,
+    NOSE_WHEEL_X, OVERSPEED_AT, PAD_HEIGHT, PAD_WIDTH, PLANE_COCKPIT, PLANE_FUSELAGE, PLANE_NOSE,
+    PLANE_RADIUS, PLANE_TAIL, PLANE_WING, RUNWAY_HEIGHT, RUNWAY_LENGTH, STALL_AT, STRUT_REACH,
+    TICK_SECONDS, WHEEL_RADIUS,
 };
 use macroquad::prelude::*;
 
@@ -227,12 +227,20 @@ async fn main() {
         for tower in &world.towers.list {
             draw_tower(tower, world.bounds);
         }
-        // The town: cranes far back (their jibs up top), high-rises in front.
+        // The town: cranes and high-rises on the ground, helicopters in
+        // the air, crashed ones falling in flames.
         for crane in &world.city.cranes {
             draw_crane(crane, world.bounds);
         }
         for high_rise in &world.city.high_rises {
             draw_high_rise(high_rise, world.bounds);
+        }
+        let s = world.bounds.scale();
+        for flyer in &world.city.flyers {
+            draw_heli(true, flyer.age, &flyer.parts(world.bounds), s);
+        }
+        for wreck in &world.city.wrecks {
+            draw_wreck(wreck, s);
         }
 
         for gull in &world.gulls.list {
@@ -941,14 +949,15 @@ fn draw_high_rise(b: &HighRise, bounds: Bounds) {
         Color::from_rgba(230, 230, 210, 255),
     );
     if let (Some(heli), Some(hp)) = (b.heli, b.heli_parts(bounds)) {
-        draw_heli(&heli, &hp, s);
+        draw_heli(heli.rotor_on(), heli.age, &hp, s);
     }
 }
 
 /// A helicopter: body with a window, tail boom, skids and a rotor that
 /// turns while it runs (its span seems to shrink and grow), and a
-/// blinking red light under it. Positions from core's `HeliParts`.
-fn draw_heli(heli: &Heli, p: &HeliParts, s: f32) {
+/// blinking red light under it. Positions from core's `HeliParts`;
+/// `age` in ticks turns the rotor.
+fn draw_heli(rotor_on: bool, age: u32, p: &HeliParts, s: f32) {
     let body = Color::from_rgba(210, 60, 50, 255);
     let dark = Color::from_rgba(40, 40, 46, 255);
     let (c, hl, hh) = p.body;
@@ -972,42 +981,68 @@ fn draw_heli(heli: &Heli, p: &HeliParts, s: f32) {
     let mid = (r0.x + r1.x) / 2.0;
     draw_line(mid, r0.y, mid, c.y - hh, 2.0 * s, dark);
     // A turning rotor looks like its span pulsing; a still one is full.
-    let span = if heli.rotor_on() {
-        ((heli.age as f32 * 0.9).sin() * 0.5 + 0.5).max(0.15)
+    let span = if rotor_on {
+        ((age as f32 * 0.9).sin() * 0.5 + 0.5).max(0.15)
     } else {
         1.0
     };
     let half = (r1.x - r0.x) / 2.0 * span;
-    let blade = if heli.rotor_on() {
+    let blade = if rotor_on {
         Color::new(0.85, 0.85, 0.9, 0.7)
     } else {
         dark
     };
     draw_line(mid - half, r0.y, mid + half, r0.y, 2.0 * s, blade);
-    if heli.rotor_on() {
+    if rotor_on {
         draw_warning_light(c.x, c.y + hh, s * 0.7, 0.3);
     }
 }
 
-/// A tower crane: the mast far back in the town (dim, never hit), the
-/// lattice jib along the top, the counterweight, the cable and its load,
-/// a steel beam. Positions from core's `Crane::parts`.
+/// A crashed helicopter: dark and tumbling as it falls, inside a
+/// fireball that swells and burns out. Positions from core's `Wreck`.
+fn draw_wreck(w: &Wreck, s: f32) {
+    let t = w.progress();
+    let (c, hl, hh) = HeliParts::at(w.pos, s).body;
+    let spin = t * 7.0;
+    let (sin, cos) = spin.sin_cos();
+    let charred = Color::new(0.16, 0.12, 0.11, 1.0 - t * 0.5);
+    draw_line(
+        c.x - cos * hl * 1.6,
+        c.y - sin * hl * 1.6,
+        c.x + cos * hl * 1.6,
+        c.y + sin * hl * 1.6,
+        2.0 * hh,
+        charred,
+    );
+    draw_explosion(c.x, c.y, s * 0.8, t);
+}
+
+/// A tower crane standing on the ground: the lattice mast down to its
+/// foot, the jib with the cab, the counterweight, the cable and its load,
+/// a steel beam. All of it can be hit. Positions from core's
+/// `Crane::parts`.
 fn draw_crane(k: &Crane, bounds: Bounds) {
     let p = k.parts(bounds);
     let s = bounds.scale();
     let yellow = Color::from_rgba(230, 180, 60, 255);
-    // The mast, far back: thin and dim.
-    let far = Color::new(0.55, 0.43, 0.18, 0.55);
+    // The mast: a yellow lattice like the jib, on a concrete foot.
     let (top, foot) = p.mast;
     let half = p.mast_width / 2.0;
-    draw_line(top.x - half, top.y, foot.x - half, foot.y, 1.5 * s, far);
-    draw_line(top.x + half, top.y, foot.x + half, foot.y, 1.5 * s, far);
+    draw_rectangle(
+        foot.x - 2.0 * half,
+        foot.y - 6.0 * s,
+        4.0 * half,
+        6.0 * s,
+        Color::from_rgba(120, 122, 128, 255),
+    );
+    draw_line(top.x - half, top.y, foot.x - half, foot.y, 1.8 * s, yellow);
+    draw_line(top.x + half, top.y, foot.x + half, foot.y, 1.8 * s, yellow);
     let mut y = top.y;
     let mut left = true;
     while y < foot.y {
         let next = (y + p.mast_width).min(foot.y);
         let (a, b) = if left { (-half, half) } else { (half, -half) };
-        draw_line(top.x + a, y, top.x + b, next, 1.0 * s, far);
+        draw_line(top.x + a, y, top.x + b, next, 1.2 * s, yellow);
         (y, left) = (next, !left);
     }
     // The cab under the jib.

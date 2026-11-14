@@ -26,7 +26,7 @@ short **meaning**.
 | Finger | finger | `pointer` | Steering by touching the screen |
 | Taste | key | `steer_from_keys` | Keyboard key (↑/W, ↓/S) |
 | Spielerin / Spieler (kurz: Spieler:in) | player | — | Person playing. In running text «Spielerin oder Spieler», in short labels «Spieler:in» |
-| Hindernis | obstacle | `Balloons`, `Pad`, `Huts`, `Gulls`, `Towers`, `City` | Something you must not fly into; touching it is a crash. So far: hot-air balloons, launch pads and huts in level 1, gulls and lifeguard towers in level 2, high-rises and cranes in level 3 |
+| Hindernis | obstacle | `Balloons`, `Pad`, `Huts`, `Gulls`, `Towers`, `City` | Something you must not fly into; touching it is a crash. So far: hot-air balloons, launch pads and huts in level 1, gulls and lifeguard towers in level 2, high-rises, cranes and helicopters in level 3 |
 | Leben | life, lives | `World.lives`, `LIVES` | Crashes you can afford; shown as small planes at the top right |
 | Rauchfahne | smoke trail | `World::smoke`, `DAMAGE_SMOKE` | Smoke behind a damaged plane; thicker with every life lost |
 | Fluggeschwindigkeit | airspeed | `Player::airspeed`, `Input::throttle` | How fast you fly yourself: gas (→/D, tip forward) and brake (←/A, tip back) |
@@ -81,10 +81,12 @@ short **meaning**.
 | Strandturm | lifeguard tower | `Tower`, `Towers` | Wooden lifeguard tower in the beach's sand (level 2), near the front or back by the water; an obstacle |
 | Stadt | town | `City`, `CITY_LEVEL` | Level 3: a town at night, with high-rises and cranes |
 | Hochhaus | high-rise | `HighRise` | Tall building at the front of the town (level 3), with an antenna; fly over it; an obstacle |
-| Baukran, Kran | tower crane, crane | `Crane` | Crane far back in the town (level 3); its jib runs along the top and a load hangs from it; fly under the load; an obstacle |
-| Helikopter | helicopter | `Heli`, `HeliState` | On some high-rises in level 3: takes off or lands while the high-rise is still far ahead; parked, it is part of the high-rise |
-| Ausleger | jib | `Crane`, `JIB_TOP` | The crane's long arm along the top of the screen |
-| Last, Stahlträger | load, steel beam | `Crane`, `LOAD_AT` | What hangs from a crane's cable; fly under it |
+| Baukran, Kran | tower crane, crane | `Crane` | Crane standing on the ground in the town (level 3), mast, jib and load; fly over it; an obstacle |
+| Helikopter | helicopter | `Heli`, `HeliState`, `FlyingHeli` | Level 3: on some high-rises (takes off or lands far ahead; parked, fly over it) and flying at the plane at its height; hit, it explodes |
+| Wrack | wreck | `Wreck` | A helicopter the plane flew into: it falls, burning, and is no obstacle any more |
+| Ausleger | jib | `Crane`, `JIB_TOP` | The crane's long arm, on top of its mast |
+| Mast | mast | `Crane`, `MAST_WIDTH` | The crane's lattice tower, from the jib down to the ground; it counts as a hit |
+| Last, Stahlträger | load, steel beam | `Crane`, `LOAD_DROP` | What hangs from a crane's cable |
 | Parallaxe | parallax | `Tower::size` | Things further away slide past more slowly |
 | Möwe | gull | `Gull`, `gull-call.wav` | Sea bird at the beach: an obstacle; many call when they appear. One you hit tumbles to the ground (`Gull::knock_down`) |
 | Melodie | tune | `Event::LevelComplete`, `new-level.wav` | Short rising tune when a level is landed and complete |

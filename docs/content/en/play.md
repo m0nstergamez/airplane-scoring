@@ -135,8 +135,8 @@ and the thunder follows. The further away the lightning, the later and
 quieter the thunder.
 
 If you touch a hot-air balloon, a launch pad or a hut (level 1) or a
-gull or a lifeguard tower (level 2) or a high-rise or a crane (level 3),
-you **crash**. Only a real touch counts: flying past very
+gull or a lifeguard tower (level 2) or a high-rise, a crane or a
+helicopter (level 3), you **crash**. Only a real touch counts: flying past very
 closely, or through the gap beside a roof, is fine. In a crash your plane smokes, falls
 and ignores the controls for a moment (1.5 seconds). Then you fly again.
 
@@ -258,14 +258,15 @@ red at the end, so you see them in the dusk and the dark.
   comes down from the sky and lands, always while the high-rise is
   still far ahead. When it reaches you, the helicopter is parked on the
   roof (fly over it too) or gone.
-- **Tower cranes** stand far back in the town. Their long yellow jib
-  runs along the very top of the screen, and a red steel beam hangs from
-  it on a cable. Fly **under** the beam: the jib, the cable and the beam
-  count, the mast far back does not. So flying right at the top is no
-  way through here.
-
-Never two cranes come in a row, so after flying under a beam you can
-expect to climb over a high-rise next.
+- **Tower cranes** stand on the ground. A yellow lattice mast holds
+  the long jib, and a red steel beam hangs from it on a cable. Fly
+  **over** the crane: all of it counts, down to the foot of the mast.
+  A crane comes at the latest after two high-rises, never two in a row.
+- **Helicopters** fly at you from the right every few seconds, at your
+  height, right up to the top of the screen (but always above the
+  houses). So flying right at the top is no way out here. Dodge them: if
+  you fly into a helicopter, parked or flying, it explodes with a bang
+  and falls, and you lose a life.
 
 ## Sound
 

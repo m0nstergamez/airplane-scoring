@@ -187,13 +187,19 @@ flowchart LR
 - **Die Stadt** (`crates/core/src/city.rs`, Level 3, `CITY_LEVEL`)
   schickt Hochhäuser und Baukräne, alle 3–5 s eins
   (`CITY_GAP_SECONDS`), mit mindestens `CITY_ROOM` (140 px) freiem Boden
-  dazwischen; `CRANE_SHARE` (40 %) sind Kräne, nie zwei hintereinander.
+  dazwischen; `CRANE_SHARE` (40 %) sind Kräne, nie zwei hintereinander
+  und spätestens nach `HIGH_RISES_IN_A_ROW` (2) Hochhäusern.
   Ein `HighRise` steht vorne (Mauern, Treppenhaus, Antenne): darüber
-  fliegen. Ein `Crane` hat seinen Mast weit hinten (gezeichnet, nie
-  getroffen); sein Ausleger läuft oben entlang (`JIB_TOP`), und eine
-  Last hängt an einem Seil (`LOAD_AT`): darunter durch. So ist weder oben
-  noch unten sicher. `parts` legt alles fest; Zusammenstösse (`shape`)
-  und Zeichnen nutzen es.
+  fliegen. Ein `Crane` steht auch am Boden: Sein Mast geht vom Ausleger
+  (`JIB_TOP`) bis zum Boden, eine Last hängt an einem Seil
+  (`LOAD_DROP`), und alles wird getroffen: darüber fliegen. Alle 5–8 s
+  kommt ein `FlyingHeli` dem Flugzeug auf seiner Höhe entgegen, nie
+  tiefer als `FLYING_HELI_LOWEST` (über der Stadt), so ist auch oben
+  nicht sicher. `parts` legt alles fest; Zusammenstösse (`shape`) und
+  Zeichnen nutzen es. Ein Helikopter, den das Flugzeug trifft (fliegend
+  oder parkiert, `heli_shape`), wird zu einem fallenden, brennenden
+  `Wreck` (`WRECK_SECONDS`) und schickt `Event::HeliCrash` (den
+  Explosionston).
   `HELI_SHARE` (35 %) der Hochhäuser haben einen `Heli`: Er hebt ab,
   sobald sein Hochhaus bei `HELI_TAKEOFF_AT` ist, und steigt nach hinten
   oben weg, oder er landet bis `HELI_TOUCHDOWN_AT` (seine Sinkrate
