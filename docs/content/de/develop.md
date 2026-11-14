@@ -398,7 +398,7 @@ gerichtet. So macht das wasm des Browsers die Replays, und ein
 x86-64-Linux-Server fliegt sie nach, wie im Betrieb. Sie braucht
 OrbStack; `e2e` braucht zusätzlich Node, `e2e-browser` Chrome. CI
 startet dieselbe Stage bei jedem Pull Request, der den Server, `core`
-oder das Board-Plugin ändert (`.github/workflows/server.yml`, etwa fünf
+oder das Board-Plugin ändert (`.github/workflows/pages.yml`, etwa fünf
 Minuten), mit `STAGE_HOST=docker`: Docker direkt auf dem Runner statt
 einer OrbStack-Maschine.
 
@@ -425,8 +425,8 @@ steht und die Liste die Zeit hat, die das Spiel zeigte, und speichert
 
 Der Server läuft bei [Fly.io](https://fly.io/) (`Dockerfile`, `fly.toml`;
 nicht gratis), als App `airplane-scoring-board`. CI spielt ihn bei jedem
-Merge auf `main` ein, der ihn ändert, sobald die Stage durch ist, und die
-veröffentlichte Seite zeigt auf ihn. So richtest du ihn einmalig ein
+Merge auf `main` ein, der ihn ändert, sobald die Stage durch ist, und
+veröffentlicht erst dann die Seite, die auf ihn zeigt. So richtest du ihn einmalig ein
 (schon erledigt):
 
 1. Installiere `flyctl` und melde dich an (`fly auth login`).

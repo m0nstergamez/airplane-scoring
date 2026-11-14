@@ -1,6 +1,6 @@
 # The leaderboard server on Fly.io (image: Dockerfile).
 #
-# CI deploys it (.github/workflows/server.yml) on every merge to main
+# CI deploys it (.github/workflows/pages.yml) on every merge to main
 # that touches the server, after the stage passed, and points the
 # published page at https://airplane-scoring-board.fly.dev. Set up once
 # (done; the manual, Developing, Leaderboard):

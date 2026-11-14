@@ -16,7 +16,8 @@ the protocol fails.
 
 Env (all optional):
   SHOT_EVAL      JS to run after MS (e.g. click a button); a promise is
-                 awaited (at most 30 s)
+                 awaited (at most SHOT_EVAL_MS, default 120000); a
+                 throw or rejection fails
   SHOT_AFTER_MS  then wait this long (default 400)
   SHOT_UNTIL     instead: wait until a console line matches this regex
                  (Python syntax; lines from before count too), at most
@@ -130,17 +131,27 @@ class DevTools:
             e = p.get("entry", {})
             self.lines.append("log.{}: {} {}".format(e.get("level"), e.get("text"), e.get("url", "")).rstrip())
 
-    def call(self, method, **params):
+    def call(self, method, wait=30, **params):
+        """`wait`: seconds the answer may take (an awaited promise can take
+        longer than the 30 s the socket normally waits)."""
         self.next_id += 1
         my_id = self.next_id
         self.ws.send(json.dumps({"id": my_id, "method": method, "params": params}))
-        while True:
-            msg = json.loads(self.ws.recv())
-            if msg.get("id") == my_id:
-                if "error" in msg:
-                    raise RuntimeError("{}: {}".format(method, msg["error"]))
-                return msg.get("result", {})
-            self._handle(msg)
+        deadline = time.monotonic() + wait
+        try:
+            while True:
+                self.ws.sock.settimeout(max(0.1, deadline - time.monotonic()))
+                try:
+                    msg = json.loads(self.ws.recv())
+                except socket.timeout:
+                    raise RuntimeError("{}: no answer within {} s".format(method, wait))
+                if msg.get("id") == my_id:
+                    if "error" in msg:
+                        raise RuntimeError("{}: {}".format(method, msg["error"]))
+                    return msg.get("result", {})
+                self._handle(msg)
+        finally:
+            self.ws.sock.settimeout(30)
 
     def pump_until(self, deadline, stop_event=None, stop_line=None):
         """Read events until `deadline` (time.monotonic), `stop_event`
@@ -227,7 +238,14 @@ def main():
         # the page react for SHOT_AFTER_MS (default 400 ms).
         js = os.environ.get("SHOT_EVAL")
         if js:
-            dt.call("Runtime.evaluate", expression=js, awaitPromise=True)
+            # A promise is awaited, up to SHOT_EVAL_MS (default 120000). A
+            # throw or a rejection fails right away, not after SHOT_UNTIL_MS.
+            r = dt.call("Runtime.evaluate", wait=int(os.environ.get("SHOT_EVAL_MS", "120000")) / 1000.0,
+                        expression=js, awaitPromise=True)
+            if "exceptionDetails" in r:
+                d = r["exceptionDetails"]
+                raise RuntimeError("SHOT_EVAL failed: {}".format(
+                    d.get("exception", {}).get("description") or d.get("text")))
         until = os.environ.get("SHOT_UNTIL")
         missed = False
         if until:

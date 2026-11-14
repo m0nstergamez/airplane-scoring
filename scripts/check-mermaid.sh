@@ -10,15 +10,7 @@ MERMAID_URL="https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.esm.min.mj
 out=target/shots
 mkdir -p "$out"
 
-chrome="${CHROME:-}"
-if [ -z "$chrome" ]; then
-  for c in "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
-           "/Applications/Chromium.app/Contents/MacOS/Chromium" \
-           "$(command -v google-chrome || true)" "$(command -v chromium || true)"; do
-    if [ -n "$c" ] && [ -x "$c" ]; then chrome="$c"; break; fi
-  done
-fi
-[ -n "$chrome" ] || { echo "No Chrome found; set CHROME=/path/to/chrome" >&2; exit 2; }
+chrome=$(scripts/find-chrome.sh) || exit 2
 
 count=$(python3 - "$out/mermaid.html" "$MERMAID_URL" <<'PY'
 import json, pathlib, re, sys

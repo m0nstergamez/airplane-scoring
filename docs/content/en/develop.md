@@ -377,7 +377,7 @@ and serves the game with `board-api` pointing at it. So the browser's
 wasm makes the replays and an x86-64 Linux server flies them again, as
 in production. It needs OrbStack; `e2e` also needs Node, `e2e-browser`
 Chrome. CI runs the same stage on every pull request that touches the
-server, `core` or the board plugin (`.github/workflows/server.yml`, about
+server, `core` or the board plugin (`.github/workflows/pages.yml`, about
 five minutes), with `STAGE_HOST=docker`: Docker on the runner itself
 instead of an OrbStack machine.
 
@@ -403,8 +403,8 @@ saves `target/shots/stage-autopilot.png`. After a change to `core`,
 
 The server runs on [Fly.io](https://fly.io/) (`Dockerfile`, `fly.toml`;
 no free tier), as the app `airplane-scoring-board`. CI deploys it on
-every merge to `main` that touches it, once the stage passed, and the
-published page points at it. To set it up once (already done):
+every merge to `main` that touches it, once the stage passed, and only
+then publishes the page, which points at it. To set it up once (already done):
 
 1. Install `flyctl` and log in (`fly auth login`).
 2. Check the region with `fly platform regions` (`fra` in `fly.toml`).

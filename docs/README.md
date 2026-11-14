@@ -940,12 +940,15 @@ that isn't code here. Keep entries short and dated.
     3 minutes), phones (needs https: a Fly app or a device cloud), the
     Fly deploy.
 - The stage in CI and the server on Fly.io, asked for:
-  - `.github/workflows/server.yml`: on every pull request that touches
+  - `.github/workflows/pages.yml`: on every pull request that touches
     the server, `core` or the board plugin, `scripts/stage.sh` runs on
     the runner with `STAGE_HOST=docker` (Docker there instead of an
     OrbStack machine): `up`, `e2e`, `e2e-browser`, the screenshot as an
     artifact. On `main` it then deploys to Fly.io with a deploy token
-    for this app only (`FLY_API_TOKEN`) and checks `/health`.
+    for this app only (`FLY_API_TOKEN`) and checks `/health`; the page
+    is published only after that (a failed stage or deploy stops it), so
+    the game never goes live before a server that flies its replays.
+    Which files count is in the job `changes`.
   - `e2e` runs core's demo flight with Node's own WASI instead of
     wasmtime: nothing to download in CI.
   - The app `airplane-scoring-board` (Frankfurt) and its 1 GB volume

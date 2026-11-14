@@ -26,7 +26,7 @@
 # need https for tilt.
 #
 # STAGE_HOST=docker: no OrbStack machine, Docker on this computer itself
-# (an amd64 Linux one, like CI's: .github/workflows/server.yml). The web
+# (an amd64 Linux one, like CI's: .github/workflows/pages.yml). The web
 # page is then served by a background python3 (pid in target/stage/).
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -190,15 +190,7 @@ JS
 e2e_browser() {
   fail() { printf '\033[31mFAIL:\033[0m %s\n' "$*" >&2; exit 1; }
   curl -fsS "$api_url/health" >/dev/null 2>&1 || fail "the stage is not up: scripts/stage.sh up"
-  chrome="${CHROME:-}"
-  if [ -z "$chrome" ]; then
-    for c in "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
-             "/Applications/Chromium.app/Contents/MacOS/Chromium" \
-             "$(command -v google-chrome || true)" "$(command -v chromium || true)"; do
-      if [ -n "$c" ] && [ -x "$c" ]; then chrome="$c"; break; fi
-    done
-  fi
-  [ -n "$chrome" ] || fail "no Chrome found; set CHROME=/path/to/chrome"
+  chrome=$(scripts/find-chrome.sh) || exit 1
   tmp=$(mktemp -d)
   trap 'rm -rf "$tmp"' EXIT
 
@@ -267,6 +259,7 @@ case "${1:-}" in
     on_stage "$docker rm -f stage-board >/dev/null 2>&1; true"
     stop_web
     echo "Stage stopped (the database is kept)." ;;
-  delete) [ "$host" = orb ] && orb delete -f "$machine" ;;
-  *) sed -n '2,31p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;;
+  delete)
+    if [ "$host" = orb ]; then orb delete -f "$machine"; else echo "STAGE_HOST=docker: no machine to delete"; fi ;;
+  *) awk 'NR > 1 && !/^#/ {exit} NR > 1 {sub(/^# ?/, ""); print}' "$0"; exit 2 ;;
 esac

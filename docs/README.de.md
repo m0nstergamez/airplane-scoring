@@ -1045,12 +1045,16 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
     Runner, etwa 3 Minuten), Handys (brauchen https: eine Fly-App oder
     eine Geräte-Cloud), das Deployment auf Fly.
 - Die Stage im CI und der Server bei Fly.io, gewünscht:
-  - `.github/workflows/server.yml`: Bei jedem Pull Request, der den
+  - `.github/workflows/pages.yml`: Bei jedem Pull Request, der den
     Server, `core` oder das Board-Plugin ändert, läuft `scripts/stage.sh`
     auf dem Runner mit `STAGE_HOST=docker` (Docker dort statt einer
     OrbStack-Maschine): `up`, `e2e`, `e2e-browser`, der Screenshot als
     Artefakt. Auf `main` spielt es danach bei Fly.io ein, mit einem
-    Deploy-Token nur für diese App (`FLY_API_TOKEN`), und prüft `/health`.
+    Deploy-Token nur für diese App (`FLY_API_TOKEN`), und prüft `/health`;
+    erst danach wird die Seite veröffentlicht (eine fehlgeschlagene Stage
+    oder ein fehlgeschlagenes Einspielen hält sie auf), damit das Spiel nie
+    vor einem Server online geht, der seine Replays nachfliegt. Welche
+    Dateien zählen, steht im Job `changes`.
   - `e2e` fliegt den Demo-Flug von core mit Nodes eigenem WASI statt mit
     wasmtime: nichts herunterzuladen im CI.
   - Die App `airplane-scoring-board` (Frankfurt) und ihr Volume mit 1 GB
