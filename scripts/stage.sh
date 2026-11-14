@@ -184,31 +184,43 @@ e2e_browser() {
   cp target/autopilot/wasm32-unknown-unknown/release/airplane-scoring.wasm "$page_dir/"
 
   step "fly level 1 in headless Chrome against the stage (real time, about a minute)"
-  # The start screen first, so the page has its seeds; then "fly(1)" is
-  # what tapping level 1 on the map does. A fresh profile: a new pilot.
+  # The start screen first, until the page has a seed for every level
+  # (each answered POST /v1/runs is a resource timing entry); then
+  # "fly(1)" is what tapping level 1 on the map does. A fresh profile: a
+  # new pilot.
   set +e
-  SHOT_EVAL='fly(1)' \
+  SHOT_EVAL='new Promise((ok) => {
+      const levels = document.querySelectorAll("#start .node[data-level]").length;
+      const since = Date.now();
+      const look = () => {
+        const runs = performance.getEntriesByType("resource").filter((e) => /\/v1\/runs$/.test(e.name)).length;
+        if (runs >= levels || Date.now() - since > 20000) setTimeout(() => { fly(1); ok(runs); }, 300);
+        else setTimeout(look, 100);
+      };
+      look();
+    })' \
     SHOT_UNTIL='autopilot: (World rank [0-9]+ of [0-9]+|Not counted online)' \
     SHOT_UNTIL_MS=300000 \
     SHOT_PRINT='localStorage.getItem("airplane-scoring.pilot")' \
     python3 scripts/cdp_shot.py "$chrome" "$web_url/autopilot/" target/shots/stage-autopilot.png \
-    844,390 3000 "$tmp/profile" >"$tmp/console.log"
+    844,390 500 "$tmp/profile" >"$tmp/console.log"
   rc=$?
   set -e
   grep 'autopilot:' "$tmp/console.log" | sed 's/^.*autopilot: /  /' || true
   echo "screenshot: target/shots/stage-autopilot.png"
   [ $rc -eq 0 ] || { grep -v 'autopilot:' "$tmp/console.log" | sed 's/^/  /' >&2; fail "no \"World rank\" line (cdp_shot.py exit $rc)"; }
   grep -q 'autopilot: Not counted online' "$tmp/console.log" && fail "the flight was not counted online"
-  line=$(grep -oE 'World rank [0-9]+ of [0-9]+' "$tmp/console.log" | tail -1)
-  millis=$(grep -oE 'level 1 complete in [0-9]+ ms' "$tmp/console.log" | tail -1 | grep -oE '[0-9]+ ms' | grep -oE '[0-9]+')
-  [ -n "$millis" ] || fail "no level time on the console"
+  line=$(grep -oE 'World rank [0-9]+ of [0-9]+' "$tmp/console.log" | tail -1 || true)
+  millis=$(sed -nE 's/.*autopilot: level 1 complete in ([0-9]+) ms.*/\1/p' "$tmp/console.log" | tail -1)
+  [ -n "$millis" ] || fail "no \"level 1 complete\" line on the console"
 
   step "the board has the time the game showed"
-  token=$(grep '^eval: ' "$tmp/console.log" | sed 's/^eval: //' |
-    python3 -c 'import json,sys; print(json.loads(sys.stdin.read())["token"])') || fail "no pilot in the page's storage"
-  board=$(curl -fsS "$api_url/v1/leaderboard?level=1" -H "Authorization: Bearer $token")
-  got=$(echo "$board" | python3 -c 'import json,sys; print(json.load(sys.stdin)["me"]["millis"])')
-  [ "$got" = "$millis" ] || fail "the game showed $millis ms, the board has $got ms"
+  token=$(sed -n 's/^eval: //p' "$tmp/console.log" |
+    python3 -c 'import json,sys; print((json.loads(sys.stdin.read() or "null") or {}).get("token", ""))' 2>/dev/null || true)
+  [ -n "$token" ] || fail "no pilot in the page's storage"
+  board=$(curl -fsS "$api_url/v1/leaderboard?level=1" -H "Authorization: Bearer $token") || fail "the board does not answer"
+  got=$(echo "$board" | python3 -c 'import json,sys; print((json.load(sys.stdin).get("me") or {}).get("millis", "nothing"))' 2>/dev/null || true)
+  [ "$got" = "$millis" ] || fail "the game showed $millis ms, the board has ${got:-nothing} for this pilot: $board"
 
   printf '\n\033[32mBrowser end to end OK.\033[0m Level 1 in %s ms; the game showed "%s".\n' "$millis" "$line"
 }

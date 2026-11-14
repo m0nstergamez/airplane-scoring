@@ -38,7 +38,7 @@ scripts/check-determinism.sh
 rc=$?
 set -e
 if [ $rc -eq 2 ]; then
-  echo "(skipped: no wasmtime found; CI runs it)"
+  echo "(skipped: no node found; CI runs it)"
 elif [ $rc -ne 0 ]; then
   exit $rc
 fi

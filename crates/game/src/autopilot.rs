@@ -1,8 +1,9 @@
 //! Test builds only: core's demo pilot (`replay::DemoPilot`) flies the
 //! real game in the browser, so a script can watch a whole ranked flight
 //! end to end (`scripts/stage.sh e2e-browser`). On with
-//! `--features autopilot`; without it `ON` is false, every call here does
-//! nothing and the release build leaves the pilot out.
+//! `--features autopilot`; without it `ON` is false, `new_flight` makes no
+//! pilot, so every call here does nothing and the release build leaves
+//! the pilot out.
 //!
 //! The pilot flies until "Level complete" and stays there. After a game
 //! over it starts a new flight. It tells the console what happens, as
@@ -35,13 +36,18 @@ impl Autopilot {
         }
     }
 
-    /// The pilot's steering and throttle, if it flies.
+    /// The pilot's steering and throttle, if it flies. At "Level
+    /// complete" it only waits (no look-ahead: nothing to steer).
     pub fn controls(&mut self, world: &World) -> Option<(f32, f32)> {
+        // Checked here too, so the compiler drops the pilot from builds
+        // without it (6 KB of wasm otherwise).
         if !ON {
             return None;
         }
-        let pilot = self.pilot.get_or_insert_with(|| DemoPilot::new(0));
-        Some(pilot.controls(world))
+        if world.level_complete().is_some() {
+            return self.pilot.as_ref().map(|_| (0.0, 0.0));
+        }
+        Some(self.pilot.as_mut()?.controls(world))
     }
 
     /// Game over: the pilot starts a new flight (a new seed, if ranked).

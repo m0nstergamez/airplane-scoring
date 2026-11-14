@@ -1011,12 +1011,14 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
     der Liste.
 - Mehr Testautomatisierung, gewünscht:
   - `scripts/check-determinism.sh`: 20 Demo-Flüge (alle fünf
-    Start-Levels, vier Bildschirmgrössen) nativ und als wasm unter wasmtime geflogen;
-    die Zeilen (ein Hash jedes Replays, seine Ticks und gelandeten
-    Zeiten) müssen gleich sein. Der Pilot entscheidet anhand von Kopien
-    der Welt, die vorausfliegen, also ändert ein einziges anderes Bit das
-    Replay lange vor einer Zeit. Etwa 4 s; Schritt 5 von
-    `scripts/check.sh` (ohne wasmtime übersprungen) und im CI.
+    Start-Levels, vier Bildschirmgrössen) nativ und als wasm in Node
+    geflogen, gebaut für das Ziel des Browsers (wasm32-unknown-unknown,
+    nicht WASI); die Zeilen (ein Hash jedes Replays, seine Ticks und
+    gelandeten Zeiten) müssen gleich sein. Der Pilot entscheidet anhand
+    von Kopien der Welt, die vorausfliegen, also ändert ein einziges
+    anderes Bit das Replay lange vor einer Zeit. Geprüft: Er schlägt
+    fehl, wenn wasm einen Flug anders fliegt. Etwa 4 s; Schritt 5 von
+    `scripts/check.sh` (ohne node übersprungen) und im CI.
   - Ein Autopilot für das echte Spiel, nur in Test-Builds
     (`--features autopilot`): der Demo-Pilot von core, jetzt ein
     `DemoPilot`, der Tick für Tick fliegt (`demo_flight` nutzt ihn; seine

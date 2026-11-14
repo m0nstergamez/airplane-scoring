@@ -911,11 +911,13 @@ that isn't code here. Keep entries short and dated.
   - `GET /health` for Fly's check, instead of a board query every 30 s.
 - More test automation, asked for:
   - `scripts/check-determinism.sh`: 20 demo flights (all five start
-    levels, four screen sizes) flown natively and as wasm under wasmtime; the
+    levels, four screen sizes) flown natively and as wasm in Node, built
+    for the browser's own target (wasm32-unknown-unknown, not WASI); the
     lines (a hash of each replay, its ticks and landed times) must be
     the same. The pilot decides from look-ahead copies of the world, so
-    one different bit changes the replay long before a time. About 4 s;
-    step 5 of `scripts/check.sh` (skipped without wasmtime) and in CI.
+    one different bit changes the replay long before a time. Checked to
+    fail when wasm flies one flight differently. About 4 s; step 5 of
+    `scripts/check.sh` (skipped without node) and in CI.
   - An autopilot for the real game, in test builds only
     (`--features autopilot`): core's demo pilot, now a `DemoPilot` that
     flies one tick at a time (`demo_flight` uses it; its replays stayed

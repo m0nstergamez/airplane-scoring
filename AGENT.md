@@ -49,8 +49,9 @@ Prefer `cargo doc` output and the vendored crate source in
    and `scripts/check-docs.sh` (manual and project notes de/en in sync)
 4. `cargo test -p airplane-scoring-server` — the leaderboard API (not
    in `--fast`).
-5. `scripts/check-determinism.sh` — demo flights natively and as wasm
-   (wasmtime) must be identical; skipped without wasmtime, CI runs it.
+5. `scripts/check-determinism.sh` — demo flights natively and as
+   wasm32-unknown-unknown (the browser's target, run in Node) must be
+   identical; skipped without node, CI runs it.
 6. `scripts/build-web.sh` — release wasm build into `web/`.
 7. `scripts/shot.sh` — loads the real web build in headless Chrome, saves
    `target/shots/latest.png` and fails on console errors or Rust panics

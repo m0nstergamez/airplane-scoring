@@ -15,10 +15,12 @@ line, to stdout; shot.sh filters known noise. Exit code 0 unless Chrome or
 the protocol fails.
 
 Env (all optional):
-  SHOT_EVAL      JS to run after MS (e.g. click a button)
+  SHOT_EVAL      JS to run after MS (e.g. click a button); a promise is
+                 awaited (at most 30 s)
   SHOT_AFTER_MS  then wait this long (default 400)
   SHOT_UNTIL     instead: wait until a console line matches this regex
-                 (Python syntax), at most SHOT_UNTIL_MS (default 60000);
+                 (Python syntax; lines from before count too), at most
+                 SHOT_UNTIL_MS (default 60000);
                  exit code 3 if it never does (the shot is still taken)
   SHOT_PRINT     JS whose value is printed as "eval: VALUE" before the shot
 """
@@ -222,12 +224,16 @@ def main():
         # the page react for SHOT_AFTER_MS (default 400 ms).
         js = os.environ.get("SHOT_EVAL")
         if js:
-            dt.call("Runtime.evaluate", expression=js)
+            dt.call("Runtime.evaluate", expression=js, awaitPromise=True)
         until = os.environ.get("SHOT_UNTIL")
         missed = False
         if until:
             limit = int(os.environ.get("SHOT_UNTIL_MS", "60000")) / 1000.0
-            missed = not dt.pump_until(time.monotonic() + limit, stop_line=re.compile(until))
+            pattern = re.compile(until)
+            missed = not (
+                any(pattern.search(l) for l in dt.lines)
+                or dt.pump_until(time.monotonic() + limit, stop_line=pattern)
+            )
             dt.pump_until(time.monotonic() + 0.3)  # let the frame be drawn
         elif js:
             after = int(os.environ.get("SHOT_AFTER_MS", "400"))
