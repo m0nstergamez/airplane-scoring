@@ -958,7 +958,8 @@ that isn't code here. Keep entries short and dated.
 - Game over in level 4 started the new flight in level 1, reported: the
   restart took the level the flight began in (the map's choice), so it
   hit every level reached with "Next level". `World::restart_level` (the
-  level the plane is in) now decides it, tested from every start level.
+  level the plane is in) now decides it, tested with a game over in the
+  next level from every start level.
   The pause menu's Restart does the same; it has its own counter
   (`page_restart`), as "Menu" still starts in the map's level.
 

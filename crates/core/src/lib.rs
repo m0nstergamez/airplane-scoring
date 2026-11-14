@@ -2187,15 +2187,38 @@ mod tests {
     }
 
     #[test]
-    fn a_restart_begins_in_the_level_the_plane_is_in() {
-        for start in 1..=LEVEL_COUNT {
+    fn after_game_over_a_restart_begins_in_the_level_the_plane_is_in() {
+        // Reported: game over in level 4 (reached with Next level) started
+        // the new flight in level 1.
+        for start in (1..=LEVEL_COUNT).filter(|&l| has_next_level(l)) {
             let mut w = World::with_seed(PHONE, 1);
             w.lives = u32::MAX;
             w.start_level = start;
             assert_eq!(w.restart_level(), start);
-            let seen = new_levels(&mut w, 1.6 * LEVEL_SECONDS);
-            let reached = seen.last().map(|&(_, l)| l).expect("a next level");
-            assert_ne!(reached, start);
+            // "Next level" at the first landing, then on into that level.
+            while w.restart_level() == start {
+                assert!(w.ticks < (2.0 * LEVEL_SECONDS / TICK_SECONDS) as u64);
+                w.go_on();
+                w.tick(&Input::NONE);
+            }
+            let reached = w.restart_level();
+            assert_eq!(reached, start + 1);
+            // Up and away from the airport, then the last life goes in a
+            // plane parked on the nose (the flight's own planes cleared).
+            while w.taking_off() {
+                w.tick(&Input::NONE);
+            }
+            w.lives = 1;
+            w.planes.clear();
+            let p = w.player.pos;
+            w.spawn_plane("m", p, Vec2::new(0.0, 0.0));
+            for _ in 0..(10.0 / TICK_SECONDS) as u32 {
+                if w.can_restart() {
+                    break;
+                }
+                w.tick(&Input::NONE);
+            }
+            assert!(w.can_restart(), "from level {start}");
             assert_eq!(w.restart_level(), reached, "from level {start}");
         }
     }
