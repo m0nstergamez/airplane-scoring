@@ -136,7 +136,7 @@ quieter the thunder.
 
 If you touch a hot-air balloon, a launch pad or a hut (level 1) or a
 gull or a lifeguard tower (level 2) or a high-rise, a crane or a
-helicopter (level 3) or a goose or a house (level 4), you **crash**. Only a real touch counts: flying past very
+helicopter (level 3) or a goose, a house or a high-rise (level 4), you **crash**. Only a real touch counts: flying past very
 closely, or through the gap beside a roof, is fine. In a crash your plane smokes, falls
 and ignores the controls for a moment (1.5 seconds). Then you fly again.
 
@@ -275,9 +275,7 @@ lights along both edges and on the centre line, green at the start and
 red at the end, so you see them in the dusk and the dark.
 
 At **sunrise** (level 4) you fly toward the low sun, over a dark forest
-and a valley in the morning haze. High-rises stand far back, black
-against the sun (never by a runway); they are only scenery, you fly in
-front of them:
+and a valley in the morning haze:
 
 - **Geese** come at you in a **V**, fast, about one every two seconds. Every
   few seconds a flock calls as it comes, never twice the same way in a
@@ -285,6 +283,9 @@ front of them:
   The V is aimed at your height: its tip or one of its arms is where you
   are. Fly over or under the whole V. If you fly into a goose, you lose a
   life and the goose tumbles down.
+- **High-rises** stand in the valley, black against the sun, never by
+  a runway. Fly over them: walls, roof, stair house and mast all count,
+  and flying into one costs a life.
 - **Houses** with a chimney stand in the valley, smaller than the
   high-rises in the town, and **steam** rises from the chimney. Flying
   into a house costs a life. Flying through the steam costs no life, but

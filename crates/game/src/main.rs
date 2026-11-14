@@ -201,7 +201,7 @@ async fn main() {
         if levels.level == SUNRISE_LEVEL {
             draw_sun(world.bounds, world.ticks);
         }
-        // High-rises far back in the valley, black against the sun.
+        // High-rises in the valley, black against the sun (obstacles).
         for b in &world.sunrise.high_rises {
             draw_far_high_rise(b, world.bounds);
         }
@@ -1097,32 +1097,24 @@ fn draw_sun(bounds: Bounds, ticks: u64) {
     draw_circle(x, y, r * 0.75, Color::from_rgba(255, 250, 225, 255));
 }
 
-/// A high-rise far back at sunrise (core's `FarHighRise`), like the one
-/// in the photo: a dark silhouette with a flat roof that overhangs, a
-/// stair house and a mast on it, dim windows, and the sun's light along
-/// its roof and right edge.
+/// A high-rise at sunrise (core's `FarHighRise::parts`, an obstacle),
+/// like the one in the photo: a dark silhouette with a flat roof that
+/// overhangs, a stair house and a mast on it, dim windows, and the sun's
+/// light along its roof and right edge.
 fn draw_far_high_rise(b: &FarHighRise, bounds: Bounds) {
     let s = bounds.scale();
-    let (l, t, w, h) = b.rect(bounds);
+    let p = b.parts(bounds);
+    let (l, t, w, h) = p.walls;
     let dark = Color::from_rgba(26, 16, 10, 255);
     let rim = Color::from_rgba(246, 160, 64, 150);
     draw_rectangle(l, t, w, h, dark);
-    // The roof slab, wider than the walls, and the stair house on it.
-    let (sl, sr) = b.span(bounds);
-    draw_rectangle(sl, t - 6.0 * s, sr - sl, 6.0 * s, dark);
-    let (hw, hh) = (0.47 * w, 22.0 * s);
-    let hl = l + 0.33 * w;
-    draw_rectangle(hl, t - 6.0 * s - hh, hw, hh, dark);
-    let mast = hl + hw * 0.5;
-    draw_line(
-        mast,
-        t - 6.0 * s - hh,
-        mast,
-        t - 6.0 * s - hh - 26.0 * s,
-        3.0 * s,
-        dark,
-    );
-    draw_line(sl, t, sr, t, 2.0 * s, rim);
+    let (rl, rt, rw, rh) = p.roof;
+    draw_rectangle(rl, rt, rw, rh, dark);
+    let (hl, ht, hw, hh) = p.stair_house;
+    draw_rectangle(hl, ht, hw, hh, dark);
+    let (m0, m1) = p.mast;
+    draw_line(m0.x, m0.y, m1.x, m1.y, p.mast_width, dark);
+    draw_line(rl, rt, rl + rw, rt, 2.0 * s, rim);
     draw_line(
         l + w,
         t,

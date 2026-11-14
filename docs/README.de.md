@@ -855,6 +855,10 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
     solange diese im Bild ist, und nur alle `GOOSE_CALL_GAP_SECONDS`
     (2.5 s) ruft eine Schar, sonst wäre es ein Lärm. Jede Sekunde war
     etwas viel: jetzt etwa alle 2 Sekunden.
+  - Die Hochhäuser im Tal sind jetzt fest, gewünscht: Durchfliegen tat
+    nichts. `FarHighRise::shape` (Mauern, Dachplatte, Treppenhaus, Mast)
+    ist, was das Spiel zeichnet und was getroffen wird; das höchste
+    lässt über einen Drittel des Bildschirms darüber frei.
   - Neue Töne aus `scripts/make-sounds.py`: `goose-honk.wav` (Rufe mit
     starken ungeraden Obertönen, wie ein Rohrblatt) und `steam.wav`.
   - Das goldene «NEW» ist auf der Level-Karte zu Level 4 gewandert.

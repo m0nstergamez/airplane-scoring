@@ -784,6 +784,10 @@ that isn't code here. Keep entries short and dated.
     while that one is on screen, and only one flock calls every
     `GOOSE_CALL_GAP_SECONDS` (2.5 s), or it would be a din. Every
     second turned out a bit much: now about every two seconds.
+  - The valley's high-rises are solid now, asked for: flying through
+    one did nothing. `FarHighRise::shape` (walls, roof slab, stair house,
+    mast) is what the game draws and what is hit; the tallest leaves
+    over a third of the screen above it.
 
 ## Concepts
 

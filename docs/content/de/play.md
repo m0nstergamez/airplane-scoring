@@ -142,7 +142,7 @@ desto später und leiser der Donner.
 
 Berührst du einen Heissluftballon, eine Startrampe oder eine Hütte
 (Level 1), eine Möwe oder einen Strandturm (Level 2) oder ein Hochhaus,
-einen Kran oder einen Helikopter (Level 3) oder eine Gans oder ein Haus (Level 4), gibt es einen
+einen Kran oder einen Helikopter (Level 3) oder eine Gans, ein Haus oder ein Hochhaus (Level 4), gibt es einen
 **Zusammenstoss**.
 Nur eine echte Berührung zählt: Ganz knapp vorbeifliegen oder durch die
 Lücke neben einem Dach ist erlaubt. Beim Zusammenstoss
@@ -294,9 +294,7 @@ am Anfang und rot am Ende, damit du sie in der Dämmerung und im Dunkeln
 siehst.
 
 Beim **Sonnenaufgang** (Level 4) fliegst du der tiefen Sonne entgegen,
-über einen dunklen Wald und ein Tal im Morgendunst. Weit hinten stehen
-Hochhäuser, schwarz vor der Sonne (nie bei einer Bahn); sie sind nur
-Kulisse, du fliegst vor ihnen durch:
+über einen dunklen Wald und ein Tal im Morgendunst:
 
 - **Gänse** kommen dir in einem **V** entgegen, schnell, etwa eins alle
   2 Sekunden. Alle paar Sekunden ruft eine Schar, wenn sie kommt, nie
@@ -305,6 +303,9 @@ Kulisse, du fliegst vor ihnen durch:
   oder einer seiner Flügel ist dort, wo du bist. Flieg über oder unter
   dem ganzen V durch. Fliegst du in eine Gans, verlierst du ein Leben,
   und die Gans stürzt ab.
+- **Hochhäuser** stehen im Tal, schwarz vor der Sonne, nie bei einer
+  Bahn. Flieg über sie: Mauern, Dach, Treppenhaus und Mast zählen alle,
+  und hineinzufliegen kostet ein Leben.
 - **Häuser** mit einem Kamin stehen im Tal, kleiner als die Hochhäuser
   in der Stadt, und aus dem Kamin steigt **Dampf**. In ein Haus zu
   fliegen kostet ein Leben. Durch den Dampf durchzufliegen kostet kein

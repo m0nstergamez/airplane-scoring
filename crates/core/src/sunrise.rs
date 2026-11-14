@@ -13,10 +13,10 @@
 //!   up ([`STEAM_LIFT`]), so you have to catch it again. The house is
 //!   small (smaller than the town's high-rises) but solid: flying into it
 //!   is a crash.
-//! * **High-rises** stand far back in the valley, black against the
-//!   sun, like the one in the photo. They are scenery, not obstacles
-//!   (the plane flies in front of them), and like everything else they
-//!   only come while no runway is on screen, so none stands by a runway.
+//! * **High-rises** stand in the valley, black against the sun, like the
+//!   one in the photo. They are solid (walls, roof, stair house and mast):
+//!   fly over them. Like everything else they only come while no runway
+//!   is on screen, so none stands by a runway.
 //! * **Glare**: now and then the low sun ahead blinds you for a moment
 //!   ([`GLARE_SECONDS`]); the game washes the screen in its light.
 //!
@@ -292,7 +292,7 @@ impl Steam {
     }
 }
 
-/// A high-rise far back in the valley, in silhouette (scenery).
+/// A high-rise in the valley, in silhouette: an obstacle, fly over it.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct FarHighRise {
     /// Its middle on screen, in px.
@@ -316,6 +316,55 @@ impl FarHighRise {
         let w = self.width * bounds.scale() * 1.2;
         (self.x - w / 2.0, self.x + w / 2.0)
     }
+
+    /// Where its parts are on this screen.
+    pub fn parts(&self, bounds: Bounds) -> FarHighRiseParts {
+        let s = bounds.scale();
+        let (l, t, w, h) = self.rect(bounds);
+        let (sl, sr) = self.span(bounds);
+        let slab = 6.0 * s;
+        let (hw, hh) = (0.47 * w, 22.0 * s);
+        let hl = l + 0.33 * w;
+        let foot = Vec2::new(hl + hw / 2.0, t - slab - hh);
+        FarHighRiseParts {
+            walls: (l, t, w, h),
+            roof: (sl, t - slab, sr - sl, slab),
+            stair_house: (hl, t - slab - hh, hw, hh),
+            mast: (foot, Vec2::new(foot.x, foot.y - 26.0 * s)),
+            mast_width: 3.0 * s,
+        }
+    }
+
+    /// The high-rise as drawn, for crashing.
+    pub fn shape(&self, bounds: Bounds) -> Vec<Poly> {
+        let p = self.parts(bounds);
+        let rect = |(l, t, w, h): (f32, f32, f32, f32)| Poly::rect(l, t, w, h);
+        vec![
+            rect(p.walls),
+            rect(p.roof),
+            rect(p.stair_house),
+            Poly::line(p.mast.0, p.mast.1, p.mast_width),
+        ]
+    }
+
+    /// Its highest point (the mast's tip), in px from the top.
+    pub fn top_y(&self, bounds: Bounds) -> f32 {
+        self.parts(bounds).mast.1.y
+    }
+}
+
+/// Where a valley high-rise's parts are on screen, in px.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct FarHighRiseParts {
+    /// The walls: left, top, width, height.
+    pub walls: (f32, f32, f32, f32),
+    /// The roof slab, wider than the walls: left, top, width, height.
+    pub roof: (f32, f32, f32, f32),
+    /// The stair house on the roof: left, top, width, height.
+    pub stair_house: (f32, f32, f32, f32),
+    /// The mast on the stair house, and its thickness.
+    pub mast: (Vec2, Vec2),
+    pub mast_width: f32,
 }
 
 /// The morning's geese, steam and glare.
@@ -325,7 +374,7 @@ pub struct Sunrise {
     pub geese: Vec<Goose>,
     /// The columns of steam on screen.
     pub steam: Vec<Steam>,
-    /// High-rises far back (scenery), oldest first.
+    /// High-rises in the valley (obstacles), oldest first.
     pub high_rises: Vec<FarHighRise>,
     /// Ticks into the glare now; `None` between glares.
     glare: Option<u32>,
@@ -805,6 +854,36 @@ mod tests {
             }
             assert!(houses > 0 && towers > 0, "both still come");
         }
+    }
+
+    #[test]
+    fn a_valley_high_rise_is_solid_with_room_above_it() {
+        let b = FarHighRise {
+            x: 400.0,
+            width: 110.0,
+            top: 0.55,
+        };
+        let shape = b.shape(PHONE);
+        let hit = |x: f32, y: f32| any_overlap(&shape, &[Poly::rect(x - 1.0, y - 1.0, 2.0, 2.0)]);
+        let p = b.parts(PHONE);
+        let (l, t, w, h) = p.walls;
+        assert!(hit(l + w / 2.0, t + h / 2.0), "the walls");
+        let (rl, rt, _, _) = p.roof;
+        assert!(hit(rl + 2.0, rt + 2.0), "the roof's overhang");
+        let (sl, st, sw, _) = p.stair_house;
+        assert!(hit(sl + sw / 2.0, st + 2.0), "the stair house");
+        assert!(hit(p.mast.1.x, p.mast.1.y + 2.0), "the mast");
+        assert!(!hit(p.mast.1.x, p.mast.1.y - 4.0), "above it is free");
+        // The tallest one still leaves room above.
+        let tall = FarHighRise {
+            top: FAR_HIGH_RISE_TOP.0,
+            ..b
+        };
+        assert!(
+            tall.top_y(PHONE) > 0.35 * PHONE.height,
+            "{}",
+            tall.top_y(PHONE)
+        );
     }
 
     #[test]

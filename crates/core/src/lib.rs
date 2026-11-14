@@ -67,8 +67,8 @@ pub use sound::{
     STEAM_VOLUME, TAKEOFF_VOLUME, VOICE_VOLUME, WARNING_VOLUME, WIND_VOLUME,
 };
 pub use sunrise::{
-    FarHighRise, Goose, HouseParts, Steam, Sunrise, GLARE_SECONDS, GOOSE_CALLS, GOOSE_GAP_SECONDS,
-    STEAM_LIFT, SUNRISE_LEVEL, SUN_AT, SUN_RADIUS,
+    FarHighRise, FarHighRiseParts, Goose, HouseParts, Steam, Sunrise, GLARE_SECONDS, GOOSE_CALLS,
+    GOOSE_GAP_SECONDS, STEAM_LIFT, SUNRISE_LEVEL, SUN_AT, SUN_RADIUS,
 };
 pub use tilt::{
     Tilt, LEAN_DEAD_ZONE_DEG, LEAN_FULL_DEG, TILT_DEAD_ZONE_DEG, TILT_FULL_DEG, TILT_MIN_GRAVITY,
@@ -1190,8 +1190,9 @@ impl World {
         } else {
             Vec::new()
         };
-        // The houses under the steam are solid.
-        let house = (self.sunrise.steam.iter()).any(|c| hits(&c.house_shape(bounds)));
+        // The houses under the steam and the valley's high-rises are solid.
+        let house = (self.sunrise.steam.iter()).any(|c| hits(&c.house_shape(bounds)))
+            || (self.sunrise.high_rises.iter()).any(|b| hits(&b.shape(bounds)));
         // Steam costs no life: the warm air throws the plane up.
         let in_steam = open && self.sunrise.in_steam(bounds, &me);
         // Helicopters too (parked on a roof or flying): one the plane
@@ -2838,6 +2839,27 @@ mod tests {
             crashed,
             "a V aimed at the plane hits it if it does not dodge"
         );
+    }
+
+    #[test]
+    fn flying_into_a_high_rise_at_sunrise_costs_a_life() {
+        let mut w = in_the_sunrise();
+        w.sunrise.high_rises.push(FarHighRise {
+            x: w.player.pos.x + 120.0,
+            width: 110.0,
+            top: 0.55,
+        });
+        let (_, top, _, h) = w.sunrise.high_rises[0].rect(PHONE);
+        let y = top + h / 3.0;
+        let lives = w.lives;
+        for _ in 0..(2.5 / TICK_SECONDS) as u32 {
+            w.sunrise.geese.clear();
+            w.sunrise.steam.clear();
+            w.player.pos.y = y;
+            w.player.vel_y = 0.0;
+            w.tick(&Input::NONE);
+        }
+        assert_eq!(w.lives, lives - 1, "the high-rise is solid");
     }
 
     #[test]

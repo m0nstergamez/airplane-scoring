@@ -203,9 +203,9 @@ flowchart LR
   `GOOSE_CALLS` calls, never the same twice in a row). Each `Steam` is a
   small house (`house_shape`, solid) with a column rising from its
   chimney; inside the column the plane is pushed up (`STEAM_LIFT`,
-  `Event::SteamHiss`), no life lost. `FarHighRise`s stand far back as
-  scenery (not hit); like everything else they only come while no
-  runway is on screen. `Sunrise::glare`
+  `Event::SteamHiss`), no life lost. `FarHighRise`s stand in the valley,
+  solid (`shape`: walls, roof, stair house, mast); like everything else
+  they only come while no runway is on screen. `Sunrise::glare`
   (0..1, every 10–16 s for `GLARE_SECONDS`) tells the game how much to
   wash the screen in the light of the sun, which it draws at `SUN_AT`.
 - **Gulls** (`crates/core/src/gulls.rs`) are the beach's obstacles. Core
