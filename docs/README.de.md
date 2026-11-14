@@ -1009,6 +1009,12 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
     mit `Retry-After`.
   - `GET /health` für die Prüfung von Fly, statt alle 30 s eine Abfrage
     der Liste.
+- «Game over» in Level 4 startete den neuen Flug in Level 1, gemeldet:
+  der Neustart nahm das Level, in dem der Flug begann (die Wahl auf der
+  Karte), darum traf es jedes Level, das man mit «Next level» erreicht.
+  Jetzt entscheidet `World::restart_level` (das Level, in dem das
+  Flugzeug ist), getestet von jedem Startlevel aus. «Restart» im
+  Pausenmenü tut dasselbe; es hat einen eigenen Zähler (`page_restart`), weil «Menu» weiter im Level der Karte startet.
 
 ## Konzepte
 

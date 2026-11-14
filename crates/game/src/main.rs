@@ -40,10 +40,11 @@ async fn main() {
     let mut audio = audio::Audio::start();
     let mut scenery = scenery::Scenery::start();
 
-    let mut world = new_world();
+    let mut world = new_world(page_js::requested_level());
     // The online leaderboard: one per flight, like the world.
     let mut board = board::Board::default();
     let mut flight = page_js::new_flight();
+    let mut restarts = page_js::restart();
     // The level's best times and where the last time landed in them, for
     // "Level complete" and "Game over".
     let mut result: Option<FlightResult> = None;
@@ -79,7 +80,7 @@ async fn main() {
             flight = page_js::new_flight();
             // Leaving a flight (Menu, Restart) counts no time: only a
             // completed level goes into the best times (and online).
-            world = new_world();
+            world = new_world(page_js::requested_level());
             board = board::Board::default();
             crash_flash = 0.0;
             result = None;
@@ -101,9 +102,12 @@ async fn main() {
             }
         }
 
-        // Game over: a tap, click or Enter starts a new flight.
-        if playing && world.can_restart() && restart_pressed() {
-            world = new_world();
+        // Game over (a tap, click or Enter) or the pause menu's Restart:
+        // a new flight in the level the plane is in, not the first one.
+        let restart = page_js::restart() != restarts;
+        restarts = page_js::restart();
+        if restart || (playing && world.can_restart() && restart_pressed()) {
+            world = new_world(world.restart_level() as i32);
             board = board::Board::default();
             crash_flash = 0.0;
             result = None;
@@ -395,8 +399,8 @@ fn record_time(world: &World) -> FlightResult {
     r
 }
 
-/// A new flight: full lives, level 1 (or `?level=`), fresh weather.
-fn new_world() -> World {
+/// A new flight in `level` (checked by core): full lives, fresh weather.
+fn new_world(level: i32) -> World {
     // The seed decides the weather; the clock makes every flight different.
     let seed = (macroquad::miniquad::date::now() * 1000.0) as u64;
     let mut world = World::with_seed(
@@ -406,7 +410,7 @@ fn new_world() -> World {
         },
         seed,
     );
-    world.start_level = start_level(page_js::requested_level());
+    world.start_level = start_level(level);
     // Every flight starts from the airport (core skips it in level 2).
     world.with_takeoff()
 }

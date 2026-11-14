@@ -909,6 +909,12 @@ that isn't code here. Keep entries short and dated.
     is flown again (`replay::steps_of` counts its ticks cheaply); re-flying
     runs one per CPU at a time, 503 with `Retry-After` after 5 s.
   - `GET /health` for Fly's check, instead of a board query every 30 s.
+- Game over in level 4 started the new flight in level 1, reported: the
+  restart took the level the flight began in (the map's choice), so it
+  hit every level reached with "Next level". `World::restart_level` (the
+  level the plane is in) now decides it, tested from every start level.
+  The pause menu's Restart does the same; it has its own counter
+  (`page_restart`), as "Menu" still starts in the map's level.
 
 ## Concepts
 
