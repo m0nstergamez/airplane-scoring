@@ -867,6 +867,53 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
     gezeichnet; die Blendung zeichnet weniger Ringe (günstiger auf
     Handys); die Spielanleitung und das Wörterbuch nennen die Hochhäuser
     und Häuser von Level 4.
+- Level 5, Herbstwald, nach unserem eigenen Foto (ein dunkler Nadelwald
+  auf einem Hügel, darunter Laubbäume und Dächer im Dunst). Hindernisse
+  aus Vorschlägen gewählt: hohe Tannen, ein herabstossender Bussard,
+  Laubböen und Nebel.
+  - Die hohe Tanne vom Foto wurde zum Hindernis; Tannen kommen zu einer
+    bis drei, jede anders hoch, mit `FOREST_ROOM` zwischen den Gruppen.
+  - Der Bussard kreist (`BUZZARD_CIRCLE_SECONDS`), bevor er herabstösst,
+    damit es fair ist; er kreist unter der Uhr und den Leben, nicht
+    darauf.
+  - Böen sind das Gegenteil vom Dampf in Level 4: Sie drücken das
+    Flugzeug nach unten (`GUST_PUSH` 700, schwächer als Steigen).
+  - Die Baumkronen im Hintergrund gehen pro Schicht nur einmal über die
+    Naht, allein in einer «-edge-art»-Gruppe: Kronen, die sich an der
+    Naht überlappten, fielen bei der Nahtprüfung durch (1.6 %).
+  - Neue Töne `buzzard.wav` und `leaves.wav`; die Level-Karte hat eine
+    fünfte Station, und das goldene NEW ist dorthin gewandert; der Test
+    der Level-Reihenfolge funktioniert jetzt mit jedem `LEVEL_COUNT`.
+  - Beim Prüfen gefunden: Mit fünf Stationen reichte die Level-Karte auf
+    einem kleinen iPhone (667×320) unter den QR-Code; auf niedrigen
+    Bildschirmen versteckt sich der QR-Code jetzt, solange die Karte
+    sichtbar ist (im Hauptmenü bleibt er).
+  - Ebenfalls gefunden: `scripts/check.sh` scheiterte ab und zu mit «no
+    background: levels/level5.png». Der lokale Testserver
+    (`scripts/serve.sh`) behielt Pythons Standard-Warteschlange von 5,
+    und die Seite lädt alle Bilder und Töne auf einmal, also brach macOS
+    ab und zu eine Verbindung ab. Jetzt sind 64 erlaubt (drei volle
+    Prüfungen nacheinander liefen durch).
+  - Der Bussard kam zu regelmässig und immer von vorn, gewünscht: jetzt
+    alle 3.5–12 s (vorher 6–9 s), und von vorn, von oben oder aus den
+    Bäumen herauf (`BuzzardFrom`), nie von hinten: Er kreist immer vor
+    dem Flugzeug, bevor er herabstösst (über zehn Minuten getestet).
+  - Behoben nach `/code-review` von PR #46: Mit mehr Gas wurde der
+    Bussard mit dem Boden verschoben, also konnte er bei hohem Tempo
+    hinter dem Flugzeug kreisen, und sein Sturzflug kam vom Kurs ab;
+    jetzt verschieben sich nur Tannen und Böen (knapp unter Overspeed
+    getestet). Ausserdem: `x` einer Böe ist ihre Mitte (sie wurde eine
+    halbe Breite daneben behalten und gesetzt); der gezeichnete
+    Zweigsaum einer Tanne bleibt in ihrer Trefferform; ein mitcommitteter
+    Python-Cache (`scripts/__pycache__`) ist weg und wird ignoriert; der
+    Test für Level 5 fliegt durch alle Levels und zurück in Level 1.
+  - Mit main zusammengeführt nach der Bestenliste im Internet (PR #45):
+    `sin`, `cos`, `atan2` des Waldes kommen jetzt wie im übrigen Core aus
+    `libm`, damit ein Flug in Level 5 auf dem Server gleich nachfliegt
+    (der Schutztest `core_maths_is_the_same_in_wasm_and_native` hat es
+    gefunden). Der Server und die Bestenlisten-Seite nehmen die Zahl der
+    Levels aus dem Core und der Karte, also hat Level 5 eine eigene
+    Liste.
   - Neue Töne aus `scripts/make-sounds.py`: `goose-honk.wav` (Rufe mit
     starken ungeraden Obertönen, wie ein Rohrblatt) und `steam.wav`.
   - Das goldene «NEW» ist auf der Level-Karte zu Level 4 gewandert.

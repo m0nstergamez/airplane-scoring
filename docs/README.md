@@ -794,6 +794,47 @@ that isn't code here. Keep entries short and dated.
     than its hit shape; the goose drawing now uses core's `GOOSE_BODY`;
     the glare draws fewer rings (cheaper on phones); How to play and the
     glossary name the level 4 high-rises and houses.
+- Level 5, autumn forest, from our own photo (a dark conifer forest on a
+  hill, autumn trees and roofs in the haze below). Obstacles picked from
+  proposals: tall firs, a diving buzzard, gusts of leaves and fog.
+  - The photo's tall fir became the obstacle; firs come in groups of one
+    to three, each its own height, with `FOREST_ROOM` between groups.
+  - The buzzard circles (`BUZZARD_CIRCLE_SECONDS`) before it dives, so it
+    is fair; it circles below the clock and the lives, not on top of them.
+  - Gusts are the opposite of level 4's steam: they press the plane down
+    (`GUST_PUSH` 700, weaker than climbing).
+  - The background's crowns cross the seam only once per layer, alone in
+    an "-edge-art" group: crowns overlapping at the seam failed the seam
+    check (1.6 %).
+  - New sounds `buzzard.wav` and `leaves.wav`; the level map got a fifth
+    stop and the golden NEW moved to it; the level order test now works
+    for any `LEVEL_COUNT`.
+  - Found while checking: with five stops the level map reached under
+    the QR code on a small iPhone (667×320); on low screens the QR code
+    now hides while the map shows (it stays in the main menu).
+  - Also found: `scripts/check.sh` failed now and then with "no
+    background: levels/level5.png". The local test server
+    (`scripts/serve.sh`) kept Python's default backlog of 5, and the page
+    loads every picture and sound at once, so macOS reset a connection
+    now and then. It now allows 64 (three full checks in a row passed).
+  - The buzzard came too regularly and always from ahead, asked for:
+    now every 3.5–12 s (was 6–9 s), and from ahead, from above or up out
+    of the trees (`BuzzardFrom`), never from behind: it always circles
+    ahead of the plane before it dives (tested over ten minutes).
+  - Fixed after `/code-review` of PR #46: with more throttle the buzzard
+    was shifted with the ground, so at high speed it could circle behind
+    the plane and its dive bent off course; now only firs and gusts
+    shift (tested just under overspeed). Also: a gust's `x` is its
+    middle (it was kept and placed half a width off); the drawn twig hem
+    of a fir stays inside its hit shape; a committed Python cache
+    (`scripts/__pycache__`) is gone and ignored; the level 5 test flies
+    through every level and back into level 1.
+  - Merged with main after the online leaderboard (PR #45): the forest's
+    `sin`, `cos`, `atan2` now come from `libm` like the rest of core, so
+    a level 5 flight replays the same on the server (the guard test
+    `core_maths_is_the_same_in_wasm_and_native` caught it). The server
+    and the leaderboard page take the level count from core and the map,
+    so level 5 has its own board.
 - Online leaderboard, from a prototype (two patches and a plan made
   outside this repo), adapted to the game as it is now. The prototype
   ranked the longest total flight; since best times count only completed

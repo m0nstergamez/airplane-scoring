@@ -2,6 +2,7 @@
 web/*.wasm
 .DS_Store
 .playwright-mcp/
+__pycache__/
 
 # Level photos stay local: public repo, and phone photos carry GPS.
 art/levels/*/photo.*

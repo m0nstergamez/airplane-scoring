@@ -12,6 +12,7 @@ mod balloons;
 mod best_times;
 mod city;
 mod clock;
+mod forest;
 mod gulls;
 mod huts;
 mod input;
@@ -44,6 +45,10 @@ pub use city::{
     HIGH_RISES_IN_A_ROW, HIGH_RISE_STYLES,
 };
 pub use clock::{Clock, MAX_FRAME_SECONDS};
+pub use forest::{
+    Buzzard, BuzzardFrom, BuzzardState, Fir, FirParts, Forest, Gust, BUZZARD_SIZE, FOREST_LEVEL,
+    GUST_PUSH,
+};
 pub use gulls::{
     Gull, GullStart, Gulls, FIRST_GULL_SECONDS, GULL_BOB, GULL_CALL_CHANCE, GULL_FROM_LEFT,
     GULL_FROM_RIGHT, GULL_GAP_SECONDS, GULL_SPEED,
@@ -62,10 +67,11 @@ pub use level::{
 pub use scenery::{background_x, scroll_distance, SCROLL_SPEED};
 pub use shape::{any_overlap, Poly};
 pub use sound::{
-    Mix, BALLOON_BURNER_VOLUME, BALLOON_BURST_VOLUME, BEACH_LEVEL, BEACH_VOLUME, CRASH_VOLUME,
-    DIVE_WIND, ENGINE_FAR_VOLUME, ENGINE_VOLUME, EXPLOSION_VOLUME, GEAR_VOLUME, GOOSE_HONK_VOLUME,
-    GULL_CALL_VOLUME, MIX_CHANGE_PER_SECOND, NEW_LEVEL_VOLUME, RAIN_VOLUME, RUMBLE_VOLUME,
-    STEAM_VOLUME, TAKEOFF_VOLUME, VOICE_VOLUME, WARNING_VOLUME, WIND_VOLUME,
+    Mix, BALLOON_BURNER_VOLUME, BALLOON_BURST_VOLUME, BEACH_LEVEL, BEACH_VOLUME, BUZZARD_VOLUME,
+    CRASH_VOLUME, DIVE_WIND, ENGINE_FAR_VOLUME, ENGINE_VOLUME, EXPLOSION_VOLUME, GEAR_VOLUME,
+    GOOSE_HONK_VOLUME, GULL_CALL_VOLUME, LEAVES_VOLUME, MIX_CHANGE_PER_SECOND, NEW_LEVEL_VOLUME,
+    RAIN_VOLUME, RUMBLE_VOLUME, STEAM_VOLUME, TAKEOFF_VOLUME, VOICE_VOLUME, WARNING_VOLUME,
+    WIND_VOLUME,
 };
 pub use sunrise::{
     FarHighRise, FarHighRiseParts, Goose, HouseParts, Steam, Sunrise, GLARE_SECONDS, GOOSE_BODY,
@@ -236,6 +242,11 @@ pub enum Event {
     /// A V of geese calls as it appears (level 4): one of
     /// [`GOOSE_CALLS`] calls, never the same twice in a row.
     GooseHonk { call: u8 },
+    /// A buzzard cries as it starts its dive (level 5).
+    BuzzardCry,
+    /// The plane flies into a gust of leaves: a rustling whoosh as it is
+    /// pressed down (level 5).
+    LeafRustle,
     /// The plane flies into a column of steam: a rushing hiss as it is
     /// thrown up (level 4).
     SteamHiss,
@@ -457,6 +468,11 @@ pub struct World {
     pub city: City,
     /// The sunrise (level 4): geese, steam and the low sun's glare.
     pub sunrise: Sunrise,
+    /// The autumn forest (level 5): firs, buzzards, gusts and fog.
+    pub forest: Forest,
+    /// Was the plane in a gust last tick? (The leaves rustle on the way
+    /// in.)
+    in_gust: bool,
     /// Was the plane in a column of steam last tick? (It hisses on the
     /// way in.)
     in_steam: bool,
@@ -521,6 +537,8 @@ impl World {
             towers: Towers::new(seed),
             city: City::new(seed),
             sunrise: Sunrise::new(seed),
+            forest: Forest::new(seed),
+            in_gust: false,
             in_steam: false,
             weather: Weather::new(seed),
             mix: Mix::SILENT,
@@ -1122,6 +1140,9 @@ impl World {
         self.towers.tick(self.bounds, beach);
         let dawn = levels.level == SUNRISE_LEVEL && !runway_in && !clearing;
         (self.sunrise).tick(self.bounds, dawn, plane_y, &mut self.events);
+        let woods = levels.level == FOREST_LEVEL && !runway_in && !clearing;
+        let plane = self.player.pos;
+        (self.forest).tick(self.bounds, woods, plane, &mut self.events);
         let town = levels.level == CITY_LEVEL && !runway_in && !clearing;
         self.city.set_speed(speed);
         self.city.tick(self.bounds, town, plane_y);
@@ -1152,6 +1173,7 @@ impl World {
             self.gulls.shift(-extra);
             self.city.shift(-extra);
             self.sunrise.shift(-extra);
+            self.forest.shift(-extra);
         }
 
         // Crash: the plane as drawn newly overlaps another plane, a
@@ -1194,6 +1216,18 @@ impl World {
         // The houses under the steam and the valley's high-rises are solid.
         let house = (self.sunrise.steam.iter()).any(|c| hits(&c.house_shape(bounds)))
             || (self.sunrise.high_rises.iter()).any(|b| hits(&b.shape(bounds)));
+        // The forest: firs are solid, buzzards are knocked down.
+        let fir = (self.forest.firs.iter()).any(|f| hits(&f.shape(bounds)));
+        let buzzards: Vec<usize> = if open {
+            (self.forest.buzzards.iter().enumerate())
+                .filter(|(_, b)| !b.is_down() && hits(&b.shape(scale)))
+                .map(|(i, _)| i)
+                .collect()
+        } else {
+            Vec::new()
+        };
+        // Gusts cost no life: they press the plane down.
+        let in_gust = open && self.forest.in_gust(bounds, &me);
         // Steam costs no life: the warm air throws the plane up.
         let in_steam = open && self.sunrise.in_steam(bounds, &me);
         // Helicopters too (parked on a roof or flying): one the plane
@@ -1219,6 +1253,8 @@ impl World {
             || !burst.is_empty()
             || !geese.is_empty()
             || house
+            || fir
+            || !buzzards.is_empty()
             || !roof_helis.is_empty()
             || !flyers.is_empty()
             || (self.balloons.pads.iter()).any(|p| hits(&p.shape(bounds)))
@@ -1263,6 +1299,16 @@ impl World {
             }
         }
         self.in_steam = in_steam;
+        for &i in &buzzards {
+            self.forest.buzzards[i].knock_down(scale);
+        }
+        if in_gust {
+            self.player.vel_y += GUST_PUSH * scale * TICK_SECONDS;
+            if !self.in_gust {
+                self.events.push(Event::LeafRustle);
+            }
+        }
+        self.in_gust = in_gust;
         for &i in &roof_helis {
             self.city.down_roof_heli(i, bounds);
         }
@@ -1346,6 +1392,7 @@ impl World {
         self.towers.list.clear();
         self.city.clear();
         self.sunrise.clear();
+        self.forest.clear();
         self.tyre_smoke.clear();
         // A fresh start in every level: all lives back (and so no smoke).
         self.lives = self.lives.max(LIVES);
@@ -2137,7 +2184,8 @@ mod tests {
         let mut w = World::with_seed(PHONE, 1);
         w.lives = u32::MAX; // nothing must end the flight
         let mut seen = Vec::new();
-        for _ in 0..(7.0 * LEVEL_SECONDS / TICK_SECONDS) as u32 {
+        let all = LEVEL_COUNT as f32 + 1.0;
+        for _ in 0..(all * 1.6 * LEVEL_SECONDS / TICK_SECONDS) as u32 {
             w.go_on();
             w.tick(&Input::NONE);
             for e in w.events() {
@@ -2148,21 +2196,12 @@ mod tests {
                 }
             }
         }
-        // Level 1 landed, level 2 begins; landed, level 3; landed, level
-        // 4; landed, level 1 again.
-        assert_eq!(
-            &seen[..8],
-            [
-                ("done", 1),
-                ("new", 2),
-                ("done", 2),
-                ("new", 3),
-                ("done", 3),
-                ("new", 4),
-                ("done", 4),
-                ("new", 1)
-            ]
-        );
+        // Each level landed, then the next begins; after the last one,
+        // level 1 again.
+        let want: Vec<(&str, u32)> = (1..=LEVEL_COUNT)
+            .flat_map(|l| [("done", l), ("new", l % LEVEL_COUNT + 1)])
+            .collect();
+        assert_eq!(&seen[..want.len()], want.as_slice());
     }
 
     /// Fly (and land, and take off) until `level` has begun and its
@@ -2764,6 +2803,162 @@ mod tests {
         assert_eq!(both, (true, true), "high-rises and cranes in the town");
     }
 
+    /// Flying in level 5, past the takeoff, nothing on screen yet.
+    fn in_the_forest() -> World {
+        let mut w = World::with_seed(PHONE, 5);
+        w.start_level = FOREST_LEVEL;
+        let mut w = w.with_takeoff();
+        while w.hands_off() {
+            w.tick(&Input::NONE);
+        }
+        w.forest.clear();
+        w
+    }
+
+    /// Hold the plane level at `y` in the forest for `seconds`; the lives
+    /// lost and the events. (A fresh `Forest` sends nothing new in its
+    /// first seconds, so what a test put there is all there is.)
+    fn hold_in_forest(w: &mut World, y: f32, seconds: f32) -> (u32, Vec<Event>) {
+        let lives = w.lives;
+        let mut events = Vec::new();
+        for _ in 0..(seconds / TICK_SECONDS) as u32 {
+            w.player.pos.y = y;
+            w.player.vel_y = 0.0;
+            w.tick(&Input::NONE);
+            events.extend_from_slice(w.events());
+        }
+        (lives - w.lives, events)
+    }
+
+    #[test]
+    fn the_forest_is_only_in_level_5() {
+        let mut w = World::with_seed(PHONE, 5);
+        w.lives = u32::MAX;
+        // Through every level, the forest and back into level 1.
+        let all = LEVEL_COUNT as f32 + 1.0;
+        for _ in 0..(all * 1.6 * LEVEL_SECONDS / TICK_SECONDS) as u32 {
+            w.go_on();
+            w.tick(&Input::NONE);
+            if w.levels().level != FOREST_LEVEL {
+                let f = &w.forest;
+                assert!(f.firs.is_empty() && f.buzzards.is_empty() && f.gusts.is_empty());
+                assert_eq!(f.fog(), 0.0);
+            }
+        }
+        let mut w = in_the_forest();
+        let mut seen = (false, false, false);
+        for _ in 0..(20.0 / TICK_SECONDS) as u32 {
+            w.lives = LIVES;
+            w.tick(&Input::NONE);
+            seen.0 |= !w.forest.firs.is_empty();
+            seen.1 |= !w.forest.buzzards.is_empty();
+            seen.2 |= !w.forest.gusts.is_empty();
+        }
+        assert_eq!(seen, (true, true, true), "firs, buzzards and gusts");
+    }
+
+    #[test]
+    fn flying_into_a_fir_costs_a_life() {
+        let mut w = in_the_forest();
+        let fir = Fir {
+            x: w.player.pos.x + 100.0,
+            top: 0.45,
+        };
+        w.forest = Forest::new(99);
+        w.forest.firs.push(fir);
+        let (_, top, _, _) = fir.parts(PHONE).trunk;
+        let (lost, _) = hold_in_forest(&mut w, top - 20.0, 2.0);
+        assert_eq!(lost, 1, "the fir is solid");
+    }
+
+    #[test]
+    fn a_diving_buzzard_that_hits_the_plane_costs_a_life() {
+        let mut w = in_the_forest();
+        let mut crashed = false;
+        for _ in 0..(30.0 / TICK_SECONDS) as u32 {
+            w.forest.firs.clear();
+            w.forest.gusts.clear();
+            w.lives = LIVES;
+            w.player.pos.y = 0.3 * PHONE.height;
+            w.player.vel_y = 0.0;
+            w.tick(&Input::NONE);
+            if w.events().contains(&Event::Crash) {
+                crashed = true;
+                assert!(w.forest.buzzards.iter().any(|b| b.is_down()));
+                break;
+            }
+        }
+        assert!(
+            crashed,
+            "a buzzard diving at a plane that does not move hits it"
+        );
+    }
+
+    #[test]
+    fn at_full_throttle_a_buzzard_still_circles_ahead_and_dives_at_the_plane() {
+        let mut w = in_the_forest();
+        let mut circled = 0;
+        let mut hits = 0;
+        for _ in 0..(60.0 / TICK_SECONDS) as u32 {
+            w.forest.firs.clear();
+            w.forest.gusts.clear();
+            w.lives = LIVES;
+            // As fast as it goes for good (any faster breaks it apart).
+            w.player.airspeed = OVERSPEED_AT - 0.01;
+            w.player.pos.y = 0.3 * PHONE.height;
+            w.player.vel_y = 0.0;
+            w.tick(&Input::NONE);
+            for b in &w.forest.buzzards {
+                if matches!(b.state, BuzzardState::Circling { .. }) {
+                    circled += 1;
+                    assert!(b.pos.x > w.player.pos.x + 100.0, "ahead: {b:?}");
+                }
+            }
+            hits += w.events().iter().filter(|e| **e == Event::Crash).count();
+            if w.landing.is_some() {
+                break;
+            }
+        }
+        assert!(circled > 0, "a buzzard came");
+        assert!(
+            hits > 0,
+            "and its dive still finds a plane that does not move"
+        );
+    }
+
+    #[test]
+    fn a_gust_presses_the_plane_down_but_costs_no_life() {
+        let mut w = in_the_forest();
+        let y = 0.3 * PHONE.height;
+        w.player.pos.y = y;
+        w.player.vel_y = 0.0;
+        w.forest.gusts.push(Gust {
+            x: w.player.pos.x + 40.0,
+            width: 100.0,
+            bottom: 0.7,
+            age: 0,
+        });
+        let lives = w.lives;
+        let mut rustled = 0;
+        for _ in 0..(0.6 / TICK_SECONDS) as u32 {
+            w.forest.firs.clear();
+            w.forest.buzzards.clear();
+            w.tick(&Input::NONE);
+            rustled += w
+                .events()
+                .iter()
+                .filter(|e| **e == Event::LeafRustle)
+                .count();
+        }
+        assert_eq!(w.lives, lives, "no life lost");
+        assert!(
+            w.player.pos.y > y + 15.0,
+            "pressed down: {} from {y}",
+            w.player.pos.y
+        );
+        assert_eq!(rustled, 1, "one rustle on the way in");
+    }
+
     /// Flying in level 4, past the takeoff, nothing on screen yet.
     fn in_the_sunrise() -> World {
         let mut w = World::with_seed(PHONE, 5);
@@ -3048,7 +3243,9 @@ mod tests {
                         | Event::BalloonBurst
                         | Event::HeliCrash
                         | Event::GooseHonk { .. }
-                        | Event::SteamHiss => {}
+                        | Event::SteamHiss
+                        | Event::BuzzardCry
+                        | Event::LeafRustle => {}
                         Event::GameOver => panic!("lives cannot run out"),
                         Event::Explosion => panic!("lives cannot run out"),
                         Event::Overspeed | Event::PullUp => panic!("no throttle given"),

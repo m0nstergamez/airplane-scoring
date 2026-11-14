@@ -211,6 +211,15 @@ flowchart LR
   they only come while no runway is on screen. `Sunrise::glare`
   (0..1, every 10–16 s for `GLARE_SECONDS`) tells the game how much to
   wash the screen in the light of the sun, which it draws at `SUN_AT`.
+- **The autumn forest** (`crates/core/src/forest.rs`, level 5,
+  `FOREST_LEVEL`): groups of one to three `Fir`s (`FIR_GROUP`), each its
+  own height, with `FOREST_ROOM` between groups; a `Buzzard` comes in from ahead,
+  above or below (`BuzzardFrom`, never from behind) every 3.5–12 s,
+  circles ahead of the plane for `BUZZARD_CIRCLE_SECONDS` and dives at where the plane is
+  then (`Event::BuzzardCry`), knocked down when hit; `Gust`s press the
+  plane down (`GUST_PUSH`, weaker than climbing, `Event::LeafRustle`),
+  no life lost; `Forest::fog` (0..1) tells the game how much to veil the
+  screen.
 - **Gulls** (`crates/core/src/gulls.rs`) are the beach's obstacles. Core
   decides when and where they appear (seeded, like the weather), moves
   them and checks the crash; a gull that calls sends a `GullCall` event,

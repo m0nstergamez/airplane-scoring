@@ -35,6 +35,10 @@ pub const BALLOON_BURNER_VOLUME: f32 = 0.35;
 pub const GOOSE_HONK_VOLUME: f32 = 0.35;
 /// Volume of the hiss when the plane flies into steam (level 4).
 pub const STEAM_VOLUME: f32 = 0.45;
+/// Volume of a buzzard's cry as it dives (level 5).
+pub const BUZZARD_VOLUME: f32 = 0.35;
+/// Volume of the leaves when the plane flies into a gust (level 5).
+pub const LEAVES_VOLUME: f32 = 0.45;
 /// Loudest the runway rumble gets (just before lift-off).
 pub const RUMBLE_VOLUME: f32 = 0.8;
 /// Volume of the landing gear folding up.

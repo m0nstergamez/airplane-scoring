@@ -298,6 +298,8 @@ mod tests {
                 | Event::HeliCrash
                 | Event::GooseHonk { .. }
                 | Event::SteamHiss
+                | Event::BuzzardCry
+                | Event::LeafRustle
                 | Event::GameOver
                 | Event::Explosion
                 | Event::Takeoff
