@@ -238,3 +238,23 @@ test("a time reads like the game's best times", () => {
   assert.equal(boardClock(5), "0:00.005");
   assert.equal(boardClock(600000), "10:00.000");
 });
+
+test("a level's list: the top, and your own place under it if you are not in it", () => {
+  const { boardRows } = load();
+  const top = [
+    { rank: 1, name: "Ada", millis: 61450, me: false },
+    { rank: 2, name: "Bo", millis: 62000, me: true },
+  ];
+  const plain = (rows) => JSON.parse(JSON.stringify(rows)); // out of the vm context
+  assert.deepEqual(plain(boardRows({ level: 4, pilots: 2, top, me: { rank: 2, name: "Bo", millis: 62000 } })), [
+    { left: "1. Ada", right: "1:01.450", me: false },
+    { left: "2. Bo", right: "1:02.000", me: true },
+  ], "in the top: not twice");
+  const below = boardRows({ level: 4, pilots: 30, top: [top[0]], me: { rank: 17, name: "Cy", millis: 90000 } });
+  assert.deepEqual(plain(below.at(-1)), { left: "17. Cy (you, of 30)", right: "1:30.000", me: true });
+  assert.deepEqual(plain(boardRows({ level: 5, pilots: 0, top: [], me: null })), [
+    { left: "No times yet. Be the first!", right: "", me: false },
+  ]);
+  // Names are other people's text: they stay text, the page never makes HTML of them.
+  assert.equal(boardRows({ level: 1, pilots: 1, top: [{ rank: 1, name: "<b>x</b>", millis: 1, me: false }], me: null })[0].left, "1. <b>x</b>");
+});

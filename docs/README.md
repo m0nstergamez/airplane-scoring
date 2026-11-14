@@ -962,6 +962,18 @@ that isn't code here. Keep entries short and dated.
   next level from every start level.
   The pause menu's Restart does the same; it has its own counter
   (`page_restart`), as "Menu" still starts in the map's level.
+- The leaderboard looked wrong on phones, reported ("only on level 2,
+  not on level 4"): the five lists did not fit a phone in landscape, so
+  level 5 was below the edge and level 3's last line was cut in half,
+  with no sign that the box scrolls. The times on the server were right
+  (checked in its database: the flight was level 5, the forest). The
+  panel now shows one level at a time, with a button per level
+  (named like on the map), and opens on the level flown last. Its rows
+  come from `boardRows` in `web/board.js`, tested.
+  - Also seen there: a time from a flight that started in level 1 is
+    much faster in level 4 than one that started in level 4, as the game
+    speeds up with every second flown (0:50.450 against 1:10.333). Not
+    changed yet.
 
 ## Concepts
 

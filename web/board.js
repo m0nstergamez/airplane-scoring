@@ -5,8 +5,9 @@
 // shows the lists. No server, or it cannot be reached: flights are just
 // not ranked.
 //
-// No DOM here, and the only globals are the two functions it defines
-// (`createBoard`, `boardClock`; a plain script, index.html calls them).
+// No DOM here, and the only globals are the functions it defines
+// (`createBoard`, `boardClock`, `boardRows`; a plain script, index.html
+// calls them).
 // What it needs comes in as `env`, so tests/web/board.test.mjs runs it in
 // Node with a fake server. index.html makes one with the real fetch and
 // localStorage.
@@ -161,4 +162,17 @@ function createBoard(env) {
 function boardClock(millis) {
   const seconds = Math.floor(millis / 1000);
   return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}.${String(millis % 1000).padStart(3, "0")}`;
+}
+
+// The rows of one level's list on the start screen, as { left, right, me }:
+// the top, or a note that nobody has a time yet, and under it the pilot's
+// own place if it is not in the top.
+function boardRows(b) {
+  const rows = b.top.map((e) => ({ left: `${e.rank}. ${e.name}`, right: boardClock(e.millis), me: Boolean(e.me) }));
+  if (!rows.length) rows.push({ left: "No times yet. Be the first!", right: "", me: false });
+  const me = b.me;
+  if (me && me.rank && !b.top.some((e) => e.me)) {
+    rows.push({ left: `${me.rank}. ${me.name} (you, of ${b.pilots})`, right: boardClock(me.millis), me: true });
+  }
+  return rows;
 }
