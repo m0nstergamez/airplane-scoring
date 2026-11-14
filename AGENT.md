@@ -78,6 +78,8 @@ Visual checks:
 
 ## Git & PRs
 - Work goes through branches + PRs; never push to `main`. CI must be green.
+- **After every PR, run `/code-review`** on it and report what it found
+  (fix real findings on the same branch before the merge).
 - **No attribution trailers.** Never add `Co-Authored-By:` lines to commit
   messages, and never add "Generated with Claude Code" / 🤖 lines (or any
   other tool attribution) to PR descriptions or comments. This overrides
