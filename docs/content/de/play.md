@@ -142,7 +142,7 @@ desto später und leiser der Donner.
 
 Berührst du einen Heissluftballon, eine Startrampe oder eine Hütte
 (Level 1), eine Möwe oder einen Strandturm (Level 2) oder ein Hochhaus,
-einen Kran oder einen Helikopter (Level 3) oder eine Gans (Level 4), gibt es einen
+einen Kran oder einen Helikopter (Level 3) oder eine Gans oder ein Haus (Level 4), gibt es einen
 **Zusammenstoss**.
 Nur eine echte Berührung zählt: Ganz knapp vorbeifliegen oder durch die
 Lücke neben einem Dach ist erlaubt. Beim Zusammenstoss
@@ -288,7 +288,7 @@ nach dem anderen und mit Platz dazwischen:
   explodiert er mit einem Knall und stürzt ab, und du verlierst ein
   Leben.
 
-Am Strand und in der Stadt (Level 2 und 3) sind die Bahnen
+Am Strand, in der Stadt und beim Sonnenaufgang (Level 2 bis 4) sind die Bahnen
 **beleuchtet**: Lichter an beiden Rändern und auf der Mittellinie, grün
 am Anfang und rot am Ende, damit du sie in der Dämmerung und im Dunkeln
 siehst.
@@ -297,13 +297,17 @@ Beim **Sonnenaufgang** (Level 4) fliegst du der tiefen Sonne entgegen,
 über einen dunklen Wald und ein Tal im Morgendunst:
 
 - **Gänse** kommen dir in einem **V** entgegen, schnell, alle paar
-  Sekunden, und schnattern. Das V zielt auf deine Höhe: Seine Spitze
+  Sekunden. Jede Schar ruft, wenn sie kommt, nie zweimal gleich
+  hintereinander: Schnattern, Rufen von weiter weg, schnelles Geplapper
+  oder ein Krähen-«Kraah». Das V zielt auf deine Höhe: Seine Spitze
   oder einer seiner Flügel ist dort, wo du bist. Flieg über oder unter
   dem ganzen V durch. Fliegst du in eine Gans, verlierst du ein Leben,
   und die Gans stürzt ab.
-- **Dampf** steigt aus Kaminen im Tal. Durch ihn durchzufliegen kostet
-  kein Leben, aber die warme Luft wirft dein Flugzeug zischend nach
-  oben. Fang es wieder auf, bevor das nächste V kommt.
+- **Häuser** mit einem Kamin stehen im Tal, kleiner als die Hochhäuser
+  in der Stadt, und aus dem Kamin steigt **Dampf**. In ein Haus zu
+  fliegen kostet ein Leben. Durch den Dampf durchzufliegen kostet kein
+  Leben, aber die warme Luft wirft dein Flugzeug zischend nach oben.
+  Fang es wieder auf, bevor das nächste V kommt.
 - Ab und zu **blendet** dich die tiefe Sonne kurz: Der Bildschirm wird
   hell, und du siehst schlechter, was kommt.
 
@@ -315,11 +319,11 @@ Beim **Sonnenaufgang** (Level 4) fliegst du der tiefen Sonne entgegen,
 | Wind | Immer. Lauter bei Regen, in Böen und wenn du sinkst. |
 | Regen | Solange es regnet (erst in späteren Levels). Je stärker der Regen, desto lauter. |
 | Donner | Einen Moment nach jedem Blitz (erst in späteren Levels). |
-| Zusammenstoss | Wenn du einen Ballon, eine Startrampe, eine Hütte, eine Möwe, einen Strandturm, ein Hochhaus, einen Kran oder eine Gans berührst. |
+| Zusammenstoss | Wenn du einen Ballon, eine Startrampe, eine Hütte, eine Möwe, einen Strandturm, ein Hochhaus, einen Kran, eine Gans oder ein Haus berührst. |
 | Brenner | Wenn ein Heissluftballon auftaucht oder abhebt (Level 1). |
 | Wellen | Am Strand (Level 2). Sie werden mit der Landschaft ein- und ausgeblendet. |
 | Möwe | Wenn eine Möwe auftaucht. Möwen von hinten rufen immer. |
-| Gänse | Wenn ein V Gänse auftaucht (Level 4): Schnattern. |
+| Gänse | Wenn ein V Gänse auftaucht (Level 4): Schnattern, Rufe von weiter weg, Geplapper oder eine Krähe, nie zweimal gleich hintereinander. |
 | Dampf | Wenn du in Dampf fliegst (Level 4): ein rauschendes Zischen. |
 | Melodie | Wenn du gelandet bist und ein Level geschafft ist. |
 | Start | Beim Rollen auf der Startbahn: Das Triebwerk dreht hoch, die Räder rumpeln, bis das Flugzeug abhebt. |

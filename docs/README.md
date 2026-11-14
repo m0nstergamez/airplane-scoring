@@ -765,6 +765,13 @@ that isn't code here. Keep entries short and dated.
   - New sounds from `scripts/make-sounds.py`: `goose-honk.wav` (honks
     with strong odd overtones, like a reed) and `steam.wav`.
   - The golden "NEW" moved to level 4 on the level map.
+  - After the first flight, asked for: the runways are lit in level 4
+    too; the photo's high-rise is out of the background (the image
+    repeats, so it stood by every runway); the steam now rises from the
+    chimneys of small houses (solid, smaller than the town's high-rises);
+    the flocks call in four ways (`GOOSE_CALLS`: honking, far off,
+    chattering, a crow), never the same twice in a row, since one call
+    over and over got on your nerves.
 
 ## Concepts
 

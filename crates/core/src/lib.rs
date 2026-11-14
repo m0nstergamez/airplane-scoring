@@ -67,8 +67,8 @@ pub use sound::{
     STEAM_VOLUME, TAKEOFF_VOLUME, VOICE_VOLUME, WARNING_VOLUME, WIND_VOLUME,
 };
 pub use sunrise::{
-    Goose, Steam, Sunrise, GLARE_SECONDS, GOOSE_GAP_SECONDS, STEAM_LIFT, SUNRISE_LEVEL, SUN_AT,
-    SUN_RADIUS,
+    Goose, HouseParts, Steam, Sunrise, GLARE_SECONDS, GOOSE_CALLS, GOOSE_GAP_SECONDS, STEAM_LIFT,
+    SUNRISE_LEVEL, SUN_AT, SUN_RADIUS,
 };
 pub use tilt::{
     Tilt, LEAN_DEAD_ZONE_DEG, LEAN_FULL_DEG, TILT_DEAD_ZONE_DEG, TILT_FULL_DEG, TILT_MIN_GRAVITY,
@@ -232,8 +232,9 @@ pub enum Event {
     GearDown,
     /// A gull calls as it appears.
     GullCall,
-    /// A V of geese honks as it appears (level 4).
-    GooseHonk,
+    /// A V of geese calls as it appears (level 4): one of
+    /// [`GOOSE_CALLS`] calls, never the same twice in a row.
+    GooseHonk { call: u8 },
     /// The plane flies into a column of steam: a rushing hiss as it is
     /// thrown up (level 4).
     SteamHiss,
@@ -1189,6 +1190,8 @@ impl World {
         } else {
             Vec::new()
         };
+        // The houses under the steam are solid.
+        let house = (self.sunrise.steam.iter()).any(|c| hits(&c.house_shape(bounds)));
         // Steam costs no life: the warm air throws the plane up.
         let in_steam = open && self.sunrise.in_steam(bounds, &me);
         // Helicopters too (parked on a roof or flying): one the plane
@@ -1213,6 +1216,7 @@ impl World {
         }) || !struck.is_empty()
             || !burst.is_empty()
             || !geese.is_empty()
+            || house
             || !roof_helis.is_empty()
             || !flyers.is_empty()
             || (self.balloons.pads.iter()).any(|p| hits(&p.shape(bounds)))
@@ -2260,8 +2264,13 @@ mod tests {
     }
 
     #[test]
-    fn the_runways_are_lit_at_sunset_and_at_night() {
-        for (level, lit) in [(1, false), (BEACH_LEVEL, true), (CITY_LEVEL, true)] {
+    fn the_runways_are_lit_at_sunset_at_night_and_at_sunrise() {
+        for (level, lit) in [
+            (1, false),
+            (BEACH_LEVEL, true),
+            (CITY_LEVEL, true),
+            (SUNRISE_LEVEL, true),
+        ] {
             let mut w = world();
             w.start_level = level;
             assert_eq!(w.runway_lit(), lit, "level {level}");
@@ -2810,6 +2819,28 @@ mod tests {
     }
 
     #[test]
+    fn flying_into_a_house_under_the_steam_costs_a_life() {
+        let mut w = in_the_sunrise();
+        w.sunrise.steam.push(Steam {
+            x: w.player.pos.x + 80.0,
+            width: 50.0,
+            top: 0.4,
+            house: (70.0, 45.0),
+            age: 0,
+        });
+        let (_, top, _, h) = w.sunrise.steam[0].house_parts(PHONE).walls;
+        let y = top + h / 2.0;
+        let lives = w.lives;
+        for _ in 0..(2.0 / TICK_SECONDS) as u32 {
+            w.sunrise.geese.clear();
+            w.player.pos.y = y;
+            w.player.vel_y = 0.0;
+            w.tick(&Input::NONE);
+        }
+        assert_eq!(w.lives, lives - 1, "the house is solid");
+    }
+
+    #[test]
     fn steam_throws_the_plane_up_but_costs_no_life() {
         let mut w = in_the_sunrise();
         let y = 0.6 * PHONE.height;
@@ -2819,6 +2850,7 @@ mod tests {
             x: w.player.pos.x + 40.0,
             width: 60.0,
             top: 0.3,
+            house: (70.0, 45.0),
             age: 0,
         });
         let lives = w.lives;
@@ -2970,7 +3002,7 @@ mod tests {
                         | Event::BalloonBurner
                         | Event::BalloonBurst
                         | Event::HeliCrash
-                        | Event::GooseHonk
+                        | Event::GooseHonk { .. }
                         | Event::SteamHiss => {}
                         Event::GameOver => panic!("lives cannot run out"),
                         Event::Explosion => panic!("lives cannot run out"),

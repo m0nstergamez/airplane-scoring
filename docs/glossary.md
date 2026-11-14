@@ -87,7 +87,8 @@ short **meaning**.
 | Helikopter | helicopter | `Heli`, `HeliState`, `FlyingHeli` | Level 3: on some high-rises (takes off or lands far ahead; parked, fly over it) and flying at the plane at its height; hit, it explodes |
 | Sonnenaufgang | sunrise | `Sunrise`, `SUNRISE_LEVEL` | Level 4: flying toward the low sun over a forest and a hazy valley |
 | Gans, V | goose, V | `Goose` | Level 4: geese come at the plane in a V aimed at its height; an obstacle, knocked down when hit |
-| Dampf, Dampfsäule | steam, column of steam | `Steam`, `STEAM_LIFT` | Level 4: rises from chimneys in the valley; throws the plane up, costs no life |
+| Dampf, Dampfsäule | steam, column of steam | `Steam`, `STEAM_LIFT` | Level 4: rises from a house's chimney in the valley; throws the plane up, costs no life |
+| Haus, Kamin | house, chimney | `Steam::house_parts`, `HOUSE_WIDTH`, `CHIMNEY` | Level 4: small houses in the valley with a chimney the steam rises from; an obstacle |
 | Blendung | glare | `Sunrise::glare`, `SUN_AT` | Level 4: the low sun blinds you for a moment; the screen washes out |
 | Wrack | wreck | `Wreck` | A helicopter the plane flew into: it falls, burning, and is no obstacle any more |
 | Ausleger | jib | `Crane`, `JIB_TOP` | The crane's long arm, on top of its mast |

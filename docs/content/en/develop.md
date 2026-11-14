@@ -199,9 +199,11 @@ flowchart LR
 - **The sunrise** (`crates/core/src/sunrise.rs`, level 4,
   `SUNRISE_LEVEL`): every 3–5 s (`GOOSE_GAP_SECONDS`) a V of geese
   comes at the plane, its tip or an arm at the plane's height
-  (`Goose::shape`, knocked down like gulls, `Event::GooseHonk`). Columns
-  of `Steam` rise from the ground; inside one the plane is pushed up
-  (`STEAM_LIFT`, `Event::SteamHiss`), no life lost. `Sunrise::glare`
+  (`Goose::shape`, knocked down like gulls, `Event::GooseHonk` with one of
+  `GOOSE_CALLS` calls, never the same twice in a row). Each `Steam` is a
+  small house (`house_shape`, solid) with a column rising from its
+  chimney; inside the column the plane is pushed up (`STEAM_LIFT`,
+  `Event::SteamHiss`), no life lost. `Sunrise::glare`
   (0..1, every 10–16 s for `GLARE_SECONDS`) tells the game how much to
   wash the screen in the light of the sun, which it draws at `SUN_AT`.
 - **Gulls** (`crates/core/src/gulls.rs`) are the beach's obstacles. Core

@@ -136,7 +136,7 @@ quieter the thunder.
 
 If you touch a hot-air balloon, a launch pad or a hut (level 1) or a
 gull or a lifeguard tower (level 2) or a high-rise, a crane or a
-helicopter (level 3) or a goose (level 4), you **crash**. Only a real touch counts: flying past very
+helicopter (level 3) or a goose or a house (level 4), you **crash**. Only a real touch counts: flying past very
 closely, or through the gap beside a roof, is fine. In a crash your plane smokes, falls
 and ignores the controls for a moment (1.5 seconds). Then you fly again.
 
@@ -270,20 +270,24 @@ time with room between them:
   you fly into a helicopter, parked or flying, it explodes with a bang
   and falls, and you lose a life.
 
-At the beach and in the town (levels 2 and 3) the runways are **lit**:
+At the beach, in the town and at sunrise (levels 2 to 4) the runways are **lit**:
 lights along both edges and on the centre line, green at the start and
 red at the end, so you see them in the dusk and the dark.
 
 At **sunrise** (level 4) you fly toward the low sun, over a dark forest
 and a valley in the morning haze:
 
-- **Geese** come at you in a **V**, fast, every few seconds, honking.
+- **Geese** come at you in a **V**, fast, every few seconds. Each flock
+  calls as it comes, never twice the same way in a row: honking, far
+  off, chattering, or a crow's "kraah".
   The V is aimed at your height: its tip or one of its arms is where you
   are. Fly over or under the whole V. If you fly into a goose, you lose a
   life and the goose tumbles down.
-- **Steam** rises from chimneys in the valley. Flying through it costs
-  no life, but the warm air throws your plane up with a hiss. Catch it
-  again before the next V comes.
+- **Houses** with a chimney stand in the valley, smaller than the
+  high-rises in the town, and **steam** rises from the chimney. Flying
+  into a house costs a life. Flying through the steam costs no life, but
+  the warm air throws your plane up with a hiss. Catch it again before
+  the next V comes.
 - Now and then the low sun **blinds** you for a moment: the screen
   washes out in its light, and you see what comes less well.
 
@@ -295,11 +299,11 @@ and a valley in the morning haze:
 | Wind | Always. Louder in rain, in gusts and when you dive. |
 | Rain | While it rains (only in later levels). Louder the harder it rains. |
 | Thunder | A moment after each lightning (only in later levels). |
-| Crash | When you touch a balloon, a launch pad, a hut, a gull, a lifeguard tower, a high-rise, a crane or a goose. |
+| Crash | When you touch a balloon, a launch pad, a hut, a gull, a lifeguard tower, a high-rise, a crane, a goose or a house. |
 | Burner | When a hot-air balloon appears or takes off (level 1). |
 | Waves | At the beach (level 2). They fade in and out with the landscape. |
 | Gull | When a gull appears. Gulls from behind always call. |
-| Geese | When a V of geese appears (level 4): honking. |
+| Geese | When a V of geese appears (level 4): honking, far-off calls, chattering or a crow, never the same twice in a row. |
 | Steam | When you fly into steam (level 4): a rushing hiss. |
 | Tune | When you have landed and a level is complete. |
 | Takeoff | Rolling down the runway: the engine spools up and the wheels rumble until the plane lifts off. |

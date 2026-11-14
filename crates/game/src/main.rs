@@ -1115,15 +1115,8 @@ fn draw_steam(c: &Steam, bounds: Bounds) {
     let s = bounds.scale();
     let (l, t, w, h) = c.rect(bounds);
     let cx = l + w / 2.0;
-    let ground = t + h;
-    draw_rectangle(
-        cx - 5.0 * s,
-        ground - 14.0 * s,
-        10.0 * s,
-        14.0 * s,
-        Color::from_rgba(70, 50, 40, 255),
-    );
-    // Billows rise through the column, round and round.
+    let ground = t + h; // the chimney's top
+                        // Billows rise through the column, round and round.
     let rise = c.age as f32 * TICK_SECONDS * 40.0 * s;
     let step = 16.0 * s;
     let count = (h / step).ceil() as i32 + 1;
@@ -1138,6 +1131,59 @@ fn draw_steam(c: &Steam, bounds: Bounds) {
         let alpha = 0.5 * (1.0 - up * 0.7);
         draw_circle(cx + sway, y, r, Color::new(1.0, 0.96, 0.92, alpha));
     }
+    draw_house(c, bounds);
+}
+
+/// The small house under a column of steam (core's `Steam::house_parts`):
+/// dark walls in the shade with a few warm windows, a pitched roof lit
+/// orange along its edge by the sun, and the brick chimney.
+fn draw_house(c: &Steam, bounds: Bounds) {
+    let s = bounds.scale();
+    let p = c.house_parts(bounds);
+    let (l, t, w, h) = p.walls;
+    draw_rectangle(l, t, w, h, Color::from_rgba(58, 40, 30, 255));
+    // Windows: two rows, some lit.
+    let lit = Color::from_rgba(255, 196, 110, 255);
+    let dark = Color::from_rgba(36, 26, 22, 255);
+    let (ww, wh) = (8.0 * s, 7.0 * s);
+    let cols = ((w / (16.0 * s)) as i32).max(2);
+    for row in 0..2 {
+        let y = t + h * (0.25 + 0.4 * row as f32);
+        for col in 0..cols {
+            let x = l + (col as f32 + 0.5) * w / cols as f32 - ww / 2.0;
+            let on = (col * 7 + row * 3 + (c.house.0 as i32)) % 3 == 0;
+            draw_rectangle(x, y, ww, wh, if on { lit } else { dark });
+        }
+    }
+    let (cl, ct, cw, ch) = p.chimney;
+    draw_rectangle(cl, ct, cw, ch, Color::from_rgba(120, 58, 40, 255));
+    draw_rectangle(
+        cl - 1.0 * s,
+        ct,
+        cw + 2.0 * s,
+        3.0 * s,
+        Color::from_rgba(80, 40, 30, 255),
+    );
+    let roof = Color::from_rgba(92, 46, 34, 255);
+    draw_triangle(
+        vec2(l - 3.0 * s, t),
+        vec2(p.ridge.x, p.ridge.y),
+        vec2(l + w + 3.0 * s, t),
+        roof,
+    );
+    // The sun catches the roof's edge.
+    let edge = Color::from_rgba(255, 170, 80, 200);
+    draw_line(l - 3.0 * s, t, p.ridge.x, p.ridge.y, 2.0 * s, edge);
+    draw_line(
+        p.ridge.x,
+        p.ridge.y,
+        l + w + 3.0 * s,
+        t,
+        1.5 * s,
+        Color::new(1.0, 0.67, 0.31, 0.45),
+    );
+    // (The chimney in front of the roof.)
+    draw_rectangle(cl, ct, cw, ch * 0.6, Color::from_rgba(120, 58, 40, 255));
 }
 
 /// A goose flying left (core's `Goose::shape`): grey-brown body, a long

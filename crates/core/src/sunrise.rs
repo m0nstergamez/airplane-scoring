@@ -3,12 +3,15 @@
 //! * **Geese** come at the plane in a V, fast, every few seconds
 //!   ([`GOOSE_GAP_SECONDS`]). The V is aimed at the plane's height: its
 //!   tip or one of its arms is where the plane is, so fly over or under
-//!   the whole V. They honk as they appear. Fly into one and you crash;
+//!   the whole V. Each flock calls as it appears, never twice the same
+//!   way in a row ([`GOOSE_CALLS`]). Fly into one and you crash;
 //!   the goose is knocked down and tumbles to the ground.
-//! * **Steam** rises from chimneys in the valley: a column from the
-//!   ground up to some height, sliding past with the ground. Flying
-//!   through it costs no life, but the warm air throws the plane up
-//!   ([`STEAM_LIFT`]) and shakes it, so you have to catch it again.
+//! * **Steam** rises from the chimney of a house in the valley: a column
+//!   from the chimney up to some height, sliding past with the ground.
+//!   Flying through it costs no life, but the warm air throws the plane
+//!   up ([`STEAM_LIFT`]), so you have to catch it again. The house is
+//!   small (smaller than the town's high-rises) but solid: flying into it
+//!   is a crash.
 //! * **Glare**: now and then the low sun ahead blinds you for a moment
 //!   ([`GLARE_SECONDS`]); the game washes the screen in its light.
 //!
@@ -41,6 +44,9 @@ pub const GOOSE_ARM: (u32, u32) = (2, 3);
 /// The step from one goose to the next along an arm: back (right) and
 /// out (up or down), in px.
 pub const GOOSE_STEP: (f32, f32) = (24.0, 15.0);
+/// How many different calls a flock can make as it appears (the game
+/// has one sound for each; see `Event::GooseHonk`).
+pub const GOOSE_CALLS: u8 = 4;
 /// A goose's half length and half height (its body), in px.
 pub const GOOSE_BODY: (f32, f32) = (11.0, 4.5);
 
@@ -58,9 +64,16 @@ pub const FIRST_STEAM_SECONDS: f32 = 4.0;
 /// fraction of the screen height from the top).
 pub const STEAM_WIDTH: (f32, f32) = (40.0, 64.0);
 pub const STEAM_TOP: (f32, f32) = (0.3, 0.55);
-/// Where the chimneys stand: the ground line, as a fraction of the
-/// screen height from the top.
+/// Where the houses stand: the ground line, as a fraction of the screen
+/// height from the top.
 pub const STEAM_GROUND: f32 = crate::huts::HUT_GROUND;
+/// A house under a column of steam: its width and its walls' height,
+/// narrowest and widest, lowest and highest, in px; its roof's height,
+/// and the chimney (width, how far it sticks out over the roof).
+pub const HOUSE_WIDTH: (f32, f32) = (56.0, 84.0);
+pub const HOUSE_HEIGHT: (f32, f32) = (34.0, 56.0);
+pub const HOUSE_ROOF: f32 = 16.0;
+pub const CHIMNEY: (f32, f32) = (9.0, 16.0);
 /// How hard the warm air throws the plane up while it is in a column,
 /// in px per second, each second (at scale 1).
 pub const STEAM_LIFT: f32 = 900.0;
@@ -168,32 +181,89 @@ impl Goose {
     }
 }
 
-/// A column of steam rising from a chimney in the valley.
+/// A house in the valley with a column of steam rising from its
+/// chimney.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Steam {
-    /// Its middle on screen, in px.
+    /// The chimney's (and the column's) middle on screen, in px.
     pub x: f32,
-    /// Its width in px at scale 1.
+    /// The column's width in px at scale 1.
     pub width: f32,
-    /// Its top, as a fraction of the screen height.
+    /// The column's top, as a fraction of the screen height.
     pub top: f32,
+    /// The house: width and walls' height, in px at scale 1.
+    pub house: (f32, f32),
     /// Ticks since it appeared (for the drawn billows).
     pub age: u32,
 }
 
+/// Where a house's parts are on screen, in px.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct HouseParts {
+    /// The walls: left, top, width, height.
+    pub walls: (f32, f32, f32, f32),
+    /// The roof's ridge (its top point); the roof runs from the walls'
+    /// top corners up to it.
+    pub ridge: Vec2,
+    /// The chimney: left, top, width, height (from the roof's line up).
+    pub chimney: (f32, f32, f32, f32),
+}
+
 impl Steam {
-    /// Where it is: left, top, width, height, in px (down to the ground).
+    /// Where the house is on this screen. The chimney stands on the
+    /// house's left (front) half of the roof.
+    pub fn house_parts(&self, bounds: Bounds) -> HouseParts {
+        let s = bounds.scale();
+        let ground = STEAM_GROUND * bounds.height;
+        let (w, h) = (self.house.0 * s, self.house.1 * s);
+        let left = self.x - 0.3 * w;
+        let top = ground - h;
+        let (cw, ch) = (CHIMNEY.0 * s, CHIMNEY.1 * s);
+        // The chimney rises from the roof's slope to above the ridge.
+        let roof = HOUSE_ROOF * s;
+        let chimney_top = top - roof - ch + roof * 0.4;
+        HouseParts {
+            walls: (left, top, w, h),
+            ridge: Vec2::new(left + w / 2.0, top - roof),
+            chimney: (self.x - cw / 2.0, chimney_top, cw, top - chimney_top),
+        }
+    }
+
+    /// The house as drawn, for crashing: walls, roof and chimney.
+    pub fn house_shape(&self, bounds: Bounds) -> Vec<Poly> {
+        let p = self.house_parts(bounds);
+        let (l, t, w, h) = p.walls;
+        let (cl, ct, cw, ch) = p.chimney;
+        vec![
+            Poly::rect(l, t, w, h),
+            Poly::at(
+                Vec2::new(0.0, 0.0),
+                1.0,
+                &[(l, t), (p.ridge.x, p.ridge.y), (l + w, t)],
+            ),
+            Poly::rect(cl, ct, cw, ch),
+        ]
+    }
+
+    /// Where the column is: left, top, width, height, in px (from its top
+    /// down to the chimney).
     pub fn rect(&self, bounds: Bounds) -> (f32, f32, f32, f32) {
         let w = self.width * bounds.scale();
         let top = self.top * bounds.height;
-        let ground = STEAM_GROUND * bounds.height;
-        (self.x - w / 2.0, top, w, ground - top)
+        let chimney = self.house_parts(bounds).chimney.1;
+        (self.x - w / 2.0, top, w, (chimney - top).max(0.0))
     }
 
     /// The column, for finding out if the plane is in it.
     pub fn shape(&self, bounds: Bounds) -> Poly {
         let (l, t, w, h) = self.rect(bounds);
         Poly::rect(l, t, w, h)
+    }
+
+    fn right(&self, bounds: Bounds) -> f32 {
+        let (l, _, w, _) = self.house_parts(bounds).walls;
+        let (cl, _, cw, _) = self.rect(bounds);
+        (l + w).max(cl + cw)
     }
 }
 
@@ -209,6 +279,8 @@ pub struct Sunrise {
     next_goose: u32,
     next_steam: u32,
     next_glare: u32,
+    /// The last flock's call, so the next one sounds different.
+    last_call: u8,
     rng: Rng,
 }
 
@@ -221,6 +293,7 @@ impl Sunrise {
             next_goose: ticks(FIRST_GOOSE_SECONDS),
             next_steam: ticks(FIRST_STEAM_SECONDS),
             next_glare: ticks(FIRST_GLARE_SECONDS),
+            last_call: 0,
             // Its own stream, so the morning does not change other things.
             rng: Rng::new(seed ^ 0x5A2A_15E0_0000_0004),
         }
@@ -268,7 +341,7 @@ impl Sunrise {
             c.x += dx;
             c.age += 1;
         }
-        self.steam.retain(|c| c.x + c.width * s > -MARGIN * s);
+        self.steam.retain(|c| c.right(bounds) > -MARGIN * s);
         if let Some(t) = &mut self.glare {
             *t += 1;
             if *t >= ticks(GLARE_SECONDS) {
@@ -286,17 +359,26 @@ impl Sunrise {
         self.next_goose -= 1;
         if self.next_goose == 0 {
             self.spawn_flock(bounds, plane_y);
-            events.push(Event::GooseHonk);
+            // Another call than the last one.
+            let other = (self.rng.unit() * (GOOSE_CALLS - 1) as f32) as u8 % (GOOSE_CALLS - 1);
+            let call = (self.last_call + 1 + other) % GOOSE_CALLS;
+            self.last_call = call;
+            events.push(Event::GooseHonk { call });
             self.next_goose = ticks(self.rng.range(GOOSE_GAP_SECONDS.0, GOOSE_GAP_SECONDS.1));
         }
         self.next_steam -= 1;
         if self.next_steam == 0 {
             let r = &mut self.rng;
             let width = r.range(STEAM_WIDTH.0, STEAM_WIDTH.1);
+            let house = (
+                r.range(HOUSE_WIDTH.0, HOUSE_WIDTH.1),
+                r.range(HOUSE_HEIGHT.0, HOUSE_HEIGHT.1),
+            );
             self.steam.push(Steam {
-                x: bounds.width + width * s,
+                x: bounds.width + (width + house.0) * s,
                 width,
                 top: r.range(STEAM_TOP.0, STEAM_TOP.1),
+                house,
                 age: 0,
             });
             self.next_steam = ticks(r.range(STEAM_GAP_SECONDS.0, STEAM_GAP_SECONDS.1));
@@ -410,7 +492,24 @@ mod tests {
         }
         let mut m = Sunrise::new(2);
         let events = run(&mut m, 20.0, true, 200.0);
-        assert!(events.iter().filter(|e| **e == Event::GooseHonk).count() >= 3);
+        let calls: Vec<u8> = (events.iter())
+            .filter_map(|e| match e {
+                Event::GooseHonk { call } => Some(*call),
+                _ => None,
+            })
+            .collect();
+        assert!(calls.len() >= 3);
+        for pair in calls.windows(2) {
+            assert_ne!(pair[0], pair[1], "never the same call twice in a row");
+        }
+        let mut m = Sunrise::new(2);
+        let events = run(&mut m, 300.0, true, 200.0);
+        for c in 0..GOOSE_CALLS {
+            assert!(
+                events.contains(&Event::GooseHonk { call: c }),
+                "call {c} is heard"
+            );
+        }
     }
 
     #[test]
@@ -468,16 +567,22 @@ mod tests {
     }
 
     #[test]
-    fn steam_rises_from_the_ground_and_slides_off_with_it() {
+    fn steam_rises_from_a_houses_chimney_and_slides_off_with_the_ground() {
         let mut m = Sunrise::new(4);
         run(&mut m, FIRST_STEAM_SECONDS + 0.1, true, 200.0);
         assert_eq!(m.steam.len(), 1);
-        let (l, t, w, h) = m.steam[0].rect(PHONE);
-        assert!(l > PHONE.width - w, "from the right edge");
+        let c = m.steam[0];
+        let (l, t, _, h) = c.rect(PHONE);
+        let house = c.house_parts(PHONE);
+        assert!(house.walls.0 > PHONE.width, "from off the right edge");
+        assert!(l > PHONE.width, "from off the right edge");
+        assert!((t + h - house.chimney.1).abs() < 0.01, "out of the chimney");
+        let (_, wt, _, wh) = house.walls;
         assert!(
-            (t + h - STEAM_GROUND * PHONE.height).abs() < 0.01,
+            (wt + wh - STEAM_GROUND * PHONE.height).abs() < 0.01,
             "on the ground"
         );
+        assert!(house.chimney.1 > 0.7 * PHONE.height, "a small house");
         assert!(t > 0.25 * PHONE.height, "room above it");
         let x = m.steam[0].x;
         run(&mut m, 1.0, false, 200.0);
@@ -487,6 +592,28 @@ mod tests {
         );
         run(&mut m, 20.0, false, 200.0);
         assert!(m.steam.is_empty());
+    }
+
+    #[test]
+    fn the_house_is_solid_the_steam_is_not() {
+        let c = Steam {
+            x: 400.0,
+            width: 50.0,
+            top: 0.4,
+            house: (70.0, 45.0),
+            age: 0,
+        };
+        let house = c.house_shape(PHONE);
+        let hit = |x: f32, y: f32| any_overlap(&house, &[Poly::rect(x - 1.0, y - 1.0, 2.0, 2.0)]);
+        let p = c.house_parts(PHONE);
+        let (l, t, w, h) = p.walls;
+        assert!(hit(l + w / 2.0, t + h / 2.0), "the walls");
+        assert!(hit(p.ridge.x, p.ridge.y + 3.0), "the roof");
+        let (cl, ct, cw, _) = p.chimney;
+        assert!(hit(cl + cw / 2.0, ct + 2.0), "the chimney");
+        assert!(!hit(l - 4.0, t + 5.0), "beside it");
+        let (sl, st, sw, sh) = c.rect(PHONE);
+        assert!(!hit(sl + sw / 2.0, st + sh / 2.0), "the steam is no wall");
     }
 
     #[test]

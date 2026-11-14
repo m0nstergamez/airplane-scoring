@@ -845,6 +845,14 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
   - Neue Töne aus `scripts/make-sounds.py`: `goose-honk.wav` (Rufe mit
     starken ungeraden Obertönen, wie ein Rohrblatt) und `steam.wav`.
   - Das goldene «NEW» ist auf der Level-Karte zu Level 4 gewandert.
+  - Nach dem ersten Flug gewünscht: Die Bahnen sind auch in Level 4
+    beleuchtet; das Hochhaus vom Foto ist aus dem Hintergrund raus (das
+    Bild wiederholt sich, also stand es bei jeder Bahn); der Dampf steigt
+    jetzt aus den Kaminen kleiner Häuser (fest, kleiner als die
+    Hochhäuser der Stadt); die Scharen rufen auf vier Arten
+    (`GOOSE_CALLS`: Schnattern, von weiter weg, Geplapper, eine Krähe),
+    nie zweimal gleich hintereinander, weil immer derselbe Ruf genervt
+    hat.
 
 ## Konzepte
 
