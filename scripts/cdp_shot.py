@@ -246,6 +246,7 @@ def main():
             r = dt.call("Runtime.evaluate", expression=show, returnByValue=True)
             dt.lines.append("eval: {}".format(r.get("result", {}).get("value")))
         shot = dt.call("Page.captureScreenshot", format="png")
+        os.makedirs(os.path.dirname(out) or ".", exist_ok=True)
         with open(out, "wb") as f:
             f.write(base64.b64decode(shot["data"]))
         # One line per message (stack traces joined), so shot.sh can filter
