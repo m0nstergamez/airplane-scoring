@@ -11,9 +11,7 @@ anything:
 - `POST /v1/players` needs no token and has no limit. A script can create
   pilots in a loop and fill the 1 GB Fly volume.
 - Every page load creates one run per level (`getSeed` for each level in
-  the board script in `web/index.html`), plus one more each time
-  `Board::frame` takes a seed while the start screen shows
-  (`crates/game/src/board.rs`). Most of these runs are never flown.
+  `web/board.js`). Most of these runs are never flown.
   Nothing deletes them.
 - `POST /v1/runs/{id}/replay` flies the whole replay again on every call
   (`spawn_blocking`, no bound). The same replay can be sent again and

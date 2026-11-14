@@ -9,8 +9,8 @@ A flight is decided by its seed and the inputs. Today the seed is known
 long before the flight:
 
 - The page fetches a run (and with it the seed) for every level when it
-  loads, and keeps it up to 12 hours (`SEED_MAX_AGE_MS` in the board
-  script, `web/index.html`). The server accepts it for 24 hours
+  loads, and keeps it up to 12 hours (`SEED_MAX_AGE_MS` in
+  `web/board.js`). The server accepts it for 24 hours
   (`RUN_MAX_AGE_MS`, `crates/server/src/lib.rs`).
 - The only time check is the lower bound: a replay may not be longer
   than the real time since the run was handed out. There is no upper

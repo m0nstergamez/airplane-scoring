@@ -1048,152 +1048,37 @@
       }, true);
     })();
   </script>
+  <script src="board.js?v=__BUILD__"></script>
   <script>
     // Board plugin (crates/game/src/board.rs): the online leaderboard of
-    // the fastest completed levels. The server (crates/server) hands out
-    // a seed for every flight and flies the replay again before a time
-    // counts, so the page only fetches seeds, sends the replay at every
-    // "Level complete" and shows the lists. No server set (the
-    // "board-api" meta tag above), or it cannot be reached: flights are
-    // just not ranked.
+    // the fastest completed levels. The talking to the server is in
+    // board.js (tested in tests/web); here only the plugin and the lists
+    // on the start screen. No server set (the "board-api" meta tag
+    // above), or it cannot be reached: flights are just not ranked.
     (function () {
       "use strict";
       // One board per level: as many as the level map has.
       const LEVELS = document.querySelectorAll('#start .node[data-level]').length;
       const local = ["localhost", "127.0.0.1"].includes(location.hostname);
-      const API = (
-        (local && new URLSearchParams(location.search).get("board")) // testing only
-        || document.querySelector('meta[name="board-api"]')?.content
-        || ""
-      ).replace(/\/+$/, "");
-      // Who this browser is on the board: a secret token from the server
-      // (no account, no e-mail). Kept in this browser only; with it gone,
-      // the pilot starts again as a new one.
-      const PILOT_KEY = "airplane-scoring.pilot";
-      let pilot = null; // { api, token, name }
-      try {
-        const stored = JSON.parse(localStorage.getItem(PILOT_KEY) || "null");
-        if (stored && stored.api === API && typeof stored.token === "string") pilot = stored;
-      } catch (_) { /* nothing stored, or private mode */ }
-      const keepPilot = () => {
-        try { localStorage.setItem(PILOT_KEY, JSON.stringify(pilot)); } catch (_) { /* private mode: a new pilot next time */ }
-      };
-      let signingUp = null;
-      const signUp = () => {
-        if (!signingUp) {
-          signingUp = (async () => {
-            try {
-              const res = await fetch(API + "/v1/players", { method: "POST" });
-              if (!res.ok) throw new Error(`sign up: ${res.status}`);
-              const p = await res.json();
-              pilot = { api: API, token: p.token, name: p.name };
-              keepPilot();
-            } finally { signingUp = null; }
-          })();
-        }
-        return signingUp;
-      };
-      // One request to the server; `body` is JSON, or bytes (a replay).
-      // `again`: on 401 (the server does not know the token) sign up as a
-      // new pilot and try once more. Not for a replay: its run belongs to
-      // the old pilot, so it could only fail.
-      const call = async (method, path, body, again = !(body instanceof Uint8Array)) => {
-        const headers = {};
-        if (pilot) headers.Authorization = `Bearer ${pilot.token}`;
-        let payload;
-        if (body instanceof Uint8Array) { headers["Content-Type"] = "application/octet-stream"; payload = body; }
-        else if (body) { headers["Content-Type"] = "application/json"; payload = JSON.stringify(body); }
-        const res = await fetch(API + path, { method, headers, body: payload });
-        if (res.status === 401 && pilot && again) {
-          // The server does not know this token (any more): a new pilot.
-          pilot = null;
-          await signUp();
-          return call(method, path, body, false);
-        }
-        if (!res.ok) throw new Error(`${method} ${path}: ${res.status}`);
-        return res.json();
-      };
-
-      // A seed waits ready for each level, so that "Tap to fly" never
-      // waits for the network: { runId, seed (BigInt), at }.
-      const SEED_MAX_AGE_MS = 12 * 60 * 60 * 1000; // the server takes them for 24 h
-      const RETRY_MS = 10 * 1000;
-      const ready = {};
-      const asked = {}; // level -> when the last request went out
-      const fetching = {};
-      const getSeed = async (level) => {
-        if (!API || fetching[level] || ready[level]) return;
-        fetching[level] = true;
-        asked[level] = Date.now();
-        try {
-          if (!pilot) await signUp();
-          const run = await call("POST", "/v1/runs", { level });
-          ready[level] = { runId: run.run_id, seed: BigInt(run.seed), at: Date.now() };
-        } catch (e) {
-          console.warn("leaderboard: no seed, flights are not ranked for now", e);
-        } finally { fetching[level] = false; }
-      };
-      const seedFor = (level) => {
-        const r = ready[level];
-        if (r && Date.now() - r.at > SEED_MAX_AGE_MS) delete ready[level];
-        if (!ready[level] && Date.now() - (asked[level] || 0) > RETRY_MS) getSeed(level);
-        return ready[level] || null;
-      };
-
-      let flying = null; // the run id of the flight in the air
-      // This flight's levels: level -> { rank, pilots } once on the board,
-      // "waiting" while its replay is out, "failed" if it was not counted.
-      let standing = {};
+      const board = createBoard({
+        api: (local && new URLSearchParams(location.search).get("board")) // testing only
+          || document.querySelector('meta[name="board-api"]')?.content
+          || "",
+        fetch: (...args) => fetch(...args),
+        storage: { getItem: (k) => localStorage.getItem(k), setItem: (k, v) => localStorage.setItem(k, v) },
+        now: () => Date.now(),
+        warn: (...args) => console.warn(...args),
+      });
       miniquad_add_plugin({
         name: "board",
         version: 1, // must match board_crate_version() in board.rs
-        register_plugin: (importObject) => {
-          importObject.env.board_ready = (level) => (seedFor(level) ? 1 : 0);
-          importObject.env.board_seed_hi = (level) => Number(ready[level].seed >> 32n);
-          importObject.env.board_seed_lo = (level) => Number(ready[level].seed & 0xffffffffn);
-          importObject.env.board_take = (level) => {
-            flying = ready[level].runId;
-            standing = {};
-            delete ready[level];
-            getSeed(level); // the next flight's
-          };
-          // At "Level complete": the replay so far. The server counts the
-          // levels it lands that it has not counted for this run yet.
-          // `level`: the level just completed, whose standing the game shows.
-          importObject.env.board_submit = (ptr, len, level) => {
-            const runId = flying;
-            if (!runId) return;
-            // A copy: the game's memory moves on while the request runs.
-            const replay = new Uint8Array(wasm_memory.buffer, ptr, len).slice();
-            standing[level] = "waiting";
-            const mine = standing; // this flight's; a new flight gets its own
-            call("POST", `/v1/runs/${runId}/replay`, replay)
-              .then((r) => {
-                for (const l of r.levels) mine[l.level] = { rank: l.rank, pilots: l.pilots };
-                if (mine[level] === "waiting") mine[level] = "failed"; // not among them
-              })
-              .catch((e) => {
-                console.warn("leaderboard: this level was not counted", e);
-                mine[level] = "failed";
-              });
-          };
-          // 1: on the board; 0: still waiting for the server; -1: not counted.
-          const ranked = (level) => typeof standing[level] === "object";
-          importObject.env.board_status = (level) => (ranked(level) ? 1 : standing[level] === "waiting" ? 0 : -1);
-          importObject.env.board_rank = (level) => (ranked(level) ? standing[level].rank : 0);
-          importObject.env.board_pilots = (level) => (ranked(level) ? standing[level].pilots : 0);
-        },
+        register_plugin: (importObject) => Object.assign(importObject.env, board.imports(() => wasm_memory)),
       });
-      if (!API) return;
+      if (!board.on) return;
 
       // The lists on the start screen.
       const lists = document.getElementById("board-lists");
       const nameInput = document.getElementById("board-name");
-      // "1:02.483", like the best times in the game (best_time_text).
-      const clock = (millis) => {
-        const seconds = Math.floor(millis / 1000);
-        return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}.${String(millis % 1000).padStart(3, "0")}`;
-      };
       const line = (left, right, me) => {
         const p = document.createElement("p");
         if (me) p.className = "me";
@@ -1208,19 +1093,19 @@
         lists.textContent = "Loading...";
         try {
           const boards = await Promise.all(
-            Array.from({ length: LEVELS }, (_, i) => call("GET", `/v1/leaderboard?level=${i + 1}&limit=10`)),
+            Array.from({ length: LEVELS }, (_, i) => board.call("GET", `/v1/leaderboard?level=${i + 1}&limit=10`)),
           );
           lists.textContent = "";
-          for (const board of boards) {
+          for (const b of boards) {
             const section = document.createElement("section");
             const title = document.createElement("h3");
-            title.textContent = `Level ${board.level}`;
+            title.textContent = `Level ${b.level}`;
             section.append(title);
-            if (!board.top.length) section.append(line("No times yet. Be the first!", "", false));
-            for (const e of board.top) section.append(line(`${e.rank}. ${e.name}`, clock(e.millis), e.me));
-            const me = board.me;
-            if (me && me.rank && !board.top.some((e) => e.me)) {
-              section.append(line(`${me.rank}. ${me.name} (you, of ${board.pilots})`, clock(me.millis), true));
+            if (!b.top.length) section.append(line("No times yet. Be the first!", "", false));
+            for (const e of b.top) section.append(line(`${e.rank}. ${e.name}`, boardClock(e.millis), e.me));
+            const me = b.me;
+            if (me && me.rank && !b.top.some((e) => e.me)) {
+              section.append(line(`${me.rank}. ${me.name} (you, of ${b.pilots})`, boardClock(me.millis), true));
             }
             lists.append(section);
           }
@@ -1231,12 +1116,12 @@
       };
       nameInput.addEventListener("change", async () => {
         try {
-          const r = await call("PUT", "/v1/players/me", { name: nameInput.value });
+          const r = await board.call("PUT", "/v1/players/me", { name: nameInput.value });
           nameInput.value = r.name;
-          if (pilot) { pilot.name = r.name; keepPilot(); }
+          board.rename(r.name);
           showBoard();
         } catch (e) {
-          nameInput.value = pilot ? pilot.name : "";
+          nameInput.value = board.name();
           lists.textContent = "A name has 1 to 16 letters, digits, spaces, - or _.";
         }
       });
@@ -1245,7 +1130,7 @@
       const button = document.getElementById("board-button");
       button.hidden = false;
       button.addEventListener("click", showBoard);
-      for (let level = 1; level <= LEVELS; level++) getSeed(level);
+      board.start(LEVELS);
     })();
   </script>
   <script>load("airplane-scoring.wasm?v=__BUILD__");</script>
