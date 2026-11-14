@@ -33,7 +33,7 @@ primary_region = "fra"         # Frankfurt; the volume must be in the same regio
 
   [[http_service.checks]]
     method = "get"
-    path = "/v1/leaderboard"
+    path = "/health"
     interval = "30s"
     timeout = "5s"
     grace_period = "10s"

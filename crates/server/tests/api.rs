@@ -8,6 +8,7 @@ use axum::body::Body;
 use axum::http::{Request, StatusCode};
 use http_body_util::BodyExt;
 use serde_json::{json, Value};
+use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use tower::ServiceExt;
 
@@ -252,13 +253,20 @@ async fn a_level_counts_once_and_only_for_its_pilot() {
         (status, body["levels"].as_array().map(Vec::len)),
         (StatusCode::OK, Some(1))
     );
-    // The same replay again (the page retried): nothing new.
-    let (status, body) = server.send(&owner, &run_id, flight).await;
-    assert_eq!(
-        (status, body["levels"].clone()),
-        (StatusCode::OK, json!([]))
-    );
+    // The same replay again: refused before it is flown again, so
+    // sending it over and over costs the server next to nothing.
+    let flown = server.0.replays_flown.load(Ordering::Relaxed);
+    let (status, _) = server.send(&owner, &run_id, flight).await;
+    assert_eq!(status, StatusCode::CONFLICT);
+    assert_eq!(server.0.replays_flown.load(Ordering::Relaxed), flown);
     assert_eq!(server.board(1, None).await["pilots"], 1);
+}
+
+#[tokio::test]
+async fn the_health_check_is_cheap_and_answers() {
+    let server = Server::new();
+    let (status, _) = server.call("GET", "/health", None, Body::empty()).await;
+    assert_eq!(status, StatusCode::OK);
 }
 
 #[tokio::test]

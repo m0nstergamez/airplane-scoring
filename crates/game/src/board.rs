@@ -12,7 +12,7 @@
 //! server): the flight is flown as ever and simply not ranked. Native
 //! builds are never ranked.
 
-use airplane_scoring_core::replay::{rounded_input, Recorder, Start};
+use airplane_scoring_core::replay::{playable_bounds, rounded_input, Recorder, Start};
 use airplane_scoring_core::{Bounds, Input, World};
 
 #[cfg(target_arch = "wasm32")]
@@ -24,7 +24,7 @@ mod js {
         fn board_seed_hi(level: u32) -> u32;
         fn board_seed_lo(level: u32) -> u32;
         fn board_take(level: u32);
-        fn board_submit(ptr: *const u8, len: u32);
+        fn board_submit(ptr: *const u8, len: u32, level: u32);
         fn board_status(level: u32) -> i32;
         fn board_rank(level: u32) -> u32;
         fn board_pilots(level: u32) -> u32;
@@ -49,9 +49,9 @@ mod js {
     }
 
     /// Send the replay so far of the flight whose seed was taken last.
-    pub fn submit(replay: &[u8]) {
+    pub fn submit(replay: &[u8], level: u32) {
         // SAFETY: the page copies the bytes before this call returns.
-        unsafe { board_submit(replay.as_ptr(), replay.len() as u32) }
+        unsafe { board_submit(replay.as_ptr(), replay.len() as u32, level) }
     }
 
     /// What the server said about `level` in the last replay sent:
@@ -68,7 +68,7 @@ mod js {
         None
     }
 
-    pub fn submit(_replay: &[u8]) {}
+    pub fn submit(_replay: &[u8], _level: u32) {}
 
     pub fn status(_level: u32) -> (i32, u32, u32) {
         (-1, 0, 0)
@@ -99,13 +99,19 @@ pub struct Board {
 }
 
 impl Board {
-    /// Call every frame before the ticks, with the screen's size now.
-    /// Keeps the world's bounds in sync. Before the first tick, it swaps
-    /// in the server's seed as soon as one is there (the flight has not
-    /// begun, so nothing is lost) and starts recording.
-    pub fn frame(&mut self, world: &mut World, bounds: Bounds) {
+    /// Call every frame right before the ticks (after any new world was
+    /// made), with the screen's size now and whether the flight has
+    /// started ("Tap to fly", not paused). Keeps the world's bounds in
+    /// sync, moved into the sizes a replay accepts
+    /// (`replay::playable_bounds`; for every flight, so all fly alike).
+    /// Once started and before the first tick, it swaps in the server's
+    /// seed if one is there (the flight has not begun, so nothing is
+    /// lost) and starts recording. Not before: a seed taken in the menu
+    /// would be wasted when the player picks another level.
+    pub fn frame(&mut self, world: &mut World, bounds: Bounds, started: bool) {
+        let bounds = playable_bounds(bounds);
         world.bounds = bounds;
-        if !self.flying && self.recorder.is_none() {
+        if started && !self.flying && self.recorder.is_none() {
             if let Some(seed) = js::take_seed(world.start_level) {
                 let start = Start {
                     seed,
@@ -142,7 +148,7 @@ impl Board {
     /// server to count the level's time.
     pub fn level_complete(&mut self, level: u32) {
         if let Some(recorder) = &self.recorder {
-            js::submit(&recorder.bytes());
+            js::submit(&recorder.bytes(), level);
             self.sent = Some(level);
         }
     }

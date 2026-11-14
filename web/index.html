@@ -1094,7 +1094,10 @@
         return signingUp;
       };
       // One request to the server; `body` is JSON, or bytes (a replay).
-      const call = async (method, path, body, again = true) => {
+      // `again`: on 401 (the server does not know the token) sign up as a
+      // new pilot and try once more. Not for a replay: its run belongs to
+      // the old pilot, so it could only fail.
+      const call = async (method, path, body, again = !(body instanceof Uint8Array)) => {
         const headers = {};
         if (pilot) headers.Authorization = `Bearer ${pilot.token}`;
         let payload;
@@ -1138,9 +1141,9 @@
       };
 
       let flying = null; // the run id of the flight in the air
-      // This flight's levels on the boards: level -> { rank, pilots }.
-      let counted = {};
-      let sending = 0; // replays sent, not answered yet
+      // This flight's levels: level -> { rank, pilots } once on the board,
+      // "waiting" while its replay is out, "failed" if it was not counted.
+      let standing = {};
       miniquad_add_plugin({
         name: "board",
         version: 1, // must match board_crate_version() in board.rs
@@ -1150,30 +1153,35 @@
           importObject.env.board_seed_lo = (level) => Number(ready[level].seed & 0xffffffffn);
           importObject.env.board_take = (level) => {
             flying = ready[level].runId;
-            counted = {};
+            standing = {};
             delete ready[level];
             getSeed(level); // the next flight's
           };
           // At "Level complete": the replay so far. The server counts the
           // levels it lands that it has not counted for this run yet.
-          importObject.env.board_submit = (ptr, len) => {
+          // `level`: the level just completed, whose standing the game shows.
+          importObject.env.board_submit = (ptr, len, level) => {
             const runId = flying;
             if (!runId) return;
             // A copy: the game's memory moves on while the request runs.
             const replay = new Uint8Array(wasm_memory.buffer, ptr, len).slice();
-            sending++;
+            standing[level] = "waiting";
+            const mine = standing; // this flight's; a new flight gets its own
             call("POST", `/v1/runs/${runId}/replay`, replay)
               .then((r) => {
-                if (flying !== runId) return; // a new flight began meanwhile
-                for (const l of r.levels) counted[l.level] = { rank: l.rank, pilots: l.pilots };
+                for (const l of r.levels) mine[l.level] = { rank: l.rank, pilots: l.pilots };
+                if (mine[level] === "waiting") mine[level] = "failed"; // not among them
               })
-              .catch((e) => console.warn("leaderboard: this level was not counted", e))
-              .finally(() => { sending--; });
+              .catch((e) => {
+                console.warn("leaderboard: this level was not counted", e);
+                mine[level] = "failed";
+              });
           };
           // 1: on the board; 0: still waiting for the server; -1: not counted.
-          importObject.env.board_status = (level) => (counted[level] ? 1 : sending > 0 ? 0 : -1);
-          importObject.env.board_rank = (level) => (counted[level] ? counted[level].rank : 0);
-          importObject.env.board_pilots = (level) => (counted[level] ? counted[level].pilots : 0);
+          const ranked = (level) => typeof standing[level] === "object";
+          importObject.env.board_status = (level) => (ranked(level) ? 1 : standing[level] === "waiting" ? 0 : -1);
+          importObject.env.board_rank = (level) => (ranked(level) ? standing[level].rank : 0);
+          importObject.env.board_pilots = (level) => (ranked(level) ? standing[level].pilots : 0);
         },
       });
       if (!API) return;

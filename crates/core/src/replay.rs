@@ -299,16 +299,66 @@ fn push_bounds(bytes: &mut Vec<u8>, bounds: Bounds) {
 
 fn read_bounds(bytes: &[u8]) -> Result<Bounds, ReplayError> {
     let f = |b: &[u8]| f32::from_le_bytes(b.try_into().expect("4 bytes"));
-    let (width, height) = (f(&bytes[..4]), f(&bytes[4..8]));
-    let within = |v: f32, (lo, hi): (f32, f32)| v.is_finite() && (lo..=hi).contains(&v);
-    if within(width, BOUNDS_WIDTH)
-        && within(height, BOUNDS_HEIGHT)
-        && within(width / height, BOUNDS_ASPECT)
-    {
-        Ok(Bounds { width, height })
+    let bounds = Bounds {
+        width: f(&bytes[..4]),
+        height: f(&bytes[4..8]),
+    };
+    if is_playable(bounds) {
+        Ok(bounds)
     } else {
         Err(ReplayError::BadBounds)
     }
+}
+
+/// Within [`BOUNDS_WIDTH`], [`BOUNDS_HEIGHT`] and [`BOUNDS_ASPECT`].
+fn is_playable(Bounds { width, height }: Bounds) -> bool {
+    let within = |v: f32, (lo, hi): (f32, f32)| v.is_finite() && (lo..=hi).contains(&v);
+    within(width, BOUNDS_WIDTH)
+        && within(height, BOUNDS_HEIGHT)
+        && within(width / height, BOUNDS_ASPECT)
+}
+
+/// The screen size the world uses: the real one, moved into the sizes a
+/// replay accepts ([`BOUNDS_WIDTH`] and so on). A window dragged very
+/// short for a moment then does not make a ranked flight void. Sizes that
+/// are fine come back unchanged.
+pub fn playable_bounds(bounds: Bounds) -> Bounds {
+    if is_playable(bounds) {
+        return bounds;
+    }
+    let fix = |v: f32, (lo, hi): (f32, f32)| if v.is_finite() { v.clamp(lo, hi) } else { lo };
+    let height = fix(bounds.height, BOUNDS_HEIGHT);
+    // A hair inside the aspect limits, so rounding in `width / height`
+    // cannot land just outside them.
+    let (lo, hi) = BOUNDS_ASPECT;
+    let width = fix(bounds.width, BOUNDS_WIDTH).clamp(height * lo * 1.0001, height * hi * 0.9999);
+    Bounds { width, height }
+}
+
+/// How many ticks a replay runs, read from its records without flying
+/// it: cheap, so a server can refuse a replay before the real work.
+/// The same as [`Outcome::steps`] for a replay [`replay`] accepts.
+pub fn steps_of(bytes: &[u8]) -> Result<u64, ReplayError> {
+    start_of(bytes)?;
+    let mut steps = 0_u64;
+    let mut rest = &bytes[HEADER_LEN..];
+    while let Some((&kind, tail)) = rest.split_first() {
+        let len = match kind {
+            TICKS => 3,
+            RESIZE => 8,
+            GO_ON => 0,
+            other => return Err(ReplayError::UnknownRecord(other)),
+        };
+        let body = tail.get(..len).ok_or(ReplayError::Truncated)?;
+        if kind == TICKS {
+            steps += u64::from(body[2]);
+            if steps > MAX_REPLAY_TICKS {
+                return Err(ReplayError::TooLong);
+            }
+        }
+        rest = &tail[len..];
+    }
+    Ok(steps)
 }
 
 /// How often the demo pilot decides, and how far it looks ahead.
@@ -520,6 +570,109 @@ mod tests {
         let flown = replay(&bytes);
         bytes.push(GO_ON);
         assert_eq!(replay(&bytes), flown);
+    }
+
+    #[test]
+    fn steps_are_read_without_flying() {
+        let bytes = demo_flight(&start(3), 5, ONE_LEVEL);
+        let outcome = replay(&bytes).expect("a valid replay");
+        assert_eq!(steps_of(&bytes), Ok(outcome.steps));
+        assert_eq!(
+            steps_of(&bytes[..bytes.len() - 1]),
+            Err(ReplayError::Truncated)
+        );
+        assert_eq!(steps_of(b"nope"), Err(ReplayError::BadHeader));
+    }
+
+    #[test]
+    fn odd_screens_are_moved_into_the_playable_sizes() {
+        let odd = [
+            (1200.0, 140.0),
+            (844.0, 1.0),
+            (8000.0, 150.0),
+            (100.0, 4000.0),
+            (20_000.0, 20_000.0),
+            (f32::NAN, 390.0),
+            (844.0, f32::INFINITY),
+            (0.0, 0.0),
+        ];
+        for (width, height) in odd {
+            let fixed = playable_bounds(Bounds { width, height });
+            assert!(is_playable(fixed), "{width}x{height} -> {fixed:?}");
+        }
+        // Real screens stay exactly as they are.
+        for bounds in [
+            PHONE,
+            Bounds {
+                width: 1366.0,
+                height: 768.0,
+            },
+        ] {
+            assert_eq!(playable_bounds(bounds), bounds);
+        }
+        // A flight recorded through them is accepted.
+        let start = start(1);
+        let mut rec = Recorder::new(&start);
+        rec.tick(0.0, 0.0);
+        rec.resize(playable_bounds(Bounds {
+            width: 1200.0,
+            height: 140.0,
+        }));
+        rec.tick(0.0, 0.0);
+        assert!(replay(&rec.bytes()).is_ok());
+    }
+
+    #[test]
+    fn core_maths_is_the_same_in_wasm_and_native() {
+        // std's sin, cos, exp ... use the system's maths library natively
+        // and Rust's own in wasm: a replay could fly differently on the
+        // server. Core uses `libm` for them. (tilt.rs runs in the game
+        // only, never in a replay.)
+        let dir = concat!(env!("CARGO_MANIFEST_DIR"), "/src");
+        let banned = [
+            ".sin()",
+            ".cos()",
+            ".tan()",
+            ".sin_cos()",
+            ".exp()",
+            ".exp2()",
+            ".ln()",
+            ".log(",
+            ".log2()",
+            ".log10()",
+            ".powf(",
+            ".asin()",
+            ".acos()",
+            ".atan()",
+            ".atan2(",
+            ".sinh()",
+            ".cosh()",
+            ".tanh()",
+            ".hypot(",
+            ".cbrt()",
+            ".exp_m1()",
+            ".ln_1p()",
+        ];
+        for entry in std::fs::read_dir(dir).expect("core's sources") {
+            let path = entry.expect("a file").path();
+            if path.file_name().is_some_and(|n| n == "tilt.rs") {
+                continue;
+            }
+            let text = std::fs::read_to_string(&path).expect("readable");
+            for (i, line) in text.lines().enumerate() {
+                let code = line.split("//").next().unwrap_or("");
+                for call in banned {
+                    // (Quoted, as in the list above, it is not a call.)
+                    let quoted = format!("\"{call}");
+                    assert!(
+                        !code.contains(call) || code.contains(&quoted),
+                        "{}:{}: `{call}` from std; use libm",
+                        path.display(),
+                        i + 1
+                    );
+                }
+            }
+        }
     }
 
     #[test]

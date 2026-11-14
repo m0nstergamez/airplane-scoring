@@ -937,6 +937,31 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
   (60617 ms) und gab einen Rang. Erster Image-Build: etwa 2 Minuten.
   Nicht abgedeckt: https, also keine Handys (Kippen braucht eine sichere
   Seite).
+- Code-Review von PR #45, Befunde 1 bis 7 behoben (8 und 9 wurden Specs
+  in `docs/specs/`):
+  - Ein nach «Game over» (oder aus dem Pausenmenü) neu gestarteter Flug
+    zählte nie: Das Board wurde zurückgesetzt, nachdem es schon nach
+    einem Startwert geschaut hatte, und das Flugzeug tickte im selben
+    Frame. `Board::frame` läuft jetzt direkt vor den Ticks.
+  - Das Board nimmt einen Startwert erst, wenn der Flug begonnen hat,
+    nicht im Menü (jeder Levelwechsel dort verbrauchte einen Run).
+  - Fünf `f32::sin_cos` in core (Form des Flugzeugs, gedrehte Polygone,
+    Höhe der Bahn, Reifenrauch) waren noch aus std: jetzt
+    `libm::sincosf`. Ein Test in core durchsucht die Quellen von core
+    nach Mathe aus std, damit das nicht wieder hineinrutscht.
+  - Seltsame Fenstergrössen (etwa kurz 1200×140) liessen den Server den
+    ganzen Flug ablehnen. Die Welt nutzt jetzt `replay::playable_bounds`,
+    die Grösse in das verschoben, was ein Replay annimmt; echte
+    Bildschirme bleiben gleich.
+  - Der Status der Seite war ein Zähler für alle Levels und Flüge: jetzt
+    pro Level des Flugs. Ein Replay meldet bei 401 keine neue Pilotin
+    mehr an (sein Run gehört der alten).
+  - Ein Replay, das nicht länger ist als das letzte seines Runs, bekommt
+    409, bevor es nachgeflogen wird (`replay::steps_of` zählt seine Ticks
+    billig); nachgeflogen wird eines pro CPU gleichzeitig, nach 5 s 503
+    mit `Retry-After`.
+  - `GET /health` für die Prüfung von Fly, statt alle 30 s eine Abfrage
+    der Liste.
 
 ## Konzepte
 

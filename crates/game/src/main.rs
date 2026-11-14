@@ -54,17 +54,6 @@ async fn main() {
     let mut crash_flash = 0.0_f32; // screen effect only, fades out
 
     loop {
-        // Keep the logical bounds in sync with the canvas (browser resizes).
-        // (The board also swaps in the server's seed before the flight
-        // begins, and writes a ranked flight down from here on.)
-        board.frame(
-            &mut world,
-            Bounds {
-                width: screen_width(),
-                height: screen_height(),
-            },
-        );
-
         let pointer_y = pointer_y();
         let keys = steer_from_keys(
             is_key_down(KeyCode::Up) || is_key_down(KeyCode::W),
@@ -119,6 +108,19 @@ async fn main() {
             crash_flash = 0.0;
             result = None;
         }
+
+        // Keep the logical bounds in sync with the canvas (browser resizes).
+        // Here, after a restart made a new world and board above: the
+        // board swaps in the server's seed before the first tick and writes
+        // a ranked flight down from here on.
+        board.frame(
+            &mut world,
+            Bounds {
+                width: screen_width(),
+                height: screen_height(),
+            },
+            page_js::started(),
+        );
 
         // Fixed ticks; the game stands still until "Tap to fly".
         for _ in 0..clock.ticks_for(get_frame_time(), page_js::started()) {

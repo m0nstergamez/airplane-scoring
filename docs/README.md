@@ -847,6 +847,27 @@ that isn't code here. Keep entries short and dated.
   x86-64 server read the same time (60617 ms) and ranked it. First image
   build: about 2 minutes. Not covered: https, so not phones (tilt needs
   a secure page).
+- Code review of PR #45, findings 1 to 7 fixed (8 and 9 became specs in
+  `docs/specs/`):
+  - A flight restarted after a game over (or from the pause menu) was
+    never ranked: the board was reset after it had looked for a seed,
+    and the plane ticked in the same frame. `Board::frame` now runs right
+    before the ticks.
+  - The board takes a seed only once the flight has started, not in the
+    menu (each level change there used up a run).
+  - Five `f32::sin_cos` in core (plane shape, turned polygons, runway
+    height, tyre smoke) were still std: now `libm::sincosf`. A core test
+    scans core's sources for std maths, so this cannot slip in again.
+  - Odd window sizes (say 1200×140 for a moment) made the server refuse
+    the whole flight. The world now uses `replay::playable_bounds`, the
+    size moved into what a replay accepts; real screens are unchanged.
+  - The page's status was one counter for all levels and flights: now
+    per level of the flight. A replay no longer signs up a new pilot on
+    401 (its run belongs to the old one).
+  - A replay not longer than the last one for its run gets 409 before it
+    is flown again (`replay::steps_of` counts its ticks cheaply); re-flying
+    runs one per CPU at a time, 503 with `Retry-After` after 5 s.
+  - `GET /health` for Fly's check, instead of a board query every 30 s.
 
 ## Concepts
 

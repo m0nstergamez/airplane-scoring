@@ -17,13 +17,15 @@
 //!   counted for this run before, each with the pilot's rank.
 //! - `GET /v1/leaderboard?level=1&limit=10`: the fastest pilots of a
 //!   level, and where the asking pilot stands (if a token came along).
+//! - `GET /health`: "ok", without touching the database (for Fly's
+//!   health check, which runs all the time).
 //!
 //! All but the first and last need `Authorization: Bearer <token>`.
 
 use std::sync::{Arc, Mutex};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use airplane_scoring_core::replay::{replay, start_of};
+use airplane_scoring_core::replay::{replay, start_of, steps_of};
 use airplane_scoring_core::{start_level, TICK_SECONDS};
 use axum::extract::{DefaultBodyLimit, FromRequestParts, Path, Query, State};
 use axum::http::header::{AUTHORIZATION, CONTENT_TYPE};
@@ -44,6 +46,9 @@ const RUN_MAX_AGE_MS: i64 = 24 * 60 * 60 * 1000;
 /// How much sooner than real time a flight may seem to end (clocks and
 /// the network are not exact).
 const CLOCK_SLACK_MS: i64 = 2_000;
+/// How long a replay may wait for its turn to be flown again before the
+/// server says it is busy.
+const REPLAY_WAIT: std::time::Duration = std::time::Duration::from_secs(5);
 const NAME_MAX_CHARS: usize = 16;
 const BOARD_MAX: u32 = 100;
 
@@ -62,7 +67,8 @@ CREATE TABLE IF NOT EXISTS runs (
     seed       INTEGER NOT NULL,
     started_ms INTEGER NOT NULL,
     counted    INTEGER NOT NULL DEFAULT 0,
-    last_ms    INTEGER
+    last_ms    INTEGER,
+    last_steps INTEGER NOT NULL DEFAULT 0
 );
 -- Each pilot's fastest time per level.
 CREATE TABLE IF NOT EXISTS best (
@@ -77,6 +83,11 @@ CREATE INDEX IF NOT EXISTS best_by_level ON best (level, millis, at_ms);
 
 pub struct App {
     pub db: Mutex<Connection>,
+    /// Replays flown again at the same time: as many as there are CPUs.
+    /// Each is real work; more at once would only slow them all.
+    flying: tokio::sync::Semaphore,
+    /// Replays flown again so far (for tests and logs).
+    pub replays_flown: std::sync::atomic::AtomicU64,
 }
 
 type Shared = Arc<App>;
@@ -92,13 +103,33 @@ impl App {
 
     fn with(db: Connection) -> rusqlite::Result<Shared> {
         db.execute_batch(SCHEMA)?;
-        Ok(Arc::new(App { db: Mutex::new(db) }))
+        migrate(&db)?;
+        let cpus = std::thread::available_parallelism().map_or(1, |n| n.get());
+        Ok(Arc::new(App {
+            db: Mutex::new(db),
+            flying: tokio::sync::Semaphore::new(cpus),
+            replays_flown: Default::default(),
+        }))
     }
 
     fn db(&self) -> std::sync::MutexGuard<'_, Connection> {
         // A panic while holding the lock leaves the connection usable.
         self.db.lock().unwrap_or_else(|e| e.into_inner())
     }
+}
+
+/// Columns added after a database was first made (`CREATE TABLE IF NOT
+/// EXISTS` leaves existing tables as they are).
+fn migrate(db: &Connection) -> rusqlite::Result<()> {
+    let has_last_steps: bool = db.query_row(
+        "SELECT COUNT(*) > 0 FROM pragma_table_info('runs') WHERE name = 'last_steps'",
+        [],
+        |r| r.get(0),
+    )?;
+    if !has_last_steps {
+        db.execute_batch("ALTER TABLE runs ADD COLUMN last_steps INTEGER NOT NULL DEFAULT 0")?;
+    }
+    Ok(())
 }
 
 /// The API, callable from the given pages (origins).
@@ -114,6 +145,7 @@ pub fn app(state: Shared, origins: &[&str]) -> Router {
         .route("/v1/runs", post(start_run))
         .route("/v1/runs/{id}/replay", post(send_replay))
         .route("/v1/leaderboard", get(leaderboard))
+        .route("/health", get(|| async { "ok" }))
         .layer(DefaultBodyLimit::max(MAX_REPLAY_BYTES))
         .layer(cors)
         .with_state(state)
@@ -121,11 +153,20 @@ pub fn app(state: Shared, origins: &[&str]) -> Router {
 
 // ---- Errors -------------------------------------------------------------
 
-struct ApiError(StatusCode, String);
+struct ApiError(StatusCode, String, Option<u64>);
 
 impl ApiError {
     fn new(status: StatusCode, message: impl Into<String>) -> Self {
-        Self(status, message.into())
+        Self(status, message.into(), None)
+    }
+
+    /// Busy now: try again in `seconds` (the `Retry-After` header).
+    fn busy(seconds: u64) -> Self {
+        Self(
+            StatusCode::SERVICE_UNAVAILABLE,
+            "busy, try again".into(),
+            Some(seconds),
+        )
     }
 }
 
@@ -135,7 +176,13 @@ impl IntoResponse for ApiError {
         struct Body {
             error: String,
         }
-        (self.0, Json(Body { error: self.1 })).into_response()
+        let mut response = (self.0, Json(Body { error: self.1 })).into_response();
+        if let Some(seconds) = self.2 {
+            response
+                .headers_mut()
+                .insert(axum::http::header::RETRY_AFTER, seconds.into());
+        }
+        response
     }
 }
 
@@ -339,15 +386,16 @@ async fn send_replay(
 ) -> Api<Replayed> {
     let refuse = |why: &str| ApiError::new(StatusCode::UNPROCESSABLE_ENTITY, why);
     let now = now_ms();
-    let run: Option<(u32, i64, i64, usize)> = state
+    let run: Option<(u32, i64, i64, usize, u64)> = state
         .db()
         .query_row(
-            "SELECT level, seed, started_ms, counted FROM runs WHERE id = ?1 AND player_id = ?2",
+            "SELECT level, seed, started_ms, counted, last_steps FROM runs
+             WHERE id = ?1 AND player_id = ?2",
             params![run_id, pilot.id],
-            |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?)),
+            |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?, r.get(4)?)),
         )
         .optional()?;
-    let (level, seed, started_ms, counted) =
+    let (level, seed, started_ms, counted, last_steps) =
         run.ok_or_else(|| ApiError::new(StatusCode::NOT_FOUND, "no such run"))?;
     if now - started_ms > RUN_MAX_AGE_MS {
         return Err(refuse("this run is too old"));
@@ -358,7 +406,25 @@ async fn send_replay(
     if start.seed != seed as u64 || start.level != level {
         return Err(refuse("the replay is of another flight"));
     }
-    // ...and is flown again here. Off the async threads: it is real work.
+    // A run only moves forward: each replay is the flight so far, so it
+    // is longer than the last one. Checked without flying it, so sending
+    // the same replay again and again costs next to nothing.
+    let steps = steps_of(&body).map_err(|e| refuse(&e.to_string()))?;
+    if steps <= last_steps {
+        return Err(ApiError::new(
+            StatusCode::CONFLICT,
+            "this replay is not longer than the last one",
+        ));
+    }
+    // ...and is flown again here, one per CPU at a time, off the async
+    // threads: it is real work.
+    let _turn = tokio::time::timeout(REPLAY_WAIT, state.flying.acquire())
+        .await
+        .map_err(|_| ApiError::busy(REPLAY_WAIT.as_secs()))?
+        .map_err(|_| ApiError::busy(REPLAY_WAIT.as_secs()))?;
+    state
+        .replays_flown
+        .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
     let outcome = tokio::task::spawn_blocking(move || replay(&body))
         .await
         .map_err(|_| ApiError::new(StatusCode::INTERNAL_SERVER_ERROR, "the replay crashed"))?
@@ -375,8 +441,16 @@ async fn send_replay(
     let mut db = state.db();
     let tx = db.transaction()?;
     let updated = tx.execute(
-        "UPDATE runs SET counted = ?1, last_ms = ?2 WHERE id = ?3 AND counted = ?4",
-        params![counted + new.len(), now, run_id, counted],
+        "UPDATE runs SET counted = ?1, last_ms = ?2, last_steps = ?3
+         WHERE id = ?4 AND counted = ?5 AND last_steps = ?6",
+        params![
+            counted + new.len(),
+            now,
+            outcome.steps,
+            run_id,
+            counted,
+            last_steps
+        ],
     )?;
     if updated == 0 {
         // Sent twice at the same moment: the other one counted.
@@ -528,6 +602,26 @@ async fn leaderboard(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn an_older_database_gets_the_new_columns() {
+        let db = Connection::open_in_memory().expect("a database");
+        db.execute_batch(
+            "CREATE TABLE runs (id TEXT PRIMARY KEY, player_id TEXT NOT NULL, level INTEGER NOT NULL,
+             seed INTEGER NOT NULL, started_ms INTEGER NOT NULL, counted INTEGER NOT NULL DEFAULT 0,
+             last_ms INTEGER);
+             INSERT INTO runs (id, player_id, level, seed, started_ms) VALUES ('r', 'p', 1, 7, 0);",
+        )
+        .expect("the old schema");
+        let app = App::with(db).expect("opens");
+        let steps: i64 = app
+            .db()
+            .query_row("SELECT last_steps FROM runs WHERE id = 'r'", [], |r| {
+                r.get(0)
+            })
+            .expect("the column is there");
+        assert_eq!(steps, 0);
+    }
 
     #[test]
     fn names_are_tidied_or_refused() {

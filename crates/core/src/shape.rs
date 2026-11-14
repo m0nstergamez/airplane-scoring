@@ -25,7 +25,7 @@ impl Poly {
     /// Like [`Poly::at`], turned by `angle` (radians, clockwise on the
     /// screen) around `at`.
     pub fn at_turned(at: Vec2, size: f32, angle: f32, points: &[(f32, f32)]) -> Poly {
-        let (sin, cos) = angle.sin_cos();
+        let (sin, cos) = libm::sincosf(angle);
         Poly(
             points
                 .iter()

@@ -73,10 +73,10 @@ up() {
       --working-directory='$repo/$web_dir' python3 -m http.server $web_port"
 
   for _ in $(seq 1 30); do
-    curl -fsS "$api_url/v1/leaderboard" >/dev/null 2>&1 && curl -fsS "$web_url/" >/dev/null 2>&1 && break
+    curl -fsS "$api_url/health" >/dev/null 2>&1 && curl -fsS "$web_url/" >/dev/null 2>&1 && break
     sleep 1
   done
-  curl -fsS "$api_url/v1/leaderboard" >/dev/null || { echo "the server does not answer; scripts/stage.sh logs" >&2; exit 1; }
+  curl -fsS "$api_url/health" >/dev/null || { echo "the server does not answer; scripts/stage.sh logs" >&2; exit 1; }
   printf '\n\033[32mStage is up.\033[0m Game: %s  API: %s\n' "$web_url" "$api_url"
 }
 
@@ -134,6 +134,12 @@ e2e() {
   got=$(echo "$answer" | json 'd["levels"][0]["millis"] if d["levels"] else "none"')
   [ "$got" = "$millis" ] || fail "server read $got ms, wasm flew $millis ms: wasm and native differ"
   rank=$(echo "$answer" | json 'd["levels"][0]["rank"]')
+
+  step "the same replay again is refused without flying it"
+  status=$(curl -sS -o /dev/null -w '%{http_code}' -X POST "$api_url/v1/runs/$run_id/replay" \
+    -H "Authorization: Bearer $token" -H 'Content-Type: application/octet-stream' \
+    --data-binary "@$tmp/replay.bin")
+  [ "$status" = 409 ] || fail "resent replay: HTTP $status, expected 409"
 
   step "the board"
   board=$(curl -fsS "$api_url/v1/leaderboard?level=1" -H "Authorization: Bearer $token")
