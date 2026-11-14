@@ -821,6 +821,14 @@ that isn't code here. Keep entries short and dated.
     now every 3.5–12 s (was 6–9 s), and from ahead, from above or up out
     of the trees (`BuzzardFrom`), never from behind: it always circles
     ahead of the plane before it dives (tested over ten minutes).
+  - Fixed after `/code-review` of PR #46: with more throttle the buzzard
+    was shifted with the ground, so at high speed it could circle behind
+    the plane and its dive bent off course; now only firs and gusts
+    shift (tested just under overspeed). Also: a gust's `x` is its
+    middle (it was kept and placed half a width off); the drawn twig hem
+    of a fir stays inside its hit shape; a committed Python cache
+    (`scripts/__pycache__`) is gone and ignored; the level 5 test flies
+    through every level and back into level 1.
 
 ## Concepts
 

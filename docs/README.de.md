@@ -898,6 +898,15 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
     alle 3.5–12 s (vorher 6–9 s), und von vorn, von oben oder aus den
     Bäumen herauf (`BuzzardFrom`), nie von hinten: Er kreist immer vor
     dem Flugzeug, bevor er herabstösst (über zehn Minuten getestet).
+  - Behoben nach `/code-review` von PR #46: Mit mehr Gas wurde der
+    Bussard mit dem Boden verschoben, also konnte er bei hohem Tempo
+    hinter dem Flugzeug kreisen, und sein Sturzflug kam vom Kurs ab;
+    jetzt verschieben sich nur Tannen und Böen (knapp unter Overspeed
+    getestet). Ausserdem: `x` einer Böe ist ihre Mitte (sie wurde eine
+    halbe Breite daneben behalten und gesetzt); der gezeichnete
+    Zweigsaum einer Tanne bleibt in ihrer Trefferform; ein mitcommitteter
+    Python-Cache (`scripts/__pycache__`) ist weg und wird ignoriert; der
+    Test für Level 5 fliegt durch alle Levels und zurück in Level 1.
   - Neue Töne aus `scripts/make-sounds.py`: `goose-honk.wav` (Rufe mit
     starken ungeraden Obertönen, wie ein Rohrblatt) und `steam.wav`.
   - Das goldene «NEW» ist auf der Level-Karte zu Level 4 gewandert.

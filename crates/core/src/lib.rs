@@ -2814,8 +2814,9 @@ mod tests {
         w
     }
 
-    /// Hold the plane at `y` in the forest with only `keep` around; the
-    /// lives lost and the events.
+    /// Hold the plane level at `y` in the forest for `seconds`; the lives
+    /// lost and the events. (A fresh `Forest` sends nothing new in its
+    /// first seconds, so what a test put there is all there is.)
     fn hold_in_forest(w: &mut World, y: f32, seconds: f32) -> (u32, Vec<Event>) {
         let lives = w.lives;
         let mut events = Vec::new();
@@ -2832,7 +2833,9 @@ mod tests {
     fn the_forest_is_only_in_level_5() {
         let mut w = World::with_seed(PHONE, 5);
         w.lives = u32::MAX;
-        for _ in 0..((4.0 * LEVEL_SECONDS + 20.0) / TICK_SECONDS) as u32 {
+        // Through every level, the forest and back into level 1.
+        let all = LEVEL_COUNT as f32 + 1.0;
+        for _ in 0..(all * 1.6 * LEVEL_SECONDS / TICK_SECONDS) as u32 {
             w.go_on();
             w.tick(&Input::NONE);
             if w.levels().level != FOREST_LEVEL {
@@ -2856,11 +2859,10 @@ mod tests {
     #[test]
     fn flying_into_a_fir_costs_a_life() {
         let mut w = in_the_forest();
-        w.forest.firs.push(Fir {
+        let fir = Fir {
             x: w.player.pos.x + 100.0,
             top: 0.45,
-        });
-        let fir = w.forest.firs[0];
+        };
         w.forest = Forest::new(99);
         w.forest.firs.push(fir);
         let (_, top, _, _) = fir.parts(PHONE).trunk;
@@ -2888,6 +2890,38 @@ mod tests {
         assert!(
             crashed,
             "a buzzard diving at a plane that does not move hits it"
+        );
+    }
+
+    #[test]
+    fn at_full_throttle_a_buzzard_still_circles_ahead_and_dives_at_the_plane() {
+        let mut w = in_the_forest();
+        let mut circled = 0;
+        let mut hits = 0;
+        for _ in 0..(60.0 / TICK_SECONDS) as u32 {
+            w.forest.firs.clear();
+            w.forest.gusts.clear();
+            w.lives = LIVES;
+            // As fast as it goes for good (any faster breaks it apart).
+            w.player.airspeed = OVERSPEED_AT - 0.01;
+            w.player.pos.y = 0.3 * PHONE.height;
+            w.player.vel_y = 0.0;
+            w.tick(&Input::NONE);
+            for b in &w.forest.buzzards {
+                if matches!(b.state, BuzzardState::Circling { .. }) {
+                    circled += 1;
+                    assert!(b.pos.x > w.player.pos.x + 100.0, "ahead: {b:?}");
+                }
+            }
+            hits += w.events().iter().filter(|e| **e == Event::Crash).count();
+            if w.landing.is_some() {
+                break;
+            }
+        }
+        assert!(circled > 0, "a buzzard came");
+        assert!(
+            hits > 0,
+            "and its dive still finds a plane that does not move"
         );
     }
 

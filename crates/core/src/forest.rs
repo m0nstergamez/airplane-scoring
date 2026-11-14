@@ -341,18 +341,13 @@ impl Forest {
         self.fog = None;
     }
 
-    /// Ground things slide further left by `dx` px (the game going faster);
-    /// buzzards fly on their own, like the gulls, and come by faster too.
+    /// Ground things (firs, gusts) slide further left by `dx` px (the game
+    /// going faster). Buzzards do not: they fly in the air, circle at a
+    /// place on the screen ahead of the plane and dive straight at it, so
+    /// at any speed they never end up behind it or miss their aim.
     pub fn shift(&mut self, dx: f32) {
         self.firs.iter_mut().for_each(|f| f.x += dx);
         self.gusts.iter_mut().for_each(|g| g.x += dx);
-        self.buzzards.iter_mut().for_each(|b| {
-            b.pos.x += dx;
-            b.circle_at.x += dx;
-            if let BuzzardState::Circling { centre, .. } = &mut b.state {
-                centre.x += dx;
-            }
-        });
     }
 
     /// How thick the fog is now: 0 = none, 1 = full, coming and going
@@ -384,7 +379,7 @@ impl Forest {
             g.age += 1;
         }
         self.firs.retain(|f| f.span(bounds).1 > -MARGIN * s);
-        self.gusts.retain(|g| g.x + g.width * s > -MARGIN * s);
+        self.gusts.retain(|g| g.x + g.width * s / 2.0 > -MARGIN * s);
         for b in &mut self.buzzards {
             b.age += 1;
             if Self::step_buzzard(b, bounds, plane) {
@@ -451,7 +446,8 @@ impl Forest {
             let r = &mut self.rng;
             let width = r.range(GUST_WIDTH.0, GUST_WIDTH.1);
             self.gusts.push(Gust {
-                x: w + width * s,
+                // (x is its middle; its left edge starts just off the screen)
+                x: w + (width / 2.0 + 10.0) * s,
                 width,
                 bottom: r.range(GUST_BOTTOM.0, GUST_BOTTOM.1),
                 age: 0,

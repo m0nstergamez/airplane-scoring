@@ -1167,7 +1167,8 @@ fn draw_fir(f: &Fir, bounds: Bounds) {
             Color::from_rgba(28, 54, 40, 255),
         ][i];
         draw_triangle(vec2(a.x, a.y), vec2(b.x, b.y), vec2(c.x, c.y), shade);
-        // The lit left side and a ragged hem of twigs.
+        // The lit left side and a ragged hem of twigs, notched up into
+        // the tier (inside what core hits, `Fir::shape`).
         draw_line(
             a.x,
             a.y,
@@ -1176,14 +1177,15 @@ fn draw_fir(f: &Fir, bounds: Bounds) {
             1.5 * s,
             Color::new(0.45, 0.6, 0.42, 0.6),
         );
+        let notch = Color::from_rgba(22, 42, 32, 255);
         let steps = 6;
-        for k in 0..steps {
-            let x = b.x + (c.x - b.x) * (k as f32 + 0.5) / steps as f32;
+        for k in 1..steps {
+            let x = b.x + (c.x - b.x) * k as f32 / steps as f32;
             draw_triangle(
-                vec2(x - 3.0 * s, b.y - 0.5),
-                vec2(x + 3.0 * s, b.y - 0.5),
-                vec2(x, b.y + 3.0 * s),
-                shade,
+                vec2(x - 2.5 * s, b.y),
+                vec2(x + 2.5 * s, b.y),
+                vec2(x, b.y - 4.0 * s),
+                notch,
             );
         }
     }
