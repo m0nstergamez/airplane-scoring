@@ -214,6 +214,96 @@ def gull_call(seconds):
     return out
 
 
+def honk(pitch, length):
+    """One goose "honk": a nasal tone (strong odd overtones, like a reed)
+    that bends up quickly and sags at the end."""
+    out, phase = [], 0.0
+    for i in range(int(length * RATE)):
+        t = i / length / RATE  # 0..1 through the honk
+        hz = pitch * (0.85 + 0.3 * min(1.0, t * 5.0) - 0.15 * t)
+        phase += 2 * math.pi * hz / RATE
+        tone = sum(math.sin(k * phase) / k for k in (1, 2, 3, 5, 7))
+        out.append(tone * math.sin(math.pi * t) ** 0.4)
+    return out
+
+
+def goose_honk(seconds):
+    """A V of geese as it appears (level 4): several honks, from different
+    geese, overlapping a little."""
+    out = [0.0] * int(seconds * RATE)
+    for at, pitch, length in [
+        (0.0, 380.0, 0.18), (0.16, 420.0, 0.16), (0.42, 360.0, 0.2),
+        (0.58, 400.0, 0.15), (0.8, 440.0, 0.17),
+    ]:
+        start = round(at * RATE)
+        for j, x in enumerate(honk(pitch, length)):
+            out[start + j] += x
+    return out
+
+
+def calls(seconds, plan):
+    """Several calls laid over each other: `plan` is a list of
+    (start s, pitch Hz, length s) for `honk`."""
+    out = [0.0] * int(seconds * RATE)
+    for at, pitch, length in plan:
+        start = round(at * RATE)
+        for j, x in enumerate(honk(pitch, length)):
+            if start + j < len(out):
+                out[start + j] += x
+    return out
+
+
+def goose_far(seconds):
+    """A V of geese further off: two slow, low honks, then one more."""
+    return calls(seconds, [(0.0, 300.0, 0.28), (0.36, 280.0, 0.3), (0.85, 310.0, 0.22)])
+
+
+def goose_chatter(seconds):
+    """A V of geese chattering: many quick, high honks tumbling over each
+    other."""
+    rng = random.Random(14)
+    plan, at = [], 0.0
+    while at < seconds - 0.15:
+        plan.append((at, rng.uniform(430.0, 560.0), rng.uniform(0.07, 0.11)))
+        at += rng.uniform(0.07, 0.12)
+    return calls(seconds, plan)
+
+
+def crow(seed, seconds):
+    """A crow's "kraah, kraah": a harsh, raspy call (a buzzing tone run
+    through noise), falling a little, twice."""
+    rng = random.Random(seed)
+    n = int(seconds * RATE)
+    out = [0.0] * n
+    for at, length in [(0.0, 0.32), (0.45, 0.36)]:
+        start, phase = round(at * RATE), 0.0
+        rasp = lowpass(noise(rng, int(length * RATE)), 2500.0)
+        for j in range(int(length * RATE)):
+            t = j / RATE / length
+            hz = 520.0 * (1.05 - 0.2 * t)
+            phase += 2 * math.pi * hz / RATE
+            buzz = sum(math.sin(k * phase) / k for k in range(1, 9))
+            env = min(1.0, t * 12.0) * (1.0 - t) ** 0.6
+            out[start + j] += env * buzz * (0.55 + 2.5 * abs(rasp[j]))
+    return out
+
+
+def steam_hiss(seed, seconds):
+    """Flying into a column of steam (level 4): a soft rushing hiss that
+    swells and fades, with a low buffet under it."""
+    rng = random.Random(seed)
+    n = int(seconds * RATE)
+    src = noise(rng, n)
+    hiss = lowpass(highpass(src, 1800.0), 7000.0)
+    buffet = lowpass(lowpass(src, 120.0), 120.0)
+    out = []
+    for i in range(n):
+        t = i / RATE
+        env = min(1.0, t / 0.12) * min(1.0, (seconds - t) / 0.5)
+        out.append(env * (0.6 * hiss[i] + 3.0 * buffet[i]))
+    return out
+
+
 def burner(seed, seconds):
     """Hot-air balloon burner: a soft roar of gas flame that swells in,
     holds with a gentle flutter, and dies away."""
@@ -422,6 +512,11 @@ if __name__ == "__main__":
     write("gull-call.wav", gull_call(1.15), 0.8)
     write("new-level.wav", new_level(1.3), 0.8)
     write("balloon-burner.wav", burner(8, 1.1), 0.8)
+    write("goose-honk.wav", goose_honk(1.05), 0.75)
+    write("goose-far.wav", goose_far(1.15), 0.7)
+    write("goose-chatter.wav", goose_chatter(1.0), 0.7)
+    write("crow.wav", crow(15, 0.9), 0.7)
+    write("steam.wav", steam_hiss(13, 1.0), 0.7)
     write("explosion.wav", explosion(9, 2.5), 0.95)
     write("runway-rumble.wav", runway_rumble(10, 2.0), 0.85)
     write("takeoff.wav", takeoff_spool(11, 6.0, 6.8), 0.9)  # ROLL_SECONDS + 0.8

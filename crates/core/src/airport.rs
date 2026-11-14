@@ -53,8 +53,8 @@ pub const FLARE_PITCH: f32 = -0.1;
 pub const NOSE_DOWN_SECONDS: f32 = 0.7;
 /// Each touchdown leaves a puff of tyre smoke that lasts this long.
 pub const TYRE_SMOKE_SECONDS: f32 = 1.6;
-/// The levels whose runways are lit (dark ones: sunset and night).
-pub const RUNWAY_LIT_LEVELS: &[u32] = &[2, 3];
+/// The levels whose runways are lit (dark ones: sunset, night, sunrise).
+pub const RUNWAY_LIT_LEVELS: &[u32] = &[2, 3, 4];
 
 /// A puff of smoke from tyres meeting the runway. It stays where it was
 /// on the ground (slides off with the landscape) and grows and fades.

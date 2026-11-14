@@ -263,9 +263,7 @@ pub fn replay(bytes: &[u8]) -> Result<Outcome, ReplayError> {
                 tail
             }
             GO_ON => {
-                // The game offers only "Menu" after the last level; core
-                // alone would go round to level 1 again.
-                if world.level_complete().is_some_and(|l| !has_next_level(l)) {
+                if !offers_next_level(&world) {
                     return Err(ReplayError::NoNextLevel);
                 }
                 world.go_on();
@@ -281,6 +279,13 @@ pub fn replay(bytes: &[u8]) -> Result<Outcome, ReplayError> {
         over: world.is_over(),
         steps,
     })
+}
+
+/// May "Next level" be tapped now? Not at "Level complete" of the last
+/// level: the game offers only "Menu" there, while core alone would go
+/// round to level 1 again.
+fn offers_next_level(world: &World) -> bool {
+    world.level_complete().is_none_or(has_next_level)
 }
 
 fn same_bits(a: Bounds, b: Bounds) -> bool {
@@ -346,8 +351,8 @@ fn demo_flight_seen(start: &Start, pilot_seed: u64, max_steps: u64) -> (Vec<u8>,
             world.bounds = bounds;
             rec.resize(bounds);
         }
-        if let Some(level) = world.level_complete() {
-            if !has_next_level(level) {
+        if world.level_complete().is_some() {
+            if !offers_next_level(&world) {
                 break;
             }
             world.go_on();
@@ -497,19 +502,24 @@ mod tests {
 
     #[test]
     fn there_is_no_next_level_after_the_last() {
-        // A flight that starts in the last level and lands it may not
-        // go round to level 1: the game offers only "Menu" there.
-        let last = Start {
-            level: crate::LEVEL_COUNT,
-            ..start(3)
-        };
-        // (Level 3 is hard for the demo pilot: pilot 2 lands it.)
-        let mut bytes = demo_flight(&last, 2, ONE_LEVEL);
-        let landed = replay(&bytes).expect("a valid replay");
-        assert_eq!(landed.completed.len(), 1, "{landed:?}");
-        assert_eq!(landed.completed[0].level, crate::LEVEL_COUNT);
+        // Landing the quick way (lives to spare, no pilot), in the level
+        // before the last and in the last: only the first goes on.
+        for level in [crate::LEVEL_COUNT - 1, crate::LEVEL_COUNT] {
+            let mut world = Start { level, ..start(3) }.world();
+            world.lives = u32::MAX;
+            assert!(offers_next_level(&world), "not at Level complete yet");
+            while world.level_complete().is_none() {
+                world.tick(&Input::NONE);
+            }
+            let last = level == crate::LEVEL_COUNT;
+            assert_eq!(offers_next_level(&world), !last, "level {level}");
+        }
+        // `replay` refuses a "Next level" where this says no (see there);
+        // anywhere but at "Level complete" the record changes nothing.
+        let mut bytes = demo_flight(&start(1), 5, 100);
+        let flown = replay(&bytes);
         bytes.push(GO_ON);
-        assert_eq!(replay(&bytes), Err(ReplayError::NoNextLevel));
+        assert_eq!(replay(&bytes), flown);
     }
 
     #[test]

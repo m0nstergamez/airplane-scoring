@@ -26,7 +26,7 @@ short **meaning**.
 | Finger | finger | `pointer` | Steering by touching the screen |
 | Taste | key | `steer_from_keys` | Keyboard key (↑/W, ↓/S) |
 | Spielerin / Spieler (kurz: Spieler:in) | player | — | Person playing. In running text «Spielerin oder Spieler», in short labels «Spieler:in» |
-| Hindernis | obstacle | `Balloons`, `Pad`, `Huts`, `Gulls`, `Towers`, `City` | Something you must not fly into; touching it is a crash. So far: hot-air balloons, launch pads and huts in level 1, gulls and lifeguard towers in level 2, high-rises, cranes and helicopters in level 3 |
+| Hindernis | obstacle | `Balloons`, `Pad`, `Huts`, `Gulls`, `Towers`, `City`, `Sunrise` | Something you must not fly into; touching it is a crash. So far: hot-air balloons, launch pads and huts in level 1, gulls and lifeguard towers in level 2, high-rises, cranes and helicopters in level 3, geese, houses and high-rises in level 4 |
 | Leben | life, lives | `World.lives`, `LIVES` | Crashes you can afford; shown as small planes at the top right |
 | Rauchfahne | smoke trail | `World::smoke`, `DAMAGE_SMOKE` | Smoke behind a damaged plane; thicker with every life lost |
 | Fluggeschwindigkeit | airspeed | `Player::airspeed`, `Input::throttle` | How fast you fly yourself: gas (→/D, tip forward) and brake (←/A, tip back) |
@@ -90,6 +90,12 @@ short **meaning**.
 | Hochhaus | high-rise | `HighRise` | Tall building at the front of the town (level 3), with an antenna; fly over it; an obstacle |
 | Baukran, Kran | tower crane, crane | `Crane` | Crane standing on the ground in the town (level 3), mast, jib and load; fly over it; an obstacle |
 | Helikopter | helicopter | `Heli`, `HeliState`, `FlyingHeli` | Level 3: on some high-rises (takes off or lands far ahead; parked, fly over it) and flying at the plane at its height; hit, it explodes |
+| Sonnenaufgang | sunrise | `Sunrise`, `SUNRISE_LEVEL` | Level 4: flying toward the low sun over a forest and a hazy valley |
+| Gans, V | goose, V | `Goose` | Level 4: geese come at the plane in a V aimed at its height; an obstacle, knocked down when hit |
+| Dampf, Dampfsäule | steam, column of steam | `Steam`, `STEAM_LIFT` | Level 4: rises from a house's chimney in the valley; throws the plane up, costs no life |
+| Hochhaus im Tal | valley high-rise | `FarHighRise` | Level 4: a high-rise in the valley, black against the sun; an obstacle (fly over it); never by a runway |
+| Haus, Kamin | house, chimney | `Steam::house_parts`, `HOUSE_WIDTH`, `CHIMNEY` | Level 4: small houses in the valley with a chimney the steam rises from; an obstacle |
+| Blendung | glare | `Sunrise::glare`, `SUN_AT` | Level 4: the low sun blinds you for a moment; the screen washes out |
 | Wrack | wreck | `Wreck` | A helicopter the plane flew into: it falls, burning, and is no obstacle any more |
 | Ausleger | jib | `Crane`, `JIB_TOP` | The crane's long arm, on top of its mast |
 | Mast | mast | `Crane`, `MAST_WIDTH` | The crane's lattice tower, from the jib down to the ground; it counts as a hit |

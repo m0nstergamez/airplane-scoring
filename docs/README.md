@@ -749,6 +749,51 @@ that isn't code here. Keep entries short and dated.
 - A progress bar under the clock, asked for: a thin gold-filling track
   with a small plane and a chequered flag at the landing
   (`World::level_progress`), since a level is now a race to its end.
+- Level 4, sunrise, from our own photo (a high-rise against the rising
+  sun over a forest, steam from the valley). The obstacles were asked
+  for: geese in groups, flying at you fast; steam and glare were picked
+  from proposals.
+  - The sun is not in the background image: the image scrolls past at
+    ground speed, so a sun in it would come by every few seconds. The
+    game draws it fixed ahead (`SUN_AT`); the glare comes from there.
+  - Geese come in a V aimed at the plane (tip or an arm at its height),
+    every 3–5 s, honking; fly over or under the whole V.
+  - Steam columns throw the plane up (`STEAM_LIFT`, no life lost), with
+    a hiss once on the way in.
+  - Glare every 10–16 s for 2.5 s washes the screen in warm light,
+    drawn as many faint rings so it has no edges.
+  - New sounds from `scripts/make-sounds.py`: `goose-honk.wav` (honks
+    with strong odd overtones, like a reed) and `steam.wav`.
+  - The golden "NEW" moved to level 4 on the level map.
+  - After the first flight, asked for: the runways are lit in level 4
+    too; the photo's high-rise is out of the background (the image
+    repeats, so it stood by every runway); the steam now rises from the
+    chimneys of small houses (solid, smaller than the town's high-rises);
+    the flocks call in four ways (`GOOSE_CALLS`: honking, far off,
+    chattering, a crow), never the same twice in a row, since one call
+    over and over got on your nerves.
+  - The high-rise came back, asked for (only not by the runway): drawn
+    by the game as `FarHighRise` far back, black against the sun, as
+    scenery. It only comes while no runway is on screen, so it never
+    stands by one (tested over a whole level).
+  - High-rises and houses came in on top of each other (each had its
+    own timer). Now one waits until the last has moved in by
+    `SUNRISE_ROOM` (tested over five minutes, several seeds).
+  - Geese about every second, asked for (was every 3–5 s). So that it
+    works: a flock is never fast enough to catch up with the one ahead
+    while that one is on screen, and only one flock calls every
+    `GOOSE_CALL_GAP_SECONDS` (2.5 s), or it would be a din. Every
+    second turned out a bit much: now about every two seconds.
+  - The valley's high-rises are solid now, asked for: flying through
+    one did nothing. `FarHighRise::shape` (walls, roof slab, stair house,
+    mast) is what the game draws and what is hit; the tallest leaves
+    over a third of the screen above it.
+  - Fixed after `/code-review` of PR #44: placing a V could panic in
+    `clamp` on a zero-height screen; a glare stopped at once when the
+    sunrise ended (now it fades out); the house roof was drawn wider
+    than its hit shape; the goose drawing now uses core's `GOOSE_BODY`;
+    the glare draws fewer rings (cheaper on phones); How to play and the
+    glossary name the level 4 high-rises and houses.
 - Online leaderboard, from a prototype (two patches and a plan made
   outside this repo), adapted to the game as it is now. The prototype
   ranked the longest total flight; since best times count only completed
@@ -777,12 +822,14 @@ that isn't code here. Keep entries short and dated.
     the server (native). Core's `sin`, `cos` and `exp` now come from the
     pure-Rust `libm` crate (already in the build through macroquad)
     instead of std, which uses the system's maths library natively.
-    Checked: 24 demo flights (all start levels, four screen sizes)
+    Checked: 32 demo flights (all four start levels, four screen sizes)
     identical native on Apple Silicon and in wasm (wasmtime), and wasm
-    flies exactly as before the change.
+    flies exactly as before the change. Level 4's goose wing beat came
+    with the merge of main and uses `libm` too.
   - Tests use a demo pilot that looks ahead on a copy of the world; it
-    lands level 1 for any seed tried, level 3 only sometimes. Server
-    tests run in `scripts/check.sh` and CI.
+    lands level 1 for any seed tried. The last-level rule is tested
+    without it (landing level 4 with it took 2 s, the geese keep it
+    searching). Server tests run in `scripts/check.sh` and CI.
   - Not done yet: deploying (Fly.io, `fly.toml`), keeping replays,
     rate limits, a shorter seed lifetime, recovery codes, a name filter,
     a wasm/native determinism check in CI. Not stopped by design: a bot

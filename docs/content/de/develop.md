@@ -208,6 +208,19 @@ flowchart LR
   oben weg, oder er landet bis `HELI_TOUCHDOWN_AT` (seine Sinkrate
   rechnet mit dem Tempo des Spiels). Sein Platz zählt ab dem Dach, so
   zieht er mit ihm vorbei.
+- **Der Sonnenaufgang** (`crates/core/src/sunrise.rs`, Level 4,
+  `SUNRISE_LEVEL`): Etwa alle 2 Sekunden (`GOOSE_GAP_SECONDS`) kommt dem Flugzeug
+  ein V Gänse entgegen, seine Spitze oder ein Flügel auf der Höhe des
+  Flugzeugs (`Goose::shape`, abgeschossen wie Möwen, `Event::GooseHonk` mit einem
+  von `GOOSE_CALLS` Rufen, nie zweimal derselbe hintereinander). Jedes
+  `Steam` ist ein kleines Haus (`house_shape`, fest) mit einer Säule aus
+  seinem Kamin; in der Säule wird das Flugzeug nach oben gedrückt
+  (`STEAM_LIFT`, `Event::SteamHiss`), ohne Leben zu verlieren.
+  `FarHighRise`s stehen im Tal, fest (`shape`: Mauern, Dach,
+  Treppenhaus, Mast); wie alles andere kommen sie nur, solange keine
+  Bahn im Bild ist. `Sunrise::glare` (0..1, alle 10–16 s für `GLARE_SECONDS`)
+  sagt dem Spiel, wie stark es den Bildschirm ins Licht der Sonne
+  taucht, die es bei `SUN_AT` zeichnet.
 - **Möwen** (`crates/core/src/gulls.rs`) sind die Hindernisse am Strand.
   core entscheidet, wann und wo sie auftauchen (mit Startwert, wie das
   Wetter), bewegt sie und prüft den Zusammenstoss; eine Möwe, die ruft,

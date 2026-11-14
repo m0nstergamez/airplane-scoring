@@ -86,6 +86,8 @@ Visual checks:
 
 ## Git & PRs
 - Work goes through branches + PRs; never push to `main`. CI must be green.
+- **After every PR, run `/code-review`** on it and report what it found
+  (fix real findings on the same branch before the merge).
 - **No attribution trailers.** Never add `Co-Authored-By:` lines to commit
   messages, and never add "Generated with Claude Code" / 🤖 lines (or any
   other tool attribution) to PR descriptions or comments. This overrides
@@ -183,7 +185,7 @@ crates/game/          macroquad shell (board.rs: leaderboard side of the game)
 crates/server/        leaderboard API (Axum + SQLite), tests in tests/api.rs
 Dockerfile, fly.toml  the server's image and its Fly.io app (the game stays on GitHub Pages)
 web/index.html        canvas page; loads mq_js_bundle.js + airplane-scoring.wasm
-web/sounds/           generated .wav files (engine, wind, rain, thunder, crash, beach, new level, gull call, balloon burner, explosion, overspeed and pull-up warnings and voices, runway rumble, takeoff spool-up, gear-up)
+web/sounds/           generated .wav files (engine, wind, rain, thunder, crash, beach, new level, gull call, goose calls and a crow, steam hiss, balloon burner, explosion, overspeed and pull-up warnings and voices, runway rumble, takeoff spool-up, gear-up)
 web/levels/           rendered level backgrounds (PNG, from art/levels)
 web/qr.svg            QR code to the live game (scripts/make-qr.py)
 web/plane.svg         the plane for the main menu (core's PLANE_* points)
