@@ -172,7 +172,9 @@ Oben in der Mitte steht deine **Zeit**: wie lange du schon in diesem
 Level fliegst, in Minuten und Sekunden («Time 1:05»). Jedes neue Level
 beginnt wieder bei 0:00. Jedes Level ist eine feste **Strecke**: Mit
 mehr Gas bist du früher am Ziel, aber alles kommt dir auch schneller
-entgegen. Je schneller du ein Level schaffst, desto besser. Mit jeder Sekunde wird das Spiel ein ganz kleines bisschen
+entgegen. Je schneller du ein Level schaffst, desto besser. Unter der
+Zeit zeigt ein dünner Balken, wie weit du schon bist: Ein kleines
+Flugzeug fliegt auf ihm zur Zielflagge, wo die Landung beginnt. Mit jeder Sekunde wird das Spiel ein ganz kleines bisschen
 **schneller**: Die Landschaft und alles darin kommen schneller daher
 (nach einer Minute etwa 12 %, höchstens 50 % schneller).
 

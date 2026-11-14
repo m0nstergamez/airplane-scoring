@@ -822,6 +822,10 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
   speichert sie unter einem neuen Schlüssel
   (`airplane-scoring.level-times-ms`) und verwirft die alte Liste mit
   ganzen Sekunden.
+- Eine Fortschrittsanzeige unter der Uhr, gewünscht: ein dünner, sich
+  golden füllender Balken mit einem kleinen Flugzeug und einer
+  Zielflagge bei der Landung (`World::level_progress`), weil ein Level
+  jetzt ein Rennen zu seinem Ende ist.
 
 ## Konzepte
 

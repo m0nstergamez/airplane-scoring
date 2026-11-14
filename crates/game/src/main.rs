@@ -314,6 +314,7 @@ async fn main() {
         } else if world.level_complete().is_none() {
             // ("Level complete" shows the time itself, too.)
             draw_time(&world);
+            draw_progress(&world);
         }
         draw_level_end(&world, result.as_ref());
 
@@ -612,6 +613,62 @@ fn draw_time(world: &World) {
         40.0 * scale,
         size,
         colour,
+    );
+}
+
+/// How far the level is done, under the clock: a thin track filling up
+/// in gold, a small plane flying along it and a chequered flag at the
+/// end, where the landing begins (core's `World::level_progress`).
+fn draw_progress(world: &World) {
+    let s = world.bounds.scale();
+    let width = 200.0 * s;
+    let left = (screen_width() - width) / 2.0;
+    let y = 56.0 * s;
+    let done = world.level_progress();
+    let thick = 5.0 * s;
+    draw_rectangle(
+        left,
+        y - thick / 2.0,
+        width,
+        thick,
+        Color::new(0.0, 0.0, 0.0, 0.35),
+    );
+    draw_rectangle(
+        left,
+        y - thick / 2.0,
+        width * done,
+        thick,
+        Color::from_rgba(255, 220, 90, 230),
+    );
+    // The flag: a pole and a small chequered cloth.
+    let fx = left + width + 6.0 * s;
+    let pole = Color::from_rgba(235, 235, 225, 255);
+    draw_line(fx, y + 5.0 * s, fx, y - 9.0 * s, 1.5 * s, pole);
+    let cell = 3.0 * s;
+    for row in 0..2 {
+        for col in 0..3 {
+            let white = (row + col) % 2 == 0;
+            let colour = if white {
+                WHITE
+            } else {
+                Color::from_rgba(30, 30, 34, 255)
+            };
+            draw_rectangle(
+                fx + col as f32 * cell,
+                y - 9.0 * s + row as f32 * cell,
+                cell,
+                cell,
+                colour,
+            );
+        }
+    }
+    draw_plane(
+        left + width * done,
+        y,
+        s * 0.42,
+        0.0,
+        WHITE_PLANE,
+        BLUE_PLANE,
     );
 }
 

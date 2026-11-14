@@ -163,7 +163,9 @@ At the top centre is your **time**: how long you have been flying in
 this level, in minutes and seconds ("Time 1:05"). Every new level starts
 again at 0:00. Every level is the same **distance**: with more throttle
 you get there sooner, but everything comes at you faster too. The
-faster you complete a level, the better.
+faster you complete a level, the better. Under the time, a thin bar
+shows how far you have come: a small plane flies along it to the
+chequered flag, where the landing begins.
 With every second the game gets a tiny bit **faster**: the landscape
 and everything in it come by quicker (after a minute about 12 %, at
 most 50 % faster).

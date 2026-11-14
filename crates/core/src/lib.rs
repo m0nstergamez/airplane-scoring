@@ -2292,7 +2292,11 @@ mod tests {
     /// its time in milliseconds.
     fn level_time_at(airspeed: f32) -> u64 {
         let mut w = World::with_seed(PHONE, 3).with_takeoff();
+        assert_eq!(w.level_progress(), 0.0);
+        let mut last = 0.0;
         while w.level_complete().is_none() {
+            assert!(w.level_progress() >= last, "the progress only grows");
+            last = w.level_progress();
             w.balloons.list.clear();
             w.balloons.pads.clear();
             w.huts.list.clear();
@@ -2301,6 +2305,7 @@ mod tests {
             }
             w.tick(&Input::NONE);
         }
+        assert_eq!(w.level_progress(), 1.0, "all the way at the landing");
         w.millis_in_level()
     }
 

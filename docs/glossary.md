@@ -39,6 +39,7 @@ short **meaning**.
 | Game over | game over | `Event::GameOver`, `World::is_over` | The last life is gone; the flight ends. On-screen label, stays English |
 | Bestzeiten | best times | `BestTimes`, `BEST_TIMES_COUNT`, `best_time_text` | The 5 fastest completed levels per level, in milliseconds («1:02.483»); only «Level complete» records one. Shown at «Level complete» and game over. On-screen labels «Best times», «New best time!» stay English |
 | Strecke | distance | `LEVEL_DISTANCE`, `World::level_progress` | How far one level is; more throttle covers it sooner |
+| Fortschrittsanzeige | progress bar | `World::level_progress` | The thin bar under the clock: a small plane flying to the chequered flag, where the landing begins |
 | Flugzeit, Zeit | flight time, time | `World::seconds_in_level`, `World::seconds_flown`, `clock_text` | How long you have flown in this level, in minutes and seconds («1:05»), from 0:00 in every level (`seconds_flown`: the whole flight); shown at the top centre, at «Level complete» and at game over. On-screen label «Time» stays English |
 
 ## Weather and sound

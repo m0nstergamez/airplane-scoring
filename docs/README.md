@@ -746,6 +746,9 @@ that isn't code here. Keep entries short and dated.
   steps), fastest first; game over and leaving record nothing. The page
   stores them under a new key (`airplane-scoring.level-times-ms`) and
   drops the old table of whole seconds.
+- A progress bar under the clock, asked for: a thin gold-filling track
+  with a small plane and a chequered flag at the landing
+  (`World::level_progress`), since a level is now a race to its end.
 
 ## Concepts
 
