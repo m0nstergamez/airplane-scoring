@@ -1,4 +1,14 @@
 # Checks every PR; on main it also publishes web/ to GitHub Pages.
+#
+# When the leaderboard server can be affected (crates/, the board
+# plugin, Docker/Fly files: job "changes"), the stage runs too:
+# scripts/stage.sh with STAGE_HOST=docker, i.e. the server's real image
+# (amd64 Linux, like Fly's machines) on the runner and the web build
+# pointing at it; `e2e` checks the API with a replay flown by core as
+# wasm, `e2e-browser` flies level 1 in the real page in headless Chrome
+# with the test-only autopilot. On main the server is then deployed to
+# Fly.io, and only after that is the page published: the published game
+# and the server must fly with the same core.
 name: build & deploy
 
 on:
@@ -16,6 +26,29 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      server: ${{ steps.diff.outputs.server }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - id: diff
+        env:
+          BASE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          paths='^(crates/|web/board\.js$|web/index\.html$|Cargo\.(toml|lock)$|\.cargo/|Dockerfile$|\.dockerignore$|fly\.toml$|scripts/(stage|set-board-api|build-web|find-chrome)\.sh$|scripts/cdp_shot\.py$|\.github/workflows/pages\.yml$)'
+          if [ -z "$BASE" ] || [ "$BASE" = 0000000000000000000000000000000000000000 ] \
+             || ! git cat-file -e "$BASE^{commit}" 2>/dev/null; then
+            server=true  # no base to compare with (manual run, new branch)
+          elif git diff --name-only "$BASE" HEAD | grep -qE "$paths"; then
+            server=true
+          else
+            server=false
+          fi
+          echo "server=$server" | tee -a "$GITHUB_OUTPUT"
+
   build:
     runs-on: ubuntu-latest
     steps:
@@ -48,13 +81,77 @@ jobs:
         run: scripts/build-web.sh
       - name: Stamp the build (installed apps notice updates)
         run: scripts/stamp-build.sh "$GITHUB_SHA"
+      - name: Point the page at the leaderboard server (Fly.io)
+        run: scripts/set-board-api.sh https://airplane-scoring-board.fly.dev
       - uses: actions/upload-pages-artifact@v5
         with:
           path: web
 
+  stage:
+    needs: changes
+    if: needs.changes.outputs.server == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      STAGE_HOST: docker
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown, wasm32-wasip1
+      - uses: Swatinem/rust-cache@v2
+      - name: Stage up (server image, web build)
+        run: scripts/stage.sh up
+      - name: API end to end
+        run: scripts/stage.sh e2e
+      - name: Browser end to end (autopilot flies level 1)
+        run: scripts/stage.sh e2e-browser
+      - name: Server log
+        if: failure()
+        run: docker logs stage-board
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: stage-autopilot
+          path: target/shots/stage-autopilot.png
+          if-no-files-found: ignore
+
+  fly:
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && needs.changes.outputs.server == 'true'
+    needs: [changes, build, stage]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    concurrency:
+      group: fly-deploy
+      cancel-in-progress: false
+    environment:
+      name: fly
+      url: https://airplane-scoring-board.fly.dev/health
+    steps:
+      - uses: actions/checkout@v7
+      - uses: superfly/flyctl-actions/setup-flyctl@1.5
+      - name: Deploy the server to Fly.io
+        run: flyctl deploy --remote-only --ha=false
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+      - name: The server answers
+        run: |
+          for _ in $(seq 1 30); do
+            curl -fsS https://airplane-scoring-board.fly.dev/health && exit 0
+            sleep 2
+          done
+          echo "the deployed server does not answer /health" >&2
+          exit 1
+
   deploy:
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-    needs: build
+    # After the server (if it changed): never a game the server cannot
+    # fly again. A failed stage or Fly deploy stops the page too.
+    if: >-
+      !cancelled() && github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+      && needs.build.result == 'success'
+      && contains(fromJSON('["success","skipped"]'), needs.stage.result)
+      && contains(fromJSON('["success","skipped"]'), needs.fly.result)
+    needs: [build, stage, fly]
     runs-on: ubuntu-latest
     permissions:
       pages: write

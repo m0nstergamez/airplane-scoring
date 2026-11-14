@@ -1044,6 +1044,23 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
   - Noch nicht abgedeckt: die Stage im CI (braucht Docker auf dem
     Runner, etwa 3 Minuten), Handys (brauchen https: eine Fly-App oder
     eine Geräte-Cloud), das Deployment auf Fly.
+- Die Stage im CI und der Server bei Fly.io, gewünscht:
+  - `.github/workflows/pages.yml`: Bei jedem Pull Request, der den
+    Server, `core` oder das Board-Plugin ändert, läuft `scripts/stage.sh`
+    auf dem Runner mit `STAGE_HOST=docker` (Docker dort statt einer
+    OrbStack-Maschine): `up`, `e2e`, `e2e-browser`, der Screenshot als
+    Artefakt. Auf `main` spielt es danach bei Fly.io ein, mit einem
+    Deploy-Token nur für diese App (`FLY_API_TOKEN`), und prüft `/health`;
+    erst danach wird die Seite veröffentlicht (eine fehlgeschlagene Stage
+    oder ein fehlgeschlagenes Einspielen hält sie auf), damit das Spiel nie
+    vor einem Server online geht, der seine Replays nachfliegt. Welche
+    Dateien zählen, steht im Job `changes`.
+  - `e2e` fliegt den Demo-Flug von core mit Nodes eigenem WASI statt mit
+    wasmtime: nichts herunterzuladen im CI.
+  - Die App `airplane-scoring-board` (Frankfurt) und ihr Volume mit 1 GB
+    gibt es. Das Meta-Tag `board-api` bleibt in den Quellen leer, damit
+    lokale Builds nichts werten; CI setzt den Server bei Fly ein, wenn es
+    die Seite veröffentlicht (`scripts/set-board-api.sh`, auch für die Stage).
 
 ## Konzepte
 
@@ -1079,6 +1096,7 @@ flowchart LR
     PR["Pull Request"] --> CI["CI: Tests, fmt, clippy,<br/>Anleitung synchron, wasm bauen"]
     CI -- rot --> PR
     CI -- grün --> M["Merge nach main"] --> CD["CI nochmals + Deploy"] --> P["GitHub Pages:<br/>m0nstergamez.github.io/airplane-scoring"]
+    M --> ST["Server geändert: Stage"] --> F["Fly.io:<br/>airplane-scoring-board.fly.dev"]
 ```
 
 Jeder Merge nach `main` ist auf GitHub Pages live. Eine **Version**

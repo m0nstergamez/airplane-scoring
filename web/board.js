@@ -5,9 +5,11 @@
 // shows the lists. No server, or it cannot be reached: flights are just
 // not ranked.
 //
-// No DOM and no globals here: what it needs comes in as `env`, so
-// tests/web/board.test.mjs runs it in Node with a fake server.
-// index.html makes one with the real fetch and localStorage.
+// No DOM here, and the only globals are the two functions it defines
+// (`createBoard`, `boardClock`; a plain script, index.html calls them).
+// What it needs comes in as `env`, so tests/web/board.test.mjs runs it in
+// Node with a fake server. index.html makes one with the real fetch and
+// localStorage.
 "use strict";
 
 /**
