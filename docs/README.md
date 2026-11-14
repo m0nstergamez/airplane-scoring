@@ -736,6 +736,16 @@ that isn't code here. Keep entries short and dated.
   - A crane comes at the latest after `HIGH_RISES_IN_A_ROW` (2)
     high-rises; before, chance alone could leave out cranes for a long
     time.
+- Best times only for completed levels, with milliseconds, asked for: a
+  time where you crashed made no sense in the list. A level used to last
+  exactly `LEVEL_SECONDS` of flying, so every completed level would have
+  had about the same time (~1:11.6). Now a level is a distance
+  (`LEVEL_DISTANCE`, `World::level_progress`): more throttle lands
+  sooner, at the risk of overspeed and of everything coming faster.
+  `BestTimes` keeps milliseconds (`World::millis_in_level`, 1/60 s
+  steps), fastest first; game over and leaving record nothing. The page
+  stores them under a new key (`airplane-scoring.level-times-ms`) and
+  drops the old table of whole seconds.
 
 ## Concepts
 

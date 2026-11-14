@@ -3,13 +3,13 @@
 
 use airplane_scoring_core::Vec2 as Vec2Core;
 use airplane_scoring_core::{
-    background_x, clock_text, has_next_level, pick_steer, pick_throttle, start_level,
-    steer_from_keys, Airport, Balloon, BestTimes, Bounds, Clock, Crane, Event, Gull, HeliParts,
-    HighRise, Hut, Input, Mix, Pad, Tilt, Tower, TyreSmoke, Warning, World, Wreck, AIRSPEED_RANGE,
-    BALLOON_RADIUS, BASKET_BELOW, BEST_TIMES_COUNT, HUT_EAVES, HUT_INSET, LIVES, MAIN_WHEEL_X,
-    NOSE_WHEEL_X, OVERSPEED_AT, PAD_HEIGHT, PAD_WIDTH, PLANE_COCKPIT, PLANE_FUSELAGE, PLANE_NOSE,
-    PLANE_RADIUS, PLANE_TAIL, PLANE_WING, RUNWAY_HEIGHT, RUNWAY_LENGTH, STALL_AT, STRUT_REACH,
-    TICK_SECONDS, WHEEL_RADIUS,
+    background_x, best_time_text, clock_text, has_next_level, pick_steer, pick_throttle,
+    start_level, steer_from_keys, Airport, Balloon, BestTimes, Bounds, Clock, Crane, Event, Gull,
+    HeliParts, HighRise, Hut, Input, Mix, Pad, Tilt, Tower, TyreSmoke, Warning, World, Wreck,
+    AIRSPEED_RANGE, BALLOON_RADIUS, BASKET_BELOW, BEST_TIMES_COUNT, HUT_EAVES, HUT_INSET, LIVES,
+    MAIN_WHEEL_X, NOSE_WHEEL_X, OVERSPEED_AT, PAD_HEIGHT, PAD_WIDTH, PLANE_COCKPIT, PLANE_FUSELAGE,
+    PLANE_NOSE, PLANE_RADIUS, PLANE_TAIL, PLANE_WING, RUNWAY_HEIGHT, RUNWAY_LENGTH, STALL_AT,
+    STRUT_REACH, TICK_SECONDS, WHEEL_RADIUS,
 };
 use macroquad::prelude::*;
 
@@ -79,12 +79,8 @@ async fn main() {
         // fresh flight ready for the next "Tap to fly".
         if page_js::new_flight() != flight {
             flight = page_js::new_flight();
-            // Leaving a flight (Menu, Restart) still counts the level's
-            // time, like a game over does (that one, and a completed
-            // level's, are in the table already).
-            if !world.is_over() && world.level_complete().is_none() {
-                record_time(&world);
-            }
+            // Leaving a flight (Menu, Restart) counts no time: only a
+            // completed level goes into the best times.
             world = new_world();
             crash_flash = 0.0;
             result = None;
@@ -131,7 +127,8 @@ async fn main() {
                     result = Some(record_time(&world));
                 }
                 if event == Event::GameOver {
-                    result = Some(record_time(&world));
+                    // No time (the level was not completed): just the table.
+                    result = Some(best_times_of(world.levels().level));
                 }
             }
         }
@@ -332,18 +329,24 @@ struct FlightResult {
     placed: Option<airplane_scoring_core::Placed>,
 }
 
-fn record_time(world: &World) -> FlightResult {
-    let level = world.levels().level;
-    let mut times = BestTimes::from_seconds(page_js::load_best_times(level, BEST_TIMES_COUNT));
-    let placed = times.add(world.seconds_in_level());
-    if placed.is_some() {
-        page_js::save_best_times(level, BEST_TIMES_COUNT, times.list());
-    }
+/// A level's stored best times, with nothing new in them.
+fn best_times_of(level: u32) -> FlightResult {
     FlightResult {
         level,
-        times,
-        placed,
+        times: BestTimes::from_millis(page_js::load_best_times(level, BEST_TIMES_COUNT)),
+        placed: None,
     }
+}
+
+/// A completed level: its time goes into the level's best times (and is
+/// saved if it made the table).
+fn record_time(world: &World) -> FlightResult {
+    let mut r = best_times_of(world.levels().level);
+    r.placed = r.times.add(world.millis_in_level());
+    if r.placed.is_some() {
+        page_js::save_best_times(r.level, BEST_TIMES_COUNT, r.times.list());
+    }
+    r
 }
 
 /// A new flight: full lives, level 1 (or `?level=`), fresh weather.
@@ -459,7 +462,7 @@ fn draw_level_end(world: &World, result: Option<&FlightResult>) {
         let mut y = h * 0.17;
         centred(&format!("Level {level} complete"), y, 44.0, gold);
         y += 38.0 * s;
-        let time = format!("Time {}", clock_text(world.seconds_in_level()));
+        let time = format!("Time {}", best_time_text(world.millis_in_level()));
         centred(&time, y, 30.0, WHITE);
         if let Some(r) = result {
             draw_best_times(r, y, s, &centred);
@@ -652,7 +655,8 @@ fn draw_lives(world: &World) {
     }
 }
 
-/// "Game over", the time flown and how to fly again.
+/// "Game over", the level's best times (a game over counts no time) and
+/// how to fly again.
 fn draw_game_over(world: &World, result: Option<&FlightResult>) {
     let (w, h) = (screen_width(), screen_height());
     draw_rectangle(0.0, 0.0, w, h, Color::new(0.08, 0.09, 0.12, 0.65));
@@ -667,10 +671,10 @@ fn draw_game_over(world: &World, result: Option<&FlightResult>) {
     centred("Game over", y, 60.0, gold);
     y += 40.0 * s;
     centred(
-        &format!("Time {}", clock_text(world.seconds_in_level())),
+        "Only completed levels get a time",
         y,
-        32.0,
-        WHITE,
+        22.0,
+        Color::from_rgba(200, 210, 225, 255),
     );
     if let Some(r) = result {
         draw_best_times(r, y, s, &centred);
@@ -706,7 +710,11 @@ fn draw_best_times(r: &FlightResult, mut y: f32, s: f32, centred: &dyn Fn(&str, 
     let label = format!("Best times  Level {}", r.level);
     centred(&label, y, 22.0, Color::from_rgba(200, 210, 225, 255));
     let mine = r.placed.map(|p| p.place);
-    for (i, &seconds) in r.times.list().iter().enumerate() {
+    if r.times.list().is_empty() {
+        y += 22.0 * s;
+        centred("none yet", y, 22.0, Color::from_rgba(235, 235, 225, 255));
+    }
+    for (i, &millis) in r.times.list().iter().enumerate() {
         y += 22.0 * s;
         let colour = if mine == Some(i) {
             gold
@@ -714,7 +722,7 @@ fn draw_best_times(r: &FlightResult, mut y: f32, s: f32, centred: &dyn Fn(&str, 
             Color::from_rgba(235, 235, 225, 255)
         };
         let marker = if mine == Some(i) { "  <" } else { "" };
-        let text = format!("{}.  {}{}", i + 1, clock_text(seconds), marker);
+        let text = format!("{}.  {}{}", i + 1, best_time_text(millis), marker);
         centred(&text, y, 22.0, colour);
     }
 }

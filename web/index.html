@@ -435,8 +435,8 @@
       <div class="guide">
         <section>
           <h3>The goal</h3>
-          <p>Fly as long as you can: the clock at the top counts your time in this level, in minutes and seconds, from 0:00 in every level. Dodge what is in your way: hot-air balloons, launch pads and huts on the coast; gulls and lifeguard towers at the beach; in the town at night, fly over the high-rises and the cranes, and dodge the helicopters that fly at you at your height. You have <strong>3 lives</strong>; each crash costs one.</p>
-          <p>At the end of a level the autopilot <strong>lands</strong> on a runway: level complete! That unlocks the next level (after the last one, more are coming). Each level keeps your <strong>5 best times</strong>.</p>
+          <p>Fly each level as fast as you can: every level is the same distance, and more throttle gets you there sooner. The clock at the top counts your time in this level, from 0:00 in every level. Dodge what is in your way: hot-air balloons, launch pads and huts on the coast; gulls and lifeguard towers at the beach; in the town at night, fly over the high-rises and the cranes, and dodge the helicopters that fly at you at your height. You have <strong>3 lives</strong>; each crash costs one.</p>
+          <p>At the end of a level the autopilot <strong>lands</strong> on a runway: level complete! That unlocks the next level (after the last one, more are coming). Each level keeps your <strong>5 fastest times</strong>, with milliseconds; only a completed level gets a time.</p>
         </section>
         <section>
           <h3>Steering</h3>
@@ -783,12 +783,15 @@
     // The old highscores (points) are gone: forget them.
     // So are the old best times, which counted whole flights across
     // levels: a time now counts one level only.
-    for (const old of ["airplane-scoring.highscores", "airplane-scoring.best-times"]) {
+    // Old tables (the last one: longest flights in whole seconds, game
+    // overs included) do not compare with the times now: dropped.
+    for (const old of ["airplane-scoring.highscores", "airplane-scoring.best-times", "airplane-scoring.level-times"]) {
       try { localStorage.removeItem(old); } catch (_) { /* private mode */ }
     }
-    // Each level's best times, in seconds: { "1": [65, 48, ...], "2": [...] }.
-    // Just numbers, kept in this browser only (core decides which count).
-    const BEST_KEY = "airplane-scoring.level-times";
+    // Each level's best times, in milliseconds, only from completed
+    // levels: { "1": [61250, 63017, ...], "2": [...] }. Just numbers, kept
+    // in this browser only (core decides which count).
+    const BEST_KEY = "airplane-scoring.level-times-ms";
     let bestTimes = {};
     try {
       const stored = JSON.parse(localStorage.getItem(BEST_KEY) || "{}");
@@ -806,9 +809,9 @@
           const list = bestTimes[level];
           return Array.isArray(list) ? Math.max(0, Math.floor(Number(list[i]) || 0)) : 0;
         };
-        importObject.env.page_set_best_time = (level, i, seconds) => {
+        importObject.env.page_set_best_time = (level, i, millis) => {
           if (!Array.isArray(bestTimes[level])) bestTimes[level] = [];
-          bestTimes[level][i] = seconds;
+          bestTimes[level][i] = millis;
           try { localStorage.setItem(BEST_KEY, JSON.stringify(bestTimes)); } catch (_) { /* private mode: not kept */ }
         };
         importObject.env.page_level_complete = (level) => {

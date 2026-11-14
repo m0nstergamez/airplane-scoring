@@ -228,6 +228,9 @@ flowchart LR
   geflogenen Ticks, darum bleibt sie bei «Game over» mit ihnen stehen und
   beginnt in jedem Level bei 0:00; `World::seconds_flown` zählt den
   ganzen Flug, für das Schnellerwerden.
+  Nur «Level complete» speichert eine Bestzeit: `World::millis_in_level`
+  (von `best_time_text` als «m:ss.mmm» angezeigt) kommt in `BestTimes`,
+  die schnellste zuerst; «Game over» oder Verlassen speichert nichts.
 - **Das Wetter ist zufällig, aber wiederholbar:** `World::with_seed`
   bekommt einen Startwert; derselbe Startwert ergibt denselben Regen und
   dieselben Blitze, darum können Tests es nachspielen.
@@ -302,7 +305,7 @@ flowchart LR
 ```
 
 Ein Level endet mit einer Landung (`World::landing`, `Landing` in
-`crates/core/src/lib.rs`): Nach `LEVEL_SECONDS` Flug kommt die
+`crates/core/src/lib.rs`): Nach `LEVEL_DISTANCE` Landschaft (`LEVEL_SECONDS` bei Reisetempo, mit mehr Gas früher) kommt die
 Landebahn, der Autopilot fliegt den Anflug und setzt auf, das Flugzeug
 bremst bis zum Stillstand, «Level N complete» erscheint (ein Tipp führt
 weiter), die Landschaft des nächsten Levels übernimmt sofort und zählt
@@ -382,7 +385,7 @@ Landschaft:
 | `HUT_GAP_SECONDS` | `crates/core/src/huts.rs` | kürzeste und längste Zeit zwischen zwei Hütten |
 | `HUT_HEIGHT` | `crates/core/src/huts.rs` | niedrigste und höchste Hütte (Pixel) |
 | `SCROLL_SPEED` | `crates/core/src/scenery.rs` | wie schnell die Landschaft vorbeizieht (Pixel pro Sekunde) |
-| `LEVEL_SECONDS` | `crates/core/src/level.rs` | wie lange ein Level dauert (Sekunden) |
+| `LEVEL_SECONDS` | `crates/core/src/level.rs` | wie lange ein Level bei Reisetempo dauert (Sekunden); legt `LEVEL_DISTANCE` fest |
 | `CLEAR_SECONDS` | `crates/core/src/airport.rs` | wie lange vor einer Landung keine neuen Hindernisse kommen |
 | `BRAKE_SECONDS` | `crates/core/src/airport.rs` | wie lange das Flugzeug nach dem Aufsetzen bis zum Stillstand bremst |
 

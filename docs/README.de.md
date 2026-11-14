@@ -810,6 +810,18 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
     jeder Zusammenstoss.
   - Spätestens nach `HIGH_RISES_IN_A_ROW` (2) Hochhäusern kommt ein
     Kran; vorher konnte der Zufall lange keine Kräne bringen.
+- Bestzeiten nur für geschaffte Levels, mit Millisekunden, gewünscht:
+  Eine Zeit, bei der man abgestürzt ist, ergab in der Liste keinen Sinn.
+  Ein Level dauerte genau `LEVEL_SECONDS` Flug, also hätte jedes
+  geschaffte Level etwa dieselbe Zeit gehabt (~1:11.6). Jetzt ist ein
+  Level eine Strecke (`LEVEL_DISTANCE`, `World::level_progress`): Mit mehr
+  Gas landet man früher, mit dem Risiko von Overspeed und davon, dass
+  alles schneller kommt. `BestTimes` speichert Millisekunden
+  (`World::millis_in_level`, in Schritten von 1/60 s), die schnellste
+  zuerst; «Game over» und Verlassen speichern nichts. Die Seite
+  speichert sie unter einem neuen Schlüssel
+  (`airplane-scoring.level-times-ms`) und verwirft die alte Liste mit
+  ganzen Sekunden.
 
 ## Konzepte
 

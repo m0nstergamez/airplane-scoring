@@ -55,7 +55,7 @@ pub use input::{
 };
 pub use level::{
     has_next_level, level_view, start_level, LevelView, LEVEL_BANNER_SECONDS, LEVEL_COUNT,
-    LEVEL_FADE_SECONDS, LEVEL_SECONDS, RAINY_LEVELS,
+    LEVEL_DISTANCE, LEVEL_FADE_SECONDS, LEVEL_SECONDS, RAINY_LEVELS,
 };
 pub use scenery::{background_x, scroll_distance, SCROLL_SPEED};
 pub use shape::{any_overlap, Poly};
@@ -177,6 +177,11 @@ pub const SAFE_TICKS: u32 = (SAFE_SECONDS * 60.0) as u32;
 /// The flight time as a clock, minutes and seconds: 125 → "2:05".
 pub fn clock_text(seconds: u64) -> String {
     format!("{}:{:02}", seconds / 60, seconds % 60)
+}
+
+/// A best time with milliseconds: 62_483 → "1:02.483".
+pub fn best_time_text(millis: u64) -> String {
+    format!("{}.{:03}", clock_text(millis / 1000), millis % 1000)
 }
 
 /// How much the plane smokes after losing lives: index = lives lost
@@ -446,9 +451,11 @@ pub struct World {
     pub start_level: u32,
     /// How many levels have been landed (completed) on this flight.
     completed: u32,
-    /// Ticks flown in the level now (it ends with a landing after
-    /// [`LEVEL_SECONDS`]).
+    /// Ticks flown in the level now: its time.
     level_ticks: u64,
+    /// How far the plane has come in the level now, in px of landscape
+    /// at scale 1. At [`LEVEL_DISTANCE`] it lands.
+    level_distance: f32,
     /// The landing at the end of a level, while it goes on.
     pub landing: Option<Landing>,
     /// A tap asked to go on from "Level complete" now.
@@ -502,6 +509,7 @@ impl World {
             start_level: 1,
             completed: 0,
             level_ticks: 0,
+            level_distance: 0.0,
             landing: None,
             go_on: false,
             lives: LIVES,
@@ -811,6 +819,18 @@ impl World {
         self.level_ticks / TICKS_PER_SECOND
     }
 
+    /// The time in the level now, in milliseconds: at "Level complete",
+    /// the time for its best times ([`best_time_text`]).
+    pub fn millis_in_level(&self) -> u64 {
+        (self.level_ticks * 1000 + TICKS_PER_SECOND / 2) / TICKS_PER_SECOND
+    }
+
+    /// How much of the level is behind the plane: 0 at the start, 1 when
+    /// the landing begins.
+    pub fn level_progress(&self) -> f32 {
+        (self.level_distance / LEVEL_DISTANCE).min(1.0)
+    }
+
     /// Steering toward a finger at `target_y` (screen px), from where the
     /// plane is now. Eases off within [`TOUCH_EASE_DISTANCE`], measured at
     /// [`DESIGN_HEIGHT`] like every other size.
@@ -869,7 +889,7 @@ impl World {
         }
         // Time's up in this level: the landing runway comes in and the
         // autopilot takes over (gear down).
-        let level_over = self.level_ticks as f32 * TICK_SECONDS >= LEVEL_SECONDS;
+        let level_over = self.level_distance >= LEVEL_DISTANCE;
         if level_over
             && self.landing.is_none()
             && self.takeoff.is_none()
@@ -1068,7 +1088,7 @@ impl World {
         // while the autopilot takes off (the player cannot dodge then).
         let clearing = self.landing.is_some()
             || self.hands_off()
-            || self.level_ticks as f32 * TICK_SECONDS >= LEVEL_SECONDS - CLEAR_SECONDS;
+            || self.level_distance >= LEVEL_DISTANCE - SCROLL_SPEED * CLEAR_SECONDS;
         let coast = levels.level == 1 && !runway_in && !clearing;
         let plane_y = self.player.pos.y;
         let pads: Vec<f32> = self.balloons.pads.iter().map(|p| p.x).collect();
@@ -1087,6 +1107,7 @@ impl World {
         // Faster than at the start: everything slides past by the extra
         // too (far towers less, as they move slower); slower while rolling.
         self.distance += (SCROLL_SPEED * speed * TICK_SECONDS) as f64;
+        self.level_distance += SCROLL_SPEED * speed * TICK_SECONDS;
         // Tyre smoke stays on the ground: it slides off with it.
         for puff in &mut self.tyre_smoke {
             puff.pos.x -= SCROLL_SPEED * scale * speed * TICK_SECONDS;
@@ -1267,6 +1288,7 @@ impl World {
     fn next_level(&mut self) {
         self.completed += 1;
         self.level_ticks = 0;
+        self.level_distance = 0.0;
         self.go_on = false;
         self.landing = Some(Landing::Countdown(0));
         self.balloons.list.clear();
@@ -2266,12 +2288,52 @@ mod tests {
         assert!(!w.player.is_crashed());
     }
 
+    /// Fly a level through at `airspeed` (nothing in the way) and land:
+    /// its time in milliseconds.
+    fn level_time_at(airspeed: f32) -> u64 {
+        let mut w = World::with_seed(PHONE, 3).with_takeoff();
+        while w.level_complete().is_none() {
+            w.balloons.list.clear();
+            w.balloons.pads.clear();
+            w.huts.list.clear();
+            if w.landing.is_none() && !w.hands_off() {
+                w.player.airspeed = airspeed;
+            }
+            w.tick(&Input::NONE);
+        }
+        w.millis_in_level()
+    }
+
+    #[test]
+    fn a_level_is_a_distance_so_more_speed_lands_sooner() {
+        let cruising = level_time_at(1.0);
+        let fast = level_time_at(1.4);
+        // Roughly a minute of flying plus takeoff and landing.
+        assert!((60_000..90_000).contains(&cruising), "{cruising}");
+        assert!(fast + 10_000 < cruising, "{fast} vs {cruising}");
+        assert_eq!(level_time_at(1.0), cruising, "same flight, same time");
+    }
+
+    #[test]
+    fn the_level_time_is_in_milliseconds() {
+        let mut w = World::with_seed(PHONE, 3);
+        for _ in 0..90 {
+            w.tick(&Input::NONE);
+        }
+        assert_eq!(w.millis_in_level(), 1500);
+        w.tick(&Input::NONE);
+        assert_eq!(w.millis_in_level(), 1517, "one tick: 1/60 s");
+        assert_eq!(best_time_text(62_483), "1:02.483");
+        assert_eq!(best_time_text(5_007), "0:05.007");
+    }
+
     #[test]
     fn overspeed_at_the_end_of_a_level_does_not_wreck_the_landing() {
         let mut w = World::with_seed(PHONE, 3);
         // Gas on just before the landing: overspeed as the approach begins.
-        let ticks = ((LEVEL_SECONDS - 1.5) / TICK_SECONDS) as u32;
-        for _ in 0..ticks {
+        // About 1.5 s of cruising before the landing.
+        let left = 1.5 * SCROLL_SPEED / LEVEL_DISTANCE;
+        while w.level_progress() < 1.0 - left {
             w.balloons.list.clear();
             w.balloons.pads.clear();
             w.huts.list.clear();
@@ -2301,8 +2363,9 @@ mod tests {
     #[test]
     fn braking_into_the_landing_does_not_crash_it() {
         let mut w = World::with_seed(PHONE, 3);
-        let ticks = ((LEVEL_SECONDS - 1.0) / TICK_SECONDS) as u32;
-        for _ in 0..ticks {
+        // About 1.0 s of cruising before the landing.
+        let left = 1.0 * SCROLL_SPEED / LEVEL_DISTANCE;
+        while w.level_progress() < 1.0 - left {
             w.balloons.list.clear();
             w.balloons.pads.clear();
             w.huts.list.clear();

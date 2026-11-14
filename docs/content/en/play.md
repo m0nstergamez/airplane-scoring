@@ -161,7 +161,9 @@ you slowly return to normal speed.
 
 At the top centre is your **time**: how long you have been flying in
 this level, in minutes and seconds ("Time 1:05"). Every new level starts
-again at 0:00. The longer you last, the better.
+again at 0:00. Every level is the same **distance**: with more throttle
+you get there sooner, but everything comes at you faster too. The
+faster you complete a level, the better.
 With every second the game gets a tiny bit **faster**: the landscape
 and everything in it come by quicker (after a minute about 12 %, at
 most 50 % faster).
@@ -180,22 +182,23 @@ thick and dark, and a small flame flickers at the tail.
 
 With the last life your plane **explodes**: a fireball, flying debris
 and a cloud of smoke, with a big bang, and the screen **shakes**. Then **"Game over"** shows on the
-screen, together with your time. After a short
+screen, with the level's best times (a game over gets no time). After a short
 moment "Tap or click to fly again" appears: tap, click or press Enter,
 and a new flight starts in the same level with 3 lives.
 
-Under the time, **"Best times"** lists the 5 longest times in this
-level, in minutes and seconds; this time is marked with a
+Only a **completed** level gets a time. "Level complete" shows it with
+milliseconds ("Time 1:02.483"), and under it **"Best times"** lists the
+5 fastest times in this level; this time is marked with a
 "<" when it made the list, and "New best time!" blinks when it beat
-them all. Each level has its own list, and "Level complete" shows it
-too. A flight you leave with **Menu**
-or **Restart** counts too. The times stay only in this browser: nothing
-goes online, and friends on their phones have their own lists.
+them all. Each level has its own list. A game over, or a flight you
+leave with **Menu** or **Restart**, counts no time. The times stay only
+in this browser: nothing goes online, and friends on their phones have
+their own lists.
 
 ## Levels
 
 Each **level** has its own landscape: first the coast (level 1), then a
-beach at sunset (level 2), then a town at night (level 3). After about a minute of flying, a level ends
+beach at sunset (level 2), then a town at night (level 3). After its distance (about a minute at cruising speed), a level ends
 with a **landing**: no new obstacles come, a runway appears, and the
 autopilot takes over. Speed warnings stay off while it flies, and the
 speed settles back by itself. The gear comes down, the plane touches down

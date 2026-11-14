@@ -37,7 +37,8 @@ short **meaning**.
 | Explosion | explosion | `Event::Explosion`, `explosion.wav` | The plane blowing up when the last life goes |
 | geschützt (blinken) | safe (blinking) | `Player::is_safe`, `SAFE_SECONDS` | After a crash the plane blinks and cannot lose another life |
 | Game over | game over | `Event::GameOver`, `World::is_over` | The last life is gone; the flight ends. On-screen label, stays English |
-| Bestzeiten | best times | `BestTimes`, `BEST_TIMES_COUNT` | The 5 longest times per level (time in that level), shown at «Level complete» and game over. On-screen labels «Best times», «New best time!» stay English |
+| Bestzeiten | best times | `BestTimes`, `BEST_TIMES_COUNT`, `best_time_text` | The 5 fastest completed levels per level, in milliseconds («1:02.483»); only «Level complete» records one. Shown at «Level complete» and game over. On-screen labels «Best times», «New best time!» stay English |
+| Strecke | distance | `LEVEL_DISTANCE`, `World::level_progress` | How far one level is; more throttle covers it sooner |
 | Flugzeit, Zeit | flight time, time | `World::seconds_in_level`, `World::seconds_flown`, `clock_text` | How long you have flown in this level, in minutes and seconds («1:05»), from 0:00 in every level (`seconds_flown`: the whole flight); shown at the top centre, at «Level complete» and at game over. On-screen label «Time» stays English |
 
 ## Weather and sound
@@ -113,7 +114,7 @@ short **meaning**.
 | scrollen | scroll | `SCROLL_SPEED` | The landscape slides past the plane |
 | Kopie | copy | `background_x` | The background drawn once more beside itself |
 | Naht | seam | `make-backgrounds.sh` | Where one copy touches the next; must not be visible |
-| Levelwechsel | level change | `level_view`, `LEVEL_SECONDS` | Every minute the next level begins; after the last one, level 1 again |
+| Levelwechsel | level change | `level_view`, `LEVEL_DISTANCE` | After its distance a level ends with a landing, then the next begins |
 | einblenden | fade in | `LevelView::fade` | No longer used between levels: the landing ends one, the next begins at once |
 | Ebene | layer | `<g id="sky">` | One group in the SVG (sky, hills, …); can later scroll at its own speed |
 

@@ -170,8 +170,9 @@ kein Gas und bremst nicht, kommst du langsam zurück aufs normale Tempo.
 
 Oben in der Mitte steht deine **Zeit**: wie lange du schon in diesem
 Level fliegst, in Minuten und Sekunden («Time 1:05»). Jedes neue Level
-beginnt wieder bei 0:00. Je länger du durchhältst, desto
-besser. Mit jeder Sekunde wird das Spiel ein ganz kleines bisschen
+beginnt wieder bei 0:00. Jedes Level ist eine feste **Strecke**: Mit
+mehr Gas bist du früher am Ziel, aber alles kommt dir auch schneller
+entgegen. Je schneller du ein Level schaffst, desto besser. Mit jeder Sekunde wird das Spiel ein ganz kleines bisschen
 **schneller**: Die Landschaft und alles darin kommen schneller daher
 (nach einer Minute etwa 12 %, höchstens 50 % schneller).
 
@@ -192,25 +193,26 @@ kleine Flamme.
 Beim letzten Leben **explodiert** dein Flugzeug: ein Feuerball,
 herumfliegende Trümmer und eine Rauchwolke, mit einem lauten Knall, und
 der Bildschirm **wackelt**.
-Dann steht **«Game over»** auf dem Bildschirm, zusammen mit deiner Zeit. Nach einem
+Dann steht **«Game over»** auf dem Bildschirm, mit den Bestzeiten des Levels (ein «Game over» bekommt keine Zeit). Nach einem
 kurzen Moment erscheint «Tap or click to fly again»: Tippe, klicke oder
 drücke Enter, und ein neuer Flug beginnt im selben Level mit 3 Leben.
 
-Unter der Zeit stehen die **«Best times»**: die 5 längsten Zeiten in
-diesem Level, in Minuten und Sekunden; diese Zeit ist mit «<»
-markiert, wenn sie in die Liste kam, und «New best time!» blinkt, wenn sie
-alle geschlagen hat. Jedes Level hat seine eigene Liste, und auch «Level
-complete» zeigt sie. Ein Flug, den
-du mit **Menu** oder **Restart** verlässt, zählt auch. Die Zeiten
-bleiben nur in diesem Browser: Nichts geht ins Internet, und deine
-Freunde haben auf ihren Handys ihre eigenen Listen.
+Nur ein **geschafftes** Level bekommt eine Zeit. «Level complete» zeigt
+sie mit Millisekunden («Time 1:02.483»), und darunter stehen die
+**«Best times»**: die 5 schnellsten Zeiten in diesem Level; diese Zeit
+ist mit «<» markiert, wenn sie in die Liste kam, und «New best time!»
+blinkt, wenn sie alle geschlagen hat. Jedes Level hat seine eigene
+Liste. Ein «Game over» oder ein Flug, den du mit **Menu** oder
+**Restart** verlässt, zählt keine Zeit. Die Zeiten bleiben nur in diesem
+Browser: Nichts geht ins Internet, und deine Freunde haben auf ihren
+Handys ihre eigenen Listen.
 
 ## Levels
 
 Jedes **Level** hat seine eigene Landschaft: zuerst die Küste (Level 1),
 dann einen Strand bei Sonnenuntergang (Level 2), dann eine Stadt bei
-Nacht (Level 3). Nach etwa einer Minute
-Flug endet ein Level mit einer **Landung**: Es kommen keine neuen
+Nacht (Level 3). Nach seiner Strecke (bei Reisetempo etwa eine Minute)
+endet ein Level mit einer **Landung**: Es kommen keine neuen
 Hindernisse mehr, eine Landebahn erscheint, und der Autopilot übernimmt.
 Solange er fliegt, schweigen die Tempo-Warnungen, und das Tempo geht von
 selbst zurück.

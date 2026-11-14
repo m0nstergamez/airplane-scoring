@@ -11,8 +11,14 @@ use crate::TICK_SECONDS;
 /// How many levels exist (`web/levels/level1.png` … `levelN.png`).
 pub const LEVEL_COUNT: u32 = 3;
 
-/// How long one level lasts, in seconds of flying.
+/// About how long one level lasts at cruising speed, in seconds of
+/// flying. The level itself is a distance ([`LEVEL_DISTANCE`]): more
+/// throttle gets there sooner.
 pub const LEVEL_SECONDS: f32 = 60.0;
+
+/// How far one level is, in px of landscape at scale 1: what the plane
+/// covers in [`LEVEL_SECONDS`] at cruising speed. Then it lands.
+pub const LEVEL_DISTANCE: f32 = crate::SCROLL_SPEED * LEVEL_SECONDS;
 
 /// How long the next landscape takes to fade in, at the end of a level.
 pub const LEVEL_FADE_SECONDS: f32 = 3.0;
