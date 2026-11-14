@@ -32,6 +32,8 @@ rustup target add wasm32-unknown-unknown
 | Play in the browser | `scripts/dev.sh`, then open <http://localhost:8080> |
 | Run all checks | `scripts/check.sh` |
 | Quick checks | `scripts/check.sh --fast` |
+| Check wasm and native fly the same | `scripts/check-determinism.sh` |
+| Test the page's leaderboard script | `node --test tests/web/*.test.mjs` |
 | Make the sound files again | `scripts/make-sounds.py` |
 | Make the level backgrounds again | `scripts/make-backgrounds.sh` |
 | Run the leaderboard server | `cargo run -p airplane-scoring-server` |
@@ -357,7 +359,9 @@ sequenceDiagram
 
 Pilots are anonymous: the server gives each browser a secret token and
 keeps only its hash. The leaderboard is off while the `board-api` meta
-tag in `web/index.html` is empty; then the game plays as before. Every
+tag in `web/index.html` is empty; then the game plays as before. In the
+source it stays empty, so local builds rank nothing; CI sets the Fly.io
+server when it publishes the page (`scripts/set-board-api.sh`). Every
 change to `core` that changes how a flight goes also changes replays:
 the server must be deployed with the same `core` as the published game.
 
@@ -371,37 +375,48 @@ an [OrbStack](https://orbstack.dev/) Linux machine named `stage` (amd64,
 like Fly's machines) runs the real server image from the `Dockerfile`
 and serves the game with `board-api` pointing at it. So the browser's
 wasm makes the replays and an x86-64 Linux server flies them again, as
-in production. It needs OrbStack; `e2e` also needs
-[wasmtime](https://wasmtime.dev/).
+in production. It needs OrbStack; `e2e` also needs Node, `e2e-browser`
+Chrome. CI runs the same stage on every pull request that touches the
+server, `core` or the board plugin (`.github/workflows/pages.yml`, about
+five minutes), with `STAGE_HOST=docker`: Docker on the runner itself
+instead of an OrbStack machine.
 
 | What | Command |
 |---|---|
 | Create, build and start the stage | `scripts/stage.sh up`, then open <http://localhost:8180> |
 | Check it automatically (about a minute) | `scripts/stage.sh e2e` |
+| Fly a level in the real page (about a minute) | `scripts/stage.sh e2e-browser` |
 | The server's log | `scripts/stage.sh logs` |
 | Empty its database | `scripts/stage.sh reset` |
 | Stop it / remove the machine | `scripts/stage.sh down` / `scripts/stage.sh delete` |
 
 `e2e` signs up a pilot, gets a seed, lets core's demo pilot (built as
 wasm) land level 1, waits until that much real time has passed and
-checks the server reads the same time and puts it on the board. After a
-change to `core`, `crates/server` or the page, run `up` again.
+checks the server reads the same time and puts it on the board.
+`e2e-browser` builds the game with the autopilot (`--features autopilot`:
+the same demo pilot flies, in the browser, never in the published game),
+opens the stage page in headless Chrome and flies level 1 in real time.
+It reads the line under the time from the console, checks that it says
+"World rank N of M" and that the board has the time the game showed, and
+saves `target/shots/stage-autopilot.png`. After a change to `core`,
+`crates/server` or the page, run `up` again.
 
-Then the server goes online, for example on
-[Fly.io](https://fly.io/) (`Dockerfile`, `fly.toml`; no free tier).
-To put it there once:
+The server runs on [Fly.io](https://fly.io/) (`Dockerfile`, `fly.toml`;
+no free tier), as the app `airplane-scoring-board`. CI deploys it on
+every merge to `main` that touches it, once the stage passed, and only
+then publishes the page, which points at it. To set it up once (already done):
 
 1. Install `flyctl` and log in (`fly auth login`).
-2. Change `app` in `fly.toml` to a name nobody has taken yet.
-3. Check the region with `fly platform regions` (`fra` in `fly.toml`).
-4. Run `fly launch --no-deploy --copy-config` and say no to databases.
-5. Run `fly volumes create leaderboard_data --size 1 --region fra`.
-6. Run `fly deploy`, then `fly scale count 1`: a second machine would
-   have its own, empty database.
-7. Put `https://<app>.fly.dev` into the `board-api` meta tag and open a
-   pull request.
+2. Check the region with `fly platform regions` (`fra` in `fly.toml`).
+3. Run `fly apps create airplane-scoring-board` (the `app` in `fly.toml`).
+4. Run `fly volumes create leaderboard_data --size 1 --region fra`.
+5. Give CI a deploy token for this app only:
+   `fly tokens create deploy -a airplane-scoring-board -x 8760h | gh secret set FLY_API_TOKEN`
+   (it expires after a year: run it again then).
+6. Run `fly deploy --ha=false`: one machine only, a second would have
+   its own, empty database.
 
-After a change to `core` or `crates/server`, run `fly deploy` again.
+To deploy by hand, run `fly deploy --ha=false` again.
 
 ### Test first
 

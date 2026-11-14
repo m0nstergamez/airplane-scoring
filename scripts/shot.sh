@@ -25,15 +25,7 @@ trap 'rm -rf "$tmpdir"' EXIT
 # Console messages that are known and harmless (from the vendored JS bundle).
 known='register_plugin is not defined|AudioContext was not allowed to start|is present in JS bundle, but is not used|GL Driver Message|favicon'
 
-chrome="${CHROME:-}"
-if [ -z "$chrome" ]; then
-  for c in "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
-           "/Applications/Chromium.app/Contents/MacOS/Chromium" \
-           "$(command -v google-chrome || true)" "$(command -v chromium || true)"; do
-    if [ -n "$c" ] && [ -x "$c" ]; then chrome="$c"; break; fi
-  done
-fi
-[ -n "$chrome" ] || { echo "No Chrome found; set CHROME=/path/to/chrome" >&2; exit 2; }
+chrome=$(scripts/find-chrome.sh) || exit 2
 
 [ -n "${SKIP_BUILD:-}" ] || scripts/build-web.sh >/dev/null 2>"$tmpdir/build.log" || { cat "$tmpdir/build.log" >&2; exit 1; }
 

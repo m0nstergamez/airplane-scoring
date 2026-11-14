@@ -15,6 +15,7 @@ use airplane_scoring_core::{
 use macroquad::prelude::*;
 
 mod audio;
+mod autopilot;
 mod board;
 mod page_js;
 mod scenery;
@@ -43,6 +44,9 @@ async fn main() {
     let mut world = new_world(page_js::requested_level());
     // The online leaderboard: one per flight, like the world.
     let mut board = board::Board::default();
+    // Test builds only: core's demo pilot flies (see autopilot.rs).
+    let mut autopilot = autopilot::Autopilot::default();
+    autopilot.new_flight();
     let mut flight = page_js::new_flight();
     let mut restarts = page_js::restart();
     // The level's best times and where the last time landed in them, for
@@ -82,6 +86,7 @@ async fn main() {
             // completed level goes into the best times (and online).
             world = new_world(page_js::requested_level());
             board = board::Board::default();
+            autopilot.new_flight();
             crash_flash = 0.0;
             result = None;
         }
@@ -106,9 +111,14 @@ async fn main() {
         // a new flight in the level the plane is in, not the first one.
         let restart = page_js::restart() != restarts;
         restarts = page_js::restart();
-        if restart || (playing && world.can_restart() && restart_pressed()) {
+        if restart
+            || (playing
+                && world.can_restart()
+                && (restart_pressed() || autopilot.wants_restart(&world)))
+        {
             world = new_world(world.restart_level() as i32);
             board = board::Board::default();
+            autopilot.new_flight();
             crash_flash = 0.0;
             result = None;
         }
@@ -135,7 +145,10 @@ async fn main() {
             let leaned = gravity.and_then(|(gx, gy, gz)| tilt.lean(gx, gy, gz));
             let steer = pick_steer(pointer, keys, tilted);
             // Rounded the way a replay keeps it, ranked flight or not.
-            world.tick(&board.input(steer, pick_throttle(gas, leaned)));
+            let (steer, throttle) = autopilot
+                .controls(&world)
+                .unwrap_or((steer, pick_throttle(gas, leaned)));
+            world.tick(&board.input(steer, throttle));
             for &event in world.events() {
                 audio.play(event);
                 if event == Event::Crash || event == Event::Explosion {
@@ -145,6 +158,9 @@ async fn main() {
                     page_js::level_complete(level); // unlocks the next level
                     result = Some(record_time(&world));
                     board.level_complete(level); // off to the leaderboard
+                    autopilot.tell(|| {
+                        format!("level {level} complete in {} ms", world.millis_in_level())
+                    });
                 }
                 if event == Event::GameOver {
                     // No time (the level was not completed): just the table.
@@ -365,6 +381,9 @@ async fn main() {
             draw_progress(&world);
         }
         let online = world.level_complete().and_then(|l| board.standing(l));
+        if let Some(online) = online {
+            autopilot.tell(|| online.line());
+        }
         draw_level_end(&world, result.as_ref(), online);
 
         next_frame().await
@@ -520,14 +539,11 @@ fn draw_level_end(world: &World, result: Option<&FlightResult>, online: Option<b
         if let Some(online) = online {
             y += 26.0 * s;
             let grey = Color::from_rgba(200, 210, 225, 255);
-            let (text, colour) = match online {
-                board::Standing::Waiting => ("World rank ...".to_owned(), grey),
-                board::Standing::Ranked { rank, pilots } => {
-                    (format!("World rank {rank} of {pilots}"), gold)
-                }
-                board::Standing::NotCounted => ("Not counted online".to_owned(), grey),
+            let colour = match online {
+                board::Standing::Ranked { .. } => gold,
+                _ => grey,
             };
-            centred(&text, y, 22.0, colour);
+            centred(&online.line(), y, 22.0, colour);
         }
         if let Some(r) = result {
             draw_best_times(r, y, s, &centred);

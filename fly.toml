@@ -1,15 +1,17 @@
 # The leaderboard server on Fly.io (image: Dockerfile).
 #
-# Once:
-#   fly launch --no-deploy --copy-config   # pick an app name; say no to databases
+# CI deploys it (.github/workflows/pages.yml) on every merge to main
+# that touches the server, after the stage passed, and points the
+# published page at https://airplane-scoring-board.fly.dev. Set up once
+# (done; the manual, Developing, Leaderboard):
+#   fly apps create airplane-scoring-board
 #   fly volumes create leaderboard_data --size 1 --region fra
-#   fly deploy
-# Then put https://<app name>.fly.dev into the "board-api" meta tag in
-# web/index.html. Later changes: fly deploy.
+#   fly tokens create deploy -a airplane-scoring-board -x 8760h | gh secret set FLY_API_TOKEN
+# By hand: fly deploy --ha=false
 #
 # One Machine only: the database is a file on its volume. Do not scale out.
 
-app = "airplane-scoring-board" # must be unique on Fly.io: change it
+app = "airplane-scoring-board"
 primary_region = "fra"         # Frankfurt; the volume must be in the same region
 
 [env]
