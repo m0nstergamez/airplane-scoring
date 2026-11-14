@@ -776,6 +776,9 @@ that isn't code here. Keep entries short and dated.
     by the game as `FarHighRise` far back, black against the sun, as
     scenery. It only comes while no runway is on screen, so it never
     stands by one (tested over a whole level).
+  - High-rises and houses came in on top of each other (each had its
+    own timer). Now one waits until the last has moved in by
+    `SUNRISE_ROOM` (tested over five minutes, several seeds).
 
 ## Concepts
 

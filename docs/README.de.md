@@ -846,6 +846,10 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
     Spiel als `FarHighRise` weit hinten gezeichnet, schwarz vor der
     Sonne, als Kulisse. Es kommt nur, solange keine Bahn im Bild ist,
     steht also nie bei einer (über ein ganzes Level getestet).
+  - Hochhäuser und Häuser kamen ineinander (jedes hatte seinen eigenen
+    Zeitgeber). Jetzt wartet das eine, bis das letzte um `SUNRISE_ROOM`
+    hereingerückt ist (über fünf Minuten mit mehreren Startwerten
+    getestet).
   - Neue Töne aus `scripts/make-sounds.py`: `goose-honk.wav` (Rufe mit
     starken ungeraden Obertönen, wie ein Rohrblatt) und `steam.wav`.
   - Das goldene «NEW» ist auf der Level-Karte zu Level 4 gewandert.

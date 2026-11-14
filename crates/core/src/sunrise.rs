@@ -89,6 +89,10 @@ pub const FAR_HIGH_RISE_GAP_SECONDS: (f32, f32) = (7.0, 12.0);
 pub const FIRST_FAR_HIGH_RISE_SECONDS: f32 = 1.5;
 pub const FAR_HIGH_RISE_WIDTH: (f32, f32) = (90.0, 130.0);
 pub const FAR_HIGH_RISE_TOP: (f32, f32) = (0.5, 0.6);
+/// The least room between a high-rise and a house with its steam, in px:
+/// one waits until the other has moved on, so they never stand in each
+/// other.
+pub const SUNRISE_ROOM: f32 = 30.0;
 
 /// Time between two glares, shortest and longest, and the first one, in
 /// seconds; how long one lasts, and how long it takes to come and go.
@@ -273,9 +277,14 @@ impl Steam {
     }
 
     fn right(&self, bounds: Bounds) -> f32 {
+        self.span(bounds).1
+    }
+
+    /// Its leftmost and rightmost x, house and steam together, in px.
+    pub fn span(&self, bounds: Bounds) -> (f32, f32) {
         let (l, _, w, _) = self.house_parts(bounds).walls;
         let (cl, _, cw, _) = self.rect(bounds);
-        (l + w).max(cl + cw)
+        (l.min(cl), (l + w).max(cl + cw))
     }
 }
 
@@ -417,6 +426,16 @@ impl Sunrise {
             self.next_goose = ticks(self.rng.range(GOOSE_GAP_SECONDS.0, GOOSE_GAP_SECONDS.1));
         }
         self.next_steam -= 1;
+        // A house or a high-rise waits until the last one has moved in far
+        // enough: they come in from just off the right edge, so this keeps
+        // room between them.
+        let busy = (self.steam.iter().map(|c| c.span(bounds).1))
+            .chain(self.high_rises.iter().map(|b| b.span(bounds).1))
+            .fold(f32::MIN, f32::max)
+            > bounds.width - SUNRISE_ROOM * s;
+        if self.next_steam == 0 && busy {
+            self.next_steam = ticks(0.2);
+        }
         if self.next_steam == 0 {
             let r = &mut self.rng;
             let width = r.range(STEAM_WIDTH.0, STEAM_WIDTH.1);
@@ -434,6 +453,13 @@ impl Sunrise {
             self.next_steam = ticks(r.range(STEAM_GAP_SECONDS.0, STEAM_GAP_SECONDS.1));
         }
         self.next_high_rise -= 1;
+        let busy = (self.steam.iter().map(|c| c.span(bounds).1))
+            .chain(self.high_rises.iter().map(|b| b.span(bounds).1))
+            .fold(f32::MIN, f32::max)
+            > bounds.width - SUNRISE_ROOM * s;
+        if self.next_high_rise == 0 && busy {
+            self.next_high_rise = ticks(0.2);
+        }
         if self.next_high_rise == 0 {
             let r = &mut self.rng;
             let width = r.range(FAR_HIGH_RISE_WIDTH.0, FAR_HIGH_RISE_WIDTH.1);
@@ -700,6 +726,29 @@ mod tests {
             was = m.glare();
         }
         assert!((3..=6).contains(&starts), "{starts}");
+    }
+
+    #[test]
+    fn high_rises_and_houses_never_stand_in_each_other() {
+        for seed in 0..8 {
+            let mut m = Sunrise::new(seed);
+            let (mut houses, mut towers) = (0, 0);
+            for _ in 0..ticks(300.0) {
+                m.tick(PHONE, true, 200.0, &mut Vec::new());
+                houses = houses.max(m.steam.len());
+                towers = towers.max(m.high_rises.len());
+                let mut spans: Vec<(f32, f32)> = (m.steam.iter())
+                    .map(|c| c.span(PHONE))
+                    .chain(m.high_rises.iter().map(|b| b.span(PHONE)))
+                    .collect();
+                spans.sort_by(|a, b| a.0.total_cmp(&b.0));
+                for pair in spans.windows(2) {
+                    let gap = pair[1].0 - pair[0].1;
+                    assert!(gap >= SUNRISE_ROOM - 1.0, "seed {seed}: {gap}");
+                }
+            }
+            assert!(houses > 0 && towers > 0, "both still come");
+        }
     }
 
     #[test]
