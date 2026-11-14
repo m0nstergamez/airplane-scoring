@@ -1069,6 +1069,20 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
   jedem Startlevel aus. «Restart» im Pausenmenü tut dasselbe; es hat
   einen eigenen Zähler (`page_restart`), weil «Menu» weiter im Level der
   Karte startet.
+- Die Bestenliste sah auf Handys falsch aus, gemeldet («nur in Level 2,
+  nicht in Level 4»): Die fünf Listen passten nicht auf ein Handy quer,
+  also lag Level 5 unter dem Rand und die letzte Zeile von Level 3 war
+  halb abgeschnitten, ohne Zeichen, dass die Box scrollt. Die Zeiten auf
+  dem Server stimmten (in seiner Datenbank geprüft: Der Flug war Level 5,
+  der Wald). Die Tafel zeigt jetzt ein Level aufs Mal, mit einem Knopf
+  pro Level (benannt wie auf der Karte), und öffnet sich beim zuletzt
+  begonnenen oder abgeschlossenen Level. Ihre Zeilen kommen aus
+  `boardRows` in `web/board.js`; nur die neueste Anfrage darf die Liste
+  ändern (`newestOnly`), beides getestet.
+  - Dabei gesehen: Eine Zeit aus einem Flug, der in Level 1 begann, ist
+    in Level 4 viel schneller als eine aus einem Flug, der in Level 4
+    begann, weil das Spiel mit jeder geflogenen Sekunde schneller wird
+    (0:50.450 gegen 1:10.333). Noch nicht geändert.
 
 ## Konzepte
 

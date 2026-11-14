@@ -339,10 +339,12 @@ Hügel und die orangen Baumkronen im Tal:
 
 Ist das Spiel mit einem Server für die Bestenliste verbunden, hat das
 Hauptmenü einen fünften Knopf, **Leaderboard**. Er zeigt die
-schnellsten Pilotinnen und Piloten jedes Levels: eine Zeile pro Person,
-mit ihrer schnellsten Zeit. Deine eigene Zeile ist golden. Unter den
-Listen kannst du **Your name** ändern (1 bis 16 Buchstaben, Ziffern,
-Leerzeichen, `-` oder `_`).
+schnellsten Pilotinnen und Piloten eines Levels aufs Mal: eine Zeile pro
+Person, mit ihrer schnellsten Zeit. Die Knöpfe über der Liste
+(**1 Coast** bis **5 Forest**) wechseln das Level; sie öffnet sich beim
+Level, das du zuletzt begonnen oder abgeschlossen hast. Deine eigene Zeile ist golden.
+Unter der Liste kannst du **Your name** ändern (1 bis 16 Buchstaben,
+Ziffern, Leerzeichen, `-` oder `_`).
 
 Du brauchst kein Konto. Beim ersten Mal holt das Spiel einen geheimen
 Schlüssel vom Server und behält ihn in diesem Browser. Löschst du die

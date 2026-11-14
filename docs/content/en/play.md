@@ -316,10 +316,11 @@ hill and the orange crowns of the valley:
 ## Leaderboard
 
 When the game is connected to a leaderboard server, the main menu has a
-fifth button, **Leaderboard**. It shows the fastest pilots of each
-level: one line per pilot, with their fastest time. Your own line is
-gold. Under the lists you can change **Your name** (1 to 16 letters,
-digits, spaces, `-` or `_`).
+fifth button, **Leaderboard**. It shows the fastest pilots of one level
+at a time: one line per pilot, with their fastest time. The buttons
+above the list (**1 Coast** to **5 Forest**) switch the level; it opens
+on the level you started or completed last. Your own line is gold. Under the list you
+can change **Your name** (1 to 16 letters, digits, spaces, `-` or `_`).
 
 You need no account. The first time, the game gets a secret key from the
 server and keeps it in this browser. Clear the browser's data or play on
