@@ -100,7 +100,7 @@
        a tab per level, then its list, which scrolls if it is long. */
     #start .board-tabs { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; flex: none; }
     #start .panel.howto .board-tabs button { font-size: 15px; padding: 5px 12px; }
-    #start .panel.howto .board-tabs button[aria-selected="true"] { background: #ffd65a; color: #14181f; border-color: #ffd65a; }
+    #start .panel.howto .board-tabs button[aria-pressed="true"] { background: #ffd65a; color: #14181f; border-color: #ffd65a; }
     #start .guide.board-list { grid-template-columns: 1fr; width: min(460px, 100%); box-sizing: border-box; margin: 0 auto; }
     #start #board-lists p { display: flex; justify-content: space-between; gap: 16px; }
     #start #board-lists p.me { color: #ffd65a; font-weight: 700; }
@@ -437,27 +437,27 @@
       <h2 id="map-title">Choose a level</h2>
       <div class="map">
         <div class="stop">
-          <button type="button" class="node" data-level="1" aria-label="Level 1: Coast"><span class="lock">&#128274;</span><span class="done" aria-hidden="true">&#10003;</span></button>
+          <button type="button" class="node" data-level="1" data-name="Coast" aria-label="Level 1: Coast"><span class="lock">&#128274;</span><span class="done" aria-hidden="true">&#10003;</span></button>
           <span class="name">1 Coast</span>
         </div>
         <div class="path" aria-hidden="true"></div>
         <div class="stop">
-          <button type="button" class="node" data-level="2" aria-label="Level 2: Beach"><span class="lock">&#128274;</span><span class="done" aria-hidden="true">&#10003;</span></button>
+          <button type="button" class="node" data-level="2" data-name="Beach" aria-label="Level 2: Beach"><span class="lock">&#128274;</span><span class="done" aria-hidden="true">&#10003;</span></button>
           <span class="name">2 Beach</span>
         </div>
         <div class="path" aria-hidden="true"></div>
         <div class="stop">
-          <button type="button" class="node" data-level="3" aria-label="Level 3: Town"><span class="lock">&#128274;</span><span class="done" aria-hidden="true">&#10003;</span></button>
+          <button type="button" class="node" data-level="3" data-name="Town" aria-label="Level 3: Town"><span class="lock">&#128274;</span><span class="done" aria-hidden="true">&#10003;</span></button>
           <span class="name">3 Town</span>
         </div>
         <div class="path" aria-hidden="true"></div>
         <div class="stop">
-          <button type="button" class="node" data-level="4" aria-label="Level 4: Sunrise"><span class="lock">&#128274;</span><span class="done" aria-hidden="true">&#10003;</span></button>
+          <button type="button" class="node" data-level="4" data-name="Sunrise" aria-label="Level 4: Sunrise"><span class="lock">&#128274;</span><span class="done" aria-hidden="true">&#10003;</span></button>
           <span class="name">4 Sunrise</span>
         </div>
         <div class="path" aria-hidden="true"></div>
         <div class="stop">
-          <button type="button" class="node" data-level="5" aria-label="Level 5: Forest (new)"><span class="lock">&#128274;</span><span class="done" aria-hidden="true">&#10003;</span></button>
+          <button type="button" class="node" data-level="5" data-name="Forest" aria-label="Level 5: Forest (new)"><span class="lock">&#128274;</span><span class="done" aria-hidden="true">&#10003;</span></button>
           <span class="name">5 Forest</span>
           <span class="new" data-new-level="5">NEW</span>
         </div>
@@ -500,8 +500,8 @@
     <!-- The online leaderboard (filled in by the "board" script below). -->
     <div class="panel howto" data-panel="board">
       <h2>Leaderboard: fastest levels</h2>
-      <div class="board-tabs" id="board-tabs" role="tablist" aria-label="Level"></div>
-      <div class="guide board-list" id="board-lists" role="tabpanel" aria-live="polite"></div>
+      <div class="board-tabs" id="board-tabs" role="group" aria-label="Level"></div>
+      <div class="guide board-list" id="board-lists" aria-live="polite"></div>
       <label class="board-name">Your name <input id="board-name" type="text" maxlength="16" autocomplete="off" spellcheck="false"></label>
       <button type="button" data-go="home">Back</button>
     </div>
@@ -860,7 +860,7 @@
           try { localStorage.setItem(BEST_KEY, JSON.stringify(bestTimes)); } catch (_) { /* private mode: not kept */ }
         };
         importObject.env.page_level_complete = (level) => {
-          document.body.dataset.lastLevel = level; // the leaderboard opens on it
+          document.dispatchEvent(new CustomEvent("level-flown", { detail: level })); // the leaderboard opens on it
           if (!isCompleted(level)) completed.push(level);
           try { localStorage.setItem(COMPLETED_KEY, JSON.stringify(completed)); } catch (_) { /* private mode */ }
           renderMap();
@@ -898,7 +898,7 @@
     const fly = async (level = 1) => {
       if (start.classList.contains("gone")) return;
       chosenLevel = level;
-      document.body.dataset.lastLevel = level; // the leaderboard opens on it
+      document.dispatchEvent(new CustomEvent("level-flown", { detail: level })); // the leaderboard opens on it
       markFlown(level);
       newFlight += 1; // the game sets up this flight (in the chosen level)
       start.classList.add("gone");
@@ -1109,30 +1109,32 @@
         }
         return p;
       };
-      // A tab per level, named like on the level map ("4 Sunrise").
+      // A button per level, named like on the level map ("4 Sunrise").
       const tabs = document.getElementById("board-tabs");
       for (const node of document.querySelectorAll("#start .node[data-level]")) {
         const tab = document.createElement("button");
         tab.type = "button";
-        tab.setAttribute("role", "tab");
         tab.dataset.boardLevel = node.dataset.level; // not data-level: that flies
-        const name = node.getAttribute("aria-label").replace(/^Level \d+: /, "").replace(/ \(new\)$/, "");
-        tab.textContent = `${node.dataset.level} ${name}`;
+        tab.textContent = `${node.dataset.level} ${node.dataset.name}`;
         tabs.append(tab);
       }
+      // Answers can come back out of order (a tab, then a rename): only
+      // the newest request may change the list and the name.
+      const latest = newestOnly();
       let shown = 1;
       const showBoard = async (level = shown) => {
         shown = level;
-        for (const tab of tabs.children) tab.setAttribute("aria-selected", String(Number(tab.dataset.boardLevel) === level));
+        const ticket = latest.next();
+        for (const tab of tabs.children) tab.setAttribute("aria-pressed", String(Number(tab.dataset.boardLevel) === level));
         lists.textContent = "Loading...";
         try {
           const b = await board.call("GET", `/v1/leaderboard?level=${level}&limit=10`);
-          if (level !== shown) return; // another tab was picked meanwhile
+          if (!latest.current(ticket)) return;
           lists.textContent = "";
           for (const row of boardRows(b)) lists.append(line(row.left, row.right, row.me));
           nameInput.value = b.me ? b.me.name : board.name();
         } catch (e) {
-          if (level === shown) lists.textContent = "The leaderboard cannot be reached right now.";
+          if (latest.current(ticket)) lists.textContent = "The leaderboard cannot be reached right now.";
         }
       };
       tabs.addEventListener("click", (e) => {
@@ -1140,6 +1142,7 @@
         if (tab) showBoard(Number(tab.dataset.boardLevel));
       });
       nameInput.addEventListener("change", async () => {
+        const ticket = latest.next(); // a list still loading must not hide what comes of this
         try {
           const r = await board.call("PUT", "/v1/players/me", { name: nameInput.value });
           nameInput.value = r.name;
@@ -1147,15 +1150,18 @@
           showBoard();
         } catch (e) {
           nameInput.value = board.name();
-          lists.textContent = "A name has 1 to 16 letters, digits, spaces, - or _.";
+          if (latest.current(ticket)) lists.textContent = "A name has 1 to 16 letters, digits, spaces, - or _.";
         }
       });
       // Typing a name must not steer, pause ("p") or start a flight.
       for (const type of ["keydown", "keyup", "keypress"]) nameInput.addEventListener(type, (e) => e.stopPropagation());
       const button = document.getElementById("board-button");
       button.hidden = false;
-      // It opens on the level flown last (in this page), else level 1.
-      button.addEventListener("click", () => showBoard(Number(document.body.dataset.lastLevel) || 1));
+      // It opens on the level started or completed last (the page script
+      // sends "level-flown"), else level 1.
+      let lastLevel = 1;
+      document.addEventListener("level-flown", (e) => { lastLevel = e.detail; });
+      button.addEventListener("click", () => showBoard(lastLevel));
       board.start(LEVELS);
     })();
   </script>

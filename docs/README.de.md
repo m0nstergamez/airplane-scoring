@@ -1076,8 +1076,9 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
   dem Server stimmten (in seiner Datenbank geprüft: Der Flug war Level 5,
   der Wald). Die Tafel zeigt jetzt ein Level aufs Mal, mit einem Knopf
   pro Level (benannt wie auf der Karte), und öffnet sich beim zuletzt
-  geflogenen Level. Ihre Zeilen kommen aus `boardRows` in `web/board.js`,
-  getestet.
+  begonnenen oder abgeschlossenen Level. Ihre Zeilen kommen aus
+  `boardRows` in `web/board.js`; nur die neueste Anfrage darf die Liste
+  ändern (`newestOnly`), beides getestet.
   - Dabei gesehen: Eine Zeit aus einem Flug, der in Level 1 begann, ist
     in Level 4 viel schneller als eine aus einem Flug, der in Level 4
     begann, weil das Spiel mit jeder geflogenen Sekunde schneller wird

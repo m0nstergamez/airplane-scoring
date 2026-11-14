@@ -6,8 +6,8 @@
 // not ranked.
 //
 // No DOM here, and the only globals are the functions it defines
-// (`createBoard`, `boardClock`, `boardRows`; a plain script, index.html
-// calls them).
+// (`createBoard`, `boardClock`, `boardRows`, `newestOnly`; a plain
+// script, index.html calls them).
 // What it needs comes in as `env`, so tests/web/board.test.mjs runs it in
 // Node with a fake server. index.html makes one with the real fetch and
 // localStorage.
@@ -175,4 +175,12 @@ function boardRows(b) {
     rows.push({ left: `${me.rank}. ${me.name} (you, of ${b.pilots})`, right: boardClock(me.millis), me: true });
   }
   return rows;
+}
+
+// For requests whose answers can come back out of order (a slow list,
+// then a newer one): each takes a ticket with `next()`, and only the
+// newest may still change the page (`current(ticket)`).
+function newestOnly() {
+  let last = 0;
+  return { next: () => ++last, current: (ticket) => ticket === last };
 }

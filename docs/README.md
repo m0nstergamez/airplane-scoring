@@ -968,8 +968,9 @@ that isn't code here. Keep entries short and dated.
   with no sign that the box scrolls. The times on the server were right
   (checked in its database: the flight was level 5, the forest). The
   panel now shows one level at a time, with a button per level
-  (named like on the map), and opens on the level flown last. Its rows
-  come from `boardRows` in `web/board.js`, tested.
+  (named like on the map), and opens on the level started or completed
+  last. Its rows come from `boardRows` in `web/board.js`; only the
+  newest request may change the list (`newestOnly`), both tested.
   - Also seen there: a time from a flight that started in level 1 is
     much faster in level 4 than one that started in level 4, as the game
     speeds up with every second flown (0:50.450 against 1:10.333). Not

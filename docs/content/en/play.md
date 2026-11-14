@@ -319,7 +319,7 @@ When the game is connected to a leaderboard server, the main menu has a
 fifth button, **Leaderboard**. It shows the fastest pilots of one level
 at a time: one line per pilot, with their fastest time. The buttons
 above the list (**1 Coast** to **5 Forest**) switch the level; it opens
-on the level you flew last. Your own line is gold. Under the list you
+on the level you started or completed last. Your own line is gold. Under the list you
 can change **Your name** (1 to 16 letters, digits, spaces, `-` or `_`).
 
 You need no account. The first time, the game gets a secret key from the

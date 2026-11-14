@@ -258,3 +258,14 @@ test("a level's list: the top, and your own place under it if you are not in it"
   // Names are other people's text: they stay text, the page never makes HTML of them.
   assert.equal(boardRows({ level: 1, pilots: 1, top: [{ rank: 1, name: "<b>x</b>", millis: 1, me: false }], me: null })[0].left, "1. <b>x</b>");
 });
+
+test("only the newest request may change the page", () => {
+  const { newestOnly } = load();
+  const latest = newestOnly();
+  const slow = latest.next(); // e.g. a tab's list
+  const rename = latest.next(); // then a rename
+  assert.equal(latest.current(slow), false, "the older answer is dropped, even for the same level");
+  assert.equal(latest.current(rename), true);
+  assert.equal(latest.current(latest.next()), true);
+  assert.equal(latest.current(rename), false);
+});

@@ -342,7 +342,7 @@ Hauptmenü einen fünften Knopf, **Leaderboard**. Er zeigt die
 schnellsten Pilotinnen und Piloten eines Levels aufs Mal: eine Zeile pro
 Person, mit ihrer schnellsten Zeit. Die Knöpfe über der Liste
 (**1 Coast** bis **5 Forest**) wechseln das Level; sie öffnet sich beim
-Level, das du zuletzt geflogen bist. Deine eigene Zeile ist golden.
+Level, das du zuletzt begonnen oder abgeschlossen hast. Deine eigene Zeile ist golden.
 Unter der Liste kannst du **Your name** ändern (1 bis 16 Buchstaben,
 Ziffern, Leerzeichen, `-` oder `_`).
 
