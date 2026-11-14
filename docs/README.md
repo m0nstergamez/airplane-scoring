@@ -812,6 +812,11 @@ that isn't code here. Keep entries short and dated.
   - Found while checking: with five stops the level map reached under
     the QR code on a small iPhone (667×320); on low screens the QR code
     now hides while the map shows (it stays in the main menu).
+  - Also found: `scripts/check.sh` failed now and then with "no
+    background: levels/level5.png". The local test server
+    (`scripts/serve.sh`) kept Python's default backlog of 5, and the page
+    loads every picture and sound at once, so macOS reset a connection
+    now and then. It now allows 64 (three full checks in a row passed).
 
 ## Concepts
 

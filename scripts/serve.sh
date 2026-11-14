@@ -17,6 +17,11 @@ import sys
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 
 class Server(ThreadingHTTPServer):
+    # The page loads every level picture and sound at once; with Python's
+    # default backlog of 5, macOS resets some of those connections and a
+    # picture fails to load now and then.
+    request_queue_size = 64
+
     def server_bind(self):
         # HTTPServer.server_bind calls socket.getfqdn(), a reverse DNS lookup
         # that can stall for ~35 s on macOS (seen with Homebrew Python 3.14).

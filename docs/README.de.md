@@ -888,6 +888,12 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
     einem kleinen iPhone (667×320) unter den QR-Code; auf niedrigen
     Bildschirmen versteckt sich der QR-Code jetzt, solange die Karte
     sichtbar ist (im Hauptmenü bleibt er).
+  - Ebenfalls gefunden: `scripts/check.sh` scheiterte ab und zu mit «no
+    background: levels/level5.png». Der lokale Testserver
+    (`scripts/serve.sh`) behielt Pythons Standard-Warteschlange von 5,
+    und die Seite lädt alle Bilder und Töne auf einmal, also brach macOS
+    ab und zu eine Verbindung ab. Jetzt sind 64 erlaubt (drei volle
+    Prüfungen nacheinander liefen durch).
   - Neue Töne aus `scripts/make-sounds.py`: `goose-honk.wav` (Rufe mit
     starken ungeraden Obertönen, wie ein Rohrblatt) und `steam.wav`.
   - Das goldene «NEW» ist auf der Level-Karte zu Level 4 gewandert.
