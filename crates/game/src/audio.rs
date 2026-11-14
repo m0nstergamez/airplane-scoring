@@ -164,7 +164,7 @@ impl Audio {
             Event::NewLevel { .. } => return,
             Event::GullCall => (&s.gull_call, GULL_CALL_VOLUME),
             Event::BalloonBurner => (&s.burner, BALLOON_BURNER_VOLUME),
-            Event::BalloonBurst => (&s.explosion, BALLOON_BURST_VOLUME),
+            Event::BalloonBurst | Event::HeliCrash => (&s.explosion, BALLOON_BURST_VOLUME),
             Event::Lightning { .. } => return, // seen, not heard
             Event::Explosion => (&s.explosion, EXPLOSION_VOLUME),
             Event::Takeoff => (&s.takeoff, TAKEOFF_VOLUME),

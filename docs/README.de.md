@@ -793,6 +793,39 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
   neben «Menu» (auch Enter).
   Das entscheidet der Core (`has_next_level`), ein neues Level 4 bringt
   den Knopf also von selbst zurück.
+- Level 3 überarbeitet, gewünscht nach einem Flug auf dem Handy: Durch
+  den Mast der Kräne konnte man durchfliegen, ein Helikopter tat beim
+  Hineinfliegen nichts Besonderes, und manchmal kam gar kein Kran.
+  - Kräne stehen jetzt am Boden, und alles an ihnen zählt, auch der Mast:
+    darüber fliegen (`JIB_TOP` 0.36–0.5). Ein fester Mast unter einem
+    Ausleger ganz oben hätte den ganzen Bildschirm gesperrt, darum kam
+    der Ausleger herunter.
+  - Damit ganz oben nicht wieder ein sicherer Platz ist, kommt alle
+    5–8 s ein `FlyingHeli` dem Flugzeug auf seiner Höhe entgegen (nie
+    tiefer als `FLYING_HELI_LOWEST`, über der Stadt), wie die Ballone in
+    Level 1.
+  - Ein Helikopter, in den das Flugzeug fliegt (fliegend oder auf einem
+    Dach parkiert), explodiert und stürzt als brennendes `Wreck` ab;
+    `Event::HeliCrash` spielt den Explosionston. Es kostet ein Leben wie
+    jeder Zusammenstoss.
+  - Spätestens nach `HIGH_RISES_IN_A_ROW` (2) Hochhäusern kommt ein
+    Kran; vorher konnte der Zufall lange keine Kräne bringen.
+- Bestzeiten nur für geschaffte Levels, mit Millisekunden, gewünscht:
+  Eine Zeit, bei der man abgestürzt ist, ergab in der Liste keinen Sinn.
+  Ein Level dauerte genau `LEVEL_SECONDS` Flug, also hätte jedes
+  geschaffte Level etwa dieselbe Zeit gehabt (~1:11.6). Jetzt ist ein
+  Level eine Strecke (`LEVEL_DISTANCE`, `World::level_progress`): Mit mehr
+  Gas landet man früher, mit dem Risiko von Overspeed und davon, dass
+  alles schneller kommt. `BestTimes` speichert Millisekunden
+  (`World::millis_in_level`, in Schritten von 1/60 s), die schnellste
+  zuerst; «Game over» und Verlassen speichern nichts. Die Seite
+  speichert sie unter einem neuen Schlüssel
+  (`airplane-scoring.level-times-ms`) und verwirft die alte Liste mit
+  ganzen Sekunden.
+- Eine Fortschrittsanzeige unter der Uhr, gewünscht: ein dünner, sich
+  golden füllender Balken mit einem kleinen Flugzeug und einer
+  Zielflagge bei der Landung (`World::level_progress`), weil ein Level
+  jetzt ein Rennen zu seinem Ende ist.
 
 ## Konzepte
 

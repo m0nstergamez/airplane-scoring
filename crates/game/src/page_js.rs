@@ -17,7 +17,7 @@ mod imp {
         fn page_show_menu();
         fn page_level_complete(level: u32);
         fn page_best_time(level: u32, i: u32) -> f64;
-        fn page_set_best_time(level: u32, i: u32, seconds: f64);
+        fn page_set_best_time(level: u32, i: u32, millis: f64);
     }
 
     /// miniquad checks this against the JS plugin's `version`.
@@ -26,7 +26,7 @@ mod imp {
         6
     }
 
-    /// A level's stored best times, in seconds (0 = none).
+    /// A level's stored best times, in milliseconds (0 = none).
     pub fn load_best_times(level: u32, count: usize) -> Vec<u64> {
         // SAFETY: plain getter provided by the page's plugin; no pointers.
         (0..count as u32)
@@ -35,9 +35,9 @@ mod imp {
     }
 
     /// Store a level's best times (missing places as 0).
-    pub fn save_best_times(level: u32, count: usize, seconds: &[u64]) {
+    pub fn save_best_times(level: u32, count: usize, millis: &[u64]) {
         for i in 0..count {
-            let s = seconds.get(i).copied().unwrap_or(0) as f64;
+            let s = millis.get(i).copied().unwrap_or(0) as f64;
             // SAFETY: plain setter provided by the page's plugin; no pointers.
             unsafe { page_set_best_time(level, i as u32, s) }
         }
@@ -101,10 +101,10 @@ mod imp {
             .unwrap_or_default()
     }
 
-    pub fn save_best_times(level: u32, _count: usize, seconds: &[u64]) {
+    pub fn save_best_times(level: u32, _count: usize, millis: &[u64]) {
         if let Ok(mut best) = BEST.lock() {
             best.retain(|(l, _)| *l != level);
-            best.push((level, seconds.to_vec()));
+            best.push((level, millis.to_vec()));
         }
     }
 }

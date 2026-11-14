@@ -295,6 +295,7 @@ mod tests {
                 | Event::GullCall
                 | Event::BalloonBurner
                 | Event::BalloonBurst
+                | Event::HeliCrash
                 | Event::GameOver
                 | Event::Explosion
                 | Event::Takeoff
