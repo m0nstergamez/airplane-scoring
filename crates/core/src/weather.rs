@@ -296,6 +296,8 @@ mod tests {
                 | Event::BalloonBurner
                 | Event::BalloonBurst
                 | Event::HeliCrash
+                | Event::GooseHonk { .. }
+                | Event::SteamHiss
                 | Event::GameOver
                 | Event::Explosion
                 | Event::Takeoff

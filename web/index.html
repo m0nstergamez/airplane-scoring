@@ -96,6 +96,7 @@
     #start .node[data-level="1"] { background-image: url(levels/level1.png); }
     #start .node[data-level="2"] { background-image: url(levels/level2.png); }
     #start .node[data-level="3"] { background-image: url(levels/level3.png); }
+    #start .node[data-level="4"] { background-image: url(levels/level4.png); }
     #start .node .lock { display: none; font-size: 34px; }
     #start .node.locked { filter: grayscale(1) brightness(0.55); cursor: default; }
     #start .node.locked .lock { display: block; }
@@ -132,7 +133,7 @@
     }
     #start .map-note:empty { display: none; }
     #start .map .name { font-size: 16px; text-shadow: 0 2px 6px rgba(0, 0, 0, 0.6); }
-    #start .path { width: 120px; margin-bottom: 30px; border-top: 5px dashed rgba(255, 255, 255, 0.85); }
+    #start .path { width: 90px; margin-bottom: 30px; border-top: 5px dashed rgba(255, 255, 255, 0.85); }
     #start small { font-weight: 400; opacity: 0.85; max-width: 30em; text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6); }
     /* How to play: a readable card that scrolls if the screen is low. */
     /* The guide fills the room between the title and Back, and its text
@@ -236,7 +237,7 @@
       #start .panel h2 { font-size: 20px; }
       #start button { font-size: 20px; padding: 10px 34px; }
       #start .node { width: 84px; height: 84px; border-width: 3px; }
-      #start .path { width: 70px; margin-bottom: 26px; }
+      #start .path { width: 52px; margin-bottom: 26px; }
       #start .keys { display: none; }
       #start figure img { width: 72px; height: 72px; padding: 6px; }
       #start figcaption { font-size: 11px; }
@@ -254,7 +255,7 @@
       #start .panel h2 { font-size: 20px; }
       #start button { font-size: 20px; padding: 10px 34px; }
       #start .node { width: 80px; height: 80px; border-width: 3px; }
-      #start .path { width: 70px; margin-bottom: 26px; }
+      #start .path { width: 52px; margin-bottom: 26px; }
       #start small { max-width: 22em; font-size: 13px; }
       #start figure img { width: 64px; height: 64px; padding: 6px; }
       #start figcaption { font-size: 11px; }
@@ -271,7 +272,7 @@
       #start .panel h2 { font-size: 18px; }
       #start button { font-size: 17px; padding: 7px 24px; }
       #start .node { width: 70px; height: 70px; }
-      #start .path { width: 56px; margin-bottom: 24px; }
+      #start .path { width: 40px; margin-bottom: 24px; }
       #start .calibrate-tip { max-width: calc(50% - 150px); font-size: 11px; padding: 5px 8px; bottom: 6px; }
       #start .home-tip { max-width: calc(50% - 150px); font-size: 11px; padding: 5px 8px; top: 42%; }
       #start .map-note { font-size: 13px; padding: 5px 10px; }
@@ -285,7 +286,7 @@
       #start .panel h2 { font-size: 16px; }
       #start button { font-size: 16px; padding: 6px 22px; }
       #start .node { width: 56px; height: 56px; }
-      #start .path { width: 44px; margin-bottom: 22px; }
+      #start .path { width: 30px; margin-bottom: 22px; }
       #start .map { padding: 0; }
       #start .map .name { font-size: 13px; }
     }
@@ -422,9 +423,14 @@
         </div>
         <div class="path" aria-hidden="true"></div>
         <div class="stop">
-          <button type="button" class="node" data-level="3" aria-label="Level 3: Town (new)"><span class="lock">&#128274;</span><span class="done" aria-hidden="true">&#10003;</span></button>
+          <button type="button" class="node" data-level="3" aria-label="Level 3: Town"><span class="lock">&#128274;</span><span class="done" aria-hidden="true">&#10003;</span></button>
           <span class="name">3 Town</span>
-          <span class="new" data-new-level="3">NEW</span>
+        </div>
+        <div class="path" aria-hidden="true"></div>
+        <div class="stop">
+          <button type="button" class="node" data-level="4" aria-label="Level 4: Sunrise (new)"><span class="lock">&#128274;</span><span class="done" aria-hidden="true">&#10003;</span></button>
+          <span class="name">4 Sunrise</span>
+          <span class="new" data-new-level="4">NEW</span>
         </div>
       </div>
       <p class="map-note" id="map-note" aria-live="polite"></p>
@@ -435,7 +441,7 @@
       <div class="guide">
         <section>
           <h3>The goal</h3>
-          <p>Fly each level as fast as you can: every level is the same distance, and more throttle gets you there sooner. The clock at the top counts your time in this level, from 0:00 in every level; the bar under it shows how far it is to the landing. Dodge what is in your way: hot-air balloons, launch pads and huts on the coast; gulls and lifeguard towers at the beach; in the town at night, fly over the high-rises and the cranes, and dodge the helicopters that fly at you at your height. You have <strong>3 lives</strong>; each crash costs one.</p>
+          <p>Fly each level as fast as you can: every level is the same distance, and more throttle gets you there sooner. The clock at the top counts your time in this level, from 0:00 in every level; the bar under it shows how far it is to the landing. Dodge what is in your way: hot-air balloons, launch pads and huts on the coast; gulls and lifeguard towers at the beach; in the town at night, fly over the high-rises and the cranes, and dodge the helicopters that fly at you at your height; at sunrise, fly over or under the geese that come in a V, fly over the high-rises and the houses, and mind the steam from their chimneys (it throws you up) and the low sun that blinds you now and then. You have <strong>3 lives</strong>; each crash costs one.</p>
           <p>At the end of a level the autopilot <strong>lands</strong> on a runway: level complete! That unlocks the next level (after the last one, more are coming). Each level keeps your <strong>5 fastest times</strong>, with milliseconds; only a completed level gets a time.</p>
         </section>
         <section>
@@ -735,7 +741,7 @@
     let chosenLevel = requestedLevel; // the level the next flight starts in
     // The level map: level 1 is open; landing a level completes it and
     // opens the next. The completed levels are kept in this browser.
-    const LEVELS = 3;
+    const LEVELS = 4;
     const UNLOCK_KEY = "airplane-scoring.unlocked"; // older versions: highest open level
     const COMPLETED_KEY = "airplane-scoring.completed";
     let completed = [];

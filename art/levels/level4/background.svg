@@ -1,0 +1,103 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+     viewBox="0 0 1600 740" width="1600" height="740">
+  <!--
+    Level 4: sunrise. A hazy grey-olive sky turning orange and bright
+    yellow toward the horizon, thin lit clouds, a dark forest along the
+    horizon and the valley below in the shade. Traced from our own photo;
+    its high-rise is left out: the image repeats, so it would stand by
+    every runway. The sun itself is not in the
+    picture: it would scroll past every few seconds, so the game draws it
+    fixed in the sky ahead (and its glare comes from there). The steam
+    from the valley's chimneys became an obstacle (houses with steam
+    rising from their chimneys), so it is not here.
+
+    The game repeats this image side by side while it scrolls, so the left
+    and right edges must match. How that is done here:
+      * The plain fills that span the whole width (sky, forest base,
+        valley) are drawn once, at the bottom of the file. They only
+        change from top to bottom, never from left to right.
+      * Everything else lives in the "-art" groups below and is drawn three
+        times (x = -1600, 0, +1600). Something that sticks out over one
+        edge comes back in at the other edge.
+      * The tree lines start and end at the same height at both edges.
+      * Bands of morning haze lie over the valley (full width).
+    The tree tips and houses were placed by a short seeded script (not
+    kept); edit them here by hand.
+    scripts/make-backgrounds.sh renders this file and checks the seam.
+  -->
+  <defs>
+    <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#6f6d5e"/>
+      <stop offset="0.3" stop-color="#9a7a52"/>
+      <stop offset="0.5" stop-color="#d08a3c"/>
+      <stop offset="0.63" stop-color="#f0a040"/>
+      <stop offset="0.68" stop-color="#f4b456"/>
+    </linearGradient>
+    <linearGradient id="hazeGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#e89a4a" stop-opacity="0"/>
+      <stop offset="0.5" stop-color="#e89a4a" stop-opacity="0.1"/>
+      <stop offset="1" stop-color="#e89a4a" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="valleyGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#21140d"/>
+      <stop offset="0.5" stop-color="#1a0f09"/>
+      <stop offset="1" stop-color="#120a06"/>
+    </linearGradient>
+
+    <!-- ===== layers, back to front ===== -->
+
+    <g id="cloud-art">
+      <!-- thin clouds lit from below by the rising sun -->
+      <ellipse cx="240" cy="330" rx="130" ry="7" fill="#f6b56a" opacity="0.45"/>
+      <ellipse cx="270" cy="335" rx="100" ry="4" fill="#8a5a3a" opacity="0.35"/>
+      <ellipse cx="820" cy="300" rx="100" ry="7" fill="#f6b56a" opacity="0.45"/>
+      <ellipse cx="850" cy="305" rx="77" ry="4" fill="#8a5a3a" opacity="0.35"/>
+      <ellipse cx="1180" cy="395" rx="170" ry="7" fill="#f6b56a" opacity="0.45"/>
+      <ellipse cx="1210" cy="400" rx="131" ry="4" fill="#8a5a3a" opacity="0.35"/>
+      <ellipse cx="560" cy="420" rx="90" ry="7" fill="#f6b56a" opacity="0.45"/>
+      <ellipse cx="590" cy="425" rx="69" ry="4" fill="#8a5a3a" opacity="0.35"/>
+    </g>
+    <g id="far-art">
+      <!-- the far forest's tree tips, lit orange at the edge -->
+      <path d="M0 478 L5 463 L10 475 L16 467 L21 476 L29 464 L37 478 L41 464 L46 476 L54 472 L63 476 L71 469 L79 474 L88 471 L97 478 L105 463 L112 476 L117 468 L123 478 L128 467 L134 476 L139 469 L145 477 L151 469 L158 478 L167 466 L176 475 L181 462 L186 475 L191 468 L196 475 L204 463 L213 476 L221 465 L230 477 L238 463 L245 475 L252 466 L259 478 L265 464 L270 476 L276 466 L281 475 L289 468 L297 476 L304 464 L311 476 L317 467 L324 478 L328 465 L333 474 L340 468 L348 477 L355 462 L362 475 L369 463 L376 477 L383 462 L390 476 L397 469 L404 476 L413 472 L423 475 L432 463 L440 475 L449 467 L458 476 L465 471 L471 475 L478 470 L486 476 L493 468 L500 477 L507 466 L514 476 L521 471 L528 477 L533 466 L538 475 L547 464 L555 475 L561 464 L567 475 L571 471 L576 478 L584 469 L593 478 L601 468 L608 478 L613 467 L618 477 L624 465 L630 476 L636 467 L642 478 L648 468 L655 477 L659 463 L664 476 L670 466 L675 475 L679 471 L684 477 L692 470 L700 475 L708 466 L716 477 L726 464 L735 476 L741 465 L746 476 L754 469 L761 475 L766 469 L770 474 L779 469 L788 475 L794 463 L800 475 L807 469 L813 478 L822 471 L832 475 L841 466 L851 477 L860 462 L869 475 L876 468 L883 477 L888 465 L894 476 L899 471 L904 475 L910 467 L916 477 L925 463 L934 478 L939 468 L945 474 L953 468 L962 477 L970 464 L978 474 L984 463 L990 475 L997 462 L1004 477 L1012 471 L1021 477 L1030 470 L1039 475 L1047 464 L1054 477 L1060 469 L1066 475 L1074 462 L1082 474 L1087 466 L1092 478 L1096 471 L1100 475 L1109 464 L1118 477 L1125 464 L1133 476 L1140 469 L1148 478 L1153 463 L1159 476 L1168 467 L1178 477 L1186 464 L1195 478 L1203 471 L1211 478 L1220 471 L1229 477 L1239 468 L1249 478 L1254 469 L1259 475 L1264 463 L1269 476 L1278 463 L1288 477 L1293 467 L1299 478 L1307 471 L1315 478 L1324 469 L1334 476 L1341 469 L1348 478 L1357 462 L1366 474 L1371 470 L1376 476 L1386 466 L1395 475 L1403 469 L1411 476 L1417 469 L1423 478 L1429 462 L1434 476 L1442 465 L1450 474 L1457 469 L1463 477 L1469 463 L1475 474 L1481 468 L1487 476 L1494 466 L1502 477 L1506 469 L1510 478 L1517 471 L1525 478 L1533 469 L1540 475 L1547 463 L1554 477 L1561 464 L1568 478 L1578 470 L1587 475 L1600 478 L1600 518 L0 518 Z" fill="#3a2316" opacity="1.0"/>
+    </g>
+    <g id="near-art">
+      <!-- the near forest in front -->
+      <path d="M0 500 L12 479 L25 500 L31 480 L37 496 L47 487 L57 497 L67 484 L77 499 L85 486 L94 496 L106 479 L119 497 L127 488 L136 500 L142 485 L147 498 L155 479 L163 497 L173 488 L182 500 L190 489 L198 497 L210 482 L223 499 L235 481 L247 496 L259 481 L270 496 L278 478 L286 495 L293 481 L299 496 L308 484 L317 497 L329 485 L341 495 L349 480 L357 495 L366 484 L374 495 L385 485 L396 499 L403 482 L411 499 L423 488 L435 495 L443 479 L450 496 L459 484 L468 496 L478 487 L487 499 L497 479 L506 497 L512 480 L518 496 L529 489 L541 496 L547 483 L553 498 L560 480 L567 499 L576 480 L585 499 L592 480 L599 498 L610 491 L620 498 L627 482 L634 500 L646 491 L658 496 L664 488 L669 496 L676 489 L682 496 L691 491 L699 495 L705 491 L712 498 L722 481 L731 499 L739 491 L747 498 L758 481 L769 495 L780 480 L791 496 L799 488 L808 496 L816 490 L824 498 L835 490 L847 497 L855 484 L863 499 L876 488 L888 497 L896 491 L905 497 L911 490 L918 500 L924 490 L931 497 L940 478 L949 495 L961 488 L974 498 L981 483 L988 497 L1000 482 L1011 499 L1019 484 L1028 500 L1033 486 L1039 499 L1050 488 L1060 499 L1067 488 L1074 499 L1083 485 L1092 498 L1102 488 L1112 495 L1124 482 L1137 498 L1146 484 L1155 500 L1163 484 L1172 499 L1178 481 L1184 498 L1193 479 L1202 497 L1210 478 L1217 498 L1223 482 L1228 499 L1236 480 L1243 496 L1249 485 L1254 498 L1263 488 L1272 497 L1278 487 L1284 498 L1296 490 L1308 496 L1315 484 L1322 498 L1331 481 L1339 498 L1346 490 L1352 500 L1363 483 L1375 495 L1385 491 L1396 496 L1407 482 L1418 497 L1426 485 L1434 496 L1441 484 L1448 497 L1461 481 L1473 495 L1484 487 L1496 499 L1505 488 L1513 498 L1524 479 L1534 497 L1545 490 L1557 498 L1569 489 L1582 498 L1600 500 L1600 540 L0 540 Z" fill="#21140d" opacity="1.0"/>
+    </g>
+    <g id="house-art">
+      <!-- roofs in the valley, a few windows lit -->
+      <rect x="380" y="573" width="46" height="16" fill="#1a100a" opacity="0.8"/>
+      <rect x="394" y="579" width="4" height="3" fill="#ffb25a" opacity="0.7"/>
+      <rect x="618" y="679" width="62" height="23" fill="#1a100a" opacity="0.8"/>
+      <rect x="637" y="687" width="4" height="3" fill="#ffb25a" opacity="0.7"/>
+      <rect x="813" y="596" width="37" height="15" fill="#1a100a" opacity="0.8"/>
+      <rect x="824" y="601" width="4" height="3" fill="#ffb25a" opacity="0.7"/>
+      <rect x="1376" y="668" width="62" height="24" fill="#1a100a" opacity="0.8"/>
+      <rect x="1394" y="676" width="4" height="3" fill="#ffb25a" opacity="0.7"/>
+      <rect x="486" y="642" width="59" height="24" fill="#1a100a" opacity="0.8"/>
+      <rect x="165" y="639" width="57" height="20" fill="#1a100a" opacity="0.8"/>
+      <rect x="182" y="646" width="4" height="3" fill="#ffb25a" opacity="0.7"/>
+      <rect x="722" y="572" width="67" height="24" fill="#1a100a" opacity="0.8"/>
+      <rect x="472" y="678" width="53" height="25" fill="#1a100a" opacity="0.8"/>
+      <rect x="772" y="614" width="54" height="19" fill="#1a100a" opacity="0.8"/>
+      <rect x="788" y="621" width="4" height="3" fill="#ffb25a" opacity="0.7"/>
+      <rect x="479" y="666" width="32" height="15" fill="#1a100a" opacity="0.8"/>
+      <rect x="444" y="630" width="49" height="18" fill="#1a100a" opacity="0.8"/>
+      <rect x="322" y="614" width="38" height="22" fill="#1a100a" opacity="0.8"/>
+      <rect x="333" y="621" width="4" height="3" fill="#ffb25a" opacity="0.7"/>
+      <rect x="552" y="657" width="43" height="21" fill="#1a100a" opacity="0.8"/>
+      <rect x="185" y="568" width="39" height="23" fill="#1a100a" opacity="0.8"/>
+      <rect x="382" y="603" width="37" height="20" fill="#1a100a" opacity="0.8"/>
+      <rect x="393" y="610" width="4" height="3" fill="#ffb25a" opacity="0.7"/>
+      <rect x="1044" y="676" width="68" height="23" fill="#1a100a" opacity="0.8"/>
+    </g>
+  </defs>
+
+  <!-- Each layer: its full-width fill once, then its "-art" three times. -->
+  <g id="cloud"><rect width="1600" height="740" fill="url(#skyGrad)"/><use xlink:href="#cloud-art" x="-1600"/><use xlink:href="#cloud-art"/><use xlink:href="#cloud-art" x="1600"/></g>
+  <g id="far"><rect y="500" width="1600" height="40" fill="#3a2316"/><use xlink:href="#far-art" x="-1600"/><use xlink:href="#far-art"/><use xlink:href="#far-art" x="1600"/></g>
+  <g id="near"><rect y="520" width="1600" height="220" fill="url(#valleyGrad)"/><use xlink:href="#near-art" x="-1600"/><use xlink:href="#near-art"/><use xlink:href="#near-art" x="1600"/></g>
+  <g id="house"><use xlink:href="#house-art" x="-1600"/><use xlink:href="#house-art"/><use xlink:href="#house-art" x="1600"/></g>
+  <g id="haze"><rect y="520" width="1600" height="90" fill="url(#hazeGrad)"/><rect y="610" width="1600" height="110" fill="url(#hazeGrad)" opacity="0.6"/></g>
+</svg>

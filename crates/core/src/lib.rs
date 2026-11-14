@@ -20,6 +20,7 @@ mod rng;
 mod scenery;
 mod shape;
 mod sound;
+mod sunrise;
 mod tilt;
 mod towers;
 mod weather;
@@ -61,9 +62,13 @@ pub use scenery::{background_x, scroll_distance, SCROLL_SPEED};
 pub use shape::{any_overlap, Poly};
 pub use sound::{
     Mix, BALLOON_BURNER_VOLUME, BALLOON_BURST_VOLUME, BEACH_LEVEL, BEACH_VOLUME, CRASH_VOLUME,
-    DIVE_WIND, ENGINE_FAR_VOLUME, ENGINE_VOLUME, EXPLOSION_VOLUME, GEAR_VOLUME, GULL_CALL_VOLUME,
-    MIX_CHANGE_PER_SECOND, NEW_LEVEL_VOLUME, RAIN_VOLUME, RUMBLE_VOLUME, TAKEOFF_VOLUME,
-    VOICE_VOLUME, WARNING_VOLUME, WIND_VOLUME,
+    DIVE_WIND, ENGINE_FAR_VOLUME, ENGINE_VOLUME, EXPLOSION_VOLUME, GEAR_VOLUME, GOOSE_HONK_VOLUME,
+    GULL_CALL_VOLUME, MIX_CHANGE_PER_SECOND, NEW_LEVEL_VOLUME, RAIN_VOLUME, RUMBLE_VOLUME,
+    STEAM_VOLUME, TAKEOFF_VOLUME, VOICE_VOLUME, WARNING_VOLUME, WIND_VOLUME,
+};
+pub use sunrise::{
+    FarHighRise, FarHighRiseParts, Goose, HouseParts, Steam, Sunrise, GLARE_SECONDS, GOOSE_BODY,
+    GOOSE_CALLS, GOOSE_GAP_SECONDS, STEAM_LIFT, SUNRISE_LEVEL, SUN_AT, SUN_RADIUS,
 };
 pub use tilt::{
     Tilt, LEAN_DEAD_ZONE_DEG, LEAN_FULL_DEG, TILT_DEAD_ZONE_DEG, TILT_FULL_DEG, TILT_MIN_GRAVITY,
@@ -227,6 +232,12 @@ pub enum Event {
     GearDown,
     /// A gull calls as it appears.
     GullCall,
+    /// A V of geese calls as it appears (level 4): one of
+    /// [`GOOSE_CALLS`] calls, never the same twice in a row.
+    GooseHonk { call: u8 },
+    /// The plane flies into a column of steam: a rushing hiss as it is
+    /// thrown up (level 4).
+    SteamHiss,
     /// A hot-air balloon's burner roars as it appears.
     BalloonBurner,
     /// The plane flew into a balloon: it explodes (a bang) and falls.
@@ -443,6 +454,11 @@ pub struct World {
     pub towers: Towers,
     /// The obstacles of level 3: high-rises and cranes.
     pub city: City,
+    /// The sunrise (level 4): geese, steam and the low sun's glare.
+    pub sunrise: Sunrise,
+    /// Was the plane in a column of steam last tick? (It hisses on the
+    /// way in.)
+    in_steam: bool,
     pub weather: Weather,
     /// Volumes of the looping sounds, eased toward what fits the world now.
     pub mix: Mix,
@@ -503,6 +519,8 @@ impl World {
             gulls: Gulls::new(seed),
             towers: Towers::new(seed),
             city: City::new(seed),
+            sunrise: Sunrise::new(seed),
+            in_steam: false,
             weather: Weather::new(seed),
             mix: Mix::SILENT,
             ticks: 0,
@@ -1101,6 +1119,8 @@ impl World {
         let beach = levels.level == BEACH_LEVEL && !runway_in && !clearing;
         self.gulls.tick(self.bounds, beach, &mut self.events);
         self.towers.tick(self.bounds, beach);
+        let dawn = levels.level == SUNRISE_LEVEL && !runway_in && !clearing;
+        (self.sunrise).tick(self.bounds, dawn, plane_y, &mut self.events);
         let town = levels.level == CITY_LEVEL && !runway_in && !clearing;
         self.city.set_speed(speed);
         self.city.tick(self.bounds, town, plane_y);
@@ -1130,6 +1150,7 @@ impl World {
             }
             self.gulls.shift(-extra);
             self.city.shift(-extra);
+            self.sunrise.shift(-extra);
         }
 
         // Crash: the plane as drawn newly overlaps another plane, a
@@ -1160,6 +1181,20 @@ impl World {
         } else {
             Vec::new()
         };
+        // Geese too: one the plane flies into is knocked down.
+        let geese: Vec<usize> = if open {
+            (self.sunrise.geese.iter().enumerate())
+                .filter(|(_, g)| !g.is_down() && hits(&g.shape(scale)))
+                .map(|(i, _)| i)
+                .collect()
+        } else {
+            Vec::new()
+        };
+        // The houses under the steam and the valley's high-rises are solid.
+        let house = (self.sunrise.steam.iter()).any(|c| hits(&c.house_shape(bounds)))
+            || (self.sunrise.high_rises.iter()).any(|b| hits(&b.shape(bounds)));
+        // Steam costs no life: the warm air throws the plane up.
+        let in_steam = open && self.sunrise.in_steam(bounds, &me);
         // Helicopters too (parked on a roof or flying): one the plane
         // flies into crashes and burns.
         let (roof_helis, flyers): (Vec<usize>, Vec<usize>) = if open {
@@ -1181,6 +1216,8 @@ impl World {
             me.iter().any(|part| part.overlaps_circle(m.pos, r))
         }) || !struck.is_empty()
             || !burst.is_empty()
+            || !geese.is_empty()
+            || house
             || !roof_helis.is_empty()
             || !flyers.is_empty()
             || (self.balloons.pads.iter()).any(|p| hits(&p.shape(bounds)))
@@ -1215,6 +1252,16 @@ impl World {
         if !burst.is_empty() {
             self.events.push(Event::BalloonBurst);
         }
+        for &i in &geese {
+            self.sunrise.geese[i].knock_down(scale);
+        }
+        if in_steam {
+            self.player.vel_y -= STEAM_LIFT * scale * TICK_SECONDS;
+            if !self.in_steam {
+                self.events.push(Event::SteamHiss);
+            }
+        }
+        self.in_steam = in_steam;
         for &i in &roof_helis {
             self.city.down_roof_heli(i, bounds);
         }
@@ -1297,6 +1344,7 @@ impl World {
         self.gulls.list.clear();
         self.towers.list.clear();
         self.city.clear();
+        self.sunrise.clear();
         self.tyre_smoke.clear();
         // A fresh start in every level: all lives back (and so no smoke).
         self.lives = self.lives.max(LIVES);
@@ -2088,7 +2136,7 @@ mod tests {
         let mut w = World::with_seed(PHONE, 1);
         w.lives = u32::MAX; // nothing must end the flight
         let mut seen = Vec::new();
-        for _ in 0..(5.0 * LEVEL_SECONDS / TICK_SECONDS) as u32 {
+        for _ in 0..(7.0 * LEVEL_SECONDS / TICK_SECONDS) as u32 {
             w.go_on();
             w.tick(&Input::NONE);
             for e in w.events() {
@@ -2100,15 +2148,17 @@ mod tests {
             }
         }
         // Level 1 landed, level 2 begins; landed, level 3; landed, level
-        // 1 again.
+        // 4; landed, level 1 again.
         assert_eq!(
-            &seen[..6],
+            &seen[..8],
             [
                 ("done", 1),
                 ("new", 2),
                 ("done", 2),
                 ("new", 3),
                 ("done", 3),
+                ("new", 4),
+                ("done", 4),
                 ("new", 1)
             ]
         );
@@ -2215,8 +2265,13 @@ mod tests {
     }
 
     #[test]
-    fn the_runways_are_lit_at_sunset_and_at_night() {
-        for (level, lit) in [(1, false), (BEACH_LEVEL, true), (CITY_LEVEL, true)] {
+    fn the_runways_are_lit_at_sunset_at_night_and_at_sunrise() {
+        for (level, lit) in [
+            (1, false),
+            (BEACH_LEVEL, true),
+            (CITY_LEVEL, true),
+            (SUNRISE_LEVEL, true),
+        ] {
             let mut w = world();
             w.start_level = level;
             assert_eq!(w.runway_lit(), lit, "level {level}");
@@ -2708,6 +2763,160 @@ mod tests {
         assert_eq!(both, (true, true), "high-rises and cranes in the town");
     }
 
+    /// Flying in level 4, past the takeoff, nothing on screen yet.
+    fn in_the_sunrise() -> World {
+        let mut w = World::with_seed(PHONE, 5);
+        w.start_level = SUNRISE_LEVEL;
+        let mut w = w.with_takeoff();
+        while w.hands_off() {
+            w.tick(&Input::NONE);
+        }
+        w.sunrise.clear();
+        w
+    }
+
+    #[test]
+    fn the_sunrise_is_only_in_level_4() {
+        let mut w = World::with_seed(PHONE, 5);
+        w.lives = u32::MAX;
+        for _ in 0..((3.0 * LEVEL_SECONDS + 20.0) / TICK_SECONDS) as u32 {
+            w.go_on();
+            w.tick(&Input::NONE);
+            if w.levels().level != SUNRISE_LEVEL {
+                assert!(w.sunrise.geese.is_empty() && w.sunrise.steam.is_empty());
+                assert_eq!(w.sunrise.glare(), 0.0);
+            }
+        }
+        let mut w = in_the_sunrise();
+        let mut seen = (false, false);
+        for _ in 0..(20.0 / TICK_SECONDS) as u32 {
+            w.lives = LIVES;
+            w.tick(&Input::NONE);
+            seen.0 |= !w.sunrise.geese.is_empty();
+            seen.1 |= !w.sunrise.steam.is_empty();
+        }
+        assert_eq!(seen, (true, true), "geese and steam at sunrise");
+    }
+
+    #[test]
+    fn at_sunrise_high_rises_stand_far_back_but_never_by_a_runway() {
+        let mut w = World::with_seed(PHONE, 7);
+        w.start_level = SUNRISE_LEVEL;
+        let mut w = w.with_takeoff();
+        let mut seen = 0;
+        while w.level_complete().is_none() {
+            w.lives = LIVES;
+            w.sunrise.geese.clear();
+            w.sunrise.steam.clear();
+            w.tick(&Input::NONE);
+            seen = seen.max(w.sunrise.high_rises.len());
+            let Some(a) = w.airport else { continue };
+            let (from, to) = (a.x, a.x + RUNWAY_LENGTH * PHONE.scale());
+            for b in &w.sunrise.high_rises {
+                let (l, r) = b.span(PHONE);
+                assert!(r < from || l > to, "a high-rise by the runway");
+            }
+        }
+        assert!(seen > 0, "there are high-rises at sunrise");
+    }
+
+    #[test]
+    fn flying_into_a_goose_costs_a_life_and_knocks_it_down() {
+        let mut w = in_the_sunrise();
+        let mut crashed = false;
+        for _ in 0..(20.0 / TICK_SECONDS) as u32 {
+            w.sunrise.steam.clear();
+            w.lives = LIVES;
+            // Hold the plane where the next V is aimed.
+            w.tick(&Input::NONE);
+            if w.events().contains(&Event::Crash) {
+                crashed = true;
+                assert!(w.sunrise.geese.iter().any(|g| g.is_down()));
+                break;
+            }
+        }
+        assert!(
+            crashed,
+            "a V aimed at the plane hits it if it does not dodge"
+        );
+    }
+
+    #[test]
+    fn flying_into_a_high_rise_at_sunrise_costs_a_life() {
+        let mut w = in_the_sunrise();
+        w.sunrise.high_rises.push(FarHighRise {
+            x: w.player.pos.x + 120.0,
+            width: 110.0,
+            top: 0.55,
+        });
+        let (_, top, _, h) = w.sunrise.high_rises[0].rect(PHONE);
+        let y = top + h / 3.0;
+        let lives = w.lives;
+        for _ in 0..(2.5 / TICK_SECONDS) as u32 {
+            w.sunrise.geese.clear();
+            w.sunrise.steam.clear();
+            w.player.pos.y = y;
+            w.player.vel_y = 0.0;
+            w.tick(&Input::NONE);
+        }
+        assert_eq!(w.lives, lives - 1, "the high-rise is solid");
+    }
+
+    #[test]
+    fn flying_into_a_house_under_the_steam_costs_a_life() {
+        let mut w = in_the_sunrise();
+        w.sunrise.steam.push(Steam {
+            x: w.player.pos.x + 80.0,
+            width: 50.0,
+            top: 0.4,
+            house: (70.0, 45.0),
+            age: 0,
+        });
+        let (_, top, _, h) = w.sunrise.steam[0].house_parts(PHONE).walls;
+        let y = top + h / 2.0;
+        let lives = w.lives;
+        for _ in 0..(2.0 / TICK_SECONDS) as u32 {
+            w.sunrise.geese.clear();
+            w.player.pos.y = y;
+            w.player.vel_y = 0.0;
+            w.tick(&Input::NONE);
+        }
+        assert_eq!(w.lives, lives - 1, "the house is solid");
+    }
+
+    #[test]
+    fn steam_throws_the_plane_up_but_costs_no_life() {
+        let mut w = in_the_sunrise();
+        let y = 0.6 * PHONE.height;
+        w.player.pos.y = y;
+        w.player.vel_y = 0.0;
+        w.sunrise.steam.push(Steam {
+            x: w.player.pos.x + 40.0,
+            width: 60.0,
+            top: 0.3,
+            house: (70.0, 45.0),
+            age: 0,
+        });
+        let lives = w.lives;
+        let mut hissed = 0;
+        for _ in 0..(0.6 / TICK_SECONDS) as u32 {
+            w.sunrise.geese.clear();
+            w.tick(&Input::NONE);
+            hissed += w
+                .events()
+                .iter()
+                .filter(|e| **e == Event::SteamHiss)
+                .count();
+        }
+        assert_eq!(w.lives, lives, "no life lost");
+        assert!(
+            w.player.pos.y < y - 15.0,
+            "thrown up: {} from {y}",
+            w.player.pos.y
+        );
+        assert_eq!(hissed, 1, "one hiss on the way in");
+    }
+
     /// The town with one crane in the plane's way (its mast 150 px ahead),
     /// the plane at `y`.
     fn crane_ahead(y: f32) -> World {
@@ -2836,7 +3045,9 @@ mod tests {
                         | Event::GullCall
                         | Event::BalloonBurner
                         | Event::BalloonBurst
-                        | Event::HeliCrash => {}
+                        | Event::HeliCrash
+                        | Event::GooseHonk { .. }
+                        | Event::SteamHiss => {}
                         Event::GameOver => panic!("lives cannot run out"),
                         Event::Explosion => panic!("lives cannot run out"),
                         Event::Overspeed | Event::PullUp => panic!("no throttle given"),

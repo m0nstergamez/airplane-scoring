@@ -4,12 +4,13 @@
 use airplane_scoring_core::Vec2 as Vec2Core;
 use airplane_scoring_core::{
     background_x, best_time_text, clock_text, has_next_level, pick_steer, pick_throttle,
-    start_level, steer_from_keys, Airport, Balloon, BestTimes, Bounds, Clock, Crane, Event, Gull,
-    HeliParts, HighRise, Hut, Input, Mix, Pad, Tilt, Tower, TyreSmoke, Warning, World, Wreck,
-    AIRSPEED_RANGE, BALLOON_RADIUS, BASKET_BELOW, BEST_TIMES_COUNT, HUT_EAVES, HUT_INSET, LIVES,
-    MAIN_WHEEL_X, NOSE_WHEEL_X, OVERSPEED_AT, PAD_HEIGHT, PAD_WIDTH, PLANE_COCKPIT, PLANE_FUSELAGE,
-    PLANE_NOSE, PLANE_RADIUS, PLANE_TAIL, PLANE_WING, RUNWAY_HEIGHT, RUNWAY_LENGTH, STALL_AT,
-    STRUT_REACH, TICK_SECONDS, WHEEL_RADIUS,
+    start_level, steer_from_keys, Airport, Balloon, BestTimes, Bounds, Clock, Crane, Event,
+    FarHighRise, Goose, Gull, HeliParts, HighRise, Hut, Input, Mix, Pad, Steam, Tilt, Tower,
+    TyreSmoke, Warning, World, Wreck, AIRSPEED_RANGE, BALLOON_RADIUS, BASKET_BELOW,
+    BEST_TIMES_COUNT, GOOSE_BODY, HUT_EAVES, HUT_INSET, LIVES, MAIN_WHEEL_X, NOSE_WHEEL_X,
+    OVERSPEED_AT, PAD_HEIGHT, PAD_WIDTH, PLANE_COCKPIT, PLANE_FUSELAGE, PLANE_NOSE, PLANE_RADIUS,
+    PLANE_TAIL, PLANE_WING, RUNWAY_HEIGHT, RUNWAY_LENGTH, STALL_AT, STRUT_REACH, SUNRISE_LEVEL,
+    SUN_AT, SUN_RADIUS, TICK_SECONDS, WHEEL_RADIUS,
 };
 use macroquad::prelude::*;
 
@@ -196,6 +197,15 @@ async fn main() {
             );
         }
 
+        // The low sun of the sunrise, fixed in the sky ahead.
+        if levels.level == SUNRISE_LEVEL {
+            draw_sun(world.bounds, world.ticks);
+        }
+        // High-rises in the valley, black against the sun (obstacles).
+        for b in &world.sunrise.high_rises {
+            draw_far_high_rise(b, world.bounds);
+        }
+
         for m in &world.planes {
             let size = world.bounds.depth(m.pos.y);
             draw_circle(m.pos.x, m.pos.y, PLANE_RADIUS * size, LIME);
@@ -243,6 +253,13 @@ async fn main() {
         for gull in &world.gulls.list {
             draw_gull(gull, world.bounds.depth(gull.pos.y));
         }
+        // The sunrise: steam rising from the valley, geese in the air.
+        for column in &world.sunrise.steam {
+            draw_steam(column, world.bounds);
+        }
+        for goose in &world.sunrise.geese {
+            draw_goose(goose, s);
+        }
 
         // A safe plane blinks (5 times a second), on real time so it
         // also blinks smoothly between ticks.
@@ -272,6 +289,7 @@ async fn main() {
             }
         }
         draw_rain(rain, world.weather.wind, world.ticks, scale);
+        draw_glare(world.sunrise.glare(), world.bounds);
 
         set_default_camera(); // flashes and the time do not shake
                               // Lightning lights the whole sky; a crash flashes red.
@@ -1061,6 +1079,202 @@ fn draw_heli(rotor_on: bool, age: u32, p: &HeliParts, s: f32) {
     if rotor_on {
         draw_warning_light(c.x, c.y + hh, s * 0.7, 0.3);
     }
+}
+
+/// The low morning sun (level 4), fixed in the sky ahead where core puts
+/// it (`SUN_AT`): a bright disc in a wide warm glow that breathes a little.
+fn draw_sun(bounds: Bounds, ticks: u64) {
+    let s = bounds.scale();
+    let (x, y) = (SUN_AT.0 * bounds.width, SUN_AT.1 * bounds.height);
+    let r = SUN_RADIUS * s;
+    let breathe = 1.0 + 0.04 * (ticks as f32 * TICK_SECONDS * 1.3).sin();
+    // Many faint rings, one inside the other: a soft glow without edges.
+    for i in 0..10 {
+        let k = 1.2 + 5.0 * (1.0 - i as f32 / 10.0);
+        draw_circle(x, y, r * k * breathe, Color::new(1.0, 0.75, 0.35, 0.055));
+    }
+    draw_circle(x, y, r, Color::from_rgba(255, 236, 170, 255));
+    draw_circle(x, y, r * 0.75, Color::from_rgba(255, 250, 225, 255));
+}
+
+/// A high-rise at sunrise (core's `FarHighRise::parts`, an obstacle),
+/// like the one in the photo: a dark silhouette with a flat roof that
+/// overhangs, a stair house and a mast on it, dim windows, and the sun's
+/// light along its roof and right edge.
+fn draw_far_high_rise(b: &FarHighRise, bounds: Bounds) {
+    let s = bounds.scale();
+    let p = b.parts(bounds);
+    let (l, t, w, h) = p.walls;
+    let dark = Color::from_rgba(26, 16, 10, 255);
+    let rim = Color::from_rgba(246, 160, 64, 150);
+    draw_rectangle(l, t, w, h, dark);
+    let (rl, rt, rw, rh) = p.roof;
+    draw_rectangle(rl, rt, rw, rh, dark);
+    let (hl, ht, hw, hh) = p.stair_house;
+    draw_rectangle(hl, ht, hw, hh, dark);
+    let (m0, m1) = p.mast;
+    draw_line(m0.x, m0.y, m1.x, m1.y, p.mast_width, dark);
+    draw_line(rl, rt, rl + rw, rt, 2.0 * s, rim);
+    draw_line(
+        l + w,
+        t,
+        l + w,
+        t + h,
+        2.0 * s,
+        Color::new(0.96, 0.63, 0.25, 0.3),
+    );
+    // Windows: a dim grid, a few lit.
+    let (ww, wh) = (12.0 * s, 6.0 * s);
+    let cols = ((w / (22.0 * s)) as i32).max(3);
+    let rows = ((h / (34.0 * s)) as i32).max(1);
+    for row in 0..rows {
+        for col in 0..cols {
+            let x = l + (col as f32 + 0.5) * w / cols as f32 - ww / 2.0;
+            let y = t + 20.0 * s + row as f32 * 34.0 * s;
+            let on = (col * 5 + row * 3 + b.width as i32) % 7 == 0;
+            let colour = if on {
+                Color::from_rgba(255, 190, 110, 200)
+            } else {
+                Color::from_rgba(58, 36, 20, 255)
+            };
+            draw_rectangle(x, y, ww, wh, colour);
+        }
+    }
+}
+
+/// The sun's glare (core's `Sunrise::glare`, 0..1): the screen washes out
+/// in warm light, brightest around the sun, so what comes is harder to
+/// see (but never gone).
+fn draw_glare(glare: f32, bounds: Bounds) {
+    if glare <= 0.0 {
+        return;
+    }
+    let (w, h) = (bounds.width, bounds.height);
+    draw_rectangle(0.0, 0.0, w, h, Color::new(1.0, 0.85, 0.6, 0.42 * glare));
+    let (x, y) = (SUN_AT.0 * w, SUN_AT.1 * h);
+    // A few faint rings make the soft bloom (each is a big alpha draw on
+    // a phone, so not too many).
+    for i in 0..8 {
+        let k = 0.08 + 0.85 * (1.0 - i as f32 / 8.0);
+        draw_circle(x, y, w * k, Color::new(1.0, 0.95, 0.8, 0.07 * glare));
+    }
+}
+
+/// A column of steam from a chimney in the valley (core's `Steam::rect`):
+/// soft white billows that rise and drift, thinning toward the top, with
+/// the chimney at its foot.
+fn draw_steam(c: &Steam, bounds: Bounds) {
+    let s = bounds.scale();
+    let (l, t, w, h) = c.rect(bounds);
+    let cx = l + w / 2.0;
+    let ground = t + h; // the chimney's top
+                        // Billows rise through the column, round and round.
+    let rise = c.age as f32 * TICK_SECONDS * 40.0 * s;
+    let step = 16.0 * s;
+    let count = (h / step).ceil() as i32 + 1;
+    for i in 0..count {
+        let y = ground - ((i as f32 * step + rise) % (h + step));
+        if y < t - step / 2.0 {
+            continue;
+        }
+        let up = ((ground - y) / h).clamp(0.0, 1.0); // 0 at the foot, 1 at the top
+        let sway = (i as f32 * 1.7 + c.age as f32 * 0.03).sin() * w * 0.12;
+        let r = w * (0.32 + 0.22 * up);
+        let alpha = 0.5 * (1.0 - up * 0.7);
+        draw_circle(cx + sway, y, r, Color::new(1.0, 0.96, 0.92, alpha));
+    }
+    draw_house(c, bounds);
+}
+
+/// The small house under a column of steam (core's `Steam::house_parts`):
+/// dark walls in the shade with a few warm windows, a pitched roof lit
+/// orange along its edge by the sun, and the brick chimney.
+fn draw_house(c: &Steam, bounds: Bounds) {
+    let s = bounds.scale();
+    let p = c.house_parts(bounds);
+    let (l, t, w, h) = p.walls;
+    draw_rectangle(l, t, w, h, Color::from_rgba(58, 40, 30, 255));
+    // Windows: two rows, some lit.
+    let lit = Color::from_rgba(255, 196, 110, 255);
+    let dark = Color::from_rgba(36, 26, 22, 255);
+    let (ww, wh) = (8.0 * s, 7.0 * s);
+    let cols = ((w / (16.0 * s)) as i32).max(2);
+    for row in 0..2 {
+        let y = t + h * (0.25 + 0.4 * row as f32);
+        for col in 0..cols {
+            let x = l + (col as f32 + 0.5) * w / cols as f32 - ww / 2.0;
+            let on = (col * 7 + row * 3 + (c.house.0 as i32)) % 3 == 0;
+            draw_rectangle(x, y, ww, wh, if on { lit } else { dark });
+        }
+    }
+    let (cl, ct, cw, ch) = p.chimney;
+    draw_rectangle(cl, ct, cw, ch, Color::from_rgba(120, 58, 40, 255));
+    draw_rectangle(
+        cl - 1.0 * s,
+        ct,
+        cw + 2.0 * s,
+        3.0 * s,
+        Color::from_rgba(80, 40, 30, 255),
+    );
+    let roof = Color::from_rgba(92, 46, 34, 255);
+    // As wide as the walls, like the roof core hits (`house_shape`).
+    draw_triangle(vec2(l, t), vec2(p.ridge.x, p.ridge.y), vec2(l + w, t), roof);
+    // The sun catches the roof's edge.
+    let edge = Color::from_rgba(255, 170, 80, 200);
+    draw_line(l, t, p.ridge.x, p.ridge.y, 2.0 * s, edge);
+    draw_line(
+        p.ridge.x,
+        p.ridge.y,
+        l + w,
+        t,
+        1.5 * s,
+        Color::new(1.0, 0.67, 0.31, 0.45),
+    );
+    // (The chimney in front of the roof.)
+    draw_rectangle(cl, ct, cw, ch * 0.6, Color::from_rgba(120, 58, 40, 255));
+}
+
+/// A goose flying left (core's `Goose::shape`): grey-brown body, a long
+/// black neck and head with a white chin strap, wings beating slowly; a
+/// struck one tumbles.
+fn draw_goose(g: &Goose, s: f32) {
+    let (sin, cos) = g.tumble().sin_cos();
+    let c = g.pos;
+    let turn = |p: airplane_scoring_core::Vec2| {
+        let (dx, dy) = (p.x - c.x, p.y - c.y);
+        vec2(c.x + dx * cos - dy * sin, c.y + dx * sin + dy * cos)
+    };
+    let body = Color::from_rgba(120, 104, 88, 255);
+    let dark = Color::from_rgba(28, 26, 26, 255);
+    let wing = Color::from_rgba(96, 82, 70, 255);
+    let tip = turn(g.wing_tip(s));
+    draw_line(c.x, c.y, tip.x, tip.y, 4.0 * s, wing);
+    let (hl, hh) = (GOOSE_BODY.0 * s, GOOSE_BODY.1 * s);
+    draw_ellipse(c.x, c.y, hl, hh, g.tumble().to_degrees(), body);
+    // The neck starts where core's hit shape has it (`Goose::shape`).
+    let neck = turn(airplane_scoring_core::Vec2::new(c.x - hl * 0.6, c.y));
+    let head = turn(g.head(s));
+    draw_line(neck.x, neck.y, head.x, head.y, 3.0 * s, dark);
+    draw_circle(head.x, head.y, 3.0 * s, dark);
+    draw_circle(
+        head.x + 1.2 * s,
+        head.y + 1.0 * s,
+        1.2 * s,
+        Color::from_rgba(240, 236, 228, 255),
+    );
+    let beak = turn(airplane_scoring_core::Vec2::new(
+        g.head(s).x - 4.5 * s,
+        g.head(s).y,
+    ));
+    draw_line(head.x, head.y, beak.x, beak.y, 1.6 * s, dark);
+    // The white tail under the back.
+    let tail = turn(airplane_scoring_core::Vec2::new(c.x + hl, c.y + 1.0 * s));
+    draw_circle(
+        tail.x,
+        tail.y,
+        2.0 * s,
+        Color::from_rgba(235, 232, 226, 255),
+    );
 }
 
 /// A crashed helicopter: dark and tumbling as it falls, inside a

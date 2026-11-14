@@ -9,7 +9,8 @@
 
 use airplane_scoring_core::{
     Event, Mix, BALLOON_BURNER_VOLUME, BALLOON_BURST_VOLUME, CRASH_VOLUME, EXPLOSION_VOLUME,
-    GEAR_VOLUME, GULL_CALL_VOLUME, NEW_LEVEL_VOLUME, TAKEOFF_VOLUME, VOICE_VOLUME,
+    GEAR_VOLUME, GOOSE_CALLS, GOOSE_HONK_VOLUME, GULL_CALL_VOLUME, NEW_LEVEL_VOLUME, STEAM_VOLUME,
+    TAKEOFF_VOLUME, VOICE_VOLUME,
 };
 use macroquad::audio::{load_sound, play_sound, set_sound_volume, PlaySoundParams, Sound};
 use macroquad::experimental::coroutines::{start_coroutine, Coroutine};
@@ -25,6 +26,9 @@ struct Sounds {
     crash: Sound,
     new_level: Sound,
     gull_call: Sound,
+    /// A flock's calls, one per `Event::GooseHonk { call }`.
+    goose_calls: [Sound; GOOSE_CALLS as usize],
+    steam: Sound,
     burner: Sound,
     explosion: Sound,
     overspeed_alarm: Sound,
@@ -61,6 +65,13 @@ impl Sounds {
             crash: file("crash").await?,
             new_level: file("new-level").await?,
             gull_call: file("gull-call").await?,
+            goose_calls: [
+                file("goose-honk").await?,
+                file("goose-far").await?,
+                file("goose-chatter").await?,
+                file("crow").await?,
+            ],
+            steam: file("steam").await?,
             burner: file("balloon-burner").await?,
             explosion: file("explosion").await?,
             overspeed_alarm: file("warning-overspeed").await?,
@@ -137,6 +148,10 @@ impl Audio {
             set_sound_volume(&s.crash, 0.0);
             set_sound_volume(&s.new_level, 0.0);
             set_sound_volume(&s.gull_call, 0.0);
+            for call in &s.goose_calls {
+                set_sound_volume(call, 0.0);
+            }
+            set_sound_volume(&s.steam, 0.0);
             set_sound_volume(&s.burner, 0.0);
             set_sound_volume(&s.explosion, 0.0);
             set_sound_volume(&s.takeoff, 0.0);
@@ -163,6 +178,11 @@ impl Audio {
             Event::LevelComplete { .. } => (&s.new_level, NEW_LEVEL_VOLUME),
             Event::NewLevel { .. } => return,
             Event::GullCall => (&s.gull_call, GULL_CALL_VOLUME),
+            Event::GooseHonk { call } => {
+                let i = call as usize % s.goose_calls.len();
+                (&s.goose_calls[i], GOOSE_HONK_VOLUME)
+            }
+            Event::SteamHiss => (&s.steam, STEAM_VOLUME),
             Event::BalloonBurner => (&s.burner, BALLOON_BURNER_VOLUME),
             Event::BalloonBurst | Event::HeliCrash => (&s.explosion, BALLOON_BURST_VOLUME),
             Event::Lightning { .. } => return, // seen, not heard

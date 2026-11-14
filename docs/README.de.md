@@ -826,6 +826,58 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
   golden füllender Balken mit einem kleinen Flugzeug und einer
   Zielflagge bei der Landung (`World::level_progress`), weil ein Level
   jetzt ein Rennen zu seinem Ende ist.
+- Level 4, Sonnenaufgang, nach unserem eigenen Foto (ein Hochhaus vor
+  der aufgehenden Sonne über einem Wald, Dampf aus dem Tal). Die
+  Hindernisse waren gewünscht: Gänse in Gruppen, die schnell
+  entgegenfliegen; Dampf und Blendung wurden aus Vorschlägen gewählt.
+  - Die Sonne ist nicht im Hintergrundbild: Das Bild läuft mit dem
+    Boden vorbei, eine Sonne darin käme alle paar Sekunden vorbei. Das
+    Spiel zeichnet sie fest voraus (`SUN_AT`); von dort kommt die
+    Blendung.
+  - Gänse kommen in einem V, das auf das Flugzeug zielt (Spitze oder ein
+    Flügel auf seiner Höhe), alle 3–5 s, und schnattern; über oder unter
+    dem ganzen V durch fliegen.
+  - Dampfsäulen werfen das Flugzeug nach oben (`STEAM_LIFT`, kein Leben
+    weg), mit einem Zischen beim Hineinfliegen.
+  - Blendung alle 10–16 s für 2.5 s taucht den Bildschirm in warmes
+    Licht, gezeichnet als viele schwache Ringe, damit sie keine Ränder
+    hat.
+  - Das Hochhaus ist zurück, gewünscht (nur nicht bei der Bahn): vom
+    Spiel als `FarHighRise` weit hinten gezeichnet, schwarz vor der
+    Sonne, als Kulisse. Es kommt nur, solange keine Bahn im Bild ist,
+    steht also nie bei einer (über ein ganzes Level getestet).
+  - Hochhäuser und Häuser kamen ineinander (jedes hatte seinen eigenen
+    Zeitgeber). Jetzt wartet das eine, bis das letzte um `SUNRISE_ROOM`
+    hereingerückt ist (über fünf Minuten mit mehreren Startwerten
+    getestet).
+  - Gänse etwa jede Sekunde, gewünscht (vorher alle 3–5 s). Damit das
+    geht: Eine Schar ist nie so schnell, dass sie die vordere einholt,
+    solange diese im Bild ist, und nur alle `GOOSE_CALL_GAP_SECONDS`
+    (2.5 s) ruft eine Schar, sonst wäre es ein Lärm. Jede Sekunde war
+    etwas viel: jetzt etwa alle 2 Sekunden.
+  - Die Hochhäuser im Tal sind jetzt fest, gewünscht: Durchfliegen tat
+    nichts. `FarHighRise::shape` (Mauern, Dachplatte, Treppenhaus, Mast)
+    ist, was das Spiel zeichnet und was getroffen wird; das höchste
+    lässt über einen Drittel des Bildschirms darüber frei.
+  - Behoben nach `/code-review` von PR #44: Das Platzieren eines V
+    konnte bei einem Bildschirm ohne Höhe in `clamp` abstürzen; eine
+    Blendung hörte beim Ende des Sonnenaufgangs schlagartig auf (jetzt
+    blendet sie aus); das Hausdach war breiter gezeichnet als seine
+    Trefferform; die Gans wird jetzt mit `GOOSE_BODY` aus dem Core
+    gezeichnet; die Blendung zeichnet weniger Ringe (günstiger auf
+    Handys); die Spielanleitung und das Wörterbuch nennen die Hochhäuser
+    und Häuser von Level 4.
+  - Neue Töne aus `scripts/make-sounds.py`: `goose-honk.wav` (Rufe mit
+    starken ungeraden Obertönen, wie ein Rohrblatt) und `steam.wav`.
+  - Das goldene «NEW» ist auf der Level-Karte zu Level 4 gewandert.
+  - Nach dem ersten Flug gewünscht: Die Bahnen sind auch in Level 4
+    beleuchtet; das Hochhaus vom Foto ist aus dem Hintergrund raus (das
+    Bild wiederholt sich, also stand es bei jeder Bahn); der Dampf steigt
+    jetzt aus den Kaminen kleiner Häuser (fest, kleiner als die
+    Hochhäuser der Stadt); die Scharen rufen auf vier Arten
+    (`GOOSE_CALLS`: Schnattern, von weiter weg, Geplapper, eine Krähe),
+    nie zweimal gleich hintereinander, weil immer derselbe Ruf genervt
+    hat.
 
 ## Konzepte
 
