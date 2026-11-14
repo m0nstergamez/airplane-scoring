@@ -779,6 +779,10 @@ that isn't code here. Keep entries short and dated.
   - High-rises and houses came in on top of each other (each had its
     own timer). Now one waits until the last has moved in by
     `SUNRISE_ROOM` (tested over five minutes, several seeds).
+  - Geese about every second, asked for (was every 3–5 s). So that it
+    works: a flock is never fast enough to catch up with the one ahead
+    while that one is on screen, and only one flock calls every
+    `GOOSE_CALL_GAP_SECONDS` (2.5 s), or it would be a din.
 
 ## Concepts
 

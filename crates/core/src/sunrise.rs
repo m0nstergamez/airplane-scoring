@@ -1,10 +1,11 @@
 //! Sunrise (level 4): flocks of geese, columns of steam and the low sun.
 //!
-//! * **Geese** come at the plane in a V, fast, every few seconds
+//! * **Geese** come at the plane in a V, fast, about one every second
 //!   ([`GOOSE_GAP_SECONDS`]). The V is aimed at the plane's height: its
 //!   tip or one of its arms is where the plane is, so fly over or under
-//!   the whole V. Each flock calls as it appears, never twice the same
-//!   way in a row ([`GOOSE_CALLS`]). Fly into one and you crash;
+//!   the whole V. A flock never catches up with the one ahead. A flock
+//!   calls as it appears (at most every [`GOOSE_CALL_GAP_SECONDS`], so it
+//!   is no din), never twice the same way in a row ([`GOOSE_CALLS`]). Fly into one and you crash;
 //!   the goose is knocked down and tumbles to the ground.
 //! * **Steam** rises from the chimney of a house in the valley: a column
 //!   from the chimney up to some height, sliding past with the ground.
@@ -36,9 +37,12 @@ pub const SUNRISE_LEVEL: u32 = 4;
 pub const SUN_AT: (f32, f32) = (0.78, 0.56);
 pub const SUN_RADIUS: f32 = 20.0;
 
-/// Time between two flocks of geese, shortest and longest, in seconds;
-/// none in the first seconds of the level.
-pub const GOOSE_GAP_SECONDS: (f32, f32) = (3.0, 5.0);
+/// Time between two flocks of geese, shortest and longest, in seconds
+/// (about one every second); none in the first seconds of the level.
+pub const GOOSE_GAP_SECONDS: (f32, f32) = (0.8, 1.2);
+/// The least time between two flocks' calls, in seconds: with a flock
+/// every second, not every one calls.
+pub const GOOSE_CALL_GAP_SECONDS: f32 = 2.5;
 pub const FIRST_GOOSE_SECONDS: f32 = 3.0;
 /// How fast a flock flies at the plane, in px per second (on its own,
 /// the ground sliding by comes on top for nothing: geese fly in the air).
@@ -331,6 +335,10 @@ pub struct Sunrise {
     next_glare: u32,
     /// The last flock's call, so the next one sounds different.
     last_call: u8,
+    /// Ticks since a flock last called.
+    since_call: u32,
+    /// The last flock's speed, px per second (0 before the first).
+    last_speed: f32,
     rng: Rng,
 }
 
@@ -346,6 +354,8 @@ impl Sunrise {
             next_high_rise: ticks(FIRST_FAR_HIGH_RISE_SECONDS),
             next_glare: ticks(FIRST_GLARE_SECONDS),
             last_call: 0,
+            since_call: u32::MAX / 2,
+            last_speed: 0.0,
             // Its own stream, so the morning does not change other things.
             rng: Rng::new(seed ^ 0x5A2A_15E0_0000_0004),
         }
@@ -386,6 +396,7 @@ impl Sunrise {
     /// `events`.
     pub fn tick(&mut self, bounds: Bounds, active: bool, plane_y: f32, events: &mut Vec<Event>) {
         let s = bounds.scale();
+        self.since_call = self.since_call.saturating_add(1);
         for g in &mut self.geese {
             g.step();
         }
@@ -418,11 +429,14 @@ impl Sunrise {
         self.next_goose -= 1;
         if self.next_goose == 0 {
             self.spawn_flock(bounds, plane_y);
-            // Another call than the last one.
-            let other = (self.rng.unit() * (GOOSE_CALLS - 1) as f32) as u8 % (GOOSE_CALLS - 1);
-            let call = (self.last_call + 1 + other) % GOOSE_CALLS;
-            self.last_call = call;
-            events.push(Event::GooseHonk { call });
+            if self.since_call >= ticks(GOOSE_CALL_GAP_SECONDS) {
+                // Another call than the last one.
+                let other = (self.rng.unit() * (GOOSE_CALLS - 1) as f32) as u8 % (GOOSE_CALLS - 1);
+                let call = (self.last_call + 1 + other) % GOOSE_CALLS;
+                self.last_call = call;
+                self.since_call = 0;
+                events.push(Event::GooseHonk { call });
+            }
             self.next_goose = ticks(self.rng.range(GOOSE_GAP_SECONDS.0, GOOSE_GAP_SECONDS.1));
         }
         self.next_steam -= 1;
@@ -496,8 +510,23 @@ impl Sunrise {
         let edge = 16.0 * s;
         let lowest = STEAM_GROUND * bounds.height - 30.0 * s;
         let tip_y = (plane_y - aim).clamp(reach + edge, lowest - reach);
-        let speed = r.range(GOOSE_SPEED.0, GOOSE_SPEED.1) * s;
         let start = bounds.width + MARGIN * s;
+        // Never faster than lets it catch up with the flock ahead before
+        // that one has left the screen (at its tail, with some room).
+        let mut speed = r.range(GOOSE_SPEED.0, GOOSE_SPEED.1) * s;
+        let ahead = (self.geese.iter())
+            .filter(|g| !g.is_down() && g.vel.x == -self.last_speed)
+            .map(|g| g.pos.x)
+            .fold(f32::MAX, f32::min);
+        if self.last_speed > 0.0 && ahead < f32::MAX {
+            let gone = (ahead + 2.0 * MARGIN * s) / self.last_speed; // s until it is off
+            let tail = (GOOSE_ARM.1 as f32 * GOOSE_STEP.0 + 2.0 * GOOSE_BODY.0) * s;
+            let room = start + 2.0 * MARGIN * s - tail - 20.0 * s;
+            speed = speed
+                .min(room / gone.max(1e-3))
+                .max(GOOSE_SPEED.0 * s * 0.5);
+        }
+        self.last_speed = speed;
         let mut add = |dx: f32, dy: f32| {
             self.geese.push(Goose {
                 pos: Vec2::new(start + dx, tip_y + dy),
@@ -565,8 +594,8 @@ mod tests {
         let events = run(&mut m, FIRST_GOOSE_SECONDS - 0.1, true, 200.0);
         assert!(m.geese.is_empty() && events.is_empty());
         let all = flocks(2, 60.0, 200.0);
-        // One every 3–5 s after the first 3 s.
-        assert!((11..=20).contains(&all.len()), "{}", all.len());
+        // About one every second after the first 3 s.
+        assert!((48..=70).contains(&all.len()), "{}", all.len());
         for v in &all {
             assert!(v.len() == 5 || v.len() == 7, "{}", v.len());
             let tip = v[0];
@@ -587,6 +616,12 @@ mod tests {
             })
             .collect();
         assert!(calls.len() >= 3);
+        // Not every flock calls: at most one call every 2.5 s.
+        assert!(
+            calls.len() as f32 <= 20.0 / GOOSE_CALL_GAP_SECONDS + 1.0,
+            "{}",
+            calls.len()
+        );
         for pair in calls.windows(2) {
             assert_ne!(pair[0], pair[1], "never the same call twice in a row");
         }
@@ -597,6 +632,27 @@ mod tests {
                 events.contains(&Event::GooseHonk { call: c }),
                 "call {c} is heard"
             );
+        }
+    }
+
+    #[test]
+    fn a_flock_never_flies_into_the_one_ahead() {
+        for seed in 0..6 {
+            let mut m = Sunrise::new(seed);
+            for _ in 0..ticks(120.0) {
+                m.tick(PHONE, true, 200.0, &mut Vec::new());
+                let flying: Vec<&Goose> = m.geese.iter().filter(|g| !g.is_down()).collect();
+                for (i, a) in flying.iter().enumerate() {
+                    for b in &flying[i + 1..] {
+                        if a.vel.x == b.vel.x {
+                            continue; // the same flock (or as fast: never meets)
+                        }
+                        let (dx, dy) = (a.pos.x - b.pos.x, a.pos.y - b.pos.y);
+                        let near = dx.abs() < 2.0 * GOOSE_BODY.0 + 4.0 && dy.abs() < 12.0;
+                        assert!(!near || a.pos.x < -MARGIN, "seed {seed}: flocks meet");
+                    }
+                }
+            }
         }
     }
 
