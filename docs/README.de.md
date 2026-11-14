@@ -1009,6 +1009,41 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
     mit `Retry-After`.
   - `GET /health` für die Prüfung von Fly, statt alle 30 s eine Abfrage
     der Liste.
+- Mehr Testautomatisierung, gewünscht:
+  - `scripts/check-determinism.sh`: 20 Demo-Flüge (alle fünf
+    Start-Levels, vier Bildschirmgrössen) nativ und als wasm in Node
+    geflogen, gebaut für das Ziel des Browsers (wasm32-unknown-unknown,
+    nicht WASI); die Zeilen (ein Hash jedes Replays, seine Ticks und
+    gelandeten Zeiten) müssen gleich sein. Der Pilot entscheidet anhand
+    von Kopien der Welt, die vorausfliegen, also ändert ein einziges
+    anderes Bit das Replay lange vor einer Zeit. Geprüft: Er schlägt
+    fehl, wenn wasm einen Flug anders fliegt. Etwa 4 s; Schritt 5 von
+    `scripts/check.sh` (ohne node übersprungen) und im CI.
+  - Ein Autopilot für das echte Spiel, nur in Test-Builds
+    (`--features autopilot`): der Demo-Pilot von core, jetzt ein
+    `DemoPilot`, der Tick für Tick fliegt (`demo_flight` nutzt ihn; seine
+    Replays blieben Byte für Byte gleich). Er schreibt Zeilen
+    `autopilot: ...` in die Konsole, auch die Online-Zeile, die das Spiel
+    zeichnet. Das veröffentlichte wasm enthält nichts davon (geprüft:
+    keine Autopilot-Texte, 142 Bytes grösser, weil der Text der Zeile
+    jetzt geteilt ist). `scripts/stage.sh e2e-browser` fliegt damit
+    Level 1 in Headless-Chrome gegen die Stage: «World rank 5 of 5» zum
+    ersten Mal auf dem Bildschirm, und die Liste hatte die Zeit, die das
+    Spiel zeigte (65233 ms). `scripts/cdp_shot.py` kann jetzt auf eine
+    Konsolenzeile warten (`SHOT_UNTIL`) und einen JS-Wert ausgeben
+    (`SHOT_PRINT`).
+  - Die Logik des Board-Plugins zog von `web/index.html` nach
+    `web/board.js` (kein DOM, alles wird übergeben), mit 14 Tests in
+    `tests/web/board.test.mjs` auf dem eigenen Test-Runner von Node gegen
+    einen falschen Server: eine Anmeldung für alle Levels, der
+    64-Bit-Startwert, Alter und Wiederholung der Startwerte, die
+    kopierten Replay-Bytes, Status pro Level und pro Flug, keine neue
+    Pilotin bei einem abgelehnten Replay. Jeder Test wurde geprüft: Er
+    schlägt fehl, wenn der Code, den er hütet, kaputt ist. Schritt 2 von
+    `scripts/check.sh` und im CI.
+  - Noch nicht abgedeckt: die Stage im CI (braucht Docker auf dem
+    Runner, etwa 3 Minuten), Handys (brauchen https: eine Fly-App oder
+    eine Geräte-Cloud), das Deployment auf Fly.
 
 ## Konzepte
 

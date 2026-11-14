@@ -27,8 +27,12 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - name: Core tests
         run: cargo test -p airplane-scoring-core
+      - name: Page script tests (web/board.js)
+        run: node --test tests/web/*.test.mjs
       - name: Leaderboard server tests
         run: cargo test -p airplane-scoring-server
+      - name: wasm and native fly the same
+        run: scripts/check-determinism.sh
       - name: Manual in sync (de/en)
         run: scripts/check-docs.sh
       - name: Diagrams render (Mermaid)
@@ -39,6 +43,7 @@ jobs:
         run: |
           cargo clippy --workspace --all-targets -- -D warnings
           cargo clippy --target wasm32-unknown-unknown -p airplane-scoring -- -D warnings
+          cargo clippy --target wasm32-unknown-unknown -p airplane-scoring --features autopilot -- -D warnings
       - name: Build web
         run: scripts/build-web.sh
       - name: Stamp the build (installed apps notice updates)

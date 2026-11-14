@@ -365,10 +365,65 @@ pub fn steps_of(bytes: &[u8]) -> Result<u64, ReplayError> {
 const DEMO_DECIDE_TICKS: u64 = 12;
 const DEMO_LOOKAHEAD_TICKS: u32 = 75;
 
-/// A made-up flight for tests and tools, flown by a pilot that looks
-/// ahead: every few ticks it tries its steering on a copy of the world
-/// and keeps it while that loses no life, else takes the first choice
-/// that does not (in a seeded random order, so pilots differ). Flies
+/// A pilot for tests and tools that looks ahead: every few ticks it
+/// tries its steering on a copy of the world and keeps it while that
+/// loses no life, else takes the first choice that does not (in a seeded
+/// random order, so pilots differ). Asked once per tick, it flies a real
+/// world as well as a made-up one: the game's test build
+/// (`--features autopilot`) lets it fly in the browser.
+#[derive(Debug, Clone)]
+pub struct DemoPilot {
+    rng: crate::rng::Rng,
+    /// Its own airspeed, well clear of stall and overspeed, so pilots
+    /// land with different times.
+    cruise: f32,
+    steer: f32,
+    throttle: f32,
+    ticks: u64,
+}
+
+impl DemoPilot {
+    pub fn new(pilot_seed: u64) -> Self {
+        let mut rng = crate::rng::Rng::new(pilot_seed);
+        let cruise = rng.range(0.95, 1.3);
+        Self {
+            rng,
+            cruise,
+            steer: 0.0,
+            throttle: 0.0,
+            ticks: 0,
+        }
+    }
+
+    /// Steering and throttle for the next tick of `world`.
+    pub fn controls(&mut self, world: &World) -> (f32, f32) {
+        if self.ticks.is_multiple_of(DEMO_DECIDE_TICKS) {
+            self.throttle = ((self.cruise - world.player.airspeed) * 4.0).clamp(-1.0, 1.0);
+            let throttle = self.throttle;
+            let mut choices = [-1.0_f32, -0.5, 0.0, 0.5, 1.0];
+            let turn = (self.rng.unit() * choices.len() as f32) as usize;
+            choices.rotate_left(turn);
+            let survives = |s: f32| {
+                let mut ahead = world.clone();
+                let input = rounded_input(s, throttle);
+                (0..DEMO_LOOKAHEAD_TICKS).all(|_| {
+                    ahead.tick(&input);
+                    ahead.lives == world.lives
+                })
+            };
+            if !survives(self.steer) {
+                self.steer = choices
+                    .into_iter()
+                    .find(|&s| survives(s))
+                    .unwrap_or(self.steer);
+            }
+        }
+        self.ticks += 1;
+        (self.steer, self.throttle)
+    }
+}
+
+/// A made-up flight for tests and tools, flown by a [`DemoPilot`]. Flies
 /// until the flight is over, `max_steps` ticks ran or the last level is
 /// landed, tapping "Next level" along the way, and turns the screen once
 /// half way. Returns the replay.
@@ -380,14 +435,9 @@ pub fn demo_flight(start: &Start, pilot_seed: u64, max_steps: u64) -> Vec<u8> {
 /// complete" (what the game would have shown and kept).
 fn demo_flight_seen(start: &Start, pilot_seed: u64, max_steps: u64) -> (Vec<u8>, Vec<LevelTime>) {
     let mut seen = Vec::new();
-    let mut pilot = crate::rng::Rng::new(pilot_seed);
+    let mut pilot = DemoPilot::new(pilot_seed);
     let mut world = start.world();
     let mut rec = Recorder::new(start);
-    // Each pilot keeps its own airspeed, well clear of stall and
-    // overspeed, so pilots land with different times.
-    let cruise = pilot.range(0.95, 1.3);
-    let mut steer = 0.0_f32;
-    let mut throttle = 0.0_f32;
     for step in 0..max_steps {
         if world.is_over() {
             break;
@@ -408,23 +458,7 @@ fn demo_flight_seen(start: &Start, pilot_seed: u64, max_steps: u64) -> (Vec<u8>,
             world.go_on();
             rec.go_on();
         }
-        if step % DEMO_DECIDE_TICKS == 0 {
-            throttle = ((cruise - world.player.airspeed) * 4.0).clamp(-1.0, 1.0);
-            let mut choices = [-1.0_f32, -0.5, 0.0, 0.5, 1.0];
-            let turn = (pilot.unit() * choices.len() as f32) as usize;
-            choices.rotate_left(turn);
-            let survives = |s: f32| {
-                let mut ahead = world.clone();
-                let input = rounded_input(s, throttle);
-                (0..DEMO_LOOKAHEAD_TICKS).all(|_| {
-                    ahead.tick(&input);
-                    ahead.lives == world.lives
-                })
-            };
-            if !survives(steer) {
-                steer = choices.into_iter().find(|&s| survives(s)).unwrap_or(steer);
-            }
-        }
+        let (steer, throttle) = pilot.controls(&world);
         world.tick(&rec.tick(steer, throttle));
         if let Some(&Event::LevelComplete { level }) = world
             .events()

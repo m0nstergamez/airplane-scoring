@@ -6,3 +6,8 @@ edition.workspace = true
 [dependencies]
 airplane-scoring-core = { path = "../core" }
 macroquad = { workspace = true }
+
+[features]
+# Test builds only: core's demo pilot flies the game (src/autopilot.rs,
+# scripts/stage.sh e2e-browser). Never in the published build.
+autopilot = []

@@ -13,11 +13,22 @@ Usage: cdp_shot.py CHROME URL OUT.png WIDTH,HEIGHT MS PROFILE_DIR
 Prints every console message, uncaught exception and log entry, one per
 line, to stdout; shot.sh filters known noise. Exit code 0 unless Chrome or
 the protocol fails.
+
+Env (all optional):
+  SHOT_EVAL      JS to run after MS (e.g. click a button); a promise is
+                 awaited (at most 30 s)
+  SHOT_AFTER_MS  then wait this long (default 400)
+  SHOT_UNTIL     instead: wait until a console line matches this regex
+                 (Python syntax; lines from before count too), at most
+                 SHOT_UNTIL_MS (default 60000);
+                 exit code 3 if it never does (the shot is still taken)
+  SHOT_PRINT     JS whose value is printed as "eval: VALUE" before the shot
 """
 
 import base64
 import json
 import os
+import re
 import socket
 import struct
 import subprocess
@@ -131,8 +142,9 @@ class DevTools:
                 return msg.get("result", {})
             self._handle(msg)
 
-    def pump_until(self, deadline, stop_event=None):
-        """Read events until `deadline` (time.monotonic) or `stop_event` arrives."""
+    def pump_until(self, deadline, stop_event=None, stop_line=None):
+        """Read events until `deadline` (time.monotonic), `stop_event`
+        arrives or a console line matches the regex `stop_line`."""
         while True:
             left = deadline - time.monotonic()
             if left <= 0:
@@ -144,8 +156,11 @@ class DevTools:
                 return False
             finally:
                 self.ws.sock.settimeout(30)
+            seen = len(self.lines)
             self._handle(msg)
             if stop_event and msg.get("method") == stop_event:
+                return True
+            if stop_line and any(stop_line.search(l) for l in self.lines[seen:]):
                 return True
 
 
@@ -209,9 +224,24 @@ def main():
         # the page react for SHOT_AFTER_MS (default 400 ms).
         js = os.environ.get("SHOT_EVAL")
         if js:
-            dt.call("Runtime.evaluate", expression=js)
+            dt.call("Runtime.evaluate", expression=js, awaitPromise=True)
+        until = os.environ.get("SHOT_UNTIL")
+        missed = False
+        if until:
+            limit = int(os.environ.get("SHOT_UNTIL_MS", "60000")) / 1000.0
+            pattern = re.compile(until)
+            missed = not (
+                any(pattern.search(l) for l in dt.lines)
+                or dt.pump_until(time.monotonic() + limit, stop_line=pattern)
+            )
+            dt.pump_until(time.monotonic() + 0.3)  # let the frame be drawn
+        elif js:
             after = int(os.environ.get("SHOT_AFTER_MS", "400"))
             dt.pump_until(time.monotonic() + after / 1000.0)
+        show = os.environ.get("SHOT_PRINT")
+        if show:
+            r = dt.call("Runtime.evaluate", expression=show, returnByValue=True)
+            dt.lines.append("eval: {}".format(r.get("result", {}).get("value")))
         shot = dt.call("Page.captureScreenshot", format="png")
         with open(out, "wb") as f:
             f.write(base64.b64decode(shot["data"]))
@@ -219,6 +249,9 @@ def main():
         # a known message as a whole.
         for line in dt.lines:
             print(" ⏎ ".join(part.strip() for part in line.splitlines()))
+        if missed:
+            print("cdp_shot.py: SHOT_UNTIL never matched: " + until, file=sys.stderr)
+            sys.exit(3)
     finally:
         proc.terminate()
         try:

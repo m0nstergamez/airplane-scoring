@@ -12,3 +12,9 @@ edition.workspace = true
 # `f32::sin` and friends use the system's maths library natively (and a
 # port of this crate in wasm). Already in the build through macroquad.
 libm = "0.2"
+
+# The determinism flights for the browser's target, loaded by Node
+# (scripts/check-determinism.sh).
+[[example]]
+name = "determinism_wasm"
+crate-type = ["cdylib"]

@@ -87,6 +87,17 @@ pub enum Standing {
     NotCounted,
 }
 
+impl Standing {
+    /// The line "Level complete" shows under the time.
+    pub fn line(self) -> String {
+        match self {
+            Standing::Waiting => "World rank ...".to_owned(),
+            Standing::Ranked { rank, pilots } => format!("World rank {rank} of {pilots}"),
+            Standing::NotCounted => "Not counted online".to_owned(),
+        }
+    }
+}
+
 /// One flight's leaderboard state. Make a new one with every new world.
 #[derive(Default)]
 pub struct Board {

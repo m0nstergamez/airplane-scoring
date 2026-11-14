@@ -909,6 +909,36 @@ that isn't code here. Keep entries short and dated.
     is flown again (`replay::steps_of` counts its ticks cheaply); re-flying
     runs one per CPU at a time, 503 with `Retry-After` after 5 s.
   - `GET /health` for Fly's check, instead of a board query every 30 s.
+- More test automation, asked for:
+  - `scripts/check-determinism.sh`: 20 demo flights (all five start
+    levels, four screen sizes) flown natively and as wasm in Node, built
+    for the browser's own target (wasm32-unknown-unknown, not WASI); the
+    lines (a hash of each replay, its ticks and landed times) must be
+    the same. The pilot decides from look-ahead copies of the world, so
+    one different bit changes the replay long before a time. Checked to
+    fail when wasm flies one flight differently. About 4 s; step 5 of
+    `scripts/check.sh` (skipped without node) and in CI.
+  - An autopilot for the real game, in test builds only
+    (`--features autopilot`): core's demo pilot, now a `DemoPilot` that
+    flies one tick at a time (`demo_flight` uses it; its replays stayed
+    byte for byte the same). It logs `autopilot: ...` lines, including
+    the online line the game draws. The published wasm has none of it
+    (checked: no autopilot strings, 142 bytes larger from sharing that
+    line's text). `scripts/stage.sh e2e-browser` flies level 1 with it in
+    headless Chrome against the stage: "World rank 5 of 5" on screen for
+    the first time, and the board had the time the game showed (65233
+    ms). `scripts/cdp_shot.py` can now wait for a console line
+    (`SHOT_UNTIL`) and print a JS value (`SHOT_PRINT`).
+  - The board plugin's logic moved from `web/index.html` into
+    `web/board.js` (no DOM, everything passed in), with 14 tests in
+    `tests/web/board.test.mjs` on Node's own test runner against a fake
+    server: one sign-up for all levels, the 64-bit seed, seed age and
+    retry, the copied replay bytes, status per level and per flight, no
+    new pilot on a refused replay. Each test was checked to fail when the
+    code it guards was broken. Step 2 of `scripts/check.sh` and in CI.
+  - Not covered yet: the stage in CI (needs Docker on the runner, about
+    3 minutes), phones (needs https: a Fly app or a device cloud), the
+    Fly deploy.
 
 ## Concepts
 
