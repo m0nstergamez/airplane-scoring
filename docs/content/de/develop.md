@@ -378,7 +378,9 @@ sequenceDiagram
 Pilotinnen und Piloten sind anonym: Der Server gibt jedem Browser einen
 geheimen Schlüssel (Token) und behält nur dessen Hash. Die Bestenliste
 ist aus, solange das Meta-Tag `board-api` in `web/index.html` leer ist;
-dann läuft das Spiel wie bisher. Jede Änderung an `core`, die einen Flug
+dann läuft das Spiel wie bisher. In den Quellen bleibt es leer, damit
+lokale Builds nichts werten; CI setzt den Server bei Fly.io ein, wenn es
+die Seite veröffentlicht (`scripts/set-board-api.sh`). Jede Änderung an `core`, die einen Flug
 anders verlaufen lässt, ändert auch die Replays: Der Server muss mit
 demselben `core` laufen wie das veröffentlichte Spiel.
 
@@ -394,8 +396,11 @@ eine [OrbStack](https://orbstack.dev/)-Linux-Maschine namens `stage`
 dem `Dockerfile` und liefert das Spiel aus, mit `board-api` auf sie
 gerichtet. So macht das wasm des Browsers die Replays, und ein
 x86-64-Linux-Server fliegt sie nach, wie im Betrieb. Sie braucht
-OrbStack; `e2e` braucht zusätzlich [wasmtime](https://wasmtime.dev/),
-`e2e-browser` Chrome.
+OrbStack; `e2e` braucht zusätzlich Node, `e2e-browser` Chrome. CI
+startet dieselbe Stage bei jedem Pull Request, der den Server, `core`
+oder das Board-Plugin ändert (`.github/workflows/server.yml`, etwa fünf
+Minuten), mit `STAGE_HOST=docker`: Docker direkt auf dem Runner statt
+einer OrbStack-Maschine.
 
 | Was | Befehl |
 |---|---|
@@ -418,20 +423,23 @@ steht und die Liste die Zeit hat, die das Spiel zeigte, und speichert
 `target/shots/stage-autopilot.png`. Nach einer Änderung an `core`,
 `crates/server` oder der Seite wieder `up` starten.
 
-Dann geht der Server online, zum Beispiel bei [Fly.io](https://fly.io/) (`Dockerfile`,
-`fly.toml`; nicht gratis). So kommt er einmalig dorthin:
+Der Server läuft bei [Fly.io](https://fly.io/) (`Dockerfile`, `fly.toml`;
+nicht gratis), als App `airplane-scoring-board`. CI spielt ihn bei jedem
+Merge auf `main` ein, der ihn ändert, sobald die Stage durch ist, und die
+veröffentlichte Seite zeigt auf ihn. So richtest du ihn einmalig ein
+(schon erledigt):
 
 1. Installiere `flyctl` und melde dich an (`fly auth login`).
-2. Ändere `app` in `fly.toml` auf einen Namen, den noch niemand hat.
-3. Prüfe die Region mit `fly platform regions` (`fra` in `fly.toml`).
-4. Starte `fly launch --no-deploy --copy-config` und sag nein zu Datenbanken.
-5. Starte `fly volumes create leaderboard_data --size 1 --region fra`.
-6. Starte `fly deploy`, dann `fly scale count 1`: Eine zweite Maschine
-   hätte ihre eigene, leere Datenbank.
-7. Trag `https://<app>.fly.dev` ins Meta-Tag `board-api` ein und öffne
-   einen Pull Request.
+2. Prüfe die Region mit `fly platform regions` (`fra` in `fly.toml`).
+3. Starte `fly apps create airplane-scoring-board` (die `app` in `fly.toml`).
+4. Starte `fly volumes create leaderboard_data --size 1 --region fra`.
+5. Gib CI einen Deploy-Token nur für diese App:
+   `fly tokens create deploy -a airplane-scoring-board -x 8760h | gh secret set FLY_API_TOKEN`
+   (er läuft nach einem Jahr ab: dann nochmals starten).
+6. Starte `fly deploy --ha=false`: nur eine Maschine, eine zweite hätte
+   ihre eigene, leere Datenbank.
 
-Nach einer Änderung an `core` oder `crates/server` wieder `fly deploy`.
+Von Hand einspielen: wieder `fly deploy --ha=false`.
 
 ### Zuerst der Test
 

@@ -21,9 +21,13 @@
 # forwards the machine's ports to this Mac; Chrome does not resolve
 # stage.orb.local itself. Other ports than scripts/dev.sh and a local
 # server, so all three can run at once.)
-# Needs OrbStack (orb); `e2e` also needs wasmtime and the wasm32-wasip1
+# Needs OrbStack (orb); `e2e` also needs node and the wasm32-wasip1
 # target, `e2e-browser` Chrome. Plain http: fine on a computer; phones
 # need https for tilt.
+#
+# STAGE_HOST=docker: no OrbStack machine, Docker on this computer itself
+# (an amd64 Linux one, like CI's: .github/workflows/server.yml). The web
+# page is then served by a background python3 (pid in target/stage/).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 repo=$(pwd)
@@ -37,9 +41,26 @@ image=airplane-scoring-board:stage
 web_dir=target/stage/web
 
 step() { printf '\n\033[1m==> %s\033[0m\n' "$*"; }
-on_stage() { orb -m "$machine" bash -c "$*"; }
+host="${STAGE_HOST:-orb}"
+case "$host" in
+  orb) on_stage() { orb -m "$machine" bash -c "$*"; }; docker="sudo docker" ;;
+  docker) on_stage() { bash -c "$*"; }; docker="docker" ;;
+  *) echo "STAGE_HOST is 'orb' (default) or 'docker'" >&2; exit 2 ;;
+esac
+web_pid=target/stage/web.pid
+
+stop_web() {
+  if [ "$host" = docker ]; then
+    [ -f "$web_pid" ] && kill "$(cat "$web_pid")" 2>/dev/null || true
+    rm -f "$web_pid"
+  else
+    on_stage "sudo systemctl stop stage-web >/dev/null 2>&1 || true
+      sudo systemctl reset-failed stage-web >/dev/null 2>&1 || true"
+  fi
+}
 
 ensure_machine() {
+  [ "$host" = orb ] || return 0
   if ! orb info "$machine" >/dev/null 2>&1; then
     step "create the OrbStack machine '$machine' (amd64 Debian bookworm)"
     orb create --arch amd64 debian:bookworm "$machine"
@@ -59,23 +80,23 @@ up() {
   rm -rf "$web_dir"
   mkdir -p "$web_dir"
   cp -R web/. "$web_dir"/
-  # Point the page at the stage server (the published page leaves it empty).
-  sed -i.bak "s|<meta name=\"board-api\" content=\"[^\"]*\">|<meta name=\"board-api\" content=\"$api_url\">|" "$web_dir/index.html"
-  rm "$web_dir/index.html.bak"
-  grep -q "content=\"$api_url\"" "$web_dir/index.html" || { echo "board-api meta tag not found" >&2; exit 1; }
+  scripts/set-board-api.sh "$api_url" "$web_dir/index.html" >/dev/null
 
   step "server image (Dockerfile) in '$machine'"
-  on_stage "cd '$repo' && sudo docker build -q -t $image ."
+  on_stage "cd '$repo' && $docker build -q -t $image ."
 
   step "start the server and the web page"
-  on_stage "sudo docker rm -f stage-board >/dev/null 2>&1 || true
-    sudo docker run -d --name stage-board --restart unless-stopped \
+  on_stage "$docker rm -f stage-board >/dev/null 2>&1 || true
+    $docker run -d --name stage-board --restart unless-stopped \
       -p $api_port:8080 -v stage-board-data:/data \
       -e ALLOWED_ORIGINS=$web_url $image >/dev/null"
-  on_stage "sudo systemctl stop stage-web >/dev/null 2>&1 || true
-    sudo systemctl reset-failed stage-web >/dev/null 2>&1 || true
-    sudo systemd-run --quiet --unit=stage-web --uid=\$(id -u) \
+  stop_web
+  if [ "$host" = docker ]; then
+    (cd "$web_dir" && nohup python3 -m http.server "$web_port" >/dev/null 2>&1 & echo $! >"$repo/$web_pid")
+  else
+    on_stage "sudo systemd-run --quiet --unit=stage-web --uid=\$(id -u) \
       --working-directory='$repo/$web_dir' python3 -m http.server $web_port"
+  fi
 
   for _ in $(seq 1 30); do
     curl -fsS "$api_url/health" >/dev/null 2>&1 && curl -fsS "$web_url/" >/dev/null 2>&1 && break
@@ -86,8 +107,8 @@ up() {
 }
 
 e2e() {
-  command -v wasmtime >/dev/null || { echo "e2e needs wasmtime (https://wasmtime.dev)" >&2; exit 1; }
-  rustup target add wasm32-wasip1 >/dev/null 2>&1
+  command -v node >/dev/null || { echo "e2e needs node (https://nodejs.org)" >&2; exit 1; }
+  if command -v rustup >/dev/null; then rustup target add wasm32-wasip1 >/dev/null 2>&1 || true; fi
   tmp=$(mktemp -d)
   trap 'rm -rf "$tmp"' EXIT
   json() { python3 -c "import json,sys; d=json.load(sys.stdin); print($1)"; }
@@ -115,8 +136,17 @@ e2e() {
 
   step "fly level 1 with core built as wasm (like the browser)"
   cargo build -q --release --example demo_replay --target wasm32-wasip1 -p airplane-scoring-core
-  read -r steps millis < <(wasmtime target/wasm32-wasip1/release/examples/demo_replay.wasm \
-    "$seed" 1 844 390 2>&1 >"$tmp/replay.bin")
+  # Node's WASI runs it: the replay on stdout, "ticks millis" on stderr.
+  read -r steps millis < <(node --no-warnings - target/wasm32-wasip1/release/examples/demo_replay.wasm \
+    "$seed" 1 844 390 2>&1 >"$tmp/replay.bin" <<'JS'
+const { WASI } = require("node:wasi");
+const [file, ...args] = process.argv.slice(2);
+const wasi = new WASI({ version: "preview1", args: [file, ...args], env: {}, returnOnExit: true });
+WebAssembly.instantiate(require("fs").readFileSync(file), wasi.getImportObject())
+  .then(({ instance }) => { process.exitCode = wasi.start(instance); });
+JS
+)
+  [ -n "$millis" ] || fail "the wasm flight gave no time (ticks: '$steps')"
   echo "landed in $steps ticks, level time $millis ms (wasm)"
 
   step "too soon: a replay sent before its time had passed is refused"
@@ -229,13 +259,14 @@ case "${1:-}" in
   up) up ;;
   e2e) e2e ;;
   e2e-browser) e2e_browser ;;
-  logs) on_stage 'sudo docker logs -f stage-board' ;;
+  logs) on_stage "$docker logs -f stage-board" ;;
   reset)
-    on_stage "sudo docker rm -f stage-board >/dev/null && sudo docker volume rm stage-board-data >/dev/null"
+    on_stage "$docker rm -f stage-board >/dev/null && $docker volume rm stage-board-data >/dev/null"
     echo "Database emptied. Start again: scripts/stage.sh up" ;;
   down)
-    on_stage "sudo docker rm -f stage-board >/dev/null 2>&1; sudo systemctl stop stage-web 2>/dev/null; true"
+    on_stage "$docker rm -f stage-board >/dev/null 2>&1; true"
+    stop_web
     echo "Stage stopped (the database is kept)." ;;
-  delete) orb delete -f "$machine" ;;
-  *) sed -n '2,26p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;;
+  delete) [ "$host" = orb ] && orb delete -f "$machine" ;;
+  *) sed -n '2,31p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;;
 esac

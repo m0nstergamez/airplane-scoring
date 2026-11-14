@@ -182,7 +182,12 @@ Visual checks:
   `scripts/stage.sh e2e-browser` (OrbStack VM, amd64, the real Docker
   image; game at http://localhost:8180; `e2e-browser` flies level 1 in
   the real page with the test-only autopilot, about a minute). If
-  OrbStack is missing, say so rather than skipping silently.
+  OrbStack is missing, say so rather than skipping silently. CI runs
+  the same stage on such PRs (`.github/workflows/server.yml`,
+  `STAGE_HOST=docker`) and, after the merge, deploys the server to
+  Fly.io (app `airplane-scoring-board`, secret `FLY_API_TOKEN`). The
+  `board-api` meta tag stays empty in `web/index.html`; CI sets it when
+  publishing (`scripts/set-board-api.sh`).
 - The autopilot (`crates/game/src/autopilot.rs`) is for test builds
   only (`--features autopilot`): keep every call behind its `ON`, so
   the published wasm has none of it.
@@ -198,7 +203,8 @@ crates/core/          pure logic + tests
 crates/game/          macroquad shell (board.rs: leaderboard side of the game;
                       autopilot.rs: test builds only)
 crates/server/        leaderboard API (Axum + SQLite), tests in tests/api.rs
-Dockerfile, fly.toml  the server's image and its Fly.io app (the game stays on GitHub Pages)
+Dockerfile, fly.toml  the server's image and its Fly.io app (the game stays on GitHub Pages;
+                      CI deploys it: .github/workflows/server.yml)
 web/index.html        canvas page; loads mq_js_bundle.js + airplane-scoring.wasm
 web/board.js          the page's leaderboard logic (no DOM), tests in tests/web/ (Node)
 web/sounds/           generated .wav files (engine, wind, rain, thunder, crash, beach, new level, gull call, goose calls and a crow, steam hiss, buzzard cry, leaves, balloon burner, explosion, overspeed and pull-up warnings and voices, runway rumble, takeoff spool-up, gear-up)
@@ -209,7 +215,8 @@ art/levels/levelN/    background.svg (source) + local photo.* (gitignored)
 .cargo/config.toml    wasm linker flag needed by the audio feature
 scripts/              check.sh, check-docs.sh, check-mermaid.sh, check-determinism.sh, shot.sh, cdp_shot.py, dev.sh, watch.sh, build-web.sh, stamp-build.sh, serve.sh,
                       docs.sh, vendor-js.sh, make-sounds.py, make-backgrounds.sh, make-qr.py,
-                      stage.sh (leaderboard stage in an OrbStack VM: up, e2e, e2e-browser, logs, reset, down)
+                      stage.sh (leaderboard stage in an OrbStack VM, or STAGE_HOST=docker as in CI: up, e2e, e2e-browser, logs, reset, down),
+                      set-board-api.sh
 docs/specs/           designs not built yet (English only), index in docs/specs/README.md
 docs/                 README.md + README.de.md = project notes (en/de);
                       docs/content/{de,en} = manual;

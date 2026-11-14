@@ -939,6 +939,19 @@ that isn't code here. Keep entries short and dated.
   - Not covered yet: the stage in CI (needs Docker on the runner, about
     3 minutes), phones (needs https: a Fly app or a device cloud), the
     Fly deploy.
+- The stage in CI and the server on Fly.io, asked for:
+  - `.github/workflows/server.yml`: on every pull request that touches
+    the server, `core` or the board plugin, `scripts/stage.sh` runs on
+    the runner with `STAGE_HOST=docker` (Docker there instead of an
+    OrbStack machine): `up`, `e2e`, `e2e-browser`, the screenshot as an
+    artifact. On `main` it then deploys to Fly.io with a deploy token
+    for this app only (`FLY_API_TOKEN`) and checks `/health`.
+  - `e2e` runs core's demo flight with Node's own WASI instead of
+    wasmtime: nothing to download in CI.
+  - The app `airplane-scoring-board` (Frankfurt) and its 1 GB volume
+    exist. The `board-api` meta tag stays empty in the source, so local
+    builds rank nothing; CI sets the Fly server when it publishes the
+    page (`scripts/set-board-api.sh`, also used by the stage).
 
 ## Concepts
 
@@ -974,6 +987,7 @@ flowchart LR
     PR["Pull request"] --> CI["CI: tests, fmt, clippy,<br/>manual sync, wasm build"]
     CI -- red --> PR
     CI -- green --> M["Merge to main"] --> CD["CI again + deploy"] --> P["GitHub Pages:<br/>m0nstergamez.github.io/airplane-scoring"]
+    M --> ST["Server changed: stage"] --> F["Fly.io:<br/>airplane-scoring-board.fly.dev"]
 ```
 
 Every merge to `main` is live on GitHub Pages. A **version** marks a

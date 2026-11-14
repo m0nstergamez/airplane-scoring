@@ -48,6 +48,8 @@ jobs:
         run: scripts/build-web.sh
       - name: Stamp the build (installed apps notice updates)
         run: scripts/stamp-build.sh "$GITHUB_SHA"
+      - name: Point the page at the leaderboard server (Fly.io, server.yml)
+        run: scripts/set-board-api.sh https://airplane-scoring-board.fly.dev
       - uses: actions/upload-pages-artifact@v5
         with:
           path: web

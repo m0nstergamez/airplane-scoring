@@ -41,7 +41,9 @@ short **meaning**.
 | Bestenliste | leaderboard | `crates/server`, `board.rs`, `#board-button` | The online list of the fastest completed level times of everybody, one per level; only when a server is set (`board-api`). On-screen label «Leaderboard» stays English |
 | Weltrang | world rank | `board::Standing` | Your place on a level's leaderboard, shown at «Level complete» («World rank 3 of 120», stays English) |
 | Pilotin / Pilot | pilot | `players`, token | Someone on the leaderboard: anonymous, known to the server only by a secret token kept in the browser |
-| Stage | stage | `scripts/stage.sh` | The leaderboard as a whole on the developer's Mac (OrbStack VM, real server image) to test before it goes online. Stays English |
+| Stage | stage | `scripts/stage.sh`, `server.yml` | The leaderboard as a whole (real server image, the web build pointing at it) to test before it goes online: on the developer's Mac in an OrbStack VM, in CI with Docker on the runner. Stays English |
+| einspielen | deploy | `fly deploy`, `server.yml` | Put a new build of the server online on Fly.io; CI does it on every merge to `main` that touches the server |
+| Deploy-Token | deploy token | `FLY_API_TOKEN` | A Fly.io token that can only deploy this one app; kept as a GitHub secret for CI |
 | Replay | replay | `replay.rs`, `Recorder`, `replay()` | A flight written down as its seed (Startwert) and every input, so the server can fly it again and read the time itself |
 | Strecke | distance | `LEVEL_DISTANCE`, `World::level_progress` | How far one level is; more throttle covers it sooner |
 | Fortschrittsanzeige | progress bar | `World::level_progress` | The thin bar under the clock: a small plane flying to the chequered flag, where the landing begins |
