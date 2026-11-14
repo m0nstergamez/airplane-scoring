@@ -1,6 +1,8 @@
 [workspace]
 resolver = "2"
-members = ["crates/core", "crates/game"]
+members = ["crates/core", "crates/game", "crates/server"]
+# `cargo run` stays the game; the leaderboard is `cargo run -p airplane-scoring-server`.
+default-members = ["crates/core", "crates/game"]
 
 [workspace.package]
 edition = "2021"

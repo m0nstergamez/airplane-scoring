@@ -38,6 +38,11 @@ short **meaning**.
 | geschützt (blinken) | safe (blinking) | `Player::is_safe`, `SAFE_SECONDS` | After a crash the plane blinks and cannot lose another life |
 | Game over | game over | `Event::GameOver`, `World::is_over` | The last life is gone; the flight ends. On-screen label, stays English |
 | Bestzeiten | best times | `BestTimes`, `BEST_TIMES_COUNT`, `best_time_text` | The 5 fastest completed levels per level, in milliseconds («1:02.483»); only «Level complete» records one. Shown at «Level complete» and game over. On-screen labels «Best times», «New best time!» stay English |
+| Bestenliste | leaderboard | `crates/server`, `board.rs`, `#board-button` | The online list of the fastest completed level times of everybody, one per level; only when a server is set (`board-api`). On-screen label «Leaderboard» stays English |
+| Weltrang | world rank | `board::Standing` | Your place on a level's leaderboard, shown at «Level complete» («World rank 3 of 120», stays English) |
+| Pilotin / Pilot | pilot | `players`, token | Someone on the leaderboard: anonymous, known to the server only by a secret token kept in the browser |
+| Stage | stage | `scripts/stage.sh` | The leaderboard as a whole on the developer's Mac (OrbStack VM, real server image) to test before it goes online. Stays English |
+| Replay | replay | `replay.rs`, `Recorder`, `replay()` | A flight written down as its seed (Startwert) and every input, so the server can fly it again and read the time itself |
 | Strecke | distance | `LEVEL_DISTANCE`, `World::level_progress` | How far one level is; more throttle covers it sooner |
 | Fortschrittsanzeige | progress bar | `World::level_progress` | The thin bar under the clock: a small plane flying to the chequered flag, where the landing begins |
 | Flugzeit, Zeit | flight time, time | `World::seconds_in_level`, `World::seconds_flown`, `clock_text` | How long you have flown in this level, in minutes and seconds («1:05»), from 0:00 in every level (`seconds_flown`: the whole flight); shown at the top centre, at «Level complete» and at game over. On-screen label «Time» stays English |
@@ -96,7 +101,7 @@ short **meaning**.
 | Landebahn | runway (landing) | `Airport` | The runway a level ends on; the same kind as the takeoff runway |
 | Reifenrauch | tyre smoke | `TyreSmoke`, `Event::MainWheelsTouch`, `Event::NoseWheelTouch` | A puff where a wheel meets the runway on landing: first the main wheels, then the nose wheel |
 | Pistenbeleuchtung | runway lights | `RUNWAY_LIT_LEVELS`, `World::runway_lit` | Lights along the runway's edges and centre line, green at its start, red at its end; in levels 2 and 3 |
-| Startwert | seed | `World::with_seed` | The number that decides the random weather |
+| Startwert | seed | `World::with_seed`, `Start::seed` | The number that decides the random weather and obstacles; for the leaderboard the server hands it out |
 
 ## Pictures and levels
 

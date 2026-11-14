@@ -55,7 +55,7 @@ impl Poly {
             (0..16)
                 .map(|i| {
                     let a = i as f32 * std::f32::consts::TAU / 16.0;
-                    Vec2::new(centre.x + rx * a.cos(), centre.y + ry * a.sin())
+                    Vec2::new(centre.x + rx * libm::cosf(a), centre.y + ry * libm::sinf(a))
                 })
                 .collect(),
         )

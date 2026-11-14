@@ -826,6 +826,63 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
   golden füllender Balken mit einem kleinen Flugzeug und einer
   Zielflagge bei der Landung (`World::level_progress`), weil ein Level
   jetzt ein Rennen zu seinem Ende ist.
+- Bestenliste im Internet, aus einem Prototyp (zwei Patches und ein Plan
+  von ausserhalb dieses Repos), an das heutige Spiel angepasst. Der
+  Prototyp bewertete den längsten ganzen Flug; da die Bestzeiten nur
+  geschaffte Levels zählen, fiel die Wahl stattdessen auf **das
+  schnellste geschaffte Level**: eine Liste pro Level, jede Person einmal
+  mit ihrer schnellsten Zeit, dieselbe Regel wie bei den Bestzeiten.
+  - Nichts, was die Seite sagt, wird geglaubt. Der Server
+    (`crates/server`, Axum und SQLite) gibt pro Flug einen Startwert aus;
+    das Spiel schreibt jede Eingabe auf (`core::replay`, Steuerung und
+    Gas für jeden Flug auf 1/127 gerundet, mit oder ohne Wertung) und
+    schickt das Replay bei jedem «Level complete»; der Server fliegt es
+    mit demselben core nach und liest `millis_in_level` jedes gelandeten
+    Levels selbst ab. Ein Run zählt jedes Level einmal; ein «Game over»
+    oder Verlassen schickt nichts.
+  - Ein Replay darf nicht weniger echte Zeit gebraucht haben, als es
+    geflogen ist (seit der Startwert ausgegeben wurde). «Next level» nach
+    dem letzten Level wird abgelehnt: core allein würde wieder bei
+    Level 1 beginnen.
+  - Pilotinnen und Piloten sind anonym: ein zufälliges Token, im Browser
+    gespeichert, auf dem Server nur als Hash. Kein Fingerprinting (braucht
+    nach Schweizer und EU-Datenschutz wohl eine Einwilligung; nicht mit
+    einer Juristin oder einem Juristen geprüft).
+  - Im Spiel: «World rank ...» unter der Zeit bei «Level complete», dann
+    «World rank 3 of 120» oder «Not counted online»; ein Knopf
+    Leaderboard und eine Tafel im Hauptmenü (passt auf Handys von 568×280
+    bis 844×390). Aus, solange das Meta-Tag `board-api` leer ist.
+  - Replays müssen im Browser (wasm) und auf dem Server (nativ) Bit für
+    Bit gleich fliegen. `sin`, `cos` und `exp` in core kommen jetzt aus
+    der reinen Rust-Crate `libm` (über macroquad schon im Build) statt
+    aus std, das nativ die Mathe-Bibliothek des Systems nutzt. Geprüft:
+    24 Demo-Flüge (alle Start-Levels, vier Bildschirmgrössen) nativ auf
+    Apple Silicon und in wasm (wasmtime) gleich, und wasm fliegt genau
+    wie vor der Änderung.
+  - Die Tests nutzen einen Demo-Piloten, der auf einer Kopie der Welt
+    vorausschaut; er landet Level 1 bei jedem getesteten Startwert,
+    Level 3 nur manchmal. Die Server-Tests laufen in `scripts/check.sh`
+    und im CI.
+  - Noch nicht gemacht: Deployment (Fly.io, `fly.toml`), Replays
+    aufbewahren, Rate-Limits, kürzere Gültigkeit der Startwerte,
+    Wiederherstellungscodes, Namensfilter, eine Prüfung im CI, dass wasm
+    und nativ gleich fliegen. Grundsätzlich nicht verhindert: ein Bot,
+    der in Echtzeit fliegt.
+- Eine Stage für die Bestenliste, gewünscht, in einer OrbStack-VM:
+  `scripts/stage.sh`. Eine Maschine `stage` (amd64 Debian bookworm, wie
+  die x86-Maschinen bei Fly und die Basis des Images) betreibt Docker mit
+  dem echten Image aus dem `Dockerfile` und liefert eine Kopie von `web/`
+  aus, deren `board-api` auf sie zeigt. Spiel unter
+  http://localhost:8180, API unter :8187: OrbStack leitet die Ports der
+  Maschine zum Mac weiter, und Chrome löste (anders als `curl`)
+  `stage.orb.local` nicht auf; andere Ports als `dev.sh`, damit beides
+  läuft. `e2e` prüft CORS, Anmeldung, Umbenennen, einen Startwert, ein zu
+  frühes Replay (abgelehnt), dann ein Replay von Level 1, das core als
+  wasm32-wasip1 macht (neues Beispiel `demo_replay`, mit wasmtime), nach
+  der echten Zeit geschickt: Der x86-64-Server las dieselbe Zeit ab
+  (60617 ms) und gab einen Rang. Erster Image-Build: etwa 2 Minuten.
+  Nicht abgedeckt: https, also keine Handys (Kippen braucht eine sichere
+  Seite).
 
 ## Konzepte
 

@@ -28,6 +28,26 @@ when bumping the macroquad version (see `AGENT.md`).
 Port 8080 taken? `PORT=9000 scripts/dev.sh`.
 The screenshot needs Google Chrome (or set `CHROME=/path/to/chrome`).
 
+## Leaderboard (prototype)
+
+An online board of the fastest completed levels, one per level (the same
+score as the local best times). The game writes each flight down (seed and
+inputs, `crates/core/src/replay.rs`) and sends it at every "Level
+complete"; the server (`crates/server`) hands out the seed, flies the
+replay again with the same core and only then counts the time. Off unless
+a server is set: the `board-api` meta tag in `web/index.html`. Deploying
+the server: `fly.toml` and the manual (Developing).
+
+| What | Command |
+|---|---|
+| Run the server | `cargo run -p airplane-scoring-server` (port 8787, `leaderboard.sqlite`) |
+| Play against it locally | `scripts/dev.sh`, then <http://localhost:8080/?board=http://localhost:8787> |
+| Its tests | `cargo test -p airplane-scoring-server` |
+
+Settings (environment): `PORT`, `DB_PATH`, `ALLOWED_ORIGINS` (the pages
+that may call it, comma separated). GitHub Pages only serves files, so the
+server runs elsewhere; the game stays on Pages.
+
 ## Publishing
 Every push to `main` runs `.github/workflows/pages.yml`: tests, clippy, wasm
 build, then deploys `web/` to GitHub Pages. Pull requests run the same checks

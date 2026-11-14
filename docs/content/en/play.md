@@ -193,9 +193,9 @@ milliseconds ("Time 1:02.483"), and under it **"Best times"** lists the
 5 fastest times in this level; this time is marked with a
 "<" when it made the list, and "New best time!" blinks when it beat
 them all. Each level has its own list. A game over, or a flight you
-leave with **Menu** or **Restart**, counts no time. The times stay only
-in this browser: nothing goes online, and friends on their phones have
-their own lists.
+leave with **Menu** or **Restart**, counts no time. The best times stay
+only in this browser, and friends on their phones have their own lists.
+The **Leaderboard** (below) compares your times with everybody's.
 
 ## Levels
 
@@ -272,6 +272,27 @@ red at the end, so you see them in the dusk and the dark.
   houses). So flying right at the top is no way out here. Dodge them: if
   you fly into a helicopter, parked or flying, it explodes with a bang
   and falls, and you lose a life.
+
+## Leaderboard
+
+When the game is connected to a leaderboard server, the main menu has a
+fifth button, **Leaderboard**. It shows the fastest pilots of each
+level: one line per pilot, with their fastest time. Your own line is
+gold. Under the lists you can change **Your name** (1 to 16 letters,
+digits, spaces, `-` or `_`).
+
+You need no account. The first time, the game gets a secret key from the
+server and keeps it in this browser. Clear the browser's data or play on
+another phone, and you start again as a new pilot.
+
+At "Level complete" a line under the time shows where this time stands:
+"World rank ..." while the server checks it, then "World rank 3 of 120".
+The server flies your flight again before it counts it, so only real
+flights get on the board. "Not counted online" means the server could
+not be reached or did not take the flight; your best times on this
+device still have it. As with the best times, a game over or a flight you
+leave counts nothing. Without internet when you start a flight, that
+flight is not counted online.
 
 ## Sound
 

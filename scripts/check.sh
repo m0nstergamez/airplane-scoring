@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 # The full verification loop from AGENT.md. A change is done when this passes.
-#   scripts/check.sh          tests, clippy, wasm build, headless screenshot
+#   scripts/check.sh          tests, clippy, server tests, wasm build, headless screenshot
 #   scripts/check.sh --fast   tests, format, clippy and manual sync only (seconds; for tight loops)
 set -euo pipefail
 cd "$(dirname "$0")/.."
 step() { printf '\n\033[1m==> %s\033[0m\n' "$*"; }
 
-step "1/4 core tests"
+step "1/5 core tests"
 cargo test -q -p airplane-scoring-core
 
-step "2/4 format + clippy + manual sync"
+step "2/5 format + clippy + manual sync"
 scripts/check-docs.sh
 cargo fmt --all --check || { echo "Run: cargo fmt --all" >&2; exit 1; }
 cargo clippy -q --workspace --all-targets -- -D warnings
@@ -20,10 +20,13 @@ if [ "${1:-}" = "--fast" ]; then
   exit 0
 fi
 
-step "3/4 wasm build"
+step "3/5 leaderboard server tests"
+cargo test -q -p airplane-scoring-server
+
+step "4/5 wasm build"
 scripts/build-web.sh
 
-step "4/4 visual: headless screenshot + console"
+step "5/5 visual: headless screenshot + console"
 set +e
 SKIP_BUILD=1 scripts/shot.sh
 rc=$?

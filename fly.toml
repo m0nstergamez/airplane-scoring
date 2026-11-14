@@ -1,0 +1,43 @@
+# The leaderboard server on Fly.io (image: Dockerfile).
+#
+# Once:
+#   fly launch --no-deploy --copy-config   # pick an app name; say no to databases
+#   fly volumes create leaderboard_data --size 1 --region fra
+#   fly deploy
+# Then put https://<app name>.fly.dev into the "board-api" meta tag in
+# web/index.html. Later changes: fly deploy.
+#
+# One Machine only: the database is a file on its volume. Do not scale out.
+
+app = "airplane-scoring-board" # must be unique on Fly.io: change it
+primary_region = "fra"         # Frankfurt; the volume must be in the same region
+
+[env]
+  PORT = "8080"
+  DB_PATH = "/data/leaderboard.sqlite"
+  # The pages that may call the server (comma separated, no trailing slash).
+  ALLOWED_ORIGINS = "https://m0nstergamez.github.io"
+
+[[mounts]]
+  source = "leaderboard_data"
+  destination = "/data"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  # Sleeps when nobody plays (compute is billed only while it runs) and
+  # wakes on the next request: the page asks for seeds as it loads.
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [[http_service.checks]]
+    method = "get"
+    path = "/v1/leaderboard"
+    interval = "30s"
+    timeout = "5s"
+    grace_period = "10s"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"

@@ -1,12 +1,18 @@
 # airplane-scoring — Claude Code guide
 
 ## What this is
-A 2D browser game in Rust. Two crates:
+A 2D browser game in Rust. Three crates:
 
 - `crates/core` (`airplane-scoring-core`): **pure logic**, no engine, no I/O.
   Every rule of the game lives here and is unit-tested.
 - `crates/game` (`airplane-scoring`): thin macroquad shell. Reads input,
   calls `World::tick`, draws. No game rules here.
+- `crates/server` (`airplane-scoring-server`): the online leaderboard
+  (Axum + SQLite, not in the wasm). Hands out seeds, flies replays
+  (`core::replay`) again and ranks the fastest completed level times.
+  `cargo run` stays the game (`default-members`); the server is
+  `cargo run -p airplane-scoring-server`. See the manual (Developing,
+  Leaderboard) and `docs/README.md`.
 
 Target: wasm32 in the browser (`web/index.html`), also runs native.
 
@@ -37,8 +43,10 @@ Prefer `cargo doc` output and the vendored crate source in
 1. `cargo test -p airplane-scoring-core` — fast, no engine. Must stay green.
 2. `cargo fmt --all --check`, `cargo clippy --workspace --all-targets -- -D warnings`
    and `scripts/check-docs.sh` (manual and project notes de/en in sync)
-3. `scripts/build-web.sh` — release wasm build into `web/`.
-4. `scripts/shot.sh` — loads the real web build in headless Chrome, saves
+3. `cargo test -p airplane-scoring-server` — the leaderboard API (not
+   in `--fast`).
+4. `scripts/build-web.sh` — release wasm build into `web/`.
+5. `scripts/shot.sh` — loads the real web build in headless Chrome, saves
    `target/shots/latest.png` and fails on console errors or Rust panics
    (panics show file:line). **Read the PNG** after any visual change.
 
@@ -149,7 +157,19 @@ Visual checks:
   GPS metadata. Where the background is drawn comes from core
   (`scenery.rs`); `crates/game/src/scenery.rs` only loads and draws.
 - Keep `World::tick` deterministic. The `simulation_is_deterministic` test
-  guards this.
+  guards this. The leaderboard depends on it: the server flies the
+  game's replays again with its own build of `core`, so a change to how
+  a flight goes needs the server deployed with it, and `core` must not
+  use anything that could differ between wasm and native: `libm::sinf`
+  etc., not `f32::sin` (std uses the system's maths library natively);
+  no hash-map order, no time.
+- The leaderboard's score is the game's own (`World::millis_in_level`
+  at "Level complete"); change both together.
+- After a change to `core::replay`, `crates/server` or the board plugin
+  in `web/index.html`, run `scripts/stage.sh up` and `scripts/stage.sh e2e`
+  (OrbStack VM, amd64, the real Docker image; game at
+  http://localhost:8180). If OrbStack is missing, say so rather than
+  skipping silently.
 - Don't add dependencies without saying why; wasm size matters.
 - Don't change the pinned macroquad version unless explicitly asked.
   If asked: edit root `Cargo.toml`, this file, run `scripts/vendor-js.sh`,
@@ -159,7 +179,9 @@ Visual checks:
 ```
 Cargo.toml            workspace, pinned deps, release profile for small wasm
 crates/core/          pure logic + tests
-crates/game/          macroquad shell
+crates/game/          macroquad shell (board.rs: leaderboard side of the game)
+crates/server/        leaderboard API (Axum + SQLite), tests in tests/api.rs
+Dockerfile, fly.toml  the server's image and its Fly.io app (the game stays on GitHub Pages)
 web/index.html        canvas page; loads mq_js_bundle.js + airplane-scoring.wasm
 web/sounds/           generated .wav files (engine, wind, rain, thunder, crash, beach, new level, gull call, balloon burner, explosion, overspeed and pull-up warnings and voices, runway rumble, takeoff spool-up, gear-up)
 web/levels/           rendered level backgrounds (PNG, from art/levels)
@@ -168,7 +190,8 @@ web/plane.svg         the plane for the main menu (core's PLANE_* points)
 art/levels/levelN/    background.svg (source) + local photo.* (gitignored)
 .cargo/config.toml    wasm linker flag needed by the audio feature
 scripts/              check.sh, check-docs.sh, check-mermaid.sh, shot.sh, cdp_shot.py, dev.sh, watch.sh, build-web.sh, stamp-build.sh, serve.sh,
-                      docs.sh, vendor-js.sh, make-sounds.py, make-backgrounds.sh, make-qr.py
+                      docs.sh, vendor-js.sh, make-sounds.py, make-backgrounds.sh, make-qr.py,
+                      stage.sh (leaderboard stage in an OrbStack VM: up, e2e, logs, reset, down)
 docs/                 README.md + README.de.md = project notes (en/de);
                       docs/content/{de,en} = manual;
                       docs/glossary.md = de/en Wörterbuch

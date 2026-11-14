@@ -16,6 +16,7 @@ mod gulls;
 mod huts;
 mod input;
 mod level;
+pub mod replay;
 mod rng;
 mod scenery;
 mod shape;
@@ -611,8 +612,8 @@ impl World {
         let strength = SHAKE_PX * self.bounds.scale() * (1.0 - t).powi(2);
         let k = self.ticks as f32;
         Vec2::new(
-            strength * (k * 1.7).sin(),
-            strength * 0.7 * (k * 2.3 + 1.0).cos(),
+            strength * libm::sinf(k * 1.7),
+            strength * 0.7 * libm::cosf(k * 2.3 + 1.0),
         )
     }
 
@@ -980,13 +981,13 @@ impl World {
         player.vel_y = if player.is_crashed() {
             wanted
         } else {
-            let ease = 1.0 - (-CLIMB_RESPONSE * TICK_SECONDS).exp();
+            let ease = 1.0 - libm::expf(-CLIMB_RESPONSE * TICK_SECONDS);
             player.vel_y + (wanted - player.vel_y) * ease
         };
         let full = (PLAYER_CLIMB_SPEED * scale).max(1e-3);
         let max_pitch = MAX_PITCH_DEG.to_radians();
         let tilt = (player.vel_y / full).clamp(-1.0, 1.0) * max_pitch;
-        let ease = 1.0 - (-PITCH_RESPONSE * TICK_SECONDS).exp();
+        let ease = 1.0 - libm::expf(-PITCH_RESPONSE * TICK_SECONDS);
         player.pitch += (tilt - player.pitch) * ease;
         let fall = player.vel_y;
         // The plane is small up high and big down low (depth), so it

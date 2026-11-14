@@ -103,8 +103,8 @@ impl Mix {
             (ENGINE_VOLUME * far, player.steer.max(0.0))
         };
         Mix {
-            engine_idle: engine * angle.cos(),
-            engine_power: engine * angle.sin(),
+            engine_idle: engine * libm::cosf(angle),
+            engine_power: engine * libm::sinf(angle),
             wind: WIND_VOLUME * (weather.wind + DIVE_WIND * dive).clamp(0.0, 1.0),
             rain: RAIN_VOLUME * weather.rain.clamp(0.0, 1.0),
             beach: BEACH_VOLUME * levels.presence(BEACH_LEVEL).clamp(0.0, 1.0),

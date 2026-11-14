@@ -749,6 +749,57 @@ that isn't code here. Keep entries short and dated.
 - A progress bar under the clock, asked for: a thin gold-filling track
   with a small plane and a chequered flag at the landing
   (`World::level_progress`), since a level is now a race to its end.
+- Online leaderboard, from a prototype (two patches and a plan made
+  outside this repo), adapted to the game as it is now. The prototype
+  ranked the longest total flight; since best times count only completed
+  levels, the user chose **the fastest completed level** instead: one
+  board per level, each pilot once with their fastest time, the same
+  rule as the local best times.
+  - Nothing the page says is trusted. The server (`crates/server`, Axum
+    and SQLite) hands out a seed per flight; the game records every
+    input (`core::replay`, steering and throttle rounded to 1/127 for
+    every flight, ranked or not) and sends the replay at every "Level
+    complete"; the server flies it again with the same core and reads
+    each landed level's `millis_in_level` itself. A run counts each
+    level once; a game over or leaving sends nothing.
+  - A replay must not take less real time than it flew (since the seed
+    was handed out). "Next level" after the last level is refused: core
+    alone would go round to level 1.
+  - Pilots are anonymous: a random token, kept in the browser, stored
+    on the server only as a hash. No fingerprinting (it likely needs
+    consent under Swiss and EU data protection; not checked with a
+    lawyer).
+  - In the game: "World rank ..." under the time at "Level complete",
+    then "World rank 3 of 120" or "Not counted online"; a Leaderboard
+    button and panel in the main menu (fits at 568×280 to 844×390 on
+    phones). Off while the `board-api` meta tag is empty.
+  - Replays must fly bit for bit the same in the browser (wasm) and on
+    the server (native). Core's `sin`, `cos` and `exp` now come from the
+    pure-Rust `libm` crate (already in the build through macroquad)
+    instead of std, which uses the system's maths library natively.
+    Checked: 24 demo flights (all start levels, four screen sizes)
+    identical native on Apple Silicon and in wasm (wasmtime), and wasm
+    flies exactly as before the change.
+  - Tests use a demo pilot that looks ahead on a copy of the world; it
+    lands level 1 for any seed tried, level 3 only sometimes. Server
+    tests run in `scripts/check.sh` and CI.
+  - Not done yet: deploying (Fly.io, `fly.toml`), keeping replays,
+    rate limits, a shorter seed lifetime, recovery codes, a name filter,
+    a wasm/native determinism check in CI. Not stopped by design: a bot
+    flying in real time.
+- A stage for the leaderboard, asked for, in an OrbStack VM:
+  `scripts/stage.sh`. A machine `stage` (amd64 Debian bookworm, like
+  Fly's x86 machines and the image's base) runs Docker with the real
+  `Dockerfile` image, and serves a copy of `web/` whose `board-api` points
+  at it. Game at http://localhost:8180, API at :8187: OrbStack forwards
+  machine ports to the Mac, while Chrome (unlike `curl`) did not resolve
+  `stage.orb.local`; other ports than `dev.sh` so both can run. `e2e`
+  checks CORS, sign-up, rename, a seed, a too-early replay (refused), then
+  a level-1 replay made by core built as wasm32-wasip1 (new example
+  `demo_replay`, run with wasmtime) and sent after the real time: the
+  x86-64 server read the same time (60617 ms) and ranked it. First image
+  build: about 2 minutes. Not covered: https, so not phones (tilt needs
+  a secure page).
 
 ## Concepts
 
