@@ -16,6 +16,7 @@ mod gulls;
 mod huts;
 mod input;
 mod level;
+pub mod replay;
 mod rng;
 mod scenery;
 mod shape;
@@ -353,7 +354,7 @@ impl Player {
         let size = bounds.plane_depth(self.pos.y);
         let at = |points: &[(f32, f32)]| Poly::at_turned(self.pos, size, self.pitch, points);
         let ((cx, cy), r) = PLANE_COCKPIT;
-        let (sin, cos) = self.pitch.sin_cos();
+        let (sin, cos) = libm::sincosf(self.pitch);
         let (cx, cy) = (cx * size, cy * size);
         let cockpit = Vec2::new(
             self.pos.x + cx * cos - cy * sin,
@@ -629,8 +630,8 @@ impl World {
         let strength = SHAKE_PX * self.bounds.scale() * (1.0 - t).powi(2);
         let k = self.ticks as f32;
         Vec2::new(
-            strength * (k * 1.7).sin(),
-            strength * 0.7 * (k * 2.3 + 1.0).cos(),
+            strength * libm::sinf(k * 1.7),
+            strength * 0.7 * libm::cosf(k * 2.3 + 1.0),
         )
     }
 
@@ -714,7 +715,7 @@ impl World {
     fn runway_y_at(&self, pitch: f32) -> f32 {
         let top = Airport::runway_top(self.bounds);
         let size = self.bounds.plane_depth(top);
-        let (sin, cos) = pitch.sin_cos();
+        let (sin, cos) = libm::sincosf(pitch);
         let main = MAIN_WHEEL_X * sin + STRUT_REACH * cos + WHEEL_RADIUS;
         let nose = NOSE_WHEEL_X * sin + STRUT_REACH * cos + WHEEL_RADIUS;
         top - main.max(nose) * size
@@ -725,7 +726,7 @@ impl World {
     fn puff_at(&mut self, wheel_x: f32, pitch: f32) {
         let top = Airport::runway_top(self.bounds);
         let size = self.bounds.plane_depth(top);
-        let (sin, cos) = pitch.sin_cos();
+        let (sin, cos) = libm::sincosf(pitch);
         let x = self.player.pos.x + (wheel_x * cos - STRUT_REACH * sin) * size;
         self.tyre_smoke.push(TyreSmoke {
             pos: Vec2::new(x, top),
@@ -998,13 +999,13 @@ impl World {
         player.vel_y = if player.is_crashed() {
             wanted
         } else {
-            let ease = 1.0 - (-CLIMB_RESPONSE * TICK_SECONDS).exp();
+            let ease = 1.0 - libm::expf(-CLIMB_RESPONSE * TICK_SECONDS);
             player.vel_y + (wanted - player.vel_y) * ease
         };
         let full = (PLAYER_CLIMB_SPEED * scale).max(1e-3);
         let max_pitch = MAX_PITCH_DEG.to_radians();
         let tilt = (player.vel_y / full).clamp(-1.0, 1.0) * max_pitch;
-        let ease = 1.0 - (-PITCH_RESPONSE * TICK_SECONDS).exp();
+        let ease = 1.0 - libm::expf(-PITCH_RESPONSE * TICK_SECONDS);
         player.pitch += (tilt - player.pitch) * ease;
         let fall = player.vel_y;
         // The plane is small up high and big down low (depth), so it
@@ -2230,7 +2231,7 @@ mod tests {
                 // The main wheels stay on the runway while the nose comes
                 // down.
                 let size = PHONE.plane_depth(Airport::runway_top(PHONE));
-                let (sin, cos) = w.player.pitch.sin_cos();
+                let (sin, cos) = libm::sincosf(w.player.pitch);
                 let main =
                     w.player.pos.y + (MAIN_WHEEL_X * sin + STRUT_REACH * cos + WHEEL_RADIUS) * size;
                 assert!((main - Airport::runway_top(PHONE)).abs() < 0.01, "{main}");

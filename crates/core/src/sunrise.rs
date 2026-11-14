@@ -150,7 +150,7 @@ impl Goose {
         if self.is_down() {
             return 0.8;
         }
-        (self.age as f32 * TICK_SECONDS * std::f32::consts::TAU * 2.2).sin()
+        libm::sinf(self.age as f32 * TICK_SECONDS * std::f32::consts::TAU * 2.2)
     }
 
     /// How far a struck goose has turned over, in radians.

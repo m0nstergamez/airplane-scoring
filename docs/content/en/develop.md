@@ -34,6 +34,8 @@ rustup target add wasm32-unknown-unknown
 | Quick checks | `scripts/check.sh --fast` |
 | Make the sound files again | `scripts/make-sounds.py` |
 | Make the level backgrounds again | `scripts/make-backgrounds.sh` |
+| Run the leaderboard server | `cargo run -p airplane-scoring-server` |
+| Play against it | `scripts/dev.sh`, then open <http://localhost:8080/?board=http://localhost:8787> |
 
 `scripts/dev.sh` keeps running: every time you save a file, the game is
 rebuilt and the browser page reloads by itself:
@@ -51,6 +53,7 @@ flowchart LR
 |---|---|
 | `crates/core` | The **rules** of the game: movement, steering, tilting, weather, crashes, sound volumes, scrolling. No graphics, no sound files. Everything here has tests. |
 | `crates/game` | Draws the game, plays the sounds and reads keys, finger and sensors. No rules. |
+| `crates/server` | The online leaderboard: hands out seeds, flies replays again with `core` and keeps the fastest times. Not part of the web page. |
 | `web` | The web page that loads the game, the sound files in `web/sounds` and the level backgrounds in `web/levels`. |
 | `art` | Drawings the game is made from: one folder per level in `art/levels`. |
 | `scripts` | Helper commands (build, start, check). |
@@ -315,6 +318,81 @@ address (`LEVEL=2 scripts/shot.sh` for a screenshot).
 flowchart LR
     T["Takeoff"] --> F["Flying,<br/>LEVEL_SECONDS"] --> A["Approach:<br/>autopilot, gear down"] --> R["Touchdown,<br/>rollout"] --> C["Level complete"] --> N["Next level:<br/>countdown 3-2-1"] --> T
 ```
+
+### Leaderboard
+
+The online leaderboard ranks the same thing as the best times: the time
+of a completed level, fastest first, one board per level. The game
+cannot be trusted with a time (anyone can change a web page), so the
+server never takes one. It hands out a **seed** for each flight; the
+game writes down every input (`crates/core/src/replay.rs`, the
+**replay**); at "Level complete" the server flies that replay again with
+the same `core` and reads the time itself. That works because
+`World::tick` is deterministic: same seed, same inputs, same flight.
+
+```mermaid
+sequenceDiagram
+    participant P as web/index.html (board plugin)
+    participant G as game (board.rs)
+    participant S as server (crates/server)
+    P->>S: POST /v1/runs (start level)
+    S-->>P: run id and seed
+    G->>P: takes the seed before the first tick
+    Note over G: every tick: the input is written down
+    G->>P: Level complete: the replay so far
+    P->>S: POST /v1/runs/{id}/replay
+    S->>S: flies it again with core, checks the time it had
+    S-->>P: level, time, rank
+    P-->>G: World rank 3 of 120
+```
+
+Pilots are anonymous: the server gives each browser a secret token and
+keeps only its hash. The leaderboard is off while the `board-api` meta
+tag in `web/index.html` is empty; then the game plays as before. Every
+change to `core` that changes how a flight goes also changes replays:
+the server must be deployed with the same `core` as the published game.
+
+The server's settings come from the environment: `PORT` (8787),
+`DB_PATH` (`leaderboard.sqlite`, an SQLite file) and `ALLOWED_ORIGINS`
+(the pages that may call it, comma separated). GitHub Pages only serves
+files, so the server runs elsewhere.
+
+Before it goes online, the **stage** tests the whole chain on your Mac:
+an [OrbStack](https://orbstack.dev/) Linux machine named `stage` (amd64,
+like Fly's machines) runs the real server image from the `Dockerfile`
+and serves the game with `board-api` pointing at it. So the browser's
+wasm makes the replays and an x86-64 Linux server flies them again, as
+in production. It needs OrbStack; `e2e` also needs
+[wasmtime](https://wasmtime.dev/).
+
+| What | Command |
+|---|---|
+| Create, build and start the stage | `scripts/stage.sh up`, then open <http://localhost:8180> |
+| Check it automatically (about a minute) | `scripts/stage.sh e2e` |
+| The server's log | `scripts/stage.sh logs` |
+| Empty its database | `scripts/stage.sh reset` |
+| Stop it / remove the machine | `scripts/stage.sh down` / `scripts/stage.sh delete` |
+
+`e2e` signs up a pilot, gets a seed, lets core's demo pilot (built as
+wasm) land level 1, waits until that much real time has passed and
+checks the server reads the same time and puts it on the board. After a
+change to `core`, `crates/server` or the page, run `up` again.
+
+Then the server goes online, for example on
+[Fly.io](https://fly.io/) (`Dockerfile`, `fly.toml`; no free tier).
+To put it there once:
+
+1. Install `flyctl` and log in (`fly auth login`).
+2. Change `app` in `fly.toml` to a name nobody has taken yet.
+3. Check the region with `fly platform regions` (`fra` in `fly.toml`).
+4. Run `fly launch --no-deploy --copy-config` and say no to databases.
+5. Run `fly volumes create leaderboard_data --size 1 --region fra`.
+6. Run `fly deploy`, then `fly scale count 1`: a second machine would
+   have its own, empty database.
+7. Put `https://<app>.fly.dev` into the `board-api` meta tag and open a
+   pull request.
+
+After a change to `core` or `crates/server`, run `fly deploy` again.
 
 ### Test first
 

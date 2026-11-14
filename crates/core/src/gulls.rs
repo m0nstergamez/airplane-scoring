@@ -110,7 +110,7 @@ impl Gull {
         if self.is_down() {
             return 0.8;
         }
-        (self.age as f32 * TICK_SECONDS * std::f32::consts::TAU * 3.0).sin()
+        libm::sinf(self.age as f32 * TICK_SECONDS * std::f32::consts::TAU * 3.0)
     }
 
     /// Facing: -1 = left, 1 = right (where it flies).
@@ -166,7 +166,7 @@ impl Gull {
             return;
         }
         let t = self.age as f32 * TICK_SECONDS;
-        let bob = self.bob * (std::f32::consts::TAU * BOB_PER_SECOND * t).sin();
+        let bob = self.bob * libm::sinf(std::f32::consts::TAU * BOB_PER_SECOND * t);
         self.pos = Vec2::new(self.line.x, self.line.y + bob);
     }
 

@@ -6,3 +6,5 @@ web/*.wasm
 # Level photos stay local: public repo, and phone photos carry GPS.
 art/levels/*/photo.*
 web/version.txt
+# The leaderboard server's database (crates/server).
+*.sqlite

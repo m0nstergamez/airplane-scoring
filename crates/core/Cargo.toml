@@ -6,3 +6,9 @@ edition.workspace = true
 # Pure logic: no engine, no I/O, no platform deps. Must stay that way so
 # `cargo test -p airplane-scoring-core` is fast and runs anywhere.
 [dependencies]
+# Sine, cosine and exp in pure Rust, the same on every platform. The
+# leaderboard server flies the browser's replays again natively, so the
+# world must compute bit for bit the same in wasm and native; std's
+# `f32::sin` and friends use the system's maths library natively (and a
+# port of this crate in wasm). Already in the build through macroquad.
+libm = "0.2"
