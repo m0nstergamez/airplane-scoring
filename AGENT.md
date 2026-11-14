@@ -194,6 +194,7 @@ art/levels/levelN/    background.svg (source) + local photo.* (gitignored)
 scripts/              check.sh, check-docs.sh, check-mermaid.sh, shot.sh, cdp_shot.py, dev.sh, watch.sh, build-web.sh, stamp-build.sh, serve.sh,
                       docs.sh, vendor-js.sh, make-sounds.py, make-backgrounds.sh, make-qr.py,
                       stage.sh (leaderboard stage in an OrbStack VM: up, e2e, logs, reset, down)
+docs/specs/           designs not built yet (English only), index in docs/specs/README.md
 docs/                 README.md + README.de.md = project notes (en/de);
                       docs/content/{de,en} = manual;
                       docs/glossary.md = de/en Wörterbuch
