@@ -44,8 +44,9 @@ pub const GOOSE_GAP_SECONDS: (f32, f32) = (1.7, 2.3);
 /// every two seconds, not every one calls.
 pub const GOOSE_CALL_GAP_SECONDS: f32 = 2.5;
 pub const FIRST_GOOSE_SECONDS: f32 = 3.0;
-/// How fast a flock flies at the plane, in px per second (on its own,
-/// the ground sliding by comes on top for nothing: geese fly in the air).
+/// How fast a flock flies at the plane, in px per second. Like the gulls,
+/// geese fly in the air and do not slide with the ground; only when the
+/// game speeds up (`World::speed`) do they come by faster too.
 pub const GOOSE_SPEED: (f32, f32) = (190.0, 260.0);
 /// How many geese fly in each arm of the V behind the leader.
 pub const GOOSE_ARM: (u32, u32) = (2, 3);
@@ -472,7 +473,7 @@ impl Sunrise {
             self.next_steam = ticks(FIRST_STEAM_SECONDS);
             self.next_high_rise = ticks(FIRST_FAR_HIGH_RISE_SECONDS);
             self.next_glare = ticks(FIRST_GLARE_SECONDS);
-            self.glare = None;
+            // (A glare going on still fades out: no pop.)
             return;
         }
         self.next_goose -= 1;
@@ -489,14 +490,7 @@ impl Sunrise {
             self.next_goose = ticks(self.rng.range(GOOSE_GAP_SECONDS.0, GOOSE_GAP_SECONDS.1));
         }
         self.next_steam -= 1;
-        // A house or a high-rise waits until the last one has moved in far
-        // enough: they come in from just off the right edge, so this keeps
-        // room between them.
-        let busy = (self.steam.iter().map(|c| c.span(bounds).1))
-            .chain(self.high_rises.iter().map(|b| b.span(bounds).1))
-            .fold(f32::MIN, f32::max)
-            > bounds.width - SUNRISE_ROOM * s;
-        if self.next_steam == 0 && busy {
+        if self.next_steam == 0 && self.right_edge_busy(bounds) {
             self.next_steam = ticks(0.2);
         }
         if self.next_steam == 0 {
@@ -516,11 +510,7 @@ impl Sunrise {
             self.next_steam = ticks(r.range(STEAM_GAP_SECONDS.0, STEAM_GAP_SECONDS.1));
         }
         self.next_high_rise -= 1;
-        let busy = (self.steam.iter().map(|c| c.span(bounds).1))
-            .chain(self.high_rises.iter().map(|b| b.span(bounds).1))
-            .fold(f32::MIN, f32::max)
-            > bounds.width - SUNRISE_ROOM * s;
-        if self.next_high_rise == 0 && busy {
+        if self.next_high_rise == 0 && self.right_edge_busy(bounds) {
             self.next_high_rise = ticks(0.2);
         }
         if self.next_high_rise == 0 {
@@ -541,6 +531,16 @@ impl Sunrise {
         }
     }
 
+    /// Is the last house or high-rise still too close to the right edge
+    /// for the next one? They come in from just off it, so waiting until
+    /// the last has moved in by [`SUNRISE_ROOM`] keeps room between them.
+    fn right_edge_busy(&self, bounds: Bounds) -> bool {
+        let last = (self.steam.iter().map(|c| c.span(bounds).1))
+            .chain(self.high_rises.iter().map(|b| b.span(bounds).1))
+            .fold(f32::MIN, f32::max);
+        last > bounds.width - SUNRISE_ROOM * bounds.scale()
+    }
+
     /// A new V from just off the right edge, aimed at `plane_y`: its tip,
     /// its upper arm or its lower arm there, the whole V on screen.
     fn spawn_flock(&mut self, bounds: Bounds, plane_y: f32) {
@@ -558,7 +558,12 @@ impl Sunrise {
         };
         let edge = 16.0 * s;
         let lowest = STEAM_GROUND * bounds.height - 30.0 * s;
-        let tip_y = (plane_y - aim).clamp(reach + edge, lowest - reach);
+        let (hi, lo) = (reach + edge, lowest - reach);
+        let tip_y = if lo >= hi {
+            (plane_y - aim).clamp(hi, lo)
+        } else {
+            (hi + lo) / 2.0 // a screen too small for a V; never panic in clamp
+        };
         let start = bounds.width + MARGIN * s;
         // Never faster than lets it catch up with the flock ahead before
         // that one has left the screen (at its tail, with some room).
@@ -884,6 +889,34 @@ mod tests {
             "{}",
             tall.top_y(PHONE)
         );
+    }
+
+    #[test]
+    fn a_tiny_screen_does_not_panic() {
+        let tiny = Bounds {
+            width: 10.0,
+            height: 0.0,
+        };
+        let mut m = Sunrise::new(1);
+        for _ in 0..ticks(30.0) {
+            m.tick(tiny, true, 0.0, &mut Vec::new());
+        }
+    }
+
+    #[test]
+    fn a_glare_fades_out_even_when_the_sunrise_ends() {
+        let mut m = Sunrise::new(6);
+        run(
+            &mut m,
+            FIRST_GLARE_SECONDS + GLARE_FADE_SECONDS + 0.2,
+            true,
+            200.0,
+        );
+        assert_eq!(m.glare(), 1.0);
+        run(&mut m, 0.1, false, 200.0);
+        assert!(m.glare() > 0.5, "no sudden end: {}", m.glare());
+        run(&mut m, GLARE_SECONDS, false, 200.0);
+        assert_eq!(m.glare(), 0.0);
     }
 
     #[test]

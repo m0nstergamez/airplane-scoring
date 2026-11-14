@@ -859,6 +859,14 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
     nichts. `FarHighRise::shape` (Mauern, Dachplatte, Treppenhaus, Mast)
     ist, was das Spiel zeichnet und was getroffen wird; das höchste
     lässt über einen Drittel des Bildschirms darüber frei.
+  - Behoben nach `/code-review` von PR #44: Das Platzieren eines V
+    konnte bei einem Bildschirm ohne Höhe in `clamp` abstürzen; eine
+    Blendung hörte beim Ende des Sonnenaufgangs schlagartig auf (jetzt
+    blendet sie aus); das Hausdach war breiter gezeichnet als seine
+    Trefferform; die Gans wird jetzt mit `GOOSE_BODY` aus dem Core
+    gezeichnet; die Blendung zeichnet weniger Ringe (günstiger auf
+    Handys); die Spielanleitung und das Wörterbuch nennen die Hochhäuser
+    und Häuser von Level 4.
   - Neue Töne aus `scripts/make-sounds.py`: `goose-honk.wav` (Rufe mit
     starken ungeraden Obertönen, wie ein Rohrblatt) und `steam.wav`.
   - Das goldene «NEW» ist auf der Level-Karte zu Level 4 gewandert.

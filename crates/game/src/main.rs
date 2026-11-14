@@ -7,10 +7,10 @@ use airplane_scoring_core::{
     start_level, steer_from_keys, Airport, Balloon, BestTimes, Bounds, Clock, Crane, Event,
     FarHighRise, Goose, Gull, HeliParts, HighRise, Hut, Input, Mix, Pad, Steam, Tilt, Tower,
     TyreSmoke, Warning, World, Wreck, AIRSPEED_RANGE, BALLOON_RADIUS, BASKET_BELOW,
-    BEST_TIMES_COUNT, HUT_EAVES, HUT_INSET, LIVES, MAIN_WHEEL_X, NOSE_WHEEL_X, OVERSPEED_AT,
-    PAD_HEIGHT, PAD_WIDTH, PLANE_COCKPIT, PLANE_FUSELAGE, PLANE_NOSE, PLANE_RADIUS, PLANE_TAIL,
-    PLANE_WING, RUNWAY_HEIGHT, RUNWAY_LENGTH, STALL_AT, STRUT_REACH, SUNRISE_LEVEL, SUN_AT,
-    SUN_RADIUS, TICK_SECONDS, WHEEL_RADIUS,
+    BEST_TIMES_COUNT, GOOSE_BODY, HUT_EAVES, HUT_INSET, LIVES, MAIN_WHEEL_X, NOSE_WHEEL_X,
+    OVERSPEED_AT, PAD_HEIGHT, PAD_WIDTH, PLANE_COCKPIT, PLANE_FUSELAGE, PLANE_NOSE, PLANE_RADIUS,
+    PLANE_TAIL, PLANE_WING, RUNWAY_HEIGHT, RUNWAY_LENGTH, STALL_AT, STRUT_REACH, SUNRISE_LEVEL,
+    SUN_AT, SUN_RADIUS, TICK_SECONDS, WHEEL_RADIUS,
 };
 use macroquad::prelude::*;
 
@@ -1089,9 +1089,9 @@ fn draw_sun(bounds: Bounds, ticks: u64) {
     let r = SUN_RADIUS * s;
     let breathe = 1.0 + 0.04 * (ticks as f32 * TICK_SECONDS * 1.3).sin();
     // Many faint rings, one inside the other: a soft glow without edges.
-    for i in 0..16 {
-        let k = 1.2 + 5.0 * (1.0 - i as f32 / 16.0);
-        draw_circle(x, y, r * k * breathe, Color::new(1.0, 0.75, 0.35, 0.035));
+    for i in 0..10 {
+        let k = 1.2 + 5.0 * (1.0 - i as f32 / 10.0);
+        draw_circle(x, y, r * k * breathe, Color::new(1.0, 0.75, 0.35, 0.055));
     }
     draw_circle(x, y, r, Color::from_rgba(255, 236, 170, 255));
     draw_circle(x, y, r * 0.75, Color::from_rgba(255, 250, 225, 255));
@@ -1152,9 +1152,11 @@ fn draw_glare(glare: f32, bounds: Bounds) {
     let (w, h) = (bounds.width, bounds.height);
     draw_rectangle(0.0, 0.0, w, h, Color::new(1.0, 0.85, 0.6, 0.42 * glare));
     let (x, y) = (SUN_AT.0 * w, SUN_AT.1 * h);
-    for i in 0..20 {
-        let k = 0.05 + 0.9 * (1.0 - i as f32 / 20.0);
-        draw_circle(x, y, w * k, Color::new(1.0, 0.95, 0.8, 0.03 * glare));
+    // A few faint rings make the soft bloom (each is a big alpha draw on
+    // a phone, so not too many).
+    for i in 0..8 {
+        let k = 0.08 + 0.85 * (1.0 - i as f32 / 8.0);
+        draw_circle(x, y, w * k, Color::new(1.0, 0.95, 0.8, 0.07 * glare));
     }
 }
 
@@ -1215,19 +1217,15 @@ fn draw_house(c: &Steam, bounds: Bounds) {
         Color::from_rgba(80, 40, 30, 255),
     );
     let roof = Color::from_rgba(92, 46, 34, 255);
-    draw_triangle(
-        vec2(l - 3.0 * s, t),
-        vec2(p.ridge.x, p.ridge.y),
-        vec2(l + w + 3.0 * s, t),
-        roof,
-    );
+    // As wide as the walls, like the roof core hits (`house_shape`).
+    draw_triangle(vec2(l, t), vec2(p.ridge.x, p.ridge.y), vec2(l + w, t), roof);
     // The sun catches the roof's edge.
     let edge = Color::from_rgba(255, 170, 80, 200);
-    draw_line(l - 3.0 * s, t, p.ridge.x, p.ridge.y, 2.0 * s, edge);
+    draw_line(l, t, p.ridge.x, p.ridge.y, 2.0 * s, edge);
     draw_line(
         p.ridge.x,
         p.ridge.y,
-        l + w + 3.0 * s,
+        l + w,
         t,
         1.5 * s,
         Color::new(1.0, 0.67, 0.31, 0.45),
@@ -1251,8 +1249,10 @@ fn draw_goose(g: &Goose, s: f32) {
     let wing = Color::from_rgba(96, 82, 70, 255);
     let tip = turn(g.wing_tip(s));
     draw_line(c.x, c.y, tip.x, tip.y, 4.0 * s, wing);
-    draw_ellipse(c.x, c.y, 11.0 * s, 4.5 * s, g.tumble().to_degrees(), body);
-    let neck = turn(airplane_scoring_core::Vec2::new(c.x - 6.6 * s, c.y));
+    let (hl, hh) = (GOOSE_BODY.0 * s, GOOSE_BODY.1 * s);
+    draw_ellipse(c.x, c.y, hl, hh, g.tumble().to_degrees(), body);
+    // The neck starts where core's hit shape has it (`Goose::shape`).
+    let neck = turn(airplane_scoring_core::Vec2::new(c.x - hl * 0.6, c.y));
     let head = turn(g.head(s));
     draw_line(neck.x, neck.y, head.x, head.y, 3.0 * s, dark);
     draw_circle(head.x, head.y, 3.0 * s, dark);
@@ -1268,10 +1268,7 @@ fn draw_goose(g: &Goose, s: f32) {
     ));
     draw_line(head.x, head.y, beak.x, beak.y, 1.6 * s, dark);
     // The white tail under the back.
-    let tail = turn(airplane_scoring_core::Vec2::new(
-        c.x + 11.0 * s,
-        c.y + 1.0 * s,
-    ));
+    let tail = turn(airplane_scoring_core::Vec2::new(c.x + hl, c.y + 1.0 * s));
     draw_circle(
         tail.x,
         tail.y,

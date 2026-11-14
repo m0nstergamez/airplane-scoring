@@ -788,6 +788,12 @@ that isn't code here. Keep entries short and dated.
     one did nothing. `FarHighRise::shape` (walls, roof slab, stair house,
     mast) is what the game draws and what is hit; the tallest leaves
     over a third of the screen above it.
+  - Fixed after `/code-review` of PR #44: placing a V could panic in
+    `clamp` on a zero-height screen; a glare stopped at once when the
+    sunrise ended (now it fades out); the house roof was drawn wider
+    than its hit shape; the goose drawing now uses core's `GOOSE_BODY`;
+    the glare draws fewer rings (cheaper on phones); How to play and the
+    glossary name the level 4 high-rises and houses.
 
 ## Concepts
 
