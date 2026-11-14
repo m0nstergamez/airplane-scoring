@@ -180,6 +180,9 @@ def main():
             chrome,
             *phone,
             "--headless=new",
+            # GitHub's Ubuntu runners do not let Chrome build its sandbox
+            # (as in check-mermaid.sh).
+            *(["--no-sandbox"] if os.environ.get("CI") else []),
             "--use-angle=swiftshader",
             "--enable-unsafe-swiftshader",
             "--window-size={},{}".format(width, height),

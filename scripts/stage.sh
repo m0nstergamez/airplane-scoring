@@ -238,7 +238,7 @@ e2e_browser() {
   set -e
   grep 'autopilot:' "$tmp/console.log" | sed 's/^.*autopilot: /  /' || true
   echo "screenshot: target/shots/stage-autopilot.png"
-  [ $rc -eq 0 ] || { grep -v 'autopilot:' "$tmp/console.log" | sed 's/^/  /' >&2; fail "no \"World rank\" line (cdp_shot.py exit $rc)"; }
+  [ $rc -eq 0 ] || { grep -v 'autopilot:' "$tmp/console.log" | sed 's/^/  /' >&2 || true; fail "no \"World rank\" line (cdp_shot.py exit $rc)"; }
   grep -q 'autopilot: Not counted online' "$tmp/console.log" && fail "the flight was not counted online"
   line=$(grep -oE 'World rank [0-9]+ of [0-9]+' "$tmp/console.log" | tail -1 || true)
   millis=$(sed -nE 's/.*autopilot: level 1 complete in ([0-9]+) ms.*/\1/p' "$tmp/console.log" | tail -1)
