@@ -196,6 +196,14 @@ flowchart LR
   its high-rise is at `HELI_TAKEOFF_AT` and climbs away back and up, or
   lands by `HELI_TOUCHDOWN_AT` (its sink rate allows for the game's
   speed). Its place is kept relative to the roof, so it slides with it.
+- **The sunrise** (`crates/core/src/sunrise.rs`, level 4,
+  `SUNRISE_LEVEL`): every 3–5 s (`GOOSE_GAP_SECONDS`) a V of geese
+  comes at the plane, its tip or an arm at the plane's height
+  (`Goose::shape`, knocked down like gulls, `Event::GooseHonk`). Columns
+  of `Steam` rise from the ground; inside one the plane is pushed up
+  (`STEAM_LIFT`, `Event::SteamHiss`), no life lost. `Sunrise::glare`
+  (0..1, every 10–16 s for `GLARE_SECONDS`) tells the game how much to
+  wash the screen in the light of the sun, which it draws at `SUN_AT`.
 - **Gulls** (`crates/core/src/gulls.rs`) are the beach's obstacles. Core
   decides when and where they appear (seeded, like the weather), moves
   them and checks the crash; a gull that calls sends a `GullCall` event,

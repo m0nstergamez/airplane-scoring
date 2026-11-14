@@ -749,6 +749,22 @@ that isn't code here. Keep entries short and dated.
 - A progress bar under the clock, asked for: a thin gold-filling track
   with a small plane and a chequered flag at the landing
   (`World::level_progress`), since a level is now a race to its end.
+- Level 4, sunrise, from our own photo (a high-rise against the rising
+  sun over a forest, steam from the valley). The obstacles were asked
+  for: geese in groups, flying at you fast; steam and glare were picked
+  from proposals.
+  - The sun is not in the background image: the image scrolls past at
+    ground speed, so a sun in it would come by every few seconds. The
+    game draws it fixed ahead (`SUN_AT`); the glare comes from there.
+  - Geese come in a V aimed at the plane (tip or an arm at its height),
+    every 3–5 s, honking; fly over or under the whole V.
+  - Steam columns throw the plane up (`STEAM_LIFT`, no life lost), with
+    a hiss once on the way in.
+  - Glare every 10–16 s for 2.5 s washes the screen in warm light,
+    drawn as many faint rings so it has no edges.
+  - New sounds from `scripts/make-sounds.py`: `goose-honk.wav` (honks
+    with strong odd overtones, like a reed) and `steam.wav`.
+  - The golden "NEW" moved to level 4 on the level map.
 
 ## Concepts
 

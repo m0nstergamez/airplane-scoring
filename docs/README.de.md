@@ -826,6 +826,25 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
   golden füllender Balken mit einem kleinen Flugzeug und einer
   Zielflagge bei der Landung (`World::level_progress`), weil ein Level
   jetzt ein Rennen zu seinem Ende ist.
+- Level 4, Sonnenaufgang, nach unserem eigenen Foto (ein Hochhaus vor
+  der aufgehenden Sonne über einem Wald, Dampf aus dem Tal). Die
+  Hindernisse waren gewünscht: Gänse in Gruppen, die schnell
+  entgegenfliegen; Dampf und Blendung wurden aus Vorschlägen gewählt.
+  - Die Sonne ist nicht im Hintergrundbild: Das Bild läuft mit dem
+    Boden vorbei, eine Sonne darin käme alle paar Sekunden vorbei. Das
+    Spiel zeichnet sie fest voraus (`SUN_AT`); von dort kommt die
+    Blendung.
+  - Gänse kommen in einem V, das auf das Flugzeug zielt (Spitze oder ein
+    Flügel auf seiner Höhe), alle 3–5 s, und schnattern; über oder unter
+    dem ganzen V durch fliegen.
+  - Dampfsäulen werfen das Flugzeug nach oben (`STEAM_LIFT`, kein Leben
+    weg), mit einem Zischen beim Hineinfliegen.
+  - Blendung alle 10–16 s für 2.5 s taucht den Bildschirm in warmes
+    Licht, gezeichnet als viele schwache Ringe, damit sie keine Ränder
+    hat.
+  - Neue Töne aus `scripts/make-sounds.py`: `goose-honk.wav` (Rufe mit
+    starken ungeraden Obertönen, wie ein Rohrblatt) und `steam.wav`.
+  - Das goldene «NEW» ist auf der Level-Karte zu Level 4 gewandert.
 
 ## Konzepte
 

@@ -31,6 +31,10 @@ pub const NEW_LEVEL_VOLUME: f32 = 0.8;
 pub const GULL_CALL_VOLUME: f32 = 0.25;
 /// Volume of a hot-air balloon's burner as it appears: clear, not loud.
 pub const BALLOON_BURNER_VOLUME: f32 = 0.35;
+/// Volume of a V of geese honking as it appears (level 4).
+pub const GOOSE_HONK_VOLUME: f32 = 0.35;
+/// Volume of the hiss when the plane flies into steam (level 4).
+pub const STEAM_VOLUME: f32 = 0.45;
 /// Loudest the runway rumble gets (just before lift-off).
 pub const RUMBLE_VOLUME: f32 = 0.8;
 /// Volume of the landing gear folding up.

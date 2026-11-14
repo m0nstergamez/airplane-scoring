@@ -136,7 +136,7 @@ quieter the thunder.
 
 If you touch a hot-air balloon, a launch pad or a hut (level 1) or a
 gull or a lifeguard tower (level 2) or a high-rise, a crane or a
-helicopter (level 3), you **crash**. Only a real touch counts: flying past very
+helicopter (level 3) or a goose (level 4), you **crash**. Only a real touch counts: flying past very
 closely, or through the gap beside a roof, is fine. In a crash your plane smokes, falls
 and ignores the controls for a moment (1.5 seconds). Then you fly again.
 
@@ -200,7 +200,8 @@ their own lists.
 ## Levels
 
 Each **level** has its own landscape: first the coast (level 1), then a
-beach at sunset (level 2), then a town at night (level 3). After its distance (about a minute at cruising speed), a level ends
+beach at sunset (level 2), then a town at night (level 3), then a
+sunrise (level 4). After its distance (about a minute at cruising speed), a level ends
 with a **landing**: no new obstacles come, a runway appears, and the
 autopilot takes over. Speed warnings stay off while it flies, and the
 speed settles back by itself. The gear comes down, the plane touches down
@@ -210,7 +211,7 @@ stops: "Level 1 complete" shows with your time, the
 level's best times and two
 buttons. **Next level** (or Enter) starts the next level: its landscape
 appears, it counts 3, 2, 1, and you take off from its runway. **Menu**
-goes to the main menu. The last level (level 3 for now) has no **Next
+goes to the main menu. The last level (level 4 for now) has no **Next
 level**: it says "No more levels yet, new ones are coming!" in its place,
 next to **Menu** (Enter too).
 
@@ -253,10 +254,6 @@ legs is open air, but it is very tight.
 In the **town at night** (level 3) two things take turns, one at a
 time with room between them:
 
-At the beach and in the town (levels 2 and 3) the runways are **lit**:
-lights along both edges and on the centre line, green at the start and
-red at the end, so you see them in the dusk and the dark.
-
 - **High-rises** stand at the front, with lit windows and a red light
   on the antenna. Fly over them; the antenna counts too. Some have a
   **helicopter** on the roof: it starts its rotor and flies away, or
@@ -273,6 +270,23 @@ red at the end, so you see them in the dusk and the dark.
   you fly into a helicopter, parked or flying, it explodes with a bang
   and falls, and you lose a life.
 
+At the beach and in the town (levels 2 and 3) the runways are **lit**:
+lights along both edges and on the centre line, green at the start and
+red at the end, so you see them in the dusk and the dark.
+
+At **sunrise** (level 4) you fly toward the low sun, over a dark forest
+and a valley in the morning haze:
+
+- **Geese** come at you in a **V**, fast, every few seconds, honking.
+  The V is aimed at your height: its tip or one of its arms is where you
+  are. Fly over or under the whole V. If you fly into a goose, you lose a
+  life and the goose tumbles down.
+- **Steam** rises from chimneys in the valley. Flying through it costs
+  no life, but the warm air throws your plane up with a hiss. Catch it
+  again before the next V comes.
+- Now and then the low sun **blinds** you for a moment: the screen
+  washes out in its light, and you see what comes less well.
+
 ## Sound
 
 | You hear | When |
@@ -281,14 +295,16 @@ red at the end, so you see them in the dusk and the dark.
 | Wind | Always. Louder in rain, in gusts and when you dive. |
 | Rain | While it rains (only in later levels). Louder the harder it rains. |
 | Thunder | A moment after each lightning (only in later levels). |
-| Crash | When you touch a balloon, a launch pad, a hut, a gull, a lifeguard tower, a high-rise or a crane. |
+| Crash | When you touch a balloon, a launch pad, a hut, a gull, a lifeguard tower, a high-rise, a crane or a goose. |
 | Burner | When a hot-air balloon appears or takes off (level 1). |
 | Waves | At the beach (level 2). They fade in and out with the landscape. |
 | Gull | When a gull appears. Gulls from behind always call. |
+| Geese | When a V of geese appears (level 4): honking. |
+| Steam | When you fly into steam (level 4): a rushing hiss. |
 | Tune | When you have landed and a level is complete. |
 | Takeoff | Rolling down the runway: the engine spools up and the wheels rumble until the plane lifts off. |
 | Gear | Just after lift-off: a whir while the wheels fold up, then a clunk. |
-| Explosion | When your plane loses its last life. |
+| Explosion | When your plane loses its last life, or a helicopter you flew into crashes. |
 | Overspeed | While you fly too fast: clacking and the voice "Overspeed". |
 | Pull up | While you fly too slow: a whooping tone and the voice "Pull up". |
 
