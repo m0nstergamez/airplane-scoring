@@ -8,6 +8,10 @@
 #
 #   scripts/stage.sh up       create the machine if needed, build, (re)start
 #   scripts/stage.sh e2e      automated check: sign up, fly a level, rank
+#   scripts/stage.sh e2e-browser
+#                             the real page in headless Chrome, flown by
+#                             core's demo pilot (a test build with
+#                             --features autopilot), until "World rank N of M"
 #   scripts/stage.sh logs     follow the server's log
 #   scripts/stage.sh reset    empty the stage database
 #   scripts/stage.sh down     stop server and web page
@@ -18,7 +22,8 @@
 # stage.orb.local itself. Other ports than scripts/dev.sh and a local
 # server, so all three can run at once.)
 # Needs OrbStack (orb); `e2e` also needs wasmtime and the wasm32-wasip1
-# target. Plain http: fine on a computer; phones need https for tilt.
+# target, `e2e-browser` Chrome. Plain http: fine on a computer; phones
+# need https for tilt.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 repo=$(pwd)
@@ -149,9 +154,69 @@ e2e() {
   printf '\n\033[32mEnd to end OK.\033[0m Level 1 in %s ms, world rank %s of %s.\n' "$millis" "$rank" "$pilots"
 }
 
+# The real page, the real game (built with the autopilot), the stage
+# server: one level flown in real time (about a minute), the line under
+# the time read from the console, the time checked on the board.
+e2e_browser() {
+  fail() { printf '\033[31mFAIL:\033[0m %s\n' "$*" >&2; exit 1; }
+  curl -fsS "$api_url/health" >/dev/null 2>&1 || fail "the stage is not up: scripts/stage.sh up"
+  chrome="${CHROME:-}"
+  if [ -z "$chrome" ]; then
+    for c in "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
+             "/Applications/Chromium.app/Contents/MacOS/Chromium" \
+             "$(command -v google-chrome || true)" "$(command -v chromium || true)"; do
+      if [ -n "$c" ] && [ -x "$c" ]; then chrome="$c"; break; fi
+    done
+  fi
+  [ -n "$chrome" ] || fail "no Chrome found; set CHROME=/path/to/chrome"
+  tmp=$(mktemp -d)
+  trap 'rm -rf "$tmp"' EXIT
+
+  step "the game with the autopilot (a test build, never published)"
+  # Its own target dir: the normal web build stays cached.
+  CARGO_TARGET_DIR=target/autopilot cargo build -q --release \
+    --target wasm32-unknown-unknown -p airplane-scoring --features autopilot
+  page_dir="$web_dir/autopilot"
+  [ -f "$web_dir/index.html" ] || fail "no stage web build: scripts/stage.sh up"
+  rm -rf "$page_dir"
+  mkdir -p "$page_dir"
+  (cd "$web_dir" && find . -mindepth 1 -maxdepth 1 ! -name autopilot -exec cp -R {} autopilot/ \;)
+  cp target/autopilot/wasm32-unknown-unknown/release/airplane-scoring.wasm "$page_dir/"
+
+  step "fly level 1 in headless Chrome against the stage (real time, about a minute)"
+  # The start screen first, so the page has its seeds; then "fly(1)" is
+  # what tapping level 1 on the map does. A fresh profile: a new pilot.
+  set +e
+  SHOT_EVAL='fly(1)' \
+    SHOT_UNTIL='autopilot: (World rank [0-9]+ of [0-9]+|Not counted online)' \
+    SHOT_UNTIL_MS=300000 \
+    SHOT_PRINT='localStorage.getItem("airplane-scoring.pilot")' \
+    python3 scripts/cdp_shot.py "$chrome" "$web_url/autopilot/" target/shots/stage-autopilot.png \
+    844,390 3000 "$tmp/profile" >"$tmp/console.log"
+  rc=$?
+  set -e
+  grep 'autopilot:' "$tmp/console.log" | sed 's/^.*autopilot: /  /' || true
+  echo "screenshot: target/shots/stage-autopilot.png"
+  [ $rc -eq 0 ] || { grep -v 'autopilot:' "$tmp/console.log" | sed 's/^/  /' >&2; fail "no \"World rank\" line (cdp_shot.py exit $rc)"; }
+  grep -q 'autopilot: Not counted online' "$tmp/console.log" && fail "the flight was not counted online"
+  line=$(grep -oE 'World rank [0-9]+ of [0-9]+' "$tmp/console.log" | tail -1)
+  millis=$(grep -oE 'level 1 complete in [0-9]+ ms' "$tmp/console.log" | tail -1 | grep -oE '[0-9]+ ms' | grep -oE '[0-9]+')
+  [ -n "$millis" ] || fail "no level time on the console"
+
+  step "the board has the time the game showed"
+  token=$(grep '^eval: ' "$tmp/console.log" | sed 's/^eval: //' |
+    python3 -c 'import json,sys; print(json.loads(sys.stdin.read())["token"])') || fail "no pilot in the page's storage"
+  board=$(curl -fsS "$api_url/v1/leaderboard?level=1" -H "Authorization: Bearer $token")
+  got=$(echo "$board" | python3 -c 'import json,sys; print(json.load(sys.stdin)["me"]["millis"])')
+  [ "$got" = "$millis" ] || fail "the game showed $millis ms, the board has $got ms"
+
+  printf '\n\033[32mBrowser end to end OK.\033[0m Level 1 in %s ms; the game showed "%s".\n' "$millis" "$line"
+}
+
 case "${1:-}" in
   up) up ;;
   e2e) e2e ;;
+  e2e-browser) e2e_browser ;;
   logs) on_stage 'sudo docker logs -f stage-board' ;;
   reset)
     on_stage "sudo docker rm -f stage-board >/dev/null && sudo docker volume rm stage-board-data >/dev/null"
@@ -160,5 +225,5 @@ case "${1:-}" in
     on_stage "sudo docker rm -f stage-board >/dev/null 2>&1; sudo systemctl stop stage-web 2>/dev/null; true"
     echo "Stage stopped (the database is kept)." ;;
   delete) orb delete -f "$machine" ;;
-  *) sed -n '2,21p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;;
+  *) sed -n '2,26p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;;
 esac

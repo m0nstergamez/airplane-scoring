@@ -22,13 +22,21 @@ jobs:
       - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
         with:
-          targets: wasm32-unknown-unknown
+          targets: wasm32-unknown-unknown, wasm32-wasip1
           components: clippy, rustfmt
       - uses: Swatinem/rust-cache@v2
       - name: Core tests
         run: cargo test -p airplane-scoring-core
+      - name: Page script tests (web/board.js)
+        run: node --test tests/web/
       - name: Leaderboard server tests
         run: cargo test -p airplane-scoring-server
+      - name: Install wasmtime
+        run: |
+          curl -sSf https://wasmtime.dev/install.sh | bash
+          echo "$HOME/.wasmtime/bin" >> "$GITHUB_PATH"
+      - name: wasm and native fly the same
+        run: scripts/check-determinism.sh
       - name: Manual in sync (de/en)
         run: scripts/check-docs.sh
       - name: Diagrams render (Mermaid)
@@ -39,6 +47,7 @@ jobs:
         run: |
           cargo clippy --workspace --all-targets -- -D warnings
           cargo clippy --target wasm32-unknown-unknown -p airplane-scoring -- -D warnings
+          cargo clippy --target wasm32-unknown-unknown -p airplane-scoring --features autopilot -- -D warnings
       - name: Build web
         run: scripts/build-web.sh
       - name: Stamp the build (installed apps notice updates)

@@ -32,6 +32,8 @@ rustup target add wasm32-unknown-unknown
 | Play in the browser | `scripts/dev.sh`, then open <http://localhost:8080> |
 | Run all checks | `scripts/check.sh` |
 | Quick checks | `scripts/check.sh --fast` |
+| Check wasm and native fly the same | `scripts/check-determinism.sh` |
+| Test the page's leaderboard script | `node --test tests/web/` |
 | Make the sound files again | `scripts/make-sounds.py` |
 | Make the level backgrounds again | `scripts/make-backgrounds.sh` |
 | Run the leaderboard server | `cargo run -p airplane-scoring-server` |
@@ -372,20 +374,27 @@ like Fly's machines) runs the real server image from the `Dockerfile`
 and serves the game with `board-api` pointing at it. So the browser's
 wasm makes the replays and an x86-64 Linux server flies them again, as
 in production. It needs OrbStack; `e2e` also needs
-[wasmtime](https://wasmtime.dev/).
+[wasmtime](https://wasmtime.dev/), `e2e-browser` Chrome.
 
 | What | Command |
 |---|---|
 | Create, build and start the stage | `scripts/stage.sh up`, then open <http://localhost:8180> |
 | Check it automatically (about a minute) | `scripts/stage.sh e2e` |
+| Fly a level in the real page (about a minute) | `scripts/stage.sh e2e-browser` |
 | The server's log | `scripts/stage.sh logs` |
 | Empty its database | `scripts/stage.sh reset` |
 | Stop it / remove the machine | `scripts/stage.sh down` / `scripts/stage.sh delete` |
 
 `e2e` signs up a pilot, gets a seed, lets core's demo pilot (built as
 wasm) land level 1, waits until that much real time has passed and
-checks the server reads the same time and puts it on the board. After a
-change to `core`, `crates/server` or the page, run `up` again.
+checks the server reads the same time and puts it on the board.
+`e2e-browser` builds the game with the autopilot (`--features autopilot`:
+the same demo pilot flies, in the browser, never in the published game),
+opens the stage page in headless Chrome and flies level 1 in real time.
+It reads the line under the time from the console, checks that it says
+"World rank N of M" and that the board has the time the game showed, and
+saves `target/shots/stage-autopilot.png`. After a change to `core`,
+`crates/server` or the page, run `up` again.
 
 Then the server goes online, for example on
 [Fly.io](https://fly.io/) (`Dockerfile`, `fly.toml`; no free tier).

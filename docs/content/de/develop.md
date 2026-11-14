@@ -32,6 +32,8 @@ rustup target add wasm32-unknown-unknown
 | Im Browser spielen | `scripts/dev.sh`, dann <http://localhost:8080> öffnen |
 | Alle Prüfungen laufen lassen | `scripts/check.sh` |
 | Schnelle Prüfungen | `scripts/check.sh --fast` |
+| Prüfen, dass wasm und nativ gleich fliegen | `scripts/check-determinism.sh` |
+| Das Bestenlisten-Skript der Seite testen | `node --test tests/web/` |
 | Tondateien neu erzeugen | `scripts/make-sounds.py` |
 | Level-Hintergründe neu erzeugen | `scripts/make-backgrounds.sh` |
 | Den Server der Bestenliste starten | `cargo run -p airplane-scoring-server` |
@@ -392,12 +394,14 @@ eine [OrbStack](https://orbstack.dev/)-Linux-Maschine namens `stage`
 dem `Dockerfile` und liefert das Spiel aus, mit `board-api` auf sie
 gerichtet. So macht das wasm des Browsers die Replays, und ein
 x86-64-Linux-Server fliegt sie nach, wie im Betrieb. Sie braucht
-OrbStack; `e2e` braucht zusätzlich [wasmtime](https://wasmtime.dev/).
+OrbStack; `e2e` braucht zusätzlich [wasmtime](https://wasmtime.dev/),
+`e2e-browser` Chrome.
 
 | Was | Befehl |
 |---|---|
 | Stage anlegen, bauen und starten | `scripts/stage.sh up`, dann <http://localhost:8180> öffnen |
 | Automatisch prüfen (etwa eine Minute) | `scripts/stage.sh e2e` |
+| Ein Level in der echten Seite fliegen (etwa eine Minute) | `scripts/stage.sh e2e-browser` |
 | Das Protokoll des Servers | `scripts/stage.sh logs` |
 | Ihre Datenbank leeren | `scripts/stage.sh reset` |
 | Anhalten / Maschine entfernen | `scripts/stage.sh down` / `scripts/stage.sh delete` |
@@ -405,7 +409,13 @@ OrbStack; `e2e` braucht zusätzlich [wasmtime](https://wasmtime.dev/).
 `e2e` meldet eine Pilotin an, holt einen Startwert, lässt den
 Demo-Piloten von core (als wasm gebaut) Level 1 landen, wartet, bis so
 viel echte Zeit vergangen ist, und prüft, dass der Server dieselbe Zeit
-abliest und sie in die Liste einträgt. Nach einer Änderung an `core`,
+abliest und sie in die Liste einträgt. `e2e-browser` baut das Spiel mit
+dem Autopiloten (`--features autopilot`: Derselbe Demo-Pilot fliegt, im
+Browser, nie im veröffentlichten Spiel), öffnet die Seite der Stage in
+Headless-Chrome und fliegt Level 1 in echter Zeit. Es liest die Zeile
+unter der Zeit aus der Konsole, prüft, dass dort «World rank N of M»
+steht und die Liste die Zeit hat, die das Spiel zeigte, und speichert
+`target/shots/stage-autopilot.png`. Nach einer Änderung an `core`,
 `crates/server` oder der Seite wieder `up` starten.
 
 Dann geht der Server online, zum Beispiel bei [Fly.io](https://fly.io/) (`Dockerfile`,

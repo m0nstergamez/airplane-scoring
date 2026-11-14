@@ -39,19 +39,25 @@ Prefer `cargo doc` output and the vendored crate source in
 `~/.cargo/registry/src/*/macroquad-0.4.16/` over anything you remember.
 
 ## The verification loop
-`scripts/check.sh` runs all of it in order (~5 s when incremental):
+`scripts/check.sh` runs all of it in order (~10 s when incremental):
 1. `cargo test -p airplane-scoring-core` — fast, no engine. Must stay green.
-2. `cargo fmt --all --check`, `cargo clippy --workspace --all-targets -- -D warnings`
+2. `node --test tests/web/` — the page's leaderboard script
+   (`web/board.js`) against a fake server. Page logic that can live
+   outside the DOM goes into such a file, with tests.
+3. `cargo fmt --all --check`, `cargo clippy --workspace --all-targets -- -D warnings`
+   (also for wasm, with and without `--features autopilot`)
    and `scripts/check-docs.sh` (manual and project notes de/en in sync)
-3. `cargo test -p airplane-scoring-server` — the leaderboard API (not
+4. `cargo test -p airplane-scoring-server` — the leaderboard API (not
    in `--fast`).
-4. `scripts/build-web.sh` — release wasm build into `web/`.
-5. `scripts/shot.sh` — loads the real web build in headless Chrome, saves
+5. `scripts/check-determinism.sh` — demo flights natively and as wasm
+   (wasmtime) must be identical; skipped without wasmtime, CI runs it.
+6. `scripts/build-web.sh` — release wasm build into `web/`.
+7. `scripts/shot.sh` — loads the real web build in headless Chrome, saves
    `target/shots/latest.png` and fails on console errors or Rust panics
    (panics show file:line). **Read the PNG** after any visual change.
 
 A change is not done until `scripts/check.sh` passes.
-While iterating, `scripts/check.sh --fast` (steps 1–2) takes ~1 s.
+While iterating, `scripts/check.sh --fast` (steps 1–3) takes ~2 s.
 
 Visual checks:
 - `scripts/shot.sh out.png 5000` — custom path, let the game run 5 s (real
@@ -59,7 +65,9 @@ Visual checks:
   `SIZE=844,390` = phone in landscape (the main target). Known console noise from the vendored
   JS bundle is filtered in the script; add new noise there, not errors.
   `SHOT_EVAL='js'` runs JS before the capture (e.g. click the menu
-  button), `SHOT_AFTER_MS` waits after it (default 400). `PHONE=1`
+  button), `SHOT_AFTER_MS` waits after it (default 400); `SHOT_UNTIL`
+  (regex) waits for a console line instead, `SHOT_PRINT='js'` prints a
+  value (see `scripts/cdp_shot.py`). `PHONE=1`
   emulates a touch screen (the page's phone layout), `DPR=2` a Retina
   MacBook (1.25 / 1.5: Windows display scaling); an iPhone in
   landscape with Safari's bars is about `SIZE=667,320` to `844,340`.
@@ -168,10 +176,15 @@ Visual checks:
 - The leaderboard's score is the game's own (`World::millis_in_level`
   at "Level complete"); change both together.
 - After a change to `core::replay`, `crates/server` or the board plugin
-  in `web/index.html`, run `scripts/stage.sh up` and `scripts/stage.sh e2e`
-  (OrbStack VM, amd64, the real Docker image; game at
-  http://localhost:8180). If OrbStack is missing, say so rather than
-  skipping silently.
+  (`web/board.js`, its part of `web/index.html`, `crates/game/src/board.rs`),
+  run `scripts/stage.sh up`, `scripts/stage.sh e2e` and
+  `scripts/stage.sh e2e-browser` (OrbStack VM, amd64, the real Docker
+  image; game at http://localhost:8180; `e2e-browser` flies level 1 in
+  the real page with the test-only autopilot, about a minute). If
+  OrbStack is missing, say so rather than skipping silently.
+- The autopilot (`crates/game/src/autopilot.rs`) is for test builds
+  only (`--features autopilot`): keep every call behind its `ON`, so
+  the published wasm has none of it.
 - Don't add dependencies without saying why; wasm size matters.
 - Don't change the pinned macroquad version unless explicitly asked.
   If asked: edit root `Cargo.toml`, this file, run `scripts/vendor-js.sh`,
@@ -181,19 +194,21 @@ Visual checks:
 ```
 Cargo.toml            workspace, pinned deps, release profile for small wasm
 crates/core/          pure logic + tests
-crates/game/          macroquad shell (board.rs: leaderboard side of the game)
+crates/game/          macroquad shell (board.rs: leaderboard side of the game;
+                      autopilot.rs: test builds only)
 crates/server/        leaderboard API (Axum + SQLite), tests in tests/api.rs
 Dockerfile, fly.toml  the server's image and its Fly.io app (the game stays on GitHub Pages)
 web/index.html        canvas page; loads mq_js_bundle.js + airplane-scoring.wasm
+web/board.js          the page's leaderboard logic (no DOM), tests in tests/web/ (Node)
 web/sounds/           generated .wav files (engine, wind, rain, thunder, crash, beach, new level, gull call, goose calls and a crow, steam hiss, buzzard cry, leaves, balloon burner, explosion, overspeed and pull-up warnings and voices, runway rumble, takeoff spool-up, gear-up)
 web/levels/           rendered level backgrounds (PNG, from art/levels)
 web/qr.svg            QR code to the live game (scripts/make-qr.py)
 web/plane.svg         the plane for the main menu (core's PLANE_* points)
 art/levels/levelN/    background.svg (source) + local photo.* (gitignored)
 .cargo/config.toml    wasm linker flag needed by the audio feature
-scripts/              check.sh, check-docs.sh, check-mermaid.sh, shot.sh, cdp_shot.py, dev.sh, watch.sh, build-web.sh, stamp-build.sh, serve.sh,
+scripts/              check.sh, check-docs.sh, check-mermaid.sh, check-determinism.sh, shot.sh, cdp_shot.py, dev.sh, watch.sh, build-web.sh, stamp-build.sh, serve.sh,
                       docs.sh, vendor-js.sh, make-sounds.py, make-backgrounds.sh, make-qr.py,
-                      stage.sh (leaderboard stage in an OrbStack VM: up, e2e, logs, reset, down)
+                      stage.sh (leaderboard stage in an OrbStack VM: up, e2e, e2e-browser, logs, reset, down)
 docs/specs/           designs not built yet (English only), index in docs/specs/README.md
 docs/                 README.md + README.de.md = project notes (en/de);
                       docs/content/{de,en} = manual;
