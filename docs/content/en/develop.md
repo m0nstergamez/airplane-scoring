@@ -197,7 +197,7 @@ flowchart LR
   lands by `HELI_TOUCHDOWN_AT` (its sink rate allows for the game's
   speed). Its place is kept relative to the roof, so it slides with it.
 - **The sunrise** (`crates/core/src/sunrise.rs`, level 4,
-  `SUNRISE_LEVEL`): about every second (`GOOSE_GAP_SECONDS`) a V of geese
+  `SUNRISE_LEVEL`): about every two seconds (`GOOSE_GAP_SECONDS`) a V of geese
   comes at the plane, its tip or an arm at the plane's height
   (`Goose::shape`, knocked down like gulls, `Event::GooseHonk` with one of
   `GOOSE_CALLS` calls, never the same twice in a row). Each `Steam` is a

@@ -782,7 +782,8 @@ that isn't code here. Keep entries short and dated.
   - Geese about every second, asked for (was every 3–5 s). So that it
     works: a flock is never fast enough to catch up with the one ahead
     while that one is on screen, and only one flock calls every
-    `GOOSE_CALL_GAP_SECONDS` (2.5 s), or it would be a din.
+    `GOOSE_CALL_GAP_SECONDS` (2.5 s), or it would be a din. Every
+    second turned out a bit much: now about every two seconds.
 
 ## Concepts
 

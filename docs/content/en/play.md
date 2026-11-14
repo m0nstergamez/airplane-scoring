@@ -279,7 +279,7 @@ and a valley in the morning haze. High-rises stand far back, black
 against the sun (never by a runway); they are only scenery, you fly in
 front of them:
 
-- **Geese** come at you in a **V**, fast, about one every second. Every
+- **Geese** come at you in a **V**, fast, about one every two seconds. Every
   few seconds a flock calls as it comes, never twice the same way in a
   row: honking, far off, chattering, or a crow's "kraah".
   The V is aimed at your height: its tip or one of its arms is where you

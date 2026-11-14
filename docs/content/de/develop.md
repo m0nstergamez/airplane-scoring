@@ -206,7 +206,7 @@ flowchart LR
   rechnet mit dem Tempo des Spiels). Sein Platz zählt ab dem Dach, so
   zieht er mit ihm vorbei.
 - **Der Sonnenaufgang** (`crates/core/src/sunrise.rs`, Level 4,
-  `SUNRISE_LEVEL`): Etwa jede Sekunde (`GOOSE_GAP_SECONDS`) kommt dem Flugzeug
+  `SUNRISE_LEVEL`): Etwa alle 2 Sekunden (`GOOSE_GAP_SECONDS`) kommt dem Flugzeug
   ein V Gänse entgegen, seine Spitze oder ein Flügel auf der Höhe des
   Flugzeugs (`Goose::shape`, abgeschossen wie Möwen, `Event::GooseHonk` mit einem
   von `GOOSE_CALLS` Rufen, nie zweimal derselbe hintereinander). Jedes

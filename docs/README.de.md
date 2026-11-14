@@ -853,7 +853,8 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
   - Gänse etwa jede Sekunde, gewünscht (vorher alle 3–5 s). Damit das
     geht: Eine Schar ist nie so schnell, dass sie die vordere einholt,
     solange diese im Bild ist, und nur alle `GOOSE_CALL_GAP_SECONDS`
-    (2.5 s) ruft eine Schar, sonst wäre es ein Lärm.
+    (2.5 s) ruft eine Schar, sonst wäre es ein Lärm. Jede Sekunde war
+    etwas viel: jetzt etwa alle 2 Sekunden.
   - Neue Töne aus `scripts/make-sounds.py`: `goose-honk.wav` (Rufe mit
     starken ungeraden Obertönen, wie ein Rohrblatt) und `steam.wav`.
   - Das goldene «NEW» ist auf der Level-Karte zu Level 4 gewandert.

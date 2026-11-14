@@ -1,6 +1,6 @@
 //! Sunrise (level 4): flocks of geese, columns of steam and the low sun.
 //!
-//! * **Geese** come at the plane in a V, fast, about one every second
+//! * **Geese** come at the plane in a V, fast, about one every two seconds
 //!   ([`GOOSE_GAP_SECONDS`]). The V is aimed at the plane's height: its
 //!   tip or one of its arms is where the plane is, so fly over or under
 //!   the whole V. A flock never catches up with the one ahead. A flock
@@ -38,10 +38,10 @@ pub const SUN_AT: (f32, f32) = (0.78, 0.56);
 pub const SUN_RADIUS: f32 = 20.0;
 
 /// Time between two flocks of geese, shortest and longest, in seconds
-/// (about one every second); none in the first seconds of the level.
-pub const GOOSE_GAP_SECONDS: (f32, f32) = (0.8, 1.2);
+/// (about one every two seconds); none in the first seconds of the level.
+pub const GOOSE_GAP_SECONDS: (f32, f32) = (1.7, 2.3);
 /// The least time between two flocks' calls, in seconds: with a flock
-/// every second, not every one calls.
+/// every two seconds, not every one calls.
 pub const GOOSE_CALL_GAP_SECONDS: f32 = 2.5;
 pub const FIRST_GOOSE_SECONDS: f32 = 3.0;
 /// How fast a flock flies at the plane, in px per second (on its own,
@@ -594,8 +594,8 @@ mod tests {
         let events = run(&mut m, FIRST_GOOSE_SECONDS - 0.1, true, 200.0);
         assert!(m.geese.is_empty() && events.is_empty());
         let all = flocks(2, 60.0, 200.0);
-        // About one every second after the first 3 s.
-        assert!((48..=70).contains(&all.len()), "{}", all.len());
+        // About one every two seconds after the first 3 s.
+        assert!((24..=34).contains(&all.len()), "{}", all.len());
         for v in &all {
             assert!(v.len() == 5 || v.len() == 7, "{}", v.len());
             let tip = v[0];

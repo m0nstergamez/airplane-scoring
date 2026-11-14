@@ -298,8 +298,8 @@ Beim **Sonnenaufgang** (Level 4) fliegst du der tiefen Sonne entgegen,
 Hochhäuser, schwarz vor der Sonne (nie bei einer Bahn); sie sind nur
 Kulisse, du fliegst vor ihnen durch:
 
-- **Gänse** kommen dir in einem **V** entgegen, schnell, etwa eins pro
-  Sekunde. Alle paar Sekunden ruft eine Schar, wenn sie kommt, nie
+- **Gänse** kommen dir in einem **V** entgegen, schnell, etwa eins alle
+  2 Sekunden. Alle paar Sekunden ruft eine Schar, wenn sie kommt, nie
   zweimal gleich hintereinander: Schnattern, Rufen von weiter weg,
   schnelles Geplapper oder ein Krähen-«Kraah». Das V zielt auf deine Höhe: Seine Spitze
   oder einer seiner Flügel ist dort, wo du bist. Flieg über oder unter
