@@ -280,6 +280,38 @@ async fn a_game_over_counts_no_time() {
 }
 
 #[tokio::test]
+async fn the_board_counts_every_landed_flight_of_all_pilots() {
+    let server = Server::new();
+    assert_eq!(server.board(1, None).await["flights"], 0);
+    let (a, b) = (server.pilot().await, server.pilot().await);
+    // Landed: a twice in level 1 (only the faster on the board), b once
+    // in level 2.
+    for (token, level, pilot) in [(&a, 1, 0), (&a, 1, 10), (&b, 2, 20)] {
+        let (run_id, start) = server.run(token, level).await;
+        let (flight, _) = landed(&start, pilot);
+        server.an_hour_passes();
+        let (status, body) = server.send(token, &run_id, flight.clone()).await;
+        assert_eq!(status, StatusCode::OK, "{body}");
+        // The same replay again counts nothing.
+        let (status, _) = server.send(token, &run_id, flight).await;
+        assert_eq!(status, StatusCode::CONFLICT);
+    }
+    // A game over and a refused replay count nothing either.
+    let (run_id, start) = server.run(&b, 1).await;
+    server.an_hour_passes();
+    server.send(&b, &run_id, crashed(&start)).await;
+    let (run_id, _) = server.run(&b, 1).await;
+    server.send(&b, &run_id, b"made up".to_vec()).await;
+    // The same number on every level's board, and for everybody.
+    assert_eq!(server.board(1, None).await["flights"], 3);
+    assert_eq!(server.board(5, Some(&a)).await["flights"], 3);
+    // The cleanup deletes old runs; the count stays.
+    server.0.time_passes(200 * DAY);
+    server.0.cleanup().expect("cleans up");
+    assert_eq!(server.board(1, None).await["flights"], 3);
+}
+
+#[tokio::test]
 async fn a_replay_of_another_seed_is_refused() {
     let server = Server::new();
     let token = server.pilot().await;

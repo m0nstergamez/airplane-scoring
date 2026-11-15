@@ -1052,6 +1052,28 @@ that isn't code here. Keep entries short and dated.
   (`App::time_passes`); the stage sends a sign-up burst with a made-up
   address that must hit `429`. Its first start on the stage deleted 24
   old runs.
+- A crash no longer ends the flight when the plane was slow, a bug
+  report ("after the first lost life it was game over", level 4): a
+  crashed plane falls out of control for 1.5 s, and its airspeed only
+  drifts back toward cruising meanwhile (0.5 to 0.725 when braking
+  hard, stalling below 0.75). It reached the ground still stalling the
+  moment the player got it back, and stalling into the ground breaks
+  the plane apart: every life gone. Now it flies on at cruising speed
+  (1.0) once the crash is over, like at the start of a level. Test:
+  `a_crash_while_slow_does_not_blow_up_the_plane_at_the_ground`. This
+  changes how such flights go, so the server goes out with it (CI
+  deploys it after the merge).
+- The leaderboard shows how many flights all pilots together have
+  landed, asked for: under the list, "1,234 flights landed by all
+  pilots" (`boardFlights` in `web/board.js`, tested). A flight is a
+  completed level the server flew again and counted, in any level; game
+  overs and flights left early never reach the server, and seeds handed
+  out are no flights (each page load asks for one per level). The
+  count lives in its own table (`stats`, one row), because the cleanup
+  deletes runs; `migrate` starts it from the landed levels the runs
+  still know (`SUM(runs.counted)`). `GET /v1/leaderboard` returns it as
+  `flights`, the same for every level; an older server without it shows
+  no line.
 
 ## Concepts
 
