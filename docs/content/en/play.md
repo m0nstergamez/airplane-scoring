@@ -339,8 +339,8 @@ device still have it. As with the best times, a game over or a flight you
 leave counts nothing. Without internet when you start a flight, that
 flight is not counted online.
 
-Under the list it says how many flights everybody together has landed
-so far ("1,234 flights landed by all pilots"), in all levels. Every
+The title says how many flights everybody together has landed so far
+("Leaderboard: fastest levels, total 48 flights landed"), in all levels. Every
 completed level that the server flew again and counted is one flight.
 
 ## Sound

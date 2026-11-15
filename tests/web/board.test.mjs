@@ -263,12 +263,13 @@ test("a level's list: the top, and your own place under it if you are not in it"
   assert.equal(boardRows({ level: 1, pilots: 1, top: [{ rank: 1, name: "<b>x</b>", millis: 1, me: false }], me: null })[0].left, "1. <b>x</b>");
 });
 
-test("the line with all pilots' landed flights", () => {
+test("the title's end with all pilots' landed flights", () => {
   const { boardFlights } = load();
-  assert.equal(boardFlights({ flights: 0 }), "No flights landed yet");
-  assert.equal(boardFlights({ flights: 1 }), "1 flight landed by all pilots");
-  assert.equal(boardFlights({ flights: 1234567 }), "1,234,567 flights landed by all pilots");
-  // An older server without the count: no line.
+  assert.equal(boardFlights({ flights: 0 }), "total 0 flights landed");
+  assert.equal(boardFlights({ flights: 1 }), "total 1 flight landed");
+  assert.equal(boardFlights({ flights: 48 }), "total 48 flights landed");
+  assert.equal(boardFlights({ flights: 1234567 }), "total 1,234,567 flights landed");
+  // An older server without the count: the title as before.
   assert.equal(boardFlights({ level: 1, pilots: 0, top: [] }), "");
   assert.equal(boardFlights({ flights: "lots" }), "");
 });

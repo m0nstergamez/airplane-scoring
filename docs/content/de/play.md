@@ -364,8 +364,8 @@ deinen Bestzeiten auf diesem Gerät steht er trotzdem. Wie bei den
 Bestzeiten zählen ein «Game over» oder ein verlassener Flug nichts. Ohne
 Internet beim Start eines Flugs zählt dieser Flug nicht online.
 
-Unter der Liste steht, wie viele Flüge alle zusammen schon gelandet
-haben («1,234 flights landed by all pilots»), in allen Levels. Jedes
+Im Titel steht, wie viele Flüge alle zusammen schon gelandet haben
+(«Leaderboard: fastest levels, total 48 flights landed»), in allen Levels. Jedes
 geschaffte Level, das der Server nachgeflogen und gezählt hat, ist ein
 Flug.
 

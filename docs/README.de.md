@@ -1196,6 +1196,11 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
   (`SUM(runs.counted)`). `GET /v1/leaderboard` gibt sie als `flights`
   zurück, für jedes Level dieselbe; ein älterer Server ohne sie zeigt
   keine Zeile.
+- Die Zahl der Flüge steht jetzt im Titel der Bestenliste, gewünscht:
+  «Leaderboard: fastest levels, total 48 flights landed». Als eigene
+  Zeile unter der Liste schob sie das Namensfeld nach unten, was das
+  Eintippen eines Namens in Safari auf dem iPhone erschwerte. Ein
+  älterer Server ohne die Zahl lässt den Titel wie bisher.
 
 ## Konzepte
 

@@ -91,9 +91,6 @@
     #start button.primary { background: #1f6feb; border-color: #1f6feb; }
     /* The leaderboard panel: the pilot's name under the lists. */
     #start .board-name { font-size: 16px; text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5); }
-    /* Under the lists: all pilots' landed flights (every level). */
-    #start .board-flights { margin: 0; font-size: 14px; opacity: 0.8; text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5); }
-    #start .board-flights:empty { display: none; }
     #start .board-name input {
       font: 600 16px system-ui, sans-serif; color: #fff; background: rgba(20, 24, 31, 0.78);
       border: 1px solid rgba(255, 255, 255, 0.35); border-radius: 8px; padding: 6px 10px; width: 11em;
@@ -502,10 +499,9 @@
     </div>
     <!-- The online leaderboard (filled in by the "board" script below). -->
     <div class="panel howto" data-panel="board">
-      <h2>Leaderboard: fastest levels</h2>
+      <h2>Leaderboard: fastest levels<span id="board-flights"></span></h2>
       <div class="board-tabs" id="board-tabs" role="group" aria-label="Level"></div>
       <div class="guide board-list" id="board-lists" aria-live="polite"></div>
-      <p class="board-flights" id="board-flights"></p>
       <label class="board-name">Your name <input id="board-name" type="text" maxlength="16" autocomplete="off" spellcheck="false"></label>
       <button type="button" data-go="home">Back</button>
     </div>
@@ -1133,13 +1129,15 @@
         const ticket = latest.next();
         for (const tab of tabs.children) tab.setAttribute("aria-pressed", String(Number(tab.dataset.boardLevel) === level));
         lists.textContent = "Loading...";
-        flights.textContent = ""; // only ever the count of this answer
         try {
           const b = await board.call("GET", `/v1/leaderboard?level=${level}&limit=10`);
           if (!latest.current(ticket)) return;
           lists.textContent = "";
           for (const row of boardRows(b)) lists.append(line(row.left, row.right, row.me));
-          flights.textContent = boardFlights(b);
+          // The same for every level: it stays while the next list loads
+          // (or fails), so the title does not jump under the finger.
+          const total = boardFlights(b);
+          flights.textContent = total ? `, ${total}` : "";
           nameInput.value = b.me ? b.me.name : board.name();
         } catch (e) {
           if (latest.current(ticket)) lists.textContent = "The leaderboard cannot be reached right now.";
