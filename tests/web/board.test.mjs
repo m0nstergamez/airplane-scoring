@@ -265,10 +265,10 @@ test("a level's list: the top, and your own place under it if you are not in it"
 
 test("the title's end with all pilots' landed flights", () => {
   const { boardFlights } = load();
-  assert.equal(boardFlights({ flights: 0 }), ", total 0 flights landed");
-  assert.equal(boardFlights({ flights: 1 }), ", total 1 flight landed");
-  assert.equal(boardFlights({ flights: 48 }), ", total 48 flights landed");
-  assert.equal(boardFlights({ flights: 1234567 }), ", total 1,234,567 flights landed");
+  assert.equal(boardFlights({ flights: 0 }), "total 0 flights landed");
+  assert.equal(boardFlights({ flights: 1 }), "total 1 flight landed");
+  assert.equal(boardFlights({ flights: 48 }), "total 48 flights landed");
+  assert.equal(boardFlights({ flights: 1234567 }), "total 1,234,567 flights landed");
   // An older server without the count: the title as before.
   assert.equal(boardFlights({ level: 1, pilots: 0, top: [] }), "");
   assert.equal(boardFlights({ flights: "lots" }), "");
