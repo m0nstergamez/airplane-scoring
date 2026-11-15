@@ -1008,9 +1008,13 @@ that isn't code here. Keep entries short and dated.
     `scripts/board-db.sh` does `backup` (`.backup` on the machine, safe
     while the server runs, then downloaded to `backups/` and checked
     with `integrity_check`), `sql` (read-only), `write` (backup first)
-    and `restore` (backup first, asks; `.restore` takes SQLite's lock,
-    so the running server needs no restart). Tried against the stage
-    with `BOARD_HOST=stage`.
+    and `restore` (backup first, asks, then restarts the server so it
+    sets up its tables again). Without a sound backup (not empty,
+    `integrity_check`, the server's tables) nothing is changed; `write`
+    runs in one transaction; `sql` and `write` use sqlite3's safe mode
+    (no `.system`, no `ATTACH`); copies left in the machine's `/tmp` are
+    removed on exit. Tried against the stage with `BOARD_HOST=stage`,
+    also each way it should fail.
   - Not taken for now: a backup off Fly by CI (artifacts of a public
     repo can be downloaded by any GitHub user, and the database holds
     names and token hashes) and Litestream (continuous replication to

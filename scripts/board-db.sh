@@ -6,16 +6,18 @@
 #                                     (sqlite3 .backup on the machine: safe
 #                                     while the server runs)
 #   scripts/board-db.sh sql "SQL"     run a query, read-only
-#   scripts/board-db.sh write "SQL"   change it: makes a backup first
+#   scripts/board-db.sh write "SQL"   change it, all or nothing: makes a
+#                                     backup first
 #   scripts/board-db.sh restore FILE  put a backup back (makes a backup of
-#                                     what is there first, asks before)
+#                                     what is there first, asks before),
+#                                     then restarts the server
 #
 # Every change by hand goes through `write` or `restore`, so there is
-# always a copy of the database from just before. Backups hold player
-# names and token hashes: they stay on this computer (backups/ is
-# gitignored), never in the repo or a CI artifact. Fly also keeps a
-# daily snapshot of the volume for 30 days (the manual, Developing,
-# Leaderboard).
+# always a copy of the database from just before; without one they
+# change nothing. Backups hold player names and token hashes: they stay
+# on this computer (backups/ is gitignored), never in the repo or a CI
+# artifact. Fly also keeps a daily snapshot of the volume for 30 days
+# (the manual, Developing, Leaderboard).
 #
 # Needs flyctl, logged in (fly auth login), and sqlite3 here (to check
 # each backup). BOARD_HOST=stage works on the stage's server instead
@@ -40,15 +42,18 @@ esac
 command -v sqlite3 >/dev/null || { echo "No sqlite3 found" >&2; exit 1; }
 
 # How to reach the server's machine: run a command there (no single
-# quotes in it: it goes through sh -c '...'), copy a file to it and back.
+# quotes in it: it goes through sh -c '...'; fails if the command does),
+# copy a file to it and back, restart the server.
 case "${BOARD_HOST:-fly}" in
   fly)
     command -v fly >/dev/null || { echo "No flyctl found (https://fly.io/docs/flyctl/install/)" >&2; exit 1; }
     app=airplane-scoring-board
     health="https://$app.fly.dev/health"
     remote() { fly ssh console -q -a "$app" -C "sh -c '$1'"; }
+    # sftp's shell exits 0 even when a put fails: the caller checks.
     to_remote() { echo "put $1 $2" | fly ssh sftp shell -a "$app" >/dev/null; }
     from_remote() { fly ssh sftp get -a "$app" "$1" "$2" >/dev/null; }
+    restart() { fly apps restart "$app" >/dev/null; }
     ;;
   stage)
     # As scripts/stage.sh runs it: the container stage-board.
@@ -62,9 +67,18 @@ case "${BOARD_HOST:-fly}" in
     remote() { docker exec stage-board sh -c "$1"; }
     to_remote() { docker cp "$(cd "$(dirname "$1")" && pwd)/$(basename "$1")" "stage-board:$2" >/dev/null; }
     from_remote() { docker cp "stage-board:$1" "$(cd "$(dirname "$2")" && pwd)/$(basename "$2")" >/dev/null; }
+    restart() { docker restart stage-board >/dev/null; }
     ;;
   *) echo "BOARD_HOST is fly or stage" >&2; exit 2 ;;
 esac
+
+# Files this run put in the machine's /tmp (copies of the database among
+# them): removed when the script ends, also when it fails.
+leftovers=()
+cleanup() {
+  [ ${#leftovers[@]} -eq 0 ] || remote "rm -f ${leftovers[*]}" >/dev/null 2>&1 || true
+}
+trap cleanup EXIT
 
 # The machine sleeps when nobody plays; a request wakes it.
 wake() {
@@ -76,39 +90,50 @@ wake() {
   exit 1
 }
 
-# Copy a local file to the machine: prints the path it got there.
-put() {
-  local path
-  path="/tmp/board-db-$(date +%s)-$$-$(basename "$1")"
-  to_remote "$1" "$path" || return 1
-  echo "$path"
+# A leaderboard database: not empty, sound, with the server's tables.
+sound() {
+  [ -s "$1" ] || return 1
+  [ "$(sqlite3 -readonly "$1" 'PRAGMA integrity_check' 2>/dev/null)" = ok ] || return 1
+  [ "$(sqlite3 -readonly "$1" "SELECT count(*) FROM sqlite_master WHERE type = 'table'
+     AND name IN ('players', 'runs', 'best')" 2>/dev/null)" = 3 ]
 }
 
+# Copy a local file to the machine; sets $path to where it got there.
+put() {
+  path="/tmp/board-db-$(date +%s)-$$-$(basename "$1")"
+  leftovers+=("$path")
+  to_remote "$1" "$path"
+  remote "test -s $path" || { echo "FAIL: could not copy $1 to the machine" >&2; exit 1; }
+}
+
+# Copy the live database here; sets $saved to the file. Exits if that
+# fails, so nothing goes on without a backup.
 backup() {
   wake
   mkdir -p "$backups"
-  local name path
+  local name
   name="$(basename "$db" .sqlite)-$(date -u +%Y%m%d-%H%M%S).sqlite"
   path="/tmp/$name"
-  remote "sqlite3 $db \".backup $path\"" >/dev/null
-  from_remote "$path" "$backups/$name"
-  remote "rm -f $path" >/dev/null
-  # A copy that does not open as a database is no backup.
-  [ "$(sqlite3 "$backups/$name" 'PRAGMA integrity_check')" = ok ] \
-    || { echo "FAIL: $backups/$name is not a sound database" >&2; exit 1; }
-  echo "$backups/$name"
+  leftovers+=("$path")
+  saved="$backups/$name"
+  # sqlite3 would make an empty database where there is none.
+  remote "test -s $db" || { echo "FAIL: no database $db on the machine" >&2; exit 1; }
+  remote "sqlite3 $db \".backup $path\"" >/dev/null || { echo "FAIL: .backup on the machine" >&2; exit 1; }
+  from_remote "$path" "$saved" || { echo "FAIL: could not download the backup" >&2; exit 1; }
+  sound "$saved" || { rm -f "$saved"; echo "FAIL: the backup is no sound leaderboard database" >&2; exit 1; }
 }
 
-# Run SQL on the machine: through a file, so its quotes need no escaping.
+# Run SQL on the machine from a file (its quotes need no escaping), in
+# safe mode: no .system, .shell, ATTACH and the like.
 run_sql() {
-  local flags=$1 sql=$2 file path
+  local flags=$1 sql=$2 file
   # In the checkout, not $TMPDIR: OrbStack's machine sees this one.
   mkdir -p target
   file=$(mktemp target/board-db.XXXXXX)
   printf '%s\n' "$sql" >"$file"
-  path=$(put "$file") || { rm -f "$file"; exit 1; }
+  put "$file"
   rm -f "$file"
-  remote "sqlite3 $flags $db \".read $path\"; status=\$?; rm -f $path; exit \$status"
+  remote "sqlite3 -safe $flags $db < $path"
 }
 
 cmd="${1:-}"
@@ -116,6 +141,7 @@ case "$cmd" in
   backup)
     [ $# -eq 1 ] || usage
     backup
+    echo "$saved"
     ;;
   sql)
     [ $# -eq 2 ] || usage
@@ -124,24 +150,31 @@ case "$cmd" in
     ;;
   write)
     [ $# -eq 2 ] || usage
-    echo "backup first: $(backup)"
-    run_sql "-bail -header -column" "$2"
+    backup
+    echo "backup first: $saved"
+    # One transaction: -bail stops at the first error, before COMMIT,
+    # so a failed statement takes the ones before it back too.
+    run_sql "-bail -header -column" "BEGIN;
+$2
+;
+COMMIT;"
     ;;
   restore)
     [ $# -eq 2 ] || usage
     file=$2
-    [ -f "$file" ] || { echo "no such file: $file" >&2; exit 1; }
-    [ "$(sqlite3 "$file" 'PRAGMA integrity_check')" = ok ] \
-      || { echo "$file is not a sound database" >&2; exit 1; }
+    sound "$file" || { echo "$file is no sound leaderboard database" >&2; exit 1; }
     printf 'Replace %s on %s with %s? Type yes: ' "$db" "${BOARD_HOST:-fly}" "$file"
     read -r answer
     [ "$answer" = yes ] || { echo "nothing changed"; exit 1; }
-    echo "backup first: $(backup)"
-    path=$(put "$file") || exit 1
-    # .restore goes through SQLite's lock: the running server sees the
-    # restored data with its next request, no restart needed.
-    remote "sqlite3 $db \".restore $path\"; status=\$?; rm -f $path; exit \$status"
-    echo "restored $db from $file"
+    backup
+    echo "backup first: $saved"
+    put "$file"
+    remote "sqlite3 $db \".restore $path\""
+    # The server sets up its tables when it opens the database
+    # (crates/server: SCHEMA, migrate): an older backup needs that again.
+    restart
+    wake
+    echo "restored $db from $file, server restarted"
     ;;
   *) usage ;;
 esac

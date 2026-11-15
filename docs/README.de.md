@@ -1092,7 +1092,7 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
   als dasselbe Level, direkt gestartet (Level 4 ab Level 1: Tempo 1,39
   bis 1,5; dort gestartet: 1,0 bis etwa 1,12). `World::speed_up`
   folgt jetzt `World::seconds_in_level`, der Uhr des Levels, also ist
-  eine Zeit auf dem Board dasselbe Rennen, egal wo der Flug begann;
+  eine Zeit in der Bestenliste dasselbe Rennen, egal wo der Flug begann;
   innerhalb eines Levels steigt das Tempo weiterhin. Erwogen und nicht
   gewählt: nur das Start-Level eines Flugs werten (macht «Next level»
   online nutzlos) und die Zeiten umrechnen (eine zweite Zeit, die man
@@ -1101,7 +1101,7 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
   Level kamen, waren zu schnell und passen nicht mehr.
   Tests: `every_level_starts_at_the_same_speed`,
   `a_level_takes_as_long_after_next_level_as_started_directly`.
-- Die unfairen Zeiten wurden von Hand vom Board entfernt, gewünscht:
+- Die unfairen Zeiten wurden von Hand aus der Bestenliste entfernt, gewünscht:
   Jede Bestzeit wurde ihrem Flug zugeordnet (gleicher Pilot, die Levels
   und das Zeitfenster des Flugs), und die 16 aus Flügen, die in einem
   früheren Level begannen, wurden gelöscht; 13 blieben. Ohne `sqlite3`
@@ -1117,9 +1117,14 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
     `scripts/board-db.sh` macht `backup` (`.backup` auf der Maschine,
     sicher während der Server läuft, dann nach `backups/` geladen und
     mit `integrity_check` geprüft), `sql` (nur lesen), `write` (zuerst
-    ein Backup) und `restore` (zuerst ein Backup, fragt; `.restore`
-    nimmt SQLites Sperre, also braucht der laufende Server keinen
-    Neustart). Gegen die Stage ausprobiert, mit `BOARD_HOST=stage`.
+    ein Backup) und `restore` (zuerst ein Backup, fragt, startet dann
+    den Server neu, damit er seine Tabellen wieder einrichtet). Ohne
+    gesundes Backup (nicht leer, `integrity_check`, die Tabellen des
+    Servers) ändert sich nichts; `write` läuft in einer Transaktion;
+    `sql` und `write` nutzen den sicheren Modus von sqlite3 (kein
+    `.system`, kein `ATTACH`); Kopien im `/tmp` der Maschine werden am
+    Ende entfernt. Gegen die Stage ausprobiert, mit `BOARD_HOST=stage`,
+    auch jede Art, wie es scheitern soll.
   - Vorerst nicht gewählt: ein Backup ausserhalb von Fly durch CI
     (Artifacts eines öffentlichen Repos kann jeder GitHub-Nutzer
     herunterladen, und die Datenbank enthält Namen und Token-Hashes) und

@@ -446,8 +446,8 @@ Die Datenbank wird zweifach gesichert:
 
 - **Snapshots:** Fly kopiert jeden Tag das ganze Volume und bewahrt die
   Kopien 30 Tage auf (`snapshot_retention` in `fly.toml`; `fly volumes
-  snapshots list <id>` zeigt sie). Zurück gehst du mit einem neuen Volume
-  daraus (`fly volumes create leaderboard_data --snapshot-id <id>`).
+  snapshots list <volume id>` zeigt sie). Zurück zu einem braucht ein
+  neues Volume und eine neue Maschine darauf (Schritte unten).
 - **Backups von Hand:** `scripts/board-db.sh` kopiert die laufende
   Datenbank nach `backups/` auf deinem Computer. Der Ordner ist
   gitignored: Er enthält Namen und Token-Hashes, halte ihn aus dem Repo.
@@ -457,12 +457,26 @@ Die Datenbank wird zweifach gesichert:
 | Datenbank hierher kopieren | `scripts/board-db.sh backup` |
 | Etwas nachschauen (nur lesen) | `scripts/board-db.sh sql "SELECT ..."` |
 | Etwas ändern (zuerst ein Backup) | `scripts/board-db.sh write "DELETE ..."` |
-| Ein Backup zurückspielen (fragt zuerst) | `scripts/board-db.sh restore backups/<datei>` |
+| Ein Backup zurückspielen (fragt zuerst, startet den Server neu) | `scripts/board-db.sh restore backups/<datei>` |
 
 Ändere die Datenbank von Hand nur mit `write` oder `restore`: Beide
-machen zuerst ein Backup, so ist der Stand von kurz vorher immer da. Zum
-Ausprobieren startest du einen Befehl mit `BOARD_HOST=stage` gegen die
-Stage.
+machen zuerst ein Backup und ändern nichts, wenn das scheitert, so ist
+der Stand von kurz vorher immer da. `write` gilt ganz oder gar nicht:
+Scheitert eine Anweisung, zählt keine. Zum Ausprobieren startest du
+einen Befehl mit `BOARD_HOST=stage` gegen die Stage.
+
+Zurück zu einem Snapshot (wenn das Volume selbst verloren oder kaputt ist):
+
+1. Starte `scripts/board-db.sh backup`, falls der Server noch antwortet.
+2. Such den Snapshot: `fly volumes list` (die ID des Volumes), dann
+   `fly volumes snapshots list <volume id>`.
+3. Mach daraus ein Volume:
+   `fly volumes create leaderboard_data --snapshot-id <snapshot id> --region fra`.
+4. Starte eine Maschine darauf: `fly machine clone <machine id> --attach-volume <new volume id>:/data`
+   (`fly machine list` zeigt die ID der Maschine).
+5. Entferne die alte Maschine: `fly machine destroy <old machine id> --force`.
+   Behalte das alte Volume, bis die Bestenliste stimmt, dann
+   `fly volumes destroy <old volume id>`.
 
 ### Zuerst der Test
 
