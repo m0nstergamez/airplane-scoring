@@ -99,6 +99,7 @@ function createBoard(env) {
   const RETRY_MS = 10 * 1000;
   const ready = {};
   const asked = {}; // level -> when the last request went out
+  const notBefore = {}; // level -> no new request before (the server's Retry-After)
   const fetching = {};
   const getSeed = async (level) => {
     if (!API || fetching[level] || ready[level]) return;
@@ -109,13 +110,15 @@ function createBoard(env) {
       const run = await call("POST", "/v1/runs", { level });
       ready[level] = { runId: run.run_id, seed: BigInt(run.seed), at: env.now() };
     } catch (e) {
+      if (e.retryAfter > 0) notBefore[level] = env.now() + e.retryAfter * 1000;
       env.warn("leaderboard: no seed, flights are not ranked for now", e);
     } finally { fetching[level] = false; }
   };
   const seedFor = (level) => {
     const r = ready[level];
     if (r && env.now() - r.at > SEED_MAX_AGE_MS) delete ready[level];
-    if (!ready[level] && env.now() - (asked[level] || 0) > RETRY_MS) getSeed(level);
+    const now = env.now();
+    if (!ready[level] && now - (asked[level] || 0) > RETRY_MS && now >= (notBefore[level] || 0)) getSeed(level);
     return ready[level] || null;
   };
 

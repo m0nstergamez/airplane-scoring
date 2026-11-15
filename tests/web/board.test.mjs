@@ -304,3 +304,26 @@ test("only once, and not when the wait is long or the replay was refused", async
     assert.equal(warnings.length, 1);
   }
 });
+
+test("over the seed limit: no new request before the server's Retry-After", async () => {
+  let limited = true;
+  const srv = friendly({
+    "POST /v1/runs": (r) => (limited
+      ? [429, { error: "slow down" }, { "Retry-After": "60" }]
+      : [200, { run_id: 7, seed: "1007", level: JSON.parse(r.body).level }]),
+  });
+  const { board, game, clock } = make({ srv });
+  await board.start(1);
+  const runs = () => srv.requests.filter((r) => r.path === "/v1/runs").length;
+  assert.equal(runs(), 1);
+  clock.t += 30_000; // past RETRY_MS, before Retry-After
+  assert.equal(game.board_ready(1), 0);
+  await settle();
+  assert.equal(runs(), 1, "waits for the server");
+  limited = false;
+  clock.t += 31_000;
+  game.board_ready(1);
+  await settle();
+  assert.equal(runs(), 2);
+  assert.equal(game.board_ready(1), 1);
+});

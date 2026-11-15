@@ -9,6 +9,13 @@ use std::sync::Mutex;
 
 const HOUR_MS: f64 = 60.0 * 60.0 * 1000.0;
 
+/// At most this many keys (about 100 bytes each). Full of keys that are
+/// all in use (many addresses at once: an attack), a new key is refused
+/// until the hourly cleanup frees some. Honest use needs a few hundred.
+const MAX_KEYS: usize = 100_000;
+/// `Retry-After` for a key refused because the map is full.
+const FULL_RETRY_S: u64 = 60;
+
 pub struct Limiter {
     burst: f64,
     /// Tokens per millisecond.
@@ -39,6 +46,9 @@ impl Limiter {
     /// the next one comes in that many seconds (for `Retry-After`).
     pub fn take(&self, key: &str, now_ms: i64) -> Result<(), u64> {
         let mut buckets = self.buckets();
+        if buckets.len() >= MAX_KEYS && !buckets.contains_key(key) {
+            return Err(FULL_RETRY_S);
+        }
         let bucket = buckets.entry(key.to_string()).or_insert(Bucket {
             tokens: self.burst,
             at_ms: now_ms,
@@ -52,6 +62,14 @@ impl Limiter {
         } else {
             let wait_ms = (1.0 - bucket.tokens) / self.refill;
             Err((wait_ms / 1000.0).ceil().max(1.0) as u64)
+        }
+    }
+
+    /// Undo a `take` that went through: the request was refused for
+    /// another reason, so it should not count against `key`.
+    pub fn give_back(&self, key: &str) {
+        if let Some(b) = self.buckets().get_mut(key) {
+            b.tokens = (b.tokens + 1.0).min(self.burst);
         }
     }
 
@@ -114,6 +132,30 @@ mod tests {
         let limit = Limiter::new(1, 60);
         assert_eq!(limit.take("a", 10 * MINUTE), Ok(()));
         assert!(limit.take("a", 0).is_err());
+    }
+
+    #[test]
+    fn a_token_given_back_can_be_taken_again() {
+        let limit = Limiter::new(1, 1);
+        assert_eq!(limit.take("a", 0), Ok(()));
+        limit.give_back("a");
+        assert_eq!(limit.take("a", 0), Ok(()));
+        limit.give_back("a");
+        limit.give_back("a");
+        assert_eq!(limit.take("a", 0), Ok(()));
+        assert!(limit.take("a", 0).is_err(), "never more than the burst");
+    }
+
+    #[test]
+    fn the_map_of_keys_cannot_grow_without_bound() {
+        let limit = Limiter::new(1, 60);
+        for i in 0..MAX_KEYS {
+            limit.take(&i.to_string(), 0).unwrap();
+        }
+        assert_eq!(limit.take("one more", 0), Err(FULL_RETRY_S));
+        assert!(limit.take("7", 0).is_err(), "a known key: its own bucket");
+        limit.forget_idle(2 * 60 * 1000);
+        assert_eq!(limit.take("one more", 2 * 60 * 1000), Ok(()));
     }
 
     #[test]

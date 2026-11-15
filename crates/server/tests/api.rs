@@ -439,12 +439,15 @@ async fn the_cleanup_deletes_what_can_never_count_and_keeps_the_board() {
 
     server.0.cleanup().expect("cleanup");
     assert_eq!(server.count("runs"), 3, "all still young enough to fly");
+    server.0.time_passes(DAY - HOUR / 2); // 24 and a half hours old
+    server.0.cleanup().expect("cleanup");
+    assert_eq!(server.count("runs"), 3, "an hour to spare: none in flight");
     server.0.time_passes(DAY);
     let line = server.0.cleanup().expect("cleanup");
     assert_eq!(server.count("runs"), 1, "only the one that counted");
     assert!(line.contains("deleted runs 2 pilots 0"), "{line}");
 
-    server.0.time_passes(88 * DAY); // 89 days and an hour since seen
+    server.0.time_passes(87 * DAY); // 89 days and half an hour since seen
     server.0.cleanup().expect("cleanup");
     assert_eq!(server.count("players"), 2, "not yet 90 days");
     server.0.time_passes(DAY);
@@ -479,4 +482,51 @@ async fn a_full_database_takes_no_new_pilots() {
     assert_eq!(status, StatusCode::SERVICE_UNAVAILABLE, "{body}");
     let line = server.0.cleanup().expect("cleanup");
     assert!(line.contains("full 1"), "{line}");
+    // Retrying while full uses up no sign-ups of the address.
+    for _ in 0..2 * SIGNUPS_PER_IP.0 {
+        let (status, _) = server.json("POST", "/v1/players", None, json!({})).await;
+        assert_eq!(status, StatusCode::SERVICE_UNAVAILABLE);
+    }
+}
+
+#[tokio::test]
+async fn the_page_may_read_retry_after() {
+    // The page is on another origin: without this it reads no
+    // Retry-After and never sends a replay once more.
+    let server = Server::new();
+    let request = Request::builder()
+        .method("POST")
+        .uri("/v1/players")
+        .header("origin", "https://game.test")
+        .body(Body::empty())
+        .expect("a request");
+    let response = app(server.0.clone(), &["https://game.test"])
+        .oneshot(request)
+        .await
+        .expect("a response");
+    let exposed = response
+        .headers()
+        .get("access-control-expose-headers")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("");
+    assert!(
+        exposed.to_ascii_lowercase().contains("retry-after"),
+        "{exposed:?}"
+    );
+}
+
+#[tokio::test]
+async fn a_limited_replay_counts_once_in_the_hourly_line() {
+    let server = Server::new();
+    let token = server.pilot().await;
+    let (run_id, _) = server.run(&token, 1).await;
+    for _ in 0..REPLAYS_PER_PILOT.0 + 3 {
+        server.send(&token, &run_id, b"made up".to_vec()).await;
+    }
+    let line = server.0.cleanup().expect("cleanup");
+    let refused = format!("refused {}", REPLAYS_PER_PILOT.0);
+    assert!(
+        line.contains(&refused) && line.contains("replays 3 |"),
+        "{line}"
+    );
 }

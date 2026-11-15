@@ -51,7 +51,7 @@ mod limits;
 use limits::Limiter;
 
 /// A replay may be this big: more than the busiest steering for
-/// `MAX_REPLAY_TICKS` (4 bytes a tick, about 0.4 MB).
+/// `MAX_REPLAY_TICKS` (4 bytes a tick, about 0.9 MB).
 const MAX_REPLAY_BYTES: usize = 1024 * 1024;
 /// A seed is good for this long after it was handed out.
 const RUN_MAX_AGE_MS: i64 = 24 * 60 * 60 * 1000;
@@ -77,12 +77,13 @@ pub const RUNS_PER_PILOT: (u32, u32) = (15, 60);
 /// Replays per pilot: one per "Level complete", with retries.
 pub const REPLAYS_PER_PILOT: (u32, u32) = (10, 60);
 
+const HOUR_MS: i64 = 60 * 60 * 1000;
 /// A pilot with no best time, not seen for this long, is deleted.
 const PILOT_IDLE_MS: i64 = 90 * 24 * 60 * 60 * 1000;
 /// `players.last_seen_ms` is written at most this often per pilot.
-const SEEN_EVERY_MS: i64 = 60 * 60 * 1000;
+const SEEN_EVERY_MS: i64 = HOUR_MS;
 /// "The database is full" goes into the log at most this often.
-const FULL_LOG_EVERY_MS: i64 = 60 * 60 * 1000;
+const FULL_LOG_EVERY_MS: i64 = HOUR_MS;
 
 const SCHEMA: &str = "
 CREATE TABLE IF NOT EXISTS players (
@@ -229,9 +230,11 @@ impl App {
             let tx = db.transaction()?;
             // A run that counted nothing can never count once too old;
             // runs that counted stay, the history behind `best`.
+            // An hour more than a seed is good for: never one that is
+            // being flown right now.
             let runs = tx.execute(
                 "DELETE FROM runs WHERE counted = 0 AND started_ms < ?1",
-                [now - RUN_MAX_AGE_MS],
+                [now - RUN_MAX_AGE_MS - HOUR_MS],
             )?;
             // Pilots not on any board and gone for long: their browser
             // signs up again (a new name) if it ever comes back.
@@ -319,7 +322,10 @@ pub fn app(state: Shared, origins: &[&str]) -> Router {
     let cors = CorsLayer::new()
         .allow_origin(AllowOrigin::list(origins))
         .allow_methods([Method::GET, Method::POST, Method::PUT])
-        .allow_headers([AUTHORIZATION, CONTENT_TYPE]);
+        .allow_headers([AUTHORIZATION, CONTENT_TYPE])
+        // The page on another origin may read it only when exposed: it
+        // waits that long before sending a replay once more.
+        .expose_headers([axum::http::header::RETRY_AFTER]);
     Router::new()
         .route("/v1/players", post(new_player))
         .route("/v1/players/me", put(rename))
@@ -401,21 +407,24 @@ fn pilot_of(state: &App, token: &str) -> Result<Option<Pilot>, rusqlite::Error> 
     let hash = Sha256::digest(token.as_bytes());
     let now = state.now();
     let db = state.db();
-    let id: Option<String> = db
+    let found: Option<(String, i64)> = db
         .query_row(
-            "SELECT id FROM players WHERE token_hash = ?1",
+            "SELECT id, last_seen_ms FROM players WHERE token_hash = ?1",
             [&hash[..]],
-            |row| row.get(0),
+            |row| Ok((row.get(0)?, row.get(1)?)),
         )
         .optional()?;
-    if let Some(id) = &id {
-        // Seen now (for the cleanup); written at most once an hour.
+    let Some((id, seen)) = found else {
+        return Ok(None);
+    };
+    // Seen now (for the cleanup); written at most once an hour.
+    if seen < now - SEEN_EVERY_MS {
         db.execute(
-            "UPDATE players SET last_seen_ms = ?1 WHERE id = ?2 AND last_seen_ms < ?3",
-            params![now, id, now - SEEN_EVERY_MS],
+            "UPDATE players SET last_seen_ms = ?1 WHERE id = ?2",
+            params![now, id],
         )?;
     }
-    Ok(id.map(|id| Pilot { id }))
+    Ok(Some(Pilot { id }))
 }
 
 /// The client's IP address, for the sign-up limit only: from the
@@ -516,13 +525,17 @@ async fn new_player(
         state.counts.limited_signups.fetch_add(1, Relaxed);
         ApiError::slow_down(seconds)
     };
-    state
-        .limits
-        .signups_per_ip
-        .take(&ip, now)
-        .map_err(limited)?;
-    state.limits.signups_all.take("all", now).map_err(limited)?;
+    // A sign-up refused further on gives its address's token back, so
+    // retries while the server is full or busy do not use it up.
+    let (per_ip, all) = (&state.limits.signups_per_ip, &state.limits.signups_all);
+    per_ip.take(&ip, now).map_err(limited)?;
+    if let Err(seconds) = all.take("all", now) {
+        per_ip.give_back(&ip);
+        return Err(limited(seconds));
+    }
     if state.db_bytes()? > state.settings.db_max_bytes {
+        per_ip.give_back(&ip);
+        all.give_back("all");
         state.counts.full.fetch_add(1, Relaxed);
         let last = state.full_logged_ms.load(Relaxed);
         if now.saturating_sub(last) >= FULL_LOG_EVERY_MS {
@@ -694,10 +707,14 @@ async fn send_replay(
         }
     };
     let count = match &result {
-        Ok(_) => &state.counts.replays_accepted,
-        Err(_) => &state.counts.replays_refused,
+        Ok(_) => Some(&state.counts.replays_accepted),
+        // A 429 is counted as such, not as a refused replay.
+        Err(e) if e.0 == StatusCode::TOO_MANY_REQUESTS => None,
+        Err(_) => Some(&state.counts.replays_refused),
     };
-    count.fetch_add(1, Relaxed);
+    if let Some(count) = count {
+        count.fetch_add(1, Relaxed);
+    }
     let outcome = match &result {
         Ok(Json(r)) => Ok(&r.levels[..]),
         Err(e) => Err(e.1.as_str()),

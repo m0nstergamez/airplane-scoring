@@ -1158,8 +1158,14 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
   24 h), und Pilotinnen und Piloten ohne Bestzeit, seit 90 Tagen nicht
   gesehen (`players.last_seen_ms`, neu), und schreibt die Zähler der
   Stunde ins Log. Über 512 MB keine neuen Pilotinnen und Piloten
-  (`DB_MAX_BYTES`). `MAX_REPLAY_TICKS` ist 30 Minuten statt drei
-  Stunden. Tests stellen eine Uhr vor (`App::time_passes`); die Stage
+  (`DB_MAX_BYTES`). `MAX_REPLAY_TICKS` ist eine Stunde statt drei
+  (nicht 30 Minuten: Die Ticks laufen weiter, während «Level complete»
+  auf einen Tipp wartet). Aus dem Review: Der Server gibt `Retry-After`
+  für die Seite frei (CORS; sonst könnte die Seite auf github.io ihn
+  nicht lesen), eine Anmeldung, die später abgelehnt wird, gibt das
+  Token ihrer Adresse zurück, der Limiter hält höchstens 100 000
+  Schlüssel, und die Seite wartet ein `Retry-After` auch bei Startwerten
+  ab. Tests stellen eine Uhr vor (`App::time_passes`); die Stage
   schickt einen Ansturm von Anmeldungen mit einer erfundenen Adresse,
   der `429` erreichen muss. Der erste Start auf der Stage löschte 24
   alte Runs.

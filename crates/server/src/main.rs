@@ -48,9 +48,12 @@ async fn main() {
         let mut every = tokio::time::interval(CLEANUP_EVERY);
         loop {
             every.tick().await;
-            match housekeeping.cleanup() {
-                Ok(line) => println!("{line}"),
-                Err(e) => eprintln!("cleanup: {e}"),
+            // Off the async threads: it holds the database for a while.
+            let state = housekeeping.clone();
+            match tokio::task::spawn_blocking(move || state.cleanup()).await {
+                Ok(Ok(line)) => println!("{line}"),
+                Ok(Err(e)) => eprintln!("cleanup: {e}"),
+                Err(e) => eprintln!("cleanup crashed: {e}"),
             }
         }
     });

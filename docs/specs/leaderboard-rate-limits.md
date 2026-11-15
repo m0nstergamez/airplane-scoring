@@ -72,7 +72,13 @@ cleanup task (below), so the map cannot grow without bound.
 | Replay | pilot | 10 | 60 per hour | one per "Level complete"; a level with takeoff and landing takes about 80 s, so up to 45 an hour |
 
 Over the limit: `429 Too Many Requests` with `Retry-After` (seconds) and
-`{ "error": "slow down" }`. The numbers are constants in `lib.rs`
+`{ "error": "slow down" }`. CORS exposes `Retry-After`, or the page on
+another origin could not read it. A sign-up refused further on (the
+global limit, a full database) gives its address's token back. The
+limiter holds at most 100,000 keys; full of keys in use (many
+addresses at once), a new one is refused until the hourly cleanup.
+`SIGNUPS_ALL` means one client with many addresses can keep new pilots
+out for an hour: accepted (a non-goal above), existing pilots play on. The numbers are constants in `lib.rs`
 (`SIGNUPS_PER_IP`, `SIGNUPS_ALL`, `RUNS_PER_PILOT`, `REPLAYS_PER_PILOT`),
 so the manual can name them. A replay takes its token before anything
 else, also one that is then refused.
@@ -103,13 +109,16 @@ Built with the review fixes in PR #45, before the rest of this spec; kept here a
   `shared-cpu-1x` machine is likely several times slower: measure on the
   stage and on Fly before fixing the timeout. Honest replays are short,
   so a queue only forms under abuse.
-- `MAX_REPLAY_TICKS` is lowered from three hours to 30 minutes: a
-  flight of all levels lasts about 7 minutes. `MAX_REPLAY_BYTES` goes
-  from 2 MB to 1 MB (the busiest 30 minutes are about 0.4 MB).
+- `MAX_REPLAY_TICKS` is lowered from three hours to one hour. A flight
+  of all levels lasts about 7 minutes, but the ticks go on while "Level
+  complete" waits for a tap, so 30 minutes could cut off a pilot who
+  came back after a break. `MAX_REPLAY_BYTES` goes from 2 MB to 1 MB
+  (the busiest hour is about 0.9 MB).
 
 The page already treats any failure as "Not counted online". On `429`
 and `503` it retries the replay once after `Retry-After` (at most 10 s),
-since a landed level is worth one more try.
+since a landed level is worth one more try. For seeds it waits out a
+`Retry-After` before asking again.
 
 ### 4. Fewer runs from the page
 

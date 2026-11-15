@@ -1042,8 +1042,13 @@ that isn't code here. Keep entries short and dated.
   most 10 s. A cleanup at start and every hour deletes runs that never
   counted (after 24 h) and pilots with no best time not seen for 90
   days (`players.last_seen_ms`, new), and logs the hour's counts. No
-  new pilots over 512 MB (`DB_MAX_BYTES`). `MAX_REPLAY_TICKS` is 30
-  minutes instead of three hours. Tests move a clock
+  new pilots over 512 MB (`DB_MAX_BYTES`). `MAX_REPLAY_TICKS` is one
+  hour instead of three (not 30 minutes: the ticks go on while "Level
+  complete" waits for a tap). From the review: the server exposes
+  `Retry-After` to the page (CORS; without it the page on github.io
+  could not read it), a sign-up refused further on gives its address's
+  token back, the limiter holds at most 100,000 keys, and the page waits
+  out a `Retry-After` on seeds too. Tests move a clock
   (`App::time_passes`); the stage sends a sign-up burst with a made-up
   address that must hit `429`. Its first start on the stage deleted 24
   old runs.
