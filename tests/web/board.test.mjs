@@ -174,7 +174,7 @@ test("a level complete: waiting, then the rank the server gave", async () => {
   new Uint8Array(memory.buffer).fill(9); // the game moves on
   await sent;
   assert.deepEqual([game.board_status(1), game.board_rank(1), game.board_pilots(1)], [1, 3, 12]);
-  const replay = srv.requests.find((r) => r.path === "/v1/runs/1/replay?shown=61450");
+  const replay = srv.requests.find((r) => r.path === "/v1/runs/1/replay?level=1&shown=61450");
   assert.ok(replay, "the time on screen goes along, for the server's log");
   assert.deepEqual([...replay.body], [1, 2, 3, 4], "the bytes as they were at the call");
   assert.equal(replay.headers["Content-Type"], "application/octet-stream");

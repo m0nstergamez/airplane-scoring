@@ -12,12 +12,12 @@
 //! - `PUT /v1/players/me`: `{ "name": .. }`, the name on the board.
 //! - `POST /v1/runs`: `{ "level": 1 }` (the level the flight starts in).
 //!   Returns a run id and the seed to fly with.
-//! - `POST /v1/runs/{id}/replay?shown=61450`: the replay bytes so far,
-//!   sent at every "Level complete". Returns the levels it landed that
-//!   were not counted for this run before, each with the pilot's rank.
-//!   `shown` (optional): the time the game showed, only for the log
-//!   line each replay gets (`replay_line`); what counts is the time
-//!   flown here.
+//! - `POST /v1/runs/{id}/replay?level=1&shown=61450`: the replay bytes
+//!   so far, sent at every "Level complete". Returns the levels it
+//!   landed that were not counted for this run before, each with the
+//!   pilot's rank. `level` and `shown` (optional): the level just
+//!   completed and the time the game showed, only for the log line each
+//!   replay gets (`replay_line`); what counts is the time flown here.
 //! - `GET /v1/leaderboard?level=1&limit=10`: the fastest pilots of a
 //!   level, and where the asking pilot stands (if a token came along).
 //! - `GET /health`: "ok", without touching the database (for Fly's
@@ -30,7 +30,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use airplane_scoring_core::replay::{replay, start_of, steps_of};
 use airplane_scoring_core::{start_level, TICK_SECONDS};
-use axum::extract::{DefaultBodyLimit, FromRequestParts, Path, Query, State};
+use axum::extract::{DefaultBodyLimit, FromRequestParts, Path, Query, RawQuery, State};
 use axum::http::header::{AUTHORIZATION, CONTENT_TYPE};
 use axum::http::request::Parts;
 use axum::http::{HeaderValue, Method, StatusCode};
@@ -381,58 +381,66 @@ struct Replayed {
     over: bool,
 }
 
-#[derive(Deserialize)]
-struct ReplayQuery {
-    /// The time the game showed at "Level complete", in ms. Text, so a
-    /// wrong one only makes "?" in the log, never a refused replay.
-    shown: Option<String>,
+/// What the game showed at "Level complete": the level and its time,
+/// from `?level=5&shown=58533`. Only for the log line.
+#[derive(Clone, Copy, Debug, PartialEq)]
+struct Shown {
+    level: u32,
+    millis: u64,
+}
+
+/// Read by hand, not with `Query`: a missing, doubled or wrong value
+/// only means no `Shown`, never a refused replay.
+fn shown_of(query: Option<&str>) -> Option<Shown> {
+    fn value<T: std::str::FromStr>(query: &str, key: &str) -> Option<T> {
+        query
+            .split('&')
+            .find_map(|pair| pair.strip_prefix(key)?.strip_prefix('='))?
+            .parse()
+            .ok()
+    }
+    let query = query?;
+    Some(Shown {
+        level: value(query, "level")?,
+        millis: value(query, "shown")?,
+    })
+}
+
+/// The run's start level and the pilot's name, as far as they were
+/// found: for the log line, also when the replay is refused.
+#[derive(Default)]
+struct Who {
+    start: Option<u32>,
+    name: Option<String>,
 }
 
 async fn send_replay(
     State(state): State<Shared>,
     pilot: Pilot,
     Path(run_id): Path<String>,
-    Query(query): Query<ReplayQuery>,
+    RawQuery(query): RawQuery,
     body: Bytes,
 ) -> Api<Replayed> {
-    let mut start = None;
-    let result = fly_replay(&state, &pilot, &run_id, body, &mut start).await;
-    let name: Option<String> = state
-        .db()
-        .query_row(
-            "SELECT name FROM players WHERE id = ?1",
-            params![pilot.id],
-            |r| r.get(0),
-        )
-        .optional()
-        .unwrap_or(None);
+    let mut who = Who::default();
+    let result = fly_replay(&state, &pilot, &run_id, body, &mut who).await;
     let outcome = match &result {
         Ok(Json(r)) => Ok(&r.levels[..]),
         Err(e) => Err(e.1.as_str()),
     };
-    println!(
-        "{}",
-        replay_line(
-            &run_id,
-            name.as_deref(),
-            start,
-            query.shown.and_then(|t| t.parse().ok()),
-            outcome
-        )
-    );
+    let shown = shown_of(query.as_deref());
+    println!("{}", replay_line(&run_id, &who, shown, outcome));
     result
 }
 
 /// One line in the server's log per replay (`fly logs`), so a time a
 /// pilot reports can be checked: who, which run and start level, the
-/// time the game showed against the time flown here, or why it was
-/// refused. A difference is marked: the game and the server should
-/// always fly the same.
+/// level and time the game showed against what was flown here, or why
+/// it was refused. A difference ends the line in `DIFFERS: ...`: the
+/// game and the server should always fly the same.
 fn replay_line(
     run_id: &str,
-    name: Option<&str>,
-    start: Option<u32>,
-    shown: Option<u64>,
+    who: &Who,
+    shown: Option<Shown>,
     outcome: Result<&[Counted], &str>,
 ) -> String {
     // From the URL: only its first letters and digits, so nobody can
@@ -442,35 +450,43 @@ fn replay_line(
         .filter(char::is_ascii_alphanumeric)
         .take(8)
         .collect();
-    let name = name.unwrap_or("?");
-    let start = start.map_or("?".into(), |l| l.to_string());
-    let shown_text = shown.map_or("?".into(), |ms| ms.to_string());
+    let name = who.name.as_deref().unwrap_or("?");
+    let start = who.start.map_or("?".into(), |l| l.to_string());
+    let shown_text = shown.map_or("?".into(), |s| format!("L{} {}", s.level, s.millis));
     let head = format!("replay run={run} pilot={name:?} start={start} shown={shown_text}");
-    match outcome {
-        Err(why) => format!("{head} refused: {why}"),
-        Ok([]) => format!("{head} counted nothing"),
-        Ok(levels) => {
-            let counted: Vec<String> = levels
-                .iter()
-                .map(|c| {
-                    let best = if c.new_best { " best" } else { "" };
-                    format!(
-                        "L{} {} ms (rank {} of {}{best})",
-                        c.level, c.millis, c.rank, c.pilots
-                    )
-                })
-                .collect();
-            // The game sends the time of the level it just completed:
-            // the last one counted.
-            let differs = match (shown, levels.last()) {
-                (Some(ms), Some(last)) if ms != last.millis => {
-                    format!(" DIFFERS: shown {ms}, flown here {}", last.millis)
-                }
-                _ => String::new(),
-            };
-            format!("{head} counted {}{differs}", counted.join(", "))
-        }
-    }
+    let levels = match outcome {
+        Err(why) => return format!("{head} refused: {why}"),
+        Ok(levels) => levels,
+    };
+    let counted: Vec<String> = levels
+        .iter()
+        .map(|c| {
+            let best = if c.new_best { " best" } else { "" };
+            format!(
+                "L{} {} ms (rank {} of {}{best})",
+                c.level, c.millis, c.rank, c.pilots
+            )
+        })
+        .collect();
+    let counted = if counted.is_empty() {
+        "counted nothing".to_string()
+    } else {
+        format!("counted {}", counted.join(", "))
+    };
+    // The level the game showed must be among those counted, with the
+    // same time.
+    let differs = shown.and_then(|s| match levels.iter().find(|c| c.level == s.level) {
+        Some(c) if c.millis == s.millis => None,
+        Some(c) => Some(format!(
+            " DIFFERS: L{} shown {}, flown here {}",
+            s.level, s.millis, c.millis
+        )),
+        None => Some(format!(
+            " DIFFERS: L{} shown {}, not counted here",
+            s.level, s.millis
+        )),
+    });
+    format!("{head} {counted}{}", differs.unwrap_or_default())
 }
 
 async fn fly_replay(
@@ -478,22 +494,35 @@ async fn fly_replay(
     pilot: &Pilot,
     run_id: &str,
     body: Bytes,
-    start_level: &mut Option<u32>,
+    who: &mut Who,
 ) -> Api<Replayed> {
     let refuse = |why: &str| ApiError::new(StatusCode::UNPROCESSABLE_ENTITY, why);
     let now = now_ms();
-    let run: Option<(u32, i64, i64, usize, u64)> = state
+    let run: Option<(u32, i64, i64, usize, u64, String)> = state
         .db()
         .query_row(
-            "SELECT level, seed, started_ms, counted, last_steps FROM runs
-             WHERE id = ?1 AND player_id = ?2",
+            "SELECT r.level, r.seed, r.started_ms, r.counted, r.last_steps, p.name
+             FROM runs r JOIN players p ON p.id = r.player_id
+             WHERE r.id = ?1 AND r.player_id = ?2",
             params![run_id, pilot.id],
-            |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?, r.get(4)?)),
+            |r| {
+                Ok((
+                    r.get(0)?,
+                    r.get(1)?,
+                    r.get(2)?,
+                    r.get(3)?,
+                    r.get(4)?,
+                    r.get(5)?,
+                ))
+            },
         )
         .optional()?;
-    let (level, seed, started_ms, counted, last_steps) =
+    let (level, seed, started_ms, counted, last_steps, name) =
         run.ok_or_else(|| ApiError::new(StatusCode::NOT_FOUND, "no such run"))?;
-    *start_level = Some(level);
+    *who = Who {
+        start: Some(level),
+        name: Some(name),
+    };
     if now - started_ms > RUN_MAX_AGE_MS {
         return Err(refuse("this run is too old"));
     }
@@ -698,8 +727,6 @@ async fn leaderboard(
 
 #[cfg(test)]
 mod tests {
-    use super::{replay_line, Counted};
-
     fn counted(level: u32, millis: u64) -> Counted {
         Counted {
             level,
@@ -711,21 +738,53 @@ mod tests {
         }
     }
 
+    fn who(start: u32, name: &str) -> Who {
+        Who {
+            start: Some(start),
+            name: Some(name.into()),
+        }
+    }
+
+    fn shown(level: u32, millis: u64) -> Option<Shown> {
+        Some(Shown { level, millis })
+    }
+
     #[test]
     fn a_replay_line_says_what_was_shown_and_what_counted() {
-        let levels = [counted(5, 63067)];
+        let levels = [counted(5, 58533)];
+        let line = replay_line(
+            "abcdef1234567890",
+            &who(5, "Geoport"),
+            shown(5, 58533),
+            Ok(&levels),
+        );
         assert_eq!(
-            replay_line("abcdef1234567890", Some("Geoport"), Some(5), Some(63067), Ok(&levels)),
-            "replay run=abcdef12 pilot=\"Geoport\" start=5 shown=63067 counted L5 63067 ms (rank 2 of 9 best)"
+            line,
+            "replay run=abcdef12 pilot=\"Geoport\" start=5 shown=L5 58533 counted L5 58533 ms (rank 2 of 9 best)"
         );
-        let line = replay_line("abc", None, Some(4), Some(56000), Ok(&levels));
-        assert!(
-            line.ends_with(" DIFFERS: shown 56000, flown here 63067"),
-            "{line}"
-        );
-        let line = replay_line("abc", None, None, None, Ok(&levels));
+        let line = replay_line("abc", &Who::default(), None, Ok(&levels));
         assert!(
             line.contains("pilot=\"?\" start=? shown=?") && !line.contains("DIFFERS"),
+            "{line}"
+        );
+    }
+
+    #[test]
+    fn a_replay_line_marks_a_time_the_server_did_not_fly() {
+        // Another time for the level the game showed.
+        let levels = [counted(4, 60000), counted(5, 63067)];
+        let line = replay_line("r", &who(4, "A"), shown(5, 56000), Ok(&levels));
+        assert!(
+            line.ends_with(" DIFFERS: L5 shown 56000, flown here 63067"),
+            "{line}"
+        );
+        // The right time, though not of the last level counted.
+        let line = replay_line("r", &who(4, "A"), shown(4, 60000), Ok(&levels));
+        assert!(!line.contains("DIFFERS"), "{line}");
+        // The level the game showed did not land here.
+        let line = replay_line("r", &who(4, "A"), shown(5, 56000), Ok(&[]));
+        assert!(
+            line.ends_with("counted nothing DIFFERS: L5 shown 56000, not counted here"),
             "{line}"
         );
     }
@@ -735,16 +794,34 @@ mod tests {
         assert_eq!(
             replay_line(
                 "r1",
-                Some("A"),
-                Some(1),
-                Some(1),
+                &who(1, "A"),
+                shown(1, 1),
                 Err("the replay is of another flight")
             ),
-            "replay run=r1 pilot=\"A\" start=1 shown=1 refused: the replay is of another flight"
+            "replay run=r1 pilot=\"A\" start=1 shown=L1 1 refused: the replay is of another flight"
         );
-        assert!(replay_line("r1", Some("A"), Some(1), None, Ok(&[])).ends_with("counted nothing"));
-        let line = replay_line("x\nreplay fake", Some("a\nb"), None, None, Ok(&[]));
+        let line = replay_line("x\nreplay fake", &who(1, "a\nb"), None, Ok(&[]));
         assert!(!line.contains('\n'), "{line}");
+    }
+
+    #[test]
+    fn what_the_game_showed_is_read_leniently() {
+        assert_eq!(shown_of(Some("level=5&shown=58533")), shown(5, 58533));
+        assert_eq!(shown_of(Some("shown=58533&level=5")), shown(5, 58533));
+        assert_eq!(
+            shown_of(Some("level=5&shown=1&shown=2")),
+            shown(5, 1),
+            "the first one"
+        );
+        for bad in [
+            None,
+            Some(""),
+            Some("shown=58533"),
+            Some("level=x&shown=1"),
+            Some("levels=5&shown=1"),
+        ] {
+            assert_eq!(shown_of(bad), None, "{bad:?}");
+        }
     }
 
     use super::*;

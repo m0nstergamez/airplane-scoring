@@ -202,18 +202,23 @@ async fn the_fastest_ranks_first_and_only_a_pilots_best_counts() {
 
 #[tokio::test]
 async fn the_time_the_game_showed_is_only_for_the_log() {
-    // `?shown=` goes into the log line; a wrong one changes nothing.
+    // `?level=&shown=` goes into the log line; a wrong one changes nothing.
     let server = Server::new();
-    for shown in ["61450", "not-a-number", ""] {
+    for query in [
+        "level=1&shown=61450",
+        "level=1&shown=not-a-number",
+        "shown=1&shown=2",
+        "",
+    ] {
         let token = server.pilot().await;
         let (run_id, start) = server.run(&token, 1).await;
         let (flight, millis) = landed(&start, 0);
         server.an_hour_passes();
-        let path = format!("/v1/runs/{run_id}/replay?shown={shown}");
+        let path = format!("/v1/runs/{run_id}/replay?{query}");
         let (status, body) = server
             .call("POST", &path, Some(&token), Body::from(flight))
             .await;
-        assert_eq!(status, StatusCode::OK, "{shown:?}: {body}");
+        assert_eq!(status, StatusCode::OK, "{query:?}: {body}");
         assert_eq!(body["levels"][0]["millis"], millis, "the server's own time");
     }
 }

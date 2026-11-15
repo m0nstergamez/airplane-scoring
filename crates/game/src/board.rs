@@ -162,7 +162,12 @@ impl Board {
     /// time it flew itself.
     pub fn level_complete(&mut self, level: u32, shown_millis: u64) {
         if let Some(recorder) = &self.recorder {
-            let shown = u32::try_from(shown_millis).unwrap_or(u32::MAX);
+            // 0: none. A wasm import's u32 arrives in JS as a signed
+            // number, so stay below 2^31 (24 days).
+            let shown = u32::try_from(shown_millis)
+                .ok()
+                .filter(|&ms| ms <= i32::MAX as u32)
+                .unwrap_or(0);
             js::submit(&recorder.bytes(), level, shown);
             self.sent = Some(level);
         }

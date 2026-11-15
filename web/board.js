@@ -129,7 +129,7 @@ function createBoard(env) {
       const replay = new Uint8Array(memory().buffer, ptr, len).slice();
       standing[level] = "waiting";
       const mine = standing; // this flight's; a new flight gets its own
-      const query = shown > 0 ? `?shown=${shown}` : "";
+      const query = shown > 0 ? `?level=${level}&shown=${shown}` : "";
       return call("POST", `/v1/runs/${runId}/replay${query}`, replay)
         .then((r) => {
           for (const l of r.levels) mine[l.level] = { rank: l.rank, pilots: l.pilots };

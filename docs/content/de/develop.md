@@ -387,13 +387,14 @@ demselben `core` laufen wie das veröffentlichte Spiel.
 
 Für jedes Replay schreibt der Server eine Zeile in sein Log (`fly logs -a
 airplane-scoring-board`): die Pilotin oder den Piloten, den Run, sein
-Start-Level, die Zeit, die das Spiel zeigte (`?shown=`, nur für diese
-Zeile), und was gezählt hat oder warum es abgelehnt wurde. Ist die auf
-dem Server geflogene Zeit nicht die, die das Spiel zeigte, endet die
-Zeile mit `DIFFERS`:
+Start-Level, Level und Zeit, die das Spiel zeigte (`?level=&shown=`, nur
+für diese Zeile), und was gezählt hat oder warum es abgelehnt wurde.
+Wurde dieses Level auf dem Server nicht gezählt oder bekam es dort eine
+andere Zeit, endet die Zeile mit `DIFFERS: ...` (such nach `DIFFERS`):
 
 ```
-replay run=3f9c2a71 pilot="Geoport" start=5 shown=63067 counted L5 63067 ms (rank 2 of 9 best)
+replay run=3f9c2a71 pilot="Geoport" start=5 shown=L5 58533 counted L5 58533 ms (rank 2 of 2 best)
+replay run=8d01b6e4 pilot="Geoport" start=4 shown=L5 56000 counted L5 63067 ms (rank 3 of 9) DIFFERS: L5 shown 56000, flown here 63067
 ```
 
 Die Einstellungen des Servers kommen aus der Umgebung: `PORT` (8787),
