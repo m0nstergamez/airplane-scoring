@@ -385,6 +385,18 @@ die Seite veröffentlicht (`scripts/set-board-api.sh`). Jede Änderung an `core`
 anders verlaufen lässt, ändert auch die Replays: Der Server muss mit
 demselben `core` laufen wie das veröffentlichte Spiel.
 
+Für jedes Replay schreibt der Server eine Zeile in sein Log (`fly logs -a
+airplane-scoring-board`): die Pilotin oder den Piloten, den Run, sein
+Start-Level, Level und Zeit, die das Spiel zeigte (`?level=&shown=`, nur
+für diese Zeile), und was gezählt hat oder warum es abgelehnt wurde.
+Wurde dieses Level auf dem Server nicht gezählt oder bekam es dort eine
+andere Zeit, endet die Zeile mit `DIFFERS: ...` (such nach `DIFFERS`):
+
+```
+replay run=3f9c2a71 pilot="Geoport" start=5 shown=L5 58533 counted L5 58533 ms (rank 2 of 2 best)
+replay run=8d01b6e4 pilot="Geoport" start=4 shown=L5 56000 counted L5 63067 ms (rank 3 of 9) DIFFERS: L5 shown 56000, flown here 63067
+```
+
 Die Einstellungen des Servers kommen aus der Umgebung: `PORT` (8787),
 `DB_PATH` (`leaderboard.sqlite`, eine SQLite-Datei) und
 `ALLOWED_ORIGINS` (die Seiten, die ihn aufrufen dürfen, durch Kommas

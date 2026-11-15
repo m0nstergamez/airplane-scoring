@@ -24,7 +24,7 @@ mod js {
         fn board_seed_hi(level: u32) -> u32;
         fn board_seed_lo(level: u32) -> u32;
         fn board_take(level: u32);
-        fn board_submit(ptr: *const u8, len: u32, level: u32);
+        fn board_submit(ptr: *const u8, len: u32, level: u32, shown_millis: u32);
         fn board_status(level: u32) -> i32;
         fn board_rank(level: u32) -> u32;
         fn board_pilots(level: u32) -> u32;
@@ -48,10 +48,11 @@ mod js {
         }
     }
 
-    /// Send the replay so far of the flight whose seed was taken last.
-    pub fn submit(replay: &[u8], level: u32) {
+    /// Send the replay so far of the flight whose seed was taken last,
+    /// with the time the game showed (for the server's log only).
+    pub fn submit(replay: &[u8], level: u32, shown_millis: u32) {
         // SAFETY: the page copies the bytes before this call returns.
-        unsafe { board_submit(replay.as_ptr(), replay.len() as u32, level) }
+        unsafe { board_submit(replay.as_ptr(), replay.len() as u32, level, shown_millis) }
     }
 
     /// What the server said about `level` in the last replay sent:
@@ -68,7 +69,7 @@ mod js {
         None
     }
 
-    pub fn submit(_replay: &[u8], _level: u32) {}
+    pub fn submit(_replay: &[u8], _level: u32, _shown_millis: u32) {}
 
     pub fn status(_level: u32) -> (i32, u32, u32) {
         (-1, 0, 0)
@@ -156,10 +157,18 @@ impl Board {
     }
 
     /// "Level complete" for `level`: send the replay so far, for the
-    /// server to count the level's time.
-    pub fn level_complete(&mut self, level: u32) {
+    /// server to count the level's time. `shown_millis`: the time on
+    /// screen, which the server only writes into its log, next to the
+    /// time it flew itself.
+    pub fn level_complete(&mut self, level: u32, shown_millis: u64) {
         if let Some(recorder) = &self.recorder {
-            js::submit(&recorder.bytes(), level);
+            // 0: none. A wasm import's u32 arrives in JS as a signed
+            // number, so stay below 2^31 (24 days).
+            let shown = u32::try_from(shown_millis)
+                .ok()
+                .filter(|&ms| ms <= i32::MAX as u32)
+                .unwrap_or(0);
+            js::submit(&recorder.bytes(), level, shown);
             self.sent = Some(level);
         }
     }

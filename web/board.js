@@ -119,16 +119,18 @@ function createBoard(env) {
     },
     // At "Level complete": the replay so far. The server counts the
     // levels it lands that it has not counted for this run yet.
-    // `level`: the level just completed, whose standing the game shows.
+    // `level`: the level just completed, whose standing the game shows;
+    // `shown`: its time on screen, in ms, for the server's log only.
     // (The promise is for tests; wasm ignores what a void import returns.)
-    board_submit: (ptr, len, level) => {
+    board_submit: (ptr, len, level, shown) => {
       const runId = flying;
       if (!runId) return;
       // A copy: the game's memory moves on while the request runs.
       const replay = new Uint8Array(memory().buffer, ptr, len).slice();
       standing[level] = "waiting";
       const mine = standing; // this flight's; a new flight gets its own
-      return call("POST", `/v1/runs/${runId}/replay`, replay)
+      const query = shown > 0 ? `?level=${level}&shown=${shown}` : "";
+      return call("POST", `/v1/runs/${runId}/replay${query}`, replay)
         .then((r) => {
           for (const l of r.levels) mine[l.level] = { rank: l.rank, pilots: l.pilots };
           if (mine[level] === "waiting") mine[level] = "failed"; // not among them

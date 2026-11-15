@@ -26,7 +26,8 @@ const server = (routes) => {
     const path = url.slice(API.length);
     const request = { method, path, headers: init.headers || {}, body: init.body };
     requests.push(request);
-    const route = routes[`${method} ${path.split("?")[0]}`] || routes[`${method} ${path.replace(/\/\d+\//, "/{id}/")}`];
+    const bare = path.split("?")[0];
+    const route = routes[`${method} ${bare}`] || routes[`${method} ${bare.replace(/\/\d+\//, "/{id}/")}`];
     if (!route) return { ok: false, status: 404, json: async () => ({ error: "no route" }) };
     const [status, body] = route(request);
     return { ok: status >= 200 && status < 300, status, json: async () => body };
@@ -168,12 +169,13 @@ test("a level complete: waiting, then the rank the server gave", async () => {
   game.board_take(1);
   assert.equal(game.board_status(1), -1, "nothing sent yet");
   new Uint8Array(memory.buffer).set([1, 2, 3, 4], 8);
-  const sent = game.board_submit(8, 4, 1);
+  const sent = game.board_submit(8, 4, 1, 61450);
   assert.equal(game.board_status(1), 0);
   new Uint8Array(memory.buffer).fill(9); // the game moves on
   await sent;
   assert.deepEqual([game.board_status(1), game.board_rank(1), game.board_pilots(1)], [1, 3, 12]);
-  const replay = srv.requests.find((r) => r.path === "/v1/runs/1/replay");
+  const replay = srv.requests.find((r) => r.path === "/v1/runs/1/replay?level=1&shown=61450");
+  assert.ok(replay, "the time on screen goes along, for the server's log");
   assert.deepEqual([...replay.body], [1, 2, 3, 4], "the bytes as they were at the call");
   assert.equal(replay.headers["Content-Type"], "application/octet-stream");
 });

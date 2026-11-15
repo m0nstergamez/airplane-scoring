@@ -1020,6 +1020,17 @@ that isn't code here. Keep entries short and dated.
     names and token hashes) and Litestream (continuous replication to
     a bucket: a second process, a bucket and a secret). Worth it once a
     lost day would hurt.
+- A log line per replay, asked for after a report ("0:56 on screen,
+  1:03 on the board", level 5): the database could not tell, as the
+  server never knew the time the game showed. Now the game sends it
+  along with its level (`?level=&shown=`, `board_submit`'s new last
+  argument), and the server logs pilot, run, start level, shown and
+  counted times (or the reason it refused), with `DIFFERS: ...` when
+  that level was not counted or got another time (`replay_line`,
+  tested; the query is read by hand, so a missing, doubled or wrong
+  value only makes "?" and never refuses a replay). Run ids from the URL are cut to letters and digits,
+  so no one can write lines into the log. Old pages and old wasm still
+  work together: an argument missing just sends no `shown`.
 
 ## Concepts
 
