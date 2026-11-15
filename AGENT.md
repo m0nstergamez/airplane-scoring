@@ -202,7 +202,7 @@ Cargo.toml            workspace, pinned deps, release profile for small wasm
 crates/core/          pure logic + tests
 crates/game/          macroquad shell (board.rs: leaderboard side of the game;
                       autopilot.rs: test builds only)
-crates/server/        leaderboard API (Axum + SQLite), tests in tests/api.rs
+crates/server/        leaderboard API (Axum + SQLite; limits.rs: rate limits), tests in tests/api.rs
 Dockerfile, fly.toml  the server's image and its Fly.io app (the game stays on GitHub Pages;
                       CI deploys it: .github/workflows/pages.yml)
 web/index.html        canvas page; loads mq_js_bundle.js + airplane-scoring.wasm

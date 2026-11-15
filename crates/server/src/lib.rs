@@ -25,12 +25,17 @@
 //!
 //! All but the first and last need `Authorization: Bearer <token>`.
 
+use std::net::SocketAddr;
+use std::sync::atomic::Ordering::Relaxed;
+use std::sync::atomic::{AtomicI64, AtomicU64};
 use std::sync::{Arc, Mutex};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use airplane_scoring_core::replay::{replay, start_of, steps_of};
 use airplane_scoring_core::{start_level, TICK_SECONDS};
-use axum::extract::{DefaultBodyLimit, FromRequestParts, Path, Query, RawQuery, State};
+use axum::extract::{
+    ConnectInfo, DefaultBodyLimit, FromRequestParts, Path, Query, RawQuery, State,
+};
 use axum::http::header::{AUTHORIZATION, CONTENT_TYPE};
 use axum::http::request::Parts;
 use axum::http::{HeaderValue, Method, StatusCode};
@@ -42,8 +47,12 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use tower_http::cors::{AllowOrigin, CorsLayer};
 
-/// A replay may be this big: about two hours of the busiest steering.
-const MAX_REPLAY_BYTES: usize = 2 * 1024 * 1024;
+mod limits;
+use limits::Limiter;
+
+/// A replay may be this big: more than the busiest steering for
+/// `MAX_REPLAY_TICKS` (4 bytes a tick, about 0.4 MB).
+const MAX_REPLAY_BYTES: usize = 1024 * 1024;
 /// A seed is good for this long after it was handed out.
 const RUN_MAX_AGE_MS: i64 = 24 * 60 * 60 * 1000;
 /// How much sooner than real time a flight may seem to end (clocks and
@@ -55,12 +64,33 @@ const REPLAY_WAIT: std::time::Duration = std::time::Duration::from_secs(5);
 const NAME_MAX_CHARS: usize = 16;
 const BOARD_MAX: u32 = 100;
 
+// Rate limits (`limits.rs`): (burst, per hour). Over a limit: 429 with
+// `Retry-After`. Sized from the real board: a pilot made up to 12 runs in
+// 10 minutes (each page load asks for a seed per level, every flight
+// for one more) and a level with takeoff and landing takes about 80 s.
+/// Sign-ups from one IP address: a school class on one Wi-Fi.
+pub const SIGNUPS_PER_IP: (u32, u32) = (40, 40);
+/// Sign-ups from everywhere together: a second line if addresses rotate.
+pub const SIGNUPS_ALL: (u32, u32) = (300, 300);
+/// New runs (seeds) per pilot: a few page loads at once, one a minute.
+pub const RUNS_PER_PILOT: (u32, u32) = (15, 60);
+/// Replays per pilot: one per "Level complete", with retries.
+pub const REPLAYS_PER_PILOT: (u32, u32) = (10, 60);
+
+/// A pilot with no best time, not seen for this long, is deleted.
+const PILOT_IDLE_MS: i64 = 90 * 24 * 60 * 60 * 1000;
+/// `players.last_seen_ms` is written at most this often per pilot.
+const SEEN_EVERY_MS: i64 = 60 * 60 * 1000;
+/// "The database is full" goes into the log at most this often.
+const FULL_LOG_EVERY_MS: i64 = 60 * 60 * 1000;
+
 const SCHEMA: &str = "
 CREATE TABLE IF NOT EXISTS players (
-    id         TEXT PRIMARY KEY,
-    token_hash BLOB NOT NULL UNIQUE,
-    name       TEXT NOT NULL,
-    created_ms INTEGER NOT NULL
+    id           TEXT PRIMARY KEY,
+    token_hash   BLOB NOT NULL UNIQUE,
+    name         TEXT NOT NULL,
+    created_ms   INTEGER NOT NULL,
+    last_seen_ms INTEGER NOT NULL DEFAULT 0
 );
 -- One flight: its seed, and how many of its landed levels are counted.
 CREATE TABLE IF NOT EXISTS runs (
@@ -84,35 +114,170 @@ CREATE TABLE IF NOT EXISTS best (
 CREATE INDEX IF NOT EXISTS best_by_level ON best (level, millis, at_ms);
 ";
 
+/// What the server is told by its environment (`main.rs`).
+pub struct Settings {
+    /// The header with the client's IP address, set by a proxy in front
+    /// (`Fly-Client-IP` on Fly.io). `None`: the socket's address. Only
+    /// trusted when set, so nobody can fake it where no proxy sets it.
+    pub trusted_ip_header: Option<String>,
+    /// Over this size the database takes no new pilots (503); the ones
+    /// there keep playing.
+    pub db_max_bytes: u64,
+}
+
+impl Default for Settings {
+    fn default() -> Self {
+        Self {
+            trusted_ip_header: None,
+            db_max_bytes: 512 * 1024 * 1024, // half the 1 GB volume
+        }
+    }
+}
+
+struct Limits {
+    signups_per_ip: Limiter,
+    signups_all: Limiter,
+    runs: Limiter,
+    replays: Limiter,
+}
+
+/// Counted since the last hourly log line (`App::cleanup`).
+#[derive(Default)]
+struct Counts {
+    signups: AtomicU64,
+    runs: AtomicU64,
+    replays_accepted: AtomicU64,
+    replays_refused: AtomicU64,
+    limited_signups: AtomicU64,
+    limited_runs: AtomicU64,
+    limited_replays: AtomicU64,
+    full: AtomicU64,
+}
+
 pub struct App {
     pub db: Mutex<Connection>,
+    settings: Settings,
     /// Replays flown again at the same time: as many as there are CPUs.
     /// Each is real work; more at once would only slow them all.
     flying: tokio::sync::Semaphore,
     /// Replays flown again so far (for tests and logs).
-    pub replays_flown: std::sync::atomic::AtomicU64,
+    pub replays_flown: AtomicU64,
+    limits: Limits,
+    counts: Counts,
+    /// Added to the real time: tests let time pass (`time_passes`).
+    offset_ms: AtomicI64,
+    /// When "the database is full" was logged last.
+    full_logged_ms: AtomicI64,
 }
 
 type Shared = Arc<App>;
 
 impl App {
-    pub fn open(path: &str) -> rusqlite::Result<Shared> {
-        Self::with(Connection::open(path)?)
+    pub fn open(path: &str, settings: Settings) -> rusqlite::Result<Shared> {
+        Self::with(Connection::open(path)?, settings)
     }
 
     pub fn in_memory() -> rusqlite::Result<Shared> {
-        Self::with(Connection::open_in_memory()?)
+        Self::in_memory_with(Settings::default())
     }
 
-    fn with(db: Connection) -> rusqlite::Result<Shared> {
+    pub fn in_memory_with(settings: Settings) -> rusqlite::Result<Shared> {
+        Self::with(Connection::open_in_memory()?, settings)
+    }
+
+    fn with(db: Connection, settings: Settings) -> rusqlite::Result<Shared> {
         db.execute_batch(SCHEMA)?;
         migrate(&db)?;
         let cpus = std::thread::available_parallelism().map_or(1, |n| n.get());
+        let limiter = |(burst, per_hour)| Limiter::new(burst, per_hour);
         Ok(Arc::new(App {
             db: Mutex::new(db),
+            settings,
             flying: tokio::sync::Semaphore::new(cpus),
             replays_flown: Default::default(),
+            limits: Limits {
+                signups_per_ip: limiter(SIGNUPS_PER_IP),
+                signups_all: limiter(SIGNUPS_ALL),
+                runs: limiter(RUNS_PER_PILOT),
+                replays: limiter(REPLAYS_PER_PILOT),
+            },
+            counts: Counts::default(),
+            offset_ms: AtomicI64::new(0),
+            full_logged_ms: AtomicI64::new(i64::MIN),
         }))
+    }
+
+    /// The time now, in ms since 1970.
+    fn now(&self) -> i64 {
+        now_ms() + self.offset_ms.load(Relaxed)
+    }
+
+    /// For tests: as if `ms` more had passed (runs get older, limits
+    /// refill, pilots go idle).
+    pub fn time_passes(&self, ms: i64) {
+        self.offset_ms.fetch_add(ms, Relaxed);
+    }
+
+    /// Housekeeping, at start and then every hour (`main.rs`): delete
+    /// what can never be used again, forget idle limits, and return the
+    /// hourly log line (counts since the last one, no IP addresses, no
+    /// tokens).
+    pub fn cleanup(&self) -> rusqlite::Result<String> {
+        let now = self.now();
+        let (runs, pilots) = {
+            let mut db = self.db();
+            let tx = db.transaction()?;
+            // A run that counted nothing can never count once too old;
+            // runs that counted stay, the history behind `best`.
+            let runs = tx.execute(
+                "DELETE FROM runs WHERE counted = 0 AND started_ms < ?1",
+                [now - RUN_MAX_AGE_MS],
+            )?;
+            // Pilots not on any board and gone for long: their browser
+            // signs up again (a new name) if it ever comes back.
+            let idle = "SELECT id FROM players WHERE last_seen_ms < ?1
+                        AND id NOT IN (SELECT player_id FROM best)";
+            tx.execute(
+                &format!("DELETE FROM runs WHERE player_id IN ({idle})"),
+                [now - PILOT_IDLE_MS],
+            )?;
+            let pilots = tx.execute(
+                &format!("DELETE FROM players WHERE id IN ({idle})"),
+                [now - PILOT_IDLE_MS],
+            )?;
+            tx.commit()?;
+            db.execute_batch("PRAGMA optimize")?;
+            (runs, pilots)
+        };
+        let l = &self.limits;
+        for limiter in [&l.signups_per_ip, &l.signups_all, &l.runs, &l.replays] {
+            limiter.forget_idle(now);
+        }
+        let c = &self.counts;
+        let n = |a: &AtomicU64| a.swap(0, Relaxed);
+        Ok(format!(
+            "hourly: signups {} runs {} replays accepted {} refused {} | \
+             429 signups {} runs {} replays {} | full {} | \
+             deleted runs {runs} pilots {pilots} | limit keys {}",
+            n(&c.signups),
+            n(&c.runs),
+            n(&c.replays_accepted),
+            n(&c.replays_refused),
+            n(&c.limited_signups),
+            n(&c.limited_runs),
+            n(&c.limited_replays),
+            n(&c.full),
+            l.signups_per_ip.keys() + l.runs.keys() + l.replays.keys(),
+        ))
+    }
+
+    /// How big the database is now, in bytes.
+    fn db_bytes(&self) -> rusqlite::Result<u64> {
+        self.db().query_row(
+            "SELECT page_count * page_size FROM pragma_page_count, pragma_page_size",
+            [],
+            |r| r.get(0),
+        )
     }
 
     fn db(&self) -> std::sync::MutexGuard<'_, Connection> {
@@ -131,6 +296,19 @@ fn migrate(db: &Connection) -> rusqlite::Result<()> {
     )?;
     if !has_last_steps {
         db.execute_batch("ALTER TABLE runs ADD COLUMN last_steps INTEGER NOT NULL DEFAULT 0")?;
+    }
+    let has_last_seen: bool = db.query_row(
+        "SELECT COUNT(*) > 0 FROM pragma_table_info('players') WHERE name = 'last_seen_ms'",
+        [],
+        |r| r.get(0),
+    )?;
+    if !has_last_seen {
+        // Pilots from before: seen when they signed up, so the cleanup
+        // gives them their full 90 days.
+        db.execute_batch(
+            "ALTER TABLE players ADD COLUMN last_seen_ms INTEGER NOT NULL DEFAULT 0;
+             UPDATE players SET last_seen_ms = created_ms;",
+        )?;
     }
     Ok(())
 }
@@ -161,6 +339,15 @@ struct ApiError(StatusCode, String, Option<u64>);
 impl ApiError {
     fn new(status: StatusCode, message: impl Into<String>) -> Self {
         Self(status, message.into(), None)
+    }
+
+    /// Over a rate limit: try again in `seconds` (`Retry-After`).
+    fn slow_down(seconds: u64) -> Self {
+        Self(
+            StatusCode::TOO_MANY_REQUESTS,
+            "slow down".into(),
+            Some(seconds),
+        )
     }
 
     /// Busy now: try again in `seconds` (the `Retry-After` header).
@@ -212,15 +399,54 @@ fn bearer(parts: &Parts) -> Option<&str> {
 
 fn pilot_of(state: &App, token: &str) -> Result<Option<Pilot>, rusqlite::Error> {
     let hash = Sha256::digest(token.as_bytes());
-    state
-        .db()
+    let now = state.now();
+    let db = state.db();
+    let id: Option<String> = db
         .query_row(
             "SELECT id FROM players WHERE token_hash = ?1",
             [&hash[..]],
             |row| row.get(0),
         )
-        .optional()
-        .map(|id| id.map(|id| Pilot { id }))
+        .optional()?;
+    if let Some(id) = &id {
+        // Seen now (for the cleanup); written at most once an hour.
+        db.execute(
+            "UPDATE players SET last_seen_ms = ?1 WHERE id = ?2 AND last_seen_ms < ?3",
+            params![now, id, now - SEEN_EVERY_MS],
+        )?;
+    }
+    Ok(id.map(|id| Pilot { id }))
+}
+
+/// The client's IP address, for the sign-up limit only: from the
+/// trusted proxy header if one is set (`Settings::trusted_ip_header`),
+/// else from the socket. Never stored or logged.
+struct ClientIp(String);
+
+impl FromRequestParts<Shared> for ClientIp {
+    type Rejection = ApiError;
+
+    async fn from_request_parts(parts: &mut Parts, state: &Shared) -> Result<Self, ApiError> {
+        let from_header = state
+            .settings
+            .trusted_ip_header
+            .as_deref()
+            .and_then(|name| {
+                let value = parts.headers.get(name)?.to_str().ok()?;
+                Some(value.split(',').next()?.trim().to_string())
+            });
+        let from_socket = || {
+            parts
+                .extensions
+                .get::<ConnectInfo<SocketAddr>>()
+                .map(|c| c.0.ip().to_string())
+        };
+        Ok(Self(
+            from_header
+                .or_else(from_socket)
+                .unwrap_or_else(|| "unknown".into()),
+        ))
+    }
 }
 
 impl FromRequestParts<Shared> for Pilot {
@@ -283,15 +509,44 @@ struct NewPlayer {
 
 async fn new_player(
     State(state): State<Shared>,
+    ClientIp(ip): ClientIp,
 ) -> Result<(StatusCode, Json<NewPlayer>), ApiError> {
+    let now = state.now();
+    let limited = |seconds| {
+        state.counts.limited_signups.fetch_add(1, Relaxed);
+        ApiError::slow_down(seconds)
+    };
+    state
+        .limits
+        .signups_per_ip
+        .take(&ip, now)
+        .map_err(limited)?;
+    state.limits.signups_all.take("all", now).map_err(limited)?;
+    if state.db_bytes()? > state.settings.db_max_bytes {
+        state.counts.full.fetch_add(1, Relaxed);
+        let last = state.full_logged_ms.load(Relaxed);
+        if now.saturating_sub(last) >= FULL_LOG_EVERY_MS {
+            state.full_logged_ms.store(now, Relaxed);
+            eprintln!(
+                "database over {} bytes: no new pilots",
+                state.settings.db_max_bytes
+            );
+        }
+        return Err(ApiError::new(
+            StatusCode::SERVICE_UNAVAILABLE,
+            "the leaderboard is full",
+        ));
+    }
     let player_id = random_hex(8)?;
     let token = random_hex(32)?;
     let name = format!("Pilot-{}", &player_id[..4]);
     let hash = Sha256::digest(token.as_bytes());
     state.db().execute(
-        "INSERT INTO players (id, token_hash, name, created_ms) VALUES (?1, ?2, ?3, ?4)",
-        params![player_id, &hash[..], name, now_ms()],
+        "INSERT INTO players (id, token_hash, name, created_ms, last_seen_ms)
+         VALUES (?1, ?2, ?3, ?4, ?4)",
+        params![player_id, &hash[..], name, now],
     )?;
+    state.counts.signups.fetch_add(1, Relaxed);
     Ok((
         StatusCode::CREATED,
         Json(NewPlayer {
@@ -341,6 +596,14 @@ async fn start_run(
     pilot: Pilot,
     Json(body): Json<StartRun>,
 ) -> Api<Run> {
+    state
+        .limits
+        .runs
+        .take(&pilot.id, state.now())
+        .map_err(|seconds| {
+            state.counts.limited_runs.fetch_add(1, Relaxed);
+            ApiError::slow_down(seconds)
+        })?;
     let level = start_level(body.level);
     let run_id = random_hex(16)?;
     let mut seed = [0_u8; 8];
@@ -350,8 +613,9 @@ async fn start_run(
     state.db().execute(
         "INSERT INTO runs (id, player_id, level, seed, started_ms) VALUES (?1, ?2, ?3, ?4, ?5)",
         // SQLite keeps signed numbers: the seed's bits, as they are.
-        params![run_id, pilot.id, level, seed as i64, now_ms()],
+        params![run_id, pilot.id, level, seed as i64, state.now()],
     )?;
+    state.counts.runs.fetch_add(1, Relaxed);
     Ok(Json(Run {
         run_id,
         seed: seed.to_string(),
@@ -422,7 +686,18 @@ async fn send_replay(
     body: Bytes,
 ) -> Api<Replayed> {
     let mut who = Who::default();
-    let result = fly_replay(&state, &pilot, &run_id, body, &mut who).await;
+    let result = match state.limits.replays.take(&pilot.id, state.now()) {
+        Ok(()) => fly_replay(&state, &pilot, &run_id, body, &mut who).await,
+        Err(seconds) => {
+            state.counts.limited_replays.fetch_add(1, Relaxed);
+            Err(ApiError::slow_down(seconds))
+        }
+    };
+    let count = match &result {
+        Ok(_) => &state.counts.replays_accepted,
+        Err(_) => &state.counts.replays_refused,
+    };
+    count.fetch_add(1, Relaxed);
     let outcome = match &result {
         Ok(Json(r)) => Ok(&r.levels[..]),
         Err(e) => Err(e.1.as_str()),
@@ -497,7 +772,7 @@ async fn fly_replay(
     who: &mut Who,
 ) -> Api<Replayed> {
     let refuse = |why: &str| ApiError::new(StatusCode::UNPROCESSABLE_ENTITY, why);
-    let now = now_ms();
+    let now = state.now();
     let run: Option<(u32, i64, i64, usize, u64, String)> = state
         .db()
         .query_row(
@@ -830,20 +1105,29 @@ mod tests {
     fn an_older_database_gets_the_new_columns() {
         let db = Connection::open_in_memory().expect("a database");
         db.execute_batch(
-            "CREATE TABLE runs (id TEXT PRIMARY KEY, player_id TEXT NOT NULL, level INTEGER NOT NULL,
+            "CREATE TABLE players (id TEXT PRIMARY KEY, token_hash BLOB NOT NULL UNIQUE,
+             name TEXT NOT NULL, created_ms INTEGER NOT NULL);
+             INSERT INTO players (id, token_hash, name, created_ms) VALUES ('p', x'00', 'Old', 1234);
+             CREATE TABLE runs (id TEXT PRIMARY KEY, player_id TEXT NOT NULL, level INTEGER NOT NULL,
              seed INTEGER NOT NULL, started_ms INTEGER NOT NULL, counted INTEGER NOT NULL DEFAULT 0,
              last_ms INTEGER);
              INSERT INTO runs (id, player_id, level, seed, started_ms) VALUES ('r', 'p', 1, 7, 0);",
         )
         .expect("the old schema");
-        let app = App::with(db).expect("opens");
-        let steps: i64 = app
-            .db()
+        let app = App::with(db, Settings::default()).expect("opens");
+        let db = app.db();
+        let steps: i64 = db
             .query_row("SELECT last_steps FROM runs WHERE id = 'r'", [], |r| {
                 r.get(0)
             })
             .expect("the column is there");
         assert_eq!(steps, 0);
+        let (name, seen): (String, i64) = db
+            .query_row("SELECT name, last_seen_ms FROM players", [], |r| {
+                Ok((r.get(0)?, r.get(1)?))
+            })
+            .expect("the pilot is still there");
+        assert_eq!((name.as_str(), seen), ("Old", 1234), "seen when signed up");
     }
 
     #[test]

@@ -28,9 +28,10 @@ const TICKS: u8 = 0;
 const RESIZE: u8 = 1;
 const GO_ON: u8 = 2;
 
-/// A replay may run this many ticks at most (three hours): a limit on
-/// the work a replay can ask of the server.
-pub const MAX_REPLAY_TICKS: u64 = 3 * 60 * 60 * 60;
+/// A replay may run this many ticks at most (30 minutes): a limit on
+/// the work a replay can ask of the server. A flight through all levels
+/// lasts about 7 minutes.
+pub const MAX_REPLAY_TICKS: u64 = 30 * 60 * 60;
 
 /// Screens a flight may be flown on, in px. Sizes and speeds scale with
 /// the height, so odd shapes could make the game easier.

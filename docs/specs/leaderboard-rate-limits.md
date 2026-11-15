@@ -1,7 +1,10 @@
 # Spec: leaderboard rate limits and data cleanup
 
-Status: proposed, 14 November 2026. Review finding 8 on PR #45 (and 7,
-the repeated replay, which the same mechanism bounds).
+Status: done (PR #54), 15 November 2026; proposed 14 November 2026.
+Review finding 8 on PR #45 (and 7, the repeated replay, which the same
+mechanism bounds). Updated before building: section 3 was already built
+(review fixes in PR #45), the limits were sized from the real board, migrations keep
+the existing column checks, and the log has a line per replay (PR #53).
 
 ## Problem
 
@@ -65,14 +68,22 @@ cleanup task (below), so the map cannot grow without bound.
 |---|---|---|---|---|
 | Sign-up | IP address | 40 | 40 per hour | a school class on one Wi-Fi |
 | Sign-up, all together | (global) | 300 | 300 per hour | a second line if addresses rotate |
-| New run | pilot | `LEVEL_COUNT` + 4 | 60 per hour | one per flight; a flight lasts at least about a minute |
-| Replay | pilot | 6 | 30 per hour | one per "Level complete", a few retries |
+| New run | pilot | 15 | 60 per hour | the board on 15 November 2026: up to 12 runs by one pilot in 10 minutes (each page load asks for 5, each flight for one more); 9 would leave a level without a seed after two reloads |
+| Replay | pilot | 10 | 60 per hour | one per "Level complete"; a level with takeoff and landing takes about 80 s, so up to 45 an hour |
 
 Over the limit: `429 Too Many Requests` with `Retry-After` (seconds) and
-`{ "error": "slow down" }`. The numbers are constants in `lib.rs`, named
-like the others (`SIGNUP_PER_HOUR`, ...), so the manual can name them.
+`{ "error": "slow down" }`. The numbers are constants in `lib.rs`
+(`SIGNUPS_PER_IP`, `SIGNUPS_ALL`, `RUNS_PER_PILOT`, `REPLAYS_PER_PILOT`),
+so the manual can name them. A replay takes its token before anything
+else, also one that is then refused.
+
+Fly stops the machine when nobody plays (`auto_stop_machines`): the
+buckets are in memory, so they all start full again. That only ever
+favours honest players and is accepted.
 
 ### 3. Replays: a run only moves forward
+
+Built with the review fixes in PR #45, before the rest of this spec; kept here as designed.
 
 - `runs` gets `last_steps INTEGER NOT NULL DEFAULT 0`: the length of the
   last replay accepted for this run.
@@ -92,9 +103,9 @@ like the others (`SIGNUP_PER_HOUR`, ...), so the manual can name them.
   `shared-cpu-1x` machine is likely several times slower: measure on the
   stage and on Fly before fixing the timeout. Honest replays are short,
   so a queue only forms under abuse.
-- Consider lowering `MAX_REPLAY_TICKS`: a flight of all levels lasts
-  minutes, not hours. Three hours is about 650,000 ticks of work per
-  request; 30 minutes would cut that by six.
+- `MAX_REPLAY_TICKS` is lowered from three hours to 30 minutes: a
+  flight of all levels lasts about 7 minutes. `MAX_REPLAY_BYTES` goes
+  from 2 MB to 1 MB (the busiest 30 minutes are about 0.4 MB).
 
 The page already treats any failure as "Not counted online". On `429`
 and `503` it retries the replay once after `Retry-After` (at most 10 s),
@@ -110,7 +121,8 @@ limit above is sized for today's prefetching (`LEVEL_COUNT` + 4 burst).
 
 ### 5. Cleanup
 
-A task started in `main.rs` runs every hour (and once at start):
+A task started in `main.rs` runs every hour (and once at start: the
+machine sleeps when nobody plays, so it may seldom run a whole hour):
 
 - Delete runs that never counted a level (`counted = 0`) and are older
   than `RUN_MAX_AGE_MS` (24 h): they can no longer be used.
@@ -119,7 +131,9 @@ A task started in `main.rs` runs every hour (and once at start):
 - `players` gets `last_seen_ms`, updated on any call with the token (at
   most once an hour per pilot, to keep writes rare). Delete pilots with
   no row in `best` and not seen for 90 days, with their runs. Pilots on
-  the board stay.
+  the board stay. A pilot deleted this way loses a chosen name: if the
+  browser comes back, its token is unknown and it signs up again as a
+  new "Pilot-xxxx".
 - Drop limiter entries idle for longer than their window.
 - `PRAGMA optimize` after the deletes. No `VACUUM` (it rewrites the whole
   file); SQLite reuses the free pages.
@@ -132,15 +146,18 @@ playing.
 ### 6. Schema change
 
 `CREATE TABLE IF NOT EXISTS` does not add columns to existing tables.
-Introduce `PRAGMA user_version` migrations in `App::with`:
-version 1 = today's schema, version 2 adds `runs.last_steps` and
-`players.last_seen_ms`. Each step runs once in a transaction.
+`migrate()` already adds a missing column after checking
+`pragma_table_info` (that is how `runs.last_steps` came); it adds
+`players.last_seen_ms` the same way and sets it to `created_ms`, so
+pilots from before get their full 90 days. `PRAGMA user_version` is
+left for a migration that has to reshape data.
 
 ### 7. Logging
 
-Per hour, one line with counts: sign-ups, runs, replays accepted and
-refused, `429`s by kind, rows deleted. No IP addresses and no tokens in
-logs.
+Per hour (with the cleanup), one line with counts: sign-ups, runs,
+replays accepted and refused, `429`s by kind, sign-ups refused as full,
+rows deleted, limiter keys. No IP addresses and no tokens in logs. Each
+replay also has its own line (PR #53), a `429` included.
 
 ## Privacy
 
@@ -154,8 +171,8 @@ tracking-like signal.
 ## Tests
 
 - `Limiter` unit tests with an injected clock: burst, refill, `Retry-After`.
-- `App` gets an injectable clock (`now_ms` from the state, real time in
-  `main.rs`), so API tests stop rewriting `started_ms` in the database.
+- `App` gets a clock tests can move (`App::time_passes`), so API tests
+  stop rewriting `started_ms` in the database.
 - API tests:
   - the 41st sign-up from one address within an hour gets `429`; one
     from another address still works;
@@ -167,15 +184,16 @@ tracking-like signal.
     keeps one on the board;
   - migration from a version-1 database file keeps its rows.
 - `scripts/stage.sh e2e`: unchanged flow still passes; add a sign-up
-  burst that must hit `429` (the stage sees all requests from one
-  address, which suits this test).
+  burst that must hit `429`. The stage's server trusts the header
+  `X-Stage-Client-Ip` (as Fly's proxy sets `Fly-Client-IP`), and only
+  this test sends it, with a made-up address: the stage's other
+  sign-ups keep their own bucket.
 
 ## Rollout
 
-1. Server first (`fly deploy`): the page treats `429` like any failure,
-   so old pages keep working.
-2. Then the page's retry on `429` / `503`.
-3. Watch the hourly counts for a week; tune the constants.
+1. One merge: CI deploys the server first, then the page with its retry
+   on `429` / `503`. Old pages treat `429` like any failure.
+2. Watch the hourly counts for a week; tune the constants.
 
 ## Open questions
 

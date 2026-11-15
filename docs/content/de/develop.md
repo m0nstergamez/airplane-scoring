@@ -398,10 +398,40 @@ replay run=8d01b6e4 pilot="Geoport" start=4 shown=L5 56000 counted L5 63067 ms (
 ```
 
 Die Einstellungen des Servers kommen aus der Umgebung: `PORT` (8787),
-`DB_PATH` (`leaderboard.sqlite`, eine SQLite-Datei) und
-`ALLOWED_ORIGINS` (die Seiten, die ihn aufrufen dürfen, durch Kommas
-getrennt). GitHub Pages liefert nur Dateien aus, darum läuft der Server
-anderswo.
+`DB_PATH` (`leaderboard.sqlite`, eine SQLite-Datei), `ALLOWED_ORIGINS`
+(die Seiten, die ihn aufrufen dürfen, durch Kommas getrennt),
+`TRUSTED_IP_HEADER` (der Header, in den ein Proxy die Adresse des
+Clients schreibt: `Fly-Client-IP` bei Fly.io; ohne ihn die Adresse der
+Verbindung) und `DB_MAX_BYTES` (über dieser Grösse keine neuen
+Pilotinnen und Piloten, 512 MB). GitHub Pages liefert nur Dateien aus,
+darum läuft der Server anderswo.
+
+Limits verhindern, dass ein einzelner Client den Server aufbraucht. Über
+einem Limit antwortet der Server mit `429` und `Retry-After`; bei einem
+Replay wartet die Seite und versucht es einmal erneut (wenn die Wartezeit
+höchstens 10 s ist). Die Zahlen sind Konstanten in
+`crates/server/src/lib.rs`, als (auf einmal, pro Stunde):
+
+| Konstante | Was sie begrenzt | Wert |
+|---|---|---|
+| `SIGNUPS_PER_IP` | neue Pilotinnen und Piloten von einer IP-Adresse (eine Schulklasse in einem WLAN) | 40, 40 |
+| `SIGNUPS_ALL` | neue Pilotinnen und Piloten von überall zusammen | 300, 300 |
+| `RUNS_PER_PILOT` | Startwerte pro Pilotin oder Pilot (jedes Laden der Seite holt einen pro Level) | 15, 60 |
+| `REPLAYS_PER_PILOT` | Replays pro Pilotin oder Pilot (eines pro «Level complete») | 10, 60 |
+
+Die IP-Adresse dient nur dem Limit für Anmeldungen, im Speicher, und ist
+innerhalb einer Stunde vergessen; sie kommt nie in die Datenbank oder
+ins Log. Hält die Maschine an (niemand spielt), beginnen alle Limits von
+vorn.
+
+Beim Start und dann jede Stunde räumt der Server auf und schreibt eine
+Zeile mit seinen Zählern (`hourly: signups ... | deleted runs ...
+pilots ...`): Runs, die nie ein Level gewertet haben, werden nach 24
+Stunden gelöscht; Pilotinnen und Piloten ohne Zeit in irgendeiner
+Bestenliste, seit 90 Tagen nicht gesehen, werden mit ihren Runs
+gelöscht (ihr Browser meldet sich als neue Pilotin oder neuer Pilot an,
+falls er zurückkommt). Runs, die gewertet haben, bleiben: Sie zeigen, aus
+welchem Flug jede Bestzeit kam.
 
 Bevor er online geht, prüft die **Stage** die ganze Kette auf deinem Mac:
 eine [OrbStack](https://orbstack.dev/)-Linux-Maschine namens `stage`

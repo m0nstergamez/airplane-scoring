@@ -43,6 +43,7 @@ short **meaning**.
 | Pilotin / Pilot | pilot | `players`, token | Someone on the leaderboard: anonymous, known to the server only by a secret token kept in the browser |
 | Stage | stage | `scripts/stage.sh`, `pages.yml` | The leaderboard as a whole (real server image, the web build pointing at it) to test before it goes online: on the developer's Mac in an OrbStack VM, in CI with Docker on the runner. Stays English |
 | einspielen | deploy | `fly deploy`, `pages.yml` | Put a new build of the server online on Fly.io; CI does it on every merge to `main` that touches the server |
+| Limit | rate limit | `limits.rs`, `SIGNUPS_PER_IP`, `429` | How often a client may ask for something (sign up, a seed, a replay) at once and per hour |
 | Log, Logzeile | log, log line | `fly logs`, `replay_line` | What the server writes about each request it handles; one line per replay. Stays English |
 | Backup | backup | `scripts/board-db.sh backup`, `backups/` | A copy of the leaderboard database on the developer's computer, made with SQLite's `.backup` while the server runs. Stays English |
 | Snapshot | snapshot | `fly volumes snapshots list`, `snapshot_retention` | Fly.io's daily copy of the whole volume, kept 30 days. Stays English |

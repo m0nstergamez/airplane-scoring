@@ -1031,6 +1031,22 @@ that isn't code here. Keep entries short and dated.
   value only makes "?" and never refuses a replay). Run ids from the URL are cut to letters and digits,
   so no one can write lines into the log. Old pages and old wasm still
   work together: an argument missing just sends no `shown`.
+- Rate limits and cleanup for the leaderboard, asked for, built from
+  the spec (`docs/specs/leaderboard-rate-limits.md`, updated first: the
+  limits are sized from the real board, where one pilot made 12 runs in
+  10 minutes; migrations keep the column checks). Token buckets in
+  memory (`crates/server/src/limits.rs`): sign-ups per IP address
+  (`Fly-Client-IP`, trusted only when `TRUSTED_IP_HEADER` is set) and
+  all together, runs and replays per pilot; over a limit `429` with
+  `Retry-After`, and the page tries a replay once more if the wait is at
+  most 10 s. A cleanup at start and every hour deletes runs that never
+  counted (after 24 h) and pilots with no best time not seen for 90
+  days (`players.last_seen_ms`, new), and logs the hour's counts. No
+  new pilots over 512 MB (`DB_MAX_BYTES`). `MAX_REPLAY_TICKS` is 30
+  minutes instead of three hours. Tests move a clock
+  (`App::time_passes`); the stage sends a sign-up burst with a made-up
+  address that must hit `429`. Its first start on the stage deleted 24
+  old runs.
 
 ## Concepts
 

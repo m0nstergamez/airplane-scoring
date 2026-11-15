@@ -1144,6 +1144,25 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
   damit niemand Zeilen ins Log schreiben kann. Alte Seiten und altes
   wasm passen weiter zusammen: Fehlt ein Argument, geht einfach kein
   `shown` mit.
+- Limits und Aufräumen für die Bestenliste, gewünscht, gebaut nach der
+  Spec (`docs/specs/leaderboard-rate-limits.md`, zuerst nachgeführt: Die
+  Limits sind an der echten Bestenliste bemessen, wo eine Pilotin 12
+  Runs in 10 Minuten erzeugte; Migrationen bleiben bei den
+  Spalten-Prüfungen). Token Buckets im Speicher
+  (`crates/server/src/limits.rs`): Anmeldungen pro IP-Adresse
+  (`Fly-Client-IP`, nur vertraut, wenn `TRUSTED_IP_HEADER` gesetzt ist)
+  und alle zusammen, Runs und Replays pro Pilotin oder Pilot; über einem
+  Limit `429` mit `Retry-After`, und die Seite versucht ein Replay
+  einmal erneut, wenn die Wartezeit höchstens 10 s ist. Ein Aufräumen
+  beim Start und jede Stunde löscht Runs, die nie gewertet haben (nach
+  24 h), und Pilotinnen und Piloten ohne Bestzeit, seit 90 Tagen nicht
+  gesehen (`players.last_seen_ms`, neu), und schreibt die Zähler der
+  Stunde ins Log. Über 512 MB keine neuen Pilotinnen und Piloten
+  (`DB_MAX_BYTES`). `MAX_REPLAY_TICKS` ist 30 Minuten statt drei
+  Stunden. Tests stellen eine Uhr vor (`App::time_passes`); die Stage
+  schickt einen Ansturm von Anmeldungen mit einer erfundenen Adresse,
+  der `429` erreichen muss. Der erste Start auf der Stage löschte 24
+  alte Runs.
 
 ## Konzepte
 

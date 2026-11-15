@@ -19,6 +19,9 @@ primary_region = "fra"         # Frankfurt; the volume must be in the same regio
   DB_PATH = "/data/leaderboard.sqlite"
   # The pages that may call the server (comma separated, no trailing slash).
   ALLOWED_ORIGINS = "https://m0nstergamez.github.io"
+  # Fly's proxy puts the client's address here; used only for the
+  # sign-up limit, in memory (crates/server: SIGNUPS_PER_IP).
+  TRUSTED_IP_HEADER = "Fly-Client-IP"
 
 [[mounts]]
   source = "leaderboard_data"

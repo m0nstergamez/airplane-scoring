@@ -8,5 +8,5 @@ note the outcome in the project notes (`docs/README.md`, both languages).
 
 | Spec | Status |
 |---|---|
-| [Leaderboard rate limits and data cleanup](leaderboard-rate-limits.md) | proposed |
+| [Leaderboard rate limits and data cleanup](leaderboard-rate-limits.md) | done (PR #54) |
 | [Reveal the seed at "Tap to fly", and keep the flight live](leaderboard-seed-reveal.md) | proposed |
