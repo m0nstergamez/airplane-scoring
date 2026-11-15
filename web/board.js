@@ -19,6 +19,8 @@
  *   fetch:   like window.fetch
  *   storage: like localStorage (may throw: private mode)
  *   now:     () => milliseconds, like Date.now
+ *   wait:    (ms) => a promise that resolves after ms (optional: then
+ *            a busy server is not asked again)
  *   warn:    (...args) => void, like console.warn
  * }
  */
@@ -69,8 +71,26 @@ function createBoard(env) {
       await signUp();
       return call(method, path, body, false);
     }
-    if (!res.ok) throw new Error(`${method} ${path}: ${res.status}`);
+    if (!res.ok) {
+      const error = new Error(`${method} ${path}: ${res.status}`);
+      error.status = res.status;
+      error.retryAfter = Number(res.headers?.get?.("Retry-After")) || 0;
+      throw error;
+    }
     return res.json();
+  };
+  // Busy (503) or over a limit (429): a landed level is worth one more
+  // try, after the time the server asks for, if that is short.
+  const RETRY_MAX_S = 10;
+  const callOnceMore = async (method, path, body) => {
+    try {
+      return await call(method, path, body);
+    } catch (e) {
+      const busy = e.status === 429 || e.status === 503;
+      if (!busy || !env.wait || !(e.retryAfter > 0) || e.retryAfter > RETRY_MAX_S) throw e;
+      await env.wait(e.retryAfter * 1000);
+      return call(method, path, body);
+    }
   };
 
   // A seed waits ready for each level, so that "Tap to fly" never
@@ -79,6 +99,7 @@ function createBoard(env) {
   const RETRY_MS = 10 * 1000;
   const ready = {};
   const asked = {}; // level -> when the last request went out
+  const notBefore = {}; // level -> no new request before (the server's Retry-After)
   const fetching = {};
   const getSeed = async (level) => {
     if (!API || fetching[level] || ready[level]) return;
@@ -89,13 +110,15 @@ function createBoard(env) {
       const run = await call("POST", "/v1/runs", { level });
       ready[level] = { runId: run.run_id, seed: BigInt(run.seed), at: env.now() };
     } catch (e) {
+      if (e.retryAfter > 0) notBefore[level] = env.now() + e.retryAfter * 1000;
       env.warn("leaderboard: no seed, flights are not ranked for now", e);
     } finally { fetching[level] = false; }
   };
   const seedFor = (level) => {
     const r = ready[level];
     if (r && env.now() - r.at > SEED_MAX_AGE_MS) delete ready[level];
-    if (!ready[level] && env.now() - (asked[level] || 0) > RETRY_MS) getSeed(level);
+    const now = env.now();
+    if (!ready[level] && now - (asked[level] || 0) > RETRY_MS && now >= (notBefore[level] || 0)) getSeed(level);
     return ready[level] || null;
   };
 
@@ -130,7 +153,7 @@ function createBoard(env) {
       standing[level] = "waiting";
       const mine = standing; // this flight's; a new flight gets its own
       const query = shown > 0 ? `?level=${level}&shown=${shown}` : "";
-      return call("POST", `/v1/runs/${runId}/replay${query}`, replay)
+      return callOnceMore("POST", `/v1/runs/${runId}/replay${query}`, replay)
         .then((r) => {
           for (const l of r.levels) mine[l.level] = { rank: l.rank, pilots: l.pilots };
           if (mine[level] === "waiting") mine[level] = "failed"; // not among them

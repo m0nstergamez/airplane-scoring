@@ -379,9 +379,35 @@ replay run=8d01b6e4 pilot="Geoport" start=4 shown=L5 56000 counted L5 63067 ms (
 ```
 
 The server's settings come from the environment: `PORT` (8787),
-`DB_PATH` (`leaderboard.sqlite`, an SQLite file) and `ALLOWED_ORIGINS`
-(the pages that may call it, comma separated). GitHub Pages only serves
-files, so the server runs elsewhere.
+`DB_PATH` (`leaderboard.sqlite`, an SQLite file), `ALLOWED_ORIGINS`
+(the pages that may call it, comma separated), `TRUSTED_IP_HEADER`
+(the header a proxy puts the client's address in: `Fly-Client-IP` on
+Fly.io; unset, the socket's address) and `DB_MAX_BYTES` (no new pilots
+over this size, 512 MB). GitHub Pages only serves files, so the server
+runs elsewhere.
+
+Limits keep one client from using up the server. Over a limit the
+server answers `429` with `Retry-After`; for a replay the page waits
+and tries once more (if the wait is at most 10 s). The numbers are
+constants in `crates/server/src/lib.rs`, as (at once, per hour):
+
+| Constant | What it limits | Value |
+|---|---|---|
+| `SIGNUPS_PER_IP` | new pilots from one IP address (a school class on one Wi-Fi) | 40, 40 |
+| `SIGNUPS_ALL` | new pilots from everywhere together | 300, 300 |
+| `RUNS_PER_PILOT` | seeds per pilot (each page load asks for one per level) | 15, 60 |
+| `REPLAYS_PER_PILOT` | replays per pilot (one per "Level complete") | 10, 60 |
+
+The IP address is used only for the sign-up limit, in memory, and
+forgotten within the hour; it is never written to the database or the
+log. When the machine stops (nobody playing), all limits start afresh.
+
+At start and then every hour the server cleans up and writes one line
+with its counts (`hourly: signups ... | deleted runs ... pilots ...`):
+runs that never counted a level are deleted after 24 hours; pilots
+with no time on any board, not seen for 90 days, are deleted with their
+runs (their browser signs up again as a new pilot if it comes back).
+Runs that counted stay: they show which flight each best time came from.
 
 Before it goes online, the **stage** tests the whole chain on your Mac:
 an [OrbStack](https://orbstack.dev/) Linux machine named `stage` (amd64,

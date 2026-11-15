@@ -29,8 +29,8 @@ const server = (routes) => {
     const bare = path.split("?")[0];
     const route = routes[`${method} ${bare}`] || routes[`${method} ${bare.replace(/\/\d+\//, "/{id}/")}`];
     if (!route) return { ok: false, status: 404, json: async () => ({ error: "no route" }) };
-    const [status, body] = route(request);
-    return { ok: status >= 200 && status < 300, status, json: async () => body };
+    const [status, body, headers = {}] = route(request);
+    return { ok: status >= 200 && status < 300, status, json: async () => body, headers: { get: (k) => headers[k] ?? null } };
   };
   return { fetch, requests };
 };
@@ -55,16 +55,18 @@ const memoryStorage = (items = {}) => ({
 const make = ({ api = API, srv = friendly(), storage = memoryStorage(), clock = { t: 1_000_000 } } = {}) => {
   const ctx = load();
   const warnings = [];
+  const waits = [];
   const board = ctx.createBoard({
     api,
     fetch: srv.fetch,
     storage,
     now: () => clock.t,
+    wait: async (ms) => { waits.push(ms); },
     warn: (...a) => warnings.push(a.join(" ")),
   });
   const memory = { buffer: new ArrayBuffer(64) };
   const game = board.imports(() => memory);
-  return { board, game, srv, storage, clock, memory, warnings };
+  return { board, game, srv, storage, clock, memory, warnings, waits };
 };
 
 // Let the board's pending requests finish.
@@ -270,4 +272,58 @@ test("only the newest request may change the page", () => {
   assert.equal(latest.current(rename), true);
   assert.equal(latest.current(latest.next()), true);
   assert.equal(latest.current(rename), false);
+});
+
+test("a busy server gets the replay once more, after the time it asks for", async () => {
+  let answers = [[429, { error: "slow down" }, { "Retry-After": "3" }],
+    [200, { levels: [{ level: 1, millis: 61450, rank: 2, pilots: 5 }] }]];
+  const srv = friendly({ "POST /v1/runs/{id}/replay": () => answers.shift() });
+  const { board, game, waits } = make({ srv });
+  await board.start(1);
+  game.board_take(1);
+  await game.board_submit(0, 4, 1, 61450);
+  assert.deepEqual(waits, [3000]);
+  assert.deepEqual([game.board_status(1), game.board_rank(1)], [1, 2]);
+  assert.equal(srv.requests.filter((r) => r.path.startsWith("/v1/runs/1/replay")).length, 2);
+});
+
+test("only once, and not when the wait is long or the replay was refused", async () => {
+  for (const [first, tries] of [
+    [[503, { error: "busy" }, { "Retry-After": "5" }], 2], // and busy again: given up
+    [[429, { error: "slow down" }, { "Retry-After": "60" }], 1], // too long to wait
+    [[429, { error: "slow down" }], 1], // no Retry-After
+    [[422, { error: "the replay is of another flight" }], 1],
+  ]) {
+    const srv = friendly({ "POST /v1/runs/{id}/replay": () => first });
+    const { board, game, warnings } = make({ srv });
+    await board.start(1);
+    game.board_take(1);
+    await game.board_submit(0, 4, 1, 61450);
+    assert.equal(game.board_status(1), -1, "not counted");
+    assert.equal(srv.requests.filter((r) => r.path.startsWith("/v1/runs/1/replay")).length, tries, JSON.stringify(first));
+    assert.equal(warnings.length, 1);
+  }
+});
+
+test("over the seed limit: no new request before the server's Retry-After", async () => {
+  let limited = true;
+  const srv = friendly({
+    "POST /v1/runs": (r) => (limited
+      ? [429, { error: "slow down" }, { "Retry-After": "60" }]
+      : [200, { run_id: 7, seed: "1007", level: JSON.parse(r.body).level }]),
+  });
+  const { board, game, clock } = make({ srv });
+  await board.start(1);
+  const runs = () => srv.requests.filter((r) => r.path === "/v1/runs").length;
+  assert.equal(runs(), 1);
+  clock.t += 30_000; // past RETRY_MS, before Retry-After
+  assert.equal(game.board_ready(1), 0);
+  await settle();
+  assert.equal(runs(), 1, "waits for the server");
+  limited = false;
+  clock.t += 31_000;
+  game.board_ready(1);
+  await settle();
+  assert.equal(runs(), 2);
+  assert.equal(game.board_ready(1), 1);
 });

@@ -35,6 +35,9 @@ repo=$(pwd)
 machine=stage
 web_port=8180
 api_port=8187
+# Fly's proxy puts the client's address in Fly-Client-IP; on the stage
+# only `e2e` sends this header, to test the sign-up limit.
+ip_header=X-Stage-Client-Ip
 web_url="http://localhost:$web_port"
 api_url="http://localhost:$api_port"
 image=airplane-scoring-board:stage
@@ -89,7 +92,7 @@ up() {
   on_stage "$docker rm -f stage-board >/dev/null 2>&1 || true
     $docker run -d --name stage-board --restart unless-stopped \
       -p $api_port:8080 -v stage-board-data:/data \
-      -e ALLOWED_ORIGINS=$web_url $image >/dev/null"
+      -e ALLOWED_ORIGINS=$web_url -e TRUSTED_IP_HEADER=$ip_header $image >/dev/null"
   stop_web
   if [ "$host" = docker ]; then
     (cd "$web_dir" && nohup python3 -m http.server "$web_port" >/dev/null 2>&1 & echo $! >"$repo/$web_pid")
@@ -180,6 +183,18 @@ JS
   board=$(curl -fsS "$api_url/v1/leaderboard?level=1" -H "Authorization: Bearer $token")
   [ "$(echo "$board" | json 'd["me"]["millis"]')" = "$millis" ] || fail "board: $board"
   pilots=$(echo "$board" | json 'd["pilots"]')
+
+  # As Fly's proxy would tell it: one made-up address for this test, so
+  # the stage's other sign-ups (no header) keep their own limit.
+  ip="10.$((RANDOM % 250)).$((RANDOM % 250)).7"
+  step "sign-ups from one address ($ip) are limited"
+  for i in $(seq 1 40); do
+    status=$(curl -sS -o /dev/null -w '%{http_code}' -X POST "$api_url/v1/players" -H "$ip_header: $ip")
+    [ "$status" = 201 ] || fail "sign-up $i from $ip: HTTP $status, expected 201"
+  done
+  limited=$(curl -sS -o /dev/null -D - -X POST "$api_url/v1/players" -H "$ip_header: $ip" | tr -d '\r')
+  echo "$limited" | head -1 | grep -q ' 429' || fail "sign-up 41 from $ip: $(echo "$limited" | head -1), expected 429"
+  echo "$limited" | grep -qi '^retry-after: [0-9]' || fail "429 without Retry-After"
 
   printf '\n\033[32mEnd to end OK.\033[0m Level 1 in %s ms, world rank %s of %s.\n' "$millis" "$rank" "$pilots"
 }
