@@ -981,7 +981,7 @@ that isn't code here. Keep entries short and dated.
 - The speed-up starts again with every level, asked for, so the
   leaderboard is fair: it counted the whole flight, so a level reached
   with "Next level" was flown up to 1.4 times faster than the same level
-  started directly (level 4 from level 1: speed factor 1.39 to 1.5;
+  started directly (level 4 from level 1: speed 1.39 to 1.5;
   started there: 1.0 to about 1.12). `World::speed_up` now follows
   `World::seconds_in_level`, the level's clock, so a time on the board is
   the same race wherever the flight started; the speed still rises
@@ -990,7 +990,8 @@ that isn't code here. Keep entries short and dated.
   times (a second time to explain next to the clock). Flights that
   start in a level fly exactly as before; times from flights that
   came from an earlier level were too fast and do not fit any more.
-  Test: `every_level_starts_at_the_same_speed`.
+  Tests: `every_level_starts_at_the_same_speed`,
+  `a_level_takes_as_long_after_next_level_as_started_directly`.
 
 ## Concepts
 

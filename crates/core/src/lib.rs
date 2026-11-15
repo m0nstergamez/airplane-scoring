@@ -210,7 +210,9 @@ pub const SHAKE_PX: f32 = 10.0;
 /// (0.2 %: after a minute about 12 % faster). Starts again at 1 with
 /// every level ([`World::speed_up`]).
 pub const SPEED_PER_SECOND: f32 = 0.002;
-/// It never gets faster than this (1 = the start).
+/// It never gets faster than this (1 = the start). A safety cap: since
+/// the speed-up starts again with every level, a level would have to
+/// last 250 s to reach it (about 1.12 after a level at cruising speed).
 pub const MAX_SPEED: f32 = 1.5;
 
 /// "Game over" shows at least this long before a tap starts again, so a
@@ -2102,6 +2104,32 @@ mod tests {
         }
         assert_eq!(w.seconds_in_level(), 5);
         assert_eq!(w.seconds_flown(), flown + 5, "the flight goes on");
+    }
+
+    #[test]
+    fn a_level_takes_as_long_after_next_level_as_started_directly() {
+        // Same plane, nothing in the way: level 2 flown after level 1
+        // takes exactly as long as level 2 started on its own.
+        let fly_level = |w: &mut World| {
+            while w.level_complete().is_none() {
+                w.balloons.list.clear();
+                w.huts.list.clear();
+                w.tick(&Input::NONE);
+            }
+            w.millis_in_level()
+        };
+        let mut through = World::with_seed(PHONE, 2).with_takeoff();
+        through.lives = u32::MAX;
+        fly_level(&mut through);
+        through.go_on();
+        while through.level_complete().is_some() {
+            through.tick(&Input::NONE);
+        }
+        let mut direct = World::with_seed(PHONE, 2);
+        direct.start_level = 2;
+        let mut direct = direct.with_takeoff();
+        direct.lives = u32::MAX;
+        assert_eq!(fly_level(&mut through), fly_level(&mut direct));
     }
 
     #[test]
