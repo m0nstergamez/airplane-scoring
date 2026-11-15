@@ -19,7 +19,9 @@
 //!   completed and the time the game showed, only for the log line each
 //!   replay gets (`replay_line`); what counts is the time flown here.
 //! - `GET /v1/leaderboard?level=1&limit=10`: the fastest pilots of a
-//!   level, and where the asking pilot stands (if a token came along).
+//!   level, where the asking pilot stands (if a token came along), and
+//!   `flights`: how many levels all pilots together have landed, flown
+//!   again here (every level, ever).
 //! - `GET /health`: "ok", without touching the database (for Fly's
 //!   health check, which runs all the time).
 //!
@@ -113,6 +115,12 @@ CREATE TABLE IF NOT EXISTS best (
     PRIMARY KEY (player_id, level)
 );
 CREATE INDEX IF NOT EXISTS best_by_level ON best (level, millis, at_ms);
+-- Counts that outlive the rows behind them (the cleanup deletes runs).
+-- One row; `migrate` writes it.
+CREATE TABLE IF NOT EXISTS stats (
+    id      INTEGER PRIMARY KEY CHECK (id = 1),
+    flights INTEGER NOT NULL
+);
 ";
 
 /// What the server is told by its environment (`main.rs`).
@@ -313,6 +321,12 @@ fn migrate(db: &Connection) -> rusqlite::Result<()> {
              UPDATE players SET last_seen_ms = created_ms;",
         )?;
     }
+    // The flight count starts from the landed levels the runs still
+    // know (a new database: 0); from then on each one adds itself.
+    db.execute_batch(
+        "INSERT OR IGNORE INTO stats (id, flights)
+         SELECT 1, COALESCE(SUM(counted), 0) FROM runs",
+    )?;
     Ok(())
 }
 
@@ -874,6 +888,12 @@ async fn fly_replay(
         // Sent twice at the same moment: the other one counted.
         return Err(ApiError::new(StatusCode::CONFLICT, "already counted"));
     }
+    if !new.is_empty() {
+        tx.execute(
+            "UPDATE stats SET flights = flights + ?1 WHERE id = 1",
+            [new.len()],
+        )?;
+    }
     for done in new {
         let millis = done.millis as i64;
         let before: Option<i64> = tx
@@ -952,6 +972,8 @@ struct Me {
 struct Board {
     level: u32,
     pilots: i64,
+    /// Levels landed by all pilots together, in every level, ever.
+    flights: i64,
     top: Vec<Entry>,
     me: Option<Me>,
 }
@@ -1009,9 +1031,11 @@ async fn leaderboard(
     let pilots: i64 = db.query_row("SELECT COUNT(*) FROM best WHERE level = ?1", [level], |r| {
         r.get(0)
     })?;
+    let flights: i64 = db.query_row("SELECT flights FROM stats WHERE id = 1", [], |r| r.get(0))?;
     Ok(Json(Board {
         level,
         pilots,
+        flights,
         top,
         me,
     }))
@@ -1128,7 +1152,9 @@ mod tests {
              CREATE TABLE runs (id TEXT PRIMARY KEY, player_id TEXT NOT NULL, level INTEGER NOT NULL,
              seed INTEGER NOT NULL, started_ms INTEGER NOT NULL, counted INTEGER NOT NULL DEFAULT 0,
              last_ms INTEGER);
-             INSERT INTO runs (id, player_id, level, seed, started_ms) VALUES ('r', 'p', 1, 7, 0);",
+             INSERT INTO runs (id, player_id, level, seed, started_ms) VALUES ('r', 'p', 1, 7, 0);
+             INSERT INTO runs (id, player_id, level, seed, started_ms, counted)
+             VALUES ('r2', 'p', 1, 8, 0, 2), ('r3', 'p', 4, 9, 0, 1);",
         )
         .expect("the old schema");
         let app = App::with(db, Settings::default()).expect("opens");
@@ -1145,6 +1171,18 @@ mod tests {
             })
             .expect("the pilot is still there");
         assert_eq!((name.as_str(), seen), ("Old", 1234), "seen when signed up");
+        let flights: i64 = db
+            .query_row("SELECT flights FROM stats", [], |r| r.get(0))
+            .expect("the flight count");
+        assert_eq!(flights, 3, "the landed levels the runs know");
+        drop(db);
+        // Opened again: counted once, not twice.
+        migrate(&app.db()).expect("migrates again");
+        let flights: i64 = app
+            .db()
+            .query_row("SELECT flights FROM stats", [], |r| r.get(0))
+            .expect("the flight count");
+        assert_eq!(flights, 3);
     }
 
     #[test]

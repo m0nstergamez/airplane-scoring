@@ -1169,6 +1169,33 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
   schickt einen Ansturm von Anmeldungen mit einer erfundenen Adresse,
   der `429` erreichen muss. Der erste Start auf der Stage löschte 24
   alte Runs.
+- Ein Zusammenstoss beendet den Flug nicht mehr, wenn das Flugzeug
+  langsam war, eine Fehlermeldung («nach dem ersten verlorenen Leben war
+  Game over», Level 4): Nach einem Zusammenstoss fällt das Flugzeug 1,5 s lang
+  unkontrolliert, und seine Fluggeschwindigkeit kehrt in dieser Zeit nur langsam zur
+  normalen zurück (0,5 bis 0,725 bei Vollbremsung, unter 0,75 trägt es
+  nicht). Es kam noch ohne Auftrieb am Boden an, genau als man es
+  wieder steuern konnte, und ohne Auftrieb am Boden aufzuschlagen
+  zerbricht das Flugzeug: alle Leben weg. Jetzt fliegt es nach dem
+  Zusammenstoss mit normaler Fluggeschwindigkeit (1,0) weiter, wie zu
+  Beginn eines Levels, und solange es blinkt (`is_safe`), zerbricht es
+  am Boden nicht (aus dem Review: Wer weiterbremste, hatte nach 0,4 s
+  wieder keinen Auftrieb). Test, mit durchgehend gehaltener Bremse:
+  `a_crash_while_slow_does_not_blow_up_the_plane_at_the_ground`.
+  Das ändert, wie solche Flüge verlaufen, also geht der Server mit
+  (CI deployt ihn nach dem Merge).
+- Die Bestenliste zeigt, wie viele Flüge alle zusammen gelandet haben,
+  gewünscht: unter der Liste «1,234 flights landed by all pilots»
+  (`boardFlights` in `web/board.js`, getestet). Ein Flug ist ein
+  geschafftes Level, das der Server nachgeflogen und gezählt hat, in
+  jedem Level; «Game over» und verlassene Flüge erreichen den Server
+  nie, und ausgegebene Startwerte sind keine Flüge (jeder Seitenaufruf
+  holt einen pro Level). Die Zahl steht in einer eigenen Tabelle
+  (`stats`, eine Zeile), weil die Bereinigung Runs löscht; `migrate`
+  beginnt sie bei den gelandeten Levels, die die Runs noch kennen
+  (`SUM(runs.counted)`). `GET /v1/leaderboard` gibt sie als `flights`
+  zurück, für jedes Level dieselbe; ein älterer Server ohne sie zeigt
+  keine Zeile.
 
 ## Konzepte
 

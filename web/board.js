@@ -6,7 +6,8 @@
 // not ranked.
 //
 // No DOM here, and the only globals are the functions it defines
-// (`createBoard`, `boardClock`, `boardRows`, `newestOnly`; a plain
+// (`createBoard`, `boardClock`, `boardRows`, `boardFlights`,
+// `newestOnly`; a plain
 // script, index.html calls them).
 // What it needs comes in as `env`, so tests/web/board.test.mjs runs it in
 // Node with a fake server. index.html makes one with the real fetch and
@@ -200,6 +201,17 @@ function boardRows(b) {
     rows.push({ left: `${me.rank}. ${me.name} (you, of ${b.pilots})`, right: boardClock(me.millis), me: true });
   }
   return rows;
+}
+
+// The line under the lists: how many levels all pilots together have
+// landed (the server's `flights`, every level, ever). "" when the server
+// does not say (an older one).
+function boardFlights(b) {
+  const n = b.flights;
+  if (!Number.isSafeInteger(n) || n < 0) return "";
+  if (n === 0) return "No flights landed yet";
+  const digits = String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  return `${digits} flight${n === 1 ? "" : "s"} landed by all pilots`;
 }
 
 // For requests whose answers can come back out of order (a slow list,

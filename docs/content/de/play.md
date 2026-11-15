@@ -187,7 +187,10 @@ wird grau und blinkt kurz.
 Fliegst du nach einem Zusammenstoss wieder, **blinkt** dein Flugzeug
 2 Sekunden lang. Solange es blinkt, bist du geschützt: Was du
 dann berührst, kostet kein Leben. So verlierst du nicht zwei Leben an derselben
-Möwengruppe.
+Möwengruppe. Es fliegt dann wieder mit normaler Fluggeschwindigkeit,
+auch wenn du vorher gebremst hast, und solange es blinkt, kostet auch
+ein Aufschlag am Boden kein Leben: Fällt es nach dem Zusammenstoss bis
+an den Boden, verlierst du nicht gleich alle Leben.
 
 Man sieht den Schaden: Nach dem ersten verlorenen Leben zieht dein
 Flugzeug eine lange graue **Rauchfahne** hinter sich her; nach dem
@@ -360,6 +363,11 @@ Server war nicht erreichbar oder hat den Flug nicht angenommen; in
 deinen Bestzeiten auf diesem Gerät steht er trotzdem. Wie bei den
 Bestzeiten zählen ein «Game over» oder ein verlassener Flug nichts. Ohne
 Internet beim Start eines Flugs zählt dieser Flug nicht online.
+
+Unter der Liste steht, wie viele Flüge alle zusammen schon gelandet
+haben («1,234 flights landed by all pilots»), in allen Levels. Jedes
+geschaffte Level, das der Server nachgeflogen und gezählt hat, ist ein
+Flug.
 
 ## Ton
 

@@ -998,6 +998,10 @@ impl World {
                     return;
                 }
                 self.player.safe_ticks = SAFE_TICKS;
+                // It flies on at cruising speed: the player could not
+                // react while it fell, so it must not stall into the
+                // ground it fell to (a crash costs one life, not all).
+                self.player.airspeed = 1.0;
             }
             CRASH_FALL_SPEED * scale
         } else {
@@ -1061,7 +1065,12 @@ impl World {
             self.player.vel_y = 0.0; // at the edge: no speed piles up
         }
         // Sagging without lift into the ground: it crashes and explodes.
-        if hit_ground && self.player.is_stalling() && self.explosion.is_none() && !self.hands_off()
+        // Not while it blinks after a crash: it may just have fallen there.
+        if hit_ground
+            && self.player.is_stalling()
+            && !self.player.is_safe()
+            && self.explosion.is_none()
+            && !self.hands_off()
         {
             self.break_apart();
         }
@@ -1618,6 +1627,38 @@ mod tests {
         assert!(!w.player.is_safe());
         assert_eq!(crash(&mut w), [Event::Crash], "safe time is over");
         assert_eq!(w.lives, LIVES - 2);
+    }
+
+    #[test]
+    fn a_crash_while_slow_does_not_blow_up_the_plane_at_the_ground() {
+        // Braking hard (stalling), it hits something: the plane falls to
+        // the ground out of control. It flies on at cruising speed then,
+        // and while it blinks, stalling into the ground costs nothing
+        // either, even with the brake held all along: one crash costs one
+        // life.
+        let mut w = world_with_plane_ahead(300.0);
+        w.player.airspeed = AIRSPEED_RANGE.0;
+        assert!(crash(&mut w).contains(&Event::Crash));
+        let mut events = Vec::new();
+        for _ in 0..CRASH_TICKS {
+            w.tick(&Input::with_throttle(0.0, -1.0));
+            events.extend_from_slice(w.events());
+        }
+        assert!(!w.player.is_crashed() && w.player.is_safe());
+        // Back at cruising speed (1.0); the brake held has just begun to
+        // slow it again.
+        assert!(w.player.airspeed > 0.98, "{}", w.player.airspeed);
+        assert!(!w.player.is_stalling());
+        let bottom = w.bounds.height - PLAYER_HALF_HEIGHT * w.bounds.plane_depth(w.bounds.height);
+        assert!(w.player.pos.y >= bottom - 1.0, "fell to the ground");
+        for _ in 0..SAFE_TICKS - 1 {
+            w.tick(&Input::with_throttle(0.0, -1.0));
+            events.extend_from_slice(w.events());
+        }
+        assert!(w.player.is_stalling(), "the brake held: stalling again");
+        assert_eq!(w.lives, LIVES - 1);
+        assert_eq!(w.explosion, None);
+        assert!(!events.contains(&Event::Explosion), "{events:?}");
     }
 
     #[test]

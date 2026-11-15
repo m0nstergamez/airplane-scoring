@@ -178,7 +178,10 @@ blinks for a moment.
 
 When you fly again after a crash, your plane **blinks** for 2 seconds.
 While it blinks you are safe: nothing you touch costs a life then. So you do not
-lose two lives to the same flock of gulls.
+lose two lives to the same flock of gulls. It flies at normal airspeed
+again, even if you were braking before, and while it blinks, hitting
+the ground costs no life either: if it fell all the way to the ground
+after the crash, you do not lose all your lives at once.
 
 You can see the damage: after the first lost life your plane trails a
 long grey trail of **smoke**; after the second there is much more smoke,
@@ -335,6 +338,10 @@ not be reached or did not take the flight; your best times on this
 device still have it. As with the best times, a game over or a flight you
 leave counts nothing. Without internet when you start a flight, that
 flight is not counted online.
+
+Under the list it says how many flights everybody together has landed
+so far ("1,234 flights landed by all pilots"), in all levels. Every
+completed level that the server flew again and counted is one flight.
 
 ## Sound
 
