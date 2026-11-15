@@ -419,6 +419,27 @@ then publishes the page, which points at it. To set it up once (already done):
 
 To deploy by hand, run `fly deploy --ha=false` again.
 
+The database is backed up twice:
+
+- **Snapshots:** Fly copies the whole volume every day and keeps the
+  copies for 30 days (`snapshot_retention` in `fly.toml`; `fly volumes
+  snapshots list <id>` shows them). To go back, make a new volume from
+  one (`fly volumes create leaderboard_data --snapshot-id <id>`).
+- **Backups by hand:** `scripts/board-db.sh` copies the live database to
+  `backups/` on your computer. The folder is gitignored: it holds names
+  and token hashes, keep it out of the repo.
+
+| What | Command |
+|---|---|
+| Copy the database here | `scripts/board-db.sh backup` |
+| Look something up (read-only) | `scripts/board-db.sh sql "SELECT ..."` |
+| Change something (backup first) | `scripts/board-db.sh write "DELETE ..."` |
+| Put a backup back (asks first) | `scripts/board-db.sh restore backups/<file>` |
+
+Change the database by hand only with `write` or `restore`: both make a
+backup first, so the state from just before is always there. To try a
+command, run it with `BOARD_HOST=stage` against the stage.
+
 ### Test first
 
 New rules are written in three steps:

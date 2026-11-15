@@ -1101,6 +1101,31 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
   Level kamen, waren zu schnell und passen nicht mehr.
   Tests: `every_level_starts_at_the_same_speed`,
   `a_level_takes_as_long_after_next_level_as_started_directly`.
+- Die unfairen Zeiten wurden von Hand vom Board entfernt, gewünscht:
+  Jede Bestzeit wurde ihrem Flug zugeordnet (gleicher Pilot, die Levels
+  und das Zeitfenster des Flugs), und die 16 aus Flügen, die in einem
+  früheren Level begannen, wurden gelöscht; 13 blieben. Ohne `sqlite3`
+  auf der Maschine hiess das: eine heruntergeladene Kopie ändern, die
+  Datei tauschen und den Server neu starten. Nebenwirkung: Der Server
+  behält eine Zeit pro Pilot und Level, also ist eine langsamere faire
+  Zeit, die ein Durchflug ersetzt hatte, auch weg.
+- Ein einfacher Plan für Backups der Datenbank der Bestenliste, gewünscht:
+  - Flys tägliche Snapshots des Volumes bleiben 30 statt 5 Tage
+    (`fly volumes update --snapshot-retention 30`, und
+    `snapshot_retention` in `fly.toml` für ein neues Volume).
+  - Das Image hat jetzt `sqlite3` (etwa 3 MB), und
+    `scripts/board-db.sh` macht `backup` (`.backup` auf der Maschine,
+    sicher während der Server läuft, dann nach `backups/` geladen und
+    mit `integrity_check` geprüft), `sql` (nur lesen), `write` (zuerst
+    ein Backup) und `restore` (zuerst ein Backup, fragt; `.restore`
+    nimmt SQLites Sperre, also braucht der laufende Server keinen
+    Neustart). Gegen die Stage ausprobiert, mit `BOARD_HOST=stage`.
+  - Vorerst nicht gewählt: ein Backup ausserhalb von Fly durch CI
+    (Artifacts eines öffentlichen Repos kann jeder GitHub-Nutzer
+    herunterladen, und die Datenbank enthält Namen und Token-Hashes) und
+    Litestream (laufende Kopie in einen Bucket: ein zweiter Prozess, ein
+    Bucket und ein Secret). Lohnt sich, sobald ein verlorener Tag weh
+    täte.
 
 ## Konzepte
 

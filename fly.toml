@@ -23,6 +23,10 @@ primary_region = "fra"         # Frankfurt; the volume must be in the same regio
 [[mounts]]
   source = "leaderboard_data"
   destination = "/data"
+  # Fly snapshots the volume daily; keep them a month (for a volume made
+  # before, set by hand: fly volumes update <id> --snapshot-retention 30).
+  # Backups by hand: scripts/board-db.sh.
+  snapshot_retention = 30
 
 [http_service]
   internal_port = 8080

@@ -442,6 +442,28 @@ veröffentlicht erst dann die Seite, die auf ihn zeigt. So richtest du ihn einma
 
 Von Hand einspielen: wieder `fly deploy --ha=false`.
 
+Die Datenbank wird zweifach gesichert:
+
+- **Snapshots:** Fly kopiert jeden Tag das ganze Volume und bewahrt die
+  Kopien 30 Tage auf (`snapshot_retention` in `fly.toml`; `fly volumes
+  snapshots list <id>` zeigt sie). Zurück gehst du mit einem neuen Volume
+  daraus (`fly volumes create leaderboard_data --snapshot-id <id>`).
+- **Backups von Hand:** `scripts/board-db.sh` kopiert die laufende
+  Datenbank nach `backups/` auf deinem Computer. Der Ordner ist
+  gitignored: Er enthält Namen und Token-Hashes, halte ihn aus dem Repo.
+
+| Was | Befehl |
+|---|---|
+| Datenbank hierher kopieren | `scripts/board-db.sh backup` |
+| Etwas nachschauen (nur lesen) | `scripts/board-db.sh sql "SELECT ..."` |
+| Etwas ändern (zuerst ein Backup) | `scripts/board-db.sh write "DELETE ..."` |
+| Ein Backup zurückspielen (fragt zuerst) | `scripts/board-db.sh restore backups/<datei>` |
+
+Ändere die Datenbank von Hand nur mit `write` oder `restore`: Beide
+machen zuerst ein Backup, so ist der Stand von kurz vorher immer da. Zum
+Ausprobieren startest du einen Befehl mit `BOARD_HOST=stage` gegen die
+Stage.
+
 ### Zuerst der Test
 
 Neue Regeln entstehen in drei Schritten:

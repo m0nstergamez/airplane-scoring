@@ -9,3 +9,5 @@ art/levels/*/photo.*
 web/version.txt
 # The leaderboard server's database (crates/server).
 *.sqlite
+# Its backups (scripts/board-db.sh): player names and token hashes.
+/backups/
