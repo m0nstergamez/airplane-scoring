@@ -419,6 +419,42 @@ then publishes the page, which points at it. To set it up once (already done):
 
 To deploy by hand, run `fly deploy --ha=false` again.
 
+The database is backed up twice:
+
+- **Snapshots:** Fly copies the whole volume every day and keeps the
+  copies for 30 days (`snapshot_retention` in `fly.toml`; `fly volumes
+  snapshots list <volume id>` shows them). Going back to one takes a
+  new volume and a new machine on it (steps below).
+- **Backups by hand:** `scripts/board-db.sh` copies the live database to
+  `backups/` on your computer. The folder is gitignored: it holds names
+  and token hashes, keep it out of the repo.
+
+| What | Command |
+|---|---|
+| Copy the database here | `scripts/board-db.sh backup` |
+| Look something up (read-only) | `scripts/board-db.sh sql "SELECT ..."` |
+| Change something (backup first) | `scripts/board-db.sh write "DELETE ..."` |
+| Put a backup back (asks first, restarts the server) | `scripts/board-db.sh restore backups/<file>` |
+
+Change the database by hand only with `write` or `restore`: both make a
+backup first and change nothing if it fails, so the state from just
+before is always there. `write` is all or nothing: if one statement
+fails, none counts. To try a command, run it with `BOARD_HOST=stage`
+against the stage.
+
+To go back to a snapshot (when the volume itself is lost or broken):
+
+1. Run `scripts/board-db.sh backup`, if the server still answers.
+2. Find the snapshot: `fly volumes list` (the volume's id), then
+   `fly volumes snapshots list <volume id>`.
+3. Make a volume from it:
+   `fly volumes create leaderboard_data --snapshot-id <snapshot id> --region fra`.
+4. Start a machine on it: `fly machine clone <machine id> --attach-volume <new volume id>:/data`
+   (`fly machine list` shows the machine's id).
+5. Remove the old machine: `fly machine destroy <old machine id> --force`.
+   Keep the old volume until the board looks right, then
+   `fly volumes destroy <old volume id>`.
+
 ### Test first
 
 New rules are written in three steps:

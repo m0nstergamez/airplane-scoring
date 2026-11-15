@@ -216,7 +216,8 @@ art/levels/levelN/    background.svg (source) + local photo.* (gitignored)
 scripts/              check.sh, check-docs.sh, check-mermaid.sh, check-determinism.sh, shot.sh, cdp_shot.py, dev.sh, watch.sh, build-web.sh, stamp-build.sh, serve.sh,
                       docs.sh, vendor-js.sh, make-sounds.py, make-backgrounds.sh, make-qr.py,
                       stage.sh (leaderboard stage in an OrbStack VM, or STAGE_HOST=docker as in CI: up, e2e, e2e-browser, logs, reset, down),
-                      set-board-api.sh, find-chrome.sh
+                      set-board-api.sh, find-chrome.sh,
+                      board-db.sh (the Fly database: backup, sql, write, restore; backups/ is gitignored)
 docs/specs/           designs not built yet (English only), index in docs/specs/README.md
 docs/                 README.md + README.de.md = project notes (en/de);
                       docs/content/{de,en} = manual;

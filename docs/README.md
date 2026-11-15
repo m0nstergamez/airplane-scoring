@@ -992,6 +992,34 @@ that isn't code here. Keep entries short and dated.
   came from an earlier level were too fast and do not fit any more.
   Tests: `every_level_starts_at_the_same_speed`,
   `a_level_takes_as_long_after_next_level_as_started_directly`.
+- The unfair times were removed from the board by hand, asked for:
+  each best time was matched to its run (same pilot, the run's level
+  range and time window), and the 16 from runs that started in an
+  earlier level were deleted; 13 stayed. With no `sqlite3` on the
+  machine this meant editing a downloaded copy, swapping the file and
+  restarting the server. Side effect: the server keeps one time per
+  pilot and level, so a slower fair time that a through-flight had
+  replaced is gone too.
+- A simple backup plan for the leaderboard database, asked for:
+  - Fly's daily volume snapshots are kept 30 days instead of 5
+    (`fly volumes update --snapshot-retention 30`, and
+    `snapshot_retention` in `fly.toml` for a new volume).
+  - The image has `sqlite3` now (about 3 MB), and
+    `scripts/board-db.sh` does `backup` (`.backup` on the machine, safe
+    while the server runs, then downloaded to `backups/` and checked
+    with `integrity_check`), `sql` (read-only), `write` (backup first)
+    and `restore` (backup first, asks, then restarts the server so it
+    sets up its tables again). Without a sound backup (not empty,
+    `integrity_check`, the server's tables) nothing is changed; `write`
+    runs in one transaction; `sql` and `write` use sqlite3's safe mode
+    (no `.system`, no `ATTACH`); copies left in the machine's `/tmp` are
+    removed on exit. Tried against the stage with `BOARD_HOST=stage`,
+    also each way it should fail.
+  - Not taken for now: a backup off Fly by CI (artifacts of a public
+    repo can be downloaded by any GitHub user, and the database holds
+    names and token hashes) and Litestream (continuous replication to
+    a bucket: a second process, a bucket and a secret). Worth it once a
+    lost day would hurt.
 
 ## Concepts
 
