@@ -366,6 +366,16 @@ server when it publishes the page (`scripts/set-board-api.sh`). Every
 change to `core` that changes how a flight goes also changes replays:
 the server must be deployed with the same `core` as the published game.
 
+For every replay the server writes one line into its log (`fly logs -a
+airplane-scoring-board`): the pilot, the run, its start level, the time
+the game showed (`?shown=`, only for this line) and what counted, or why
+it was refused. If the time flown on the server is not the one the game
+showed, the line ends in `DIFFERS`:
+
+```
+replay run=3f9c2a71 pilot="Geoport" start=5 shown=63067 counted L5 63067 ms (rank 2 of 9 best)
+```
+
 The server's settings come from the environment: `PORT` (8787),
 `DB_PATH` (`leaderboard.sqlite`, an SQLite file) and `ALLOWED_ORIGINS`
 (the pages that may call it, comma separated). GitHub Pages only serves

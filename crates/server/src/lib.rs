@@ -12,9 +12,12 @@
 //! - `PUT /v1/players/me`: `{ "name": .. }`, the name on the board.
 //! - `POST /v1/runs`: `{ "level": 1 }` (the level the flight starts in).
 //!   Returns a run id and the seed to fly with.
-//! - `POST /v1/runs/{id}/replay`: the replay bytes so far, sent at every
-//!   "Level complete". Returns the levels it landed that were not
-//!   counted for this run before, each with the pilot's rank.
+//! - `POST /v1/runs/{id}/replay?shown=61450`: the replay bytes so far,
+//!   sent at every "Level complete". Returns the levels it landed that
+//!   were not counted for this run before, each with the pilot's rank.
+//!   `shown` (optional): the time the game showed, only for the log
+//!   line each replay gets (`replay_line`); what counts is the time
+//!   flown here.
 //! - `GET /v1/leaderboard?level=1&limit=10`: the fastest pilots of a
 //!   level, and where the asking pilot stands (if a token came along).
 //! - `GET /health`: "ok", without touching the database (for Fly's
@@ -378,11 +381,104 @@ struct Replayed {
     over: bool,
 }
 
+#[derive(Deserialize)]
+struct ReplayQuery {
+    /// The time the game showed at "Level complete", in ms. Text, so a
+    /// wrong one only makes "?" in the log, never a refused replay.
+    shown: Option<String>,
+}
+
 async fn send_replay(
     State(state): State<Shared>,
     pilot: Pilot,
     Path(run_id): Path<String>,
+    Query(query): Query<ReplayQuery>,
     body: Bytes,
+) -> Api<Replayed> {
+    let mut start = None;
+    let result = fly_replay(&state, &pilot, &run_id, body, &mut start).await;
+    let name: Option<String> = state
+        .db()
+        .query_row(
+            "SELECT name FROM players WHERE id = ?1",
+            params![pilot.id],
+            |r| r.get(0),
+        )
+        .optional()
+        .unwrap_or(None);
+    let outcome = match &result {
+        Ok(Json(r)) => Ok(&r.levels[..]),
+        Err(e) => Err(e.1.as_str()),
+    };
+    println!(
+        "{}",
+        replay_line(
+            &run_id,
+            name.as_deref(),
+            start,
+            query.shown.and_then(|t| t.parse().ok()),
+            outcome
+        )
+    );
+    result
+}
+
+/// One line in the server's log per replay (`fly logs`), so a time a
+/// pilot reports can be checked: who, which run and start level, the
+/// time the game showed against the time flown here, or why it was
+/// refused. A difference is marked: the game and the server should
+/// always fly the same.
+fn replay_line(
+    run_id: &str,
+    name: Option<&str>,
+    start: Option<u32>,
+    shown: Option<u64>,
+    outcome: Result<&[Counted], &str>,
+) -> String {
+    // From the URL: only its first letters and digits, so nobody can
+    // write lines of their own into the log.
+    let run: String = run_id
+        .chars()
+        .filter(char::is_ascii_alphanumeric)
+        .take(8)
+        .collect();
+    let name = name.unwrap_or("?");
+    let start = start.map_or("?".into(), |l| l.to_string());
+    let shown_text = shown.map_or("?".into(), |ms| ms.to_string());
+    let head = format!("replay run={run} pilot={name:?} start={start} shown={shown_text}");
+    match outcome {
+        Err(why) => format!("{head} refused: {why}"),
+        Ok([]) => format!("{head} counted nothing"),
+        Ok(levels) => {
+            let counted: Vec<String> = levels
+                .iter()
+                .map(|c| {
+                    let best = if c.new_best { " best" } else { "" };
+                    format!(
+                        "L{} {} ms (rank {} of {}{best})",
+                        c.level, c.millis, c.rank, c.pilots
+                    )
+                })
+                .collect();
+            // The game sends the time of the level it just completed:
+            // the last one counted.
+            let differs = match (shown, levels.last()) {
+                (Some(ms), Some(last)) if ms != last.millis => {
+                    format!(" DIFFERS: shown {ms}, flown here {}", last.millis)
+                }
+                _ => String::new(),
+            };
+            format!("{head} counted {}{differs}", counted.join(", "))
+        }
+    }
+}
+
+async fn fly_replay(
+    state: &Shared,
+    pilot: &Pilot,
+    run_id: &str,
+    body: Bytes,
+    start_level: &mut Option<u32>,
 ) -> Api<Replayed> {
     let refuse = |why: &str| ApiError::new(StatusCode::UNPROCESSABLE_ENTITY, why);
     let now = now_ms();
@@ -397,6 +493,7 @@ async fn send_replay(
         .optional()?;
     let (level, seed, started_ms, counted, last_steps) =
         run.ok_or_else(|| ApiError::new(StatusCode::NOT_FOUND, "no such run"))?;
+    *start_level = Some(level);
     if now - started_ms > RUN_MAX_AGE_MS {
         return Err(refuse("this run is too old"));
     }
@@ -601,6 +698,55 @@ async fn leaderboard(
 
 #[cfg(test)]
 mod tests {
+    use super::{replay_line, Counted};
+
+    fn counted(level: u32, millis: u64) -> Counted {
+        Counted {
+            level,
+            millis,
+            new_best: true,
+            best_millis: millis as i64,
+            rank: 2,
+            pilots: 9,
+        }
+    }
+
+    #[test]
+    fn a_replay_line_says_what_was_shown_and_what_counted() {
+        let levels = [counted(5, 63067)];
+        assert_eq!(
+            replay_line("abcdef1234567890", Some("Geoport"), Some(5), Some(63067), Ok(&levels)),
+            "replay run=abcdef12 pilot=\"Geoport\" start=5 shown=63067 counted L5 63067 ms (rank 2 of 9 best)"
+        );
+        let line = replay_line("abc", None, Some(4), Some(56000), Ok(&levels));
+        assert!(
+            line.ends_with(" DIFFERS: shown 56000, flown here 63067"),
+            "{line}"
+        );
+        let line = replay_line("abc", None, None, None, Ok(&levels));
+        assert!(
+            line.contains("pilot=\"?\" start=? shown=?") && !line.contains("DIFFERS"),
+            "{line}"
+        );
+    }
+
+    #[test]
+    fn a_replay_line_says_why_it_was_refused_and_cannot_be_split() {
+        assert_eq!(
+            replay_line(
+                "r1",
+                Some("A"),
+                Some(1),
+                Some(1),
+                Err("the replay is of another flight")
+            ),
+            "replay run=r1 pilot=\"A\" start=1 shown=1 refused: the replay is of another flight"
+        );
+        assert!(replay_line("r1", Some("A"), Some(1), None, Ok(&[])).ends_with("counted nothing"));
+        let line = replay_line("x\nreplay fake", Some("a\nb"), None, None, Ok(&[]));
+        assert!(!line.contains('\n'), "{line}");
+    }
+
     use super::*;
 
     #[test]

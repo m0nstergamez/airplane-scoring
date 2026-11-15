@@ -157,7 +157,7 @@ async fn main() {
                 if let Event::LevelComplete { level } = event {
                     page_js::level_complete(level); // unlocks the next level
                     result = Some(record_time(&world));
-                    board.level_complete(level); // off to the leaderboard
+                    board.level_complete(level, world.millis_in_level()); // off to the leaderboard
                     autopilot.tell(|| {
                         format!("level {level} complete in {} ms", world.millis_in_level())
                     });

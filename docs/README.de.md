@@ -1131,6 +1131,18 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
     Litestream (laufende Kopie in einen Bucket: ein zweiter Prozess, ein
     Bucket und ein Secret). Lohnt sich, sobald ein verlorener Tag weh
     täte.
+- Eine Logzeile pro Replay, gewünscht nach einer Meldung («0:56 im Spiel,
+  1:03 in der Bestenliste», Level 5): Die Datenbank konnte das nicht
+  klären, weil der Server die Zeit, die das Spiel zeigte, nie kannte.
+  Jetzt schickt das Spiel sie mit (`?shown=`, das neue letzte Argument
+  von `board_submit`), und der Server schreibt Pilot, Run, Start-Level,
+  gezeigte und gezählte Zeit (oder den Grund der Ablehnung) ins Log,
+  mit `DIFFERS` markiert, wenn sie nicht gleich sind (`replay_line`,
+  getestet; die gezeigte Zeit zählt für nichts, eine falsche gibt nur
+  «?»). Run-IDs aus der URL werden auf Buchstaben und Ziffern gekürzt,
+  damit niemand Zeilen ins Log schreiben kann. Alte Seiten und altes
+  wasm passen weiter zusammen: Fehlt ein Argument, geht einfach kein
+  `shown` mit.
 
 ## Konzepte
 
