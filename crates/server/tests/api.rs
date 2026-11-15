@@ -305,9 +305,14 @@ async fn the_board_counts_every_landed_flight_of_all_pilots() {
     // The same number on every level's board, and for everybody.
     assert_eq!(server.board(1, None).await["flights"], 3);
     assert_eq!(server.board(5, Some(&a)).await["flights"], 3);
-    // The cleanup deletes old runs; the count stays.
-    server.0.time_passes(200 * DAY);
-    server.0.cleanup().expect("cleans up");
+    // Runs go (the cleanup deletes those of idle pilots); the count stays.
+    server
+        .0
+        .db
+        .lock()
+        .expect("the database")
+        .execute("DELETE FROM runs", [])
+        .expect("deletes");
     assert_eq!(server.board(1, None).await["flights"], 3);
 }
 

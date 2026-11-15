@@ -1171,14 +1171,17 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
   alte Runs.
 - Ein Zusammenstoss beendet den Flug nicht mehr, wenn das Flugzeug
   langsam war, eine Fehlermeldung («nach dem ersten verlorenen Leben war
-  Game over», Level 4): Ein abgestürztes Flugzeug fällt 1,5 s lang
-  unkontrolliert, und sein Tempo kehrt in dieser Zeit nur langsam zum
+  Game over», Level 4): Nach einem Zusammenstoss fällt das Flugzeug 1,5 s lang
+  unkontrolliert, und seine Fluggeschwindigkeit kehrt in dieser Zeit nur langsam zur
   normalen zurück (0,5 bis 0,725 bei Vollbremsung, unter 0,75 trägt es
   nicht). Es kam noch ohne Auftrieb am Boden an, genau als man es
   wieder steuern konnte, und ohne Auftrieb am Boden aufzuschlagen
   zerbricht das Flugzeug: alle Leben weg. Jetzt fliegt es nach dem
-  Absturz mit normalem Tempo (1,0) weiter, wie zu Beginn eines Levels.
-  Test: `a_crash_while_slow_does_not_blow_up_the_plane_at_the_ground`.
+  Zusammenstoss mit normaler Fluggeschwindigkeit (1,0) weiter, wie zu
+  Beginn eines Levels, und solange es blinkt (`is_safe`), zerbricht es
+  am Boden nicht (aus dem Review: Wer weiterbremste, hatte nach 0,4 s
+  wieder keinen Auftrieb). Test, mit durchgehend gehaltener Bremse:
+  `a_crash_while_slow_does_not_blow_up_the_plane_at_the_ground`.
   Das ändert, wie solche Flüge verlaufen, also geht der Server mit
   (CI deployt ihn nach dem Merge).
 - Die Bestenliste zeigt, wie viele Flüge alle zusammen gelandet haben,

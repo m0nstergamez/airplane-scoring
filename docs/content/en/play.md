@@ -178,9 +178,10 @@ blinks for a moment.
 
 When you fly again after a crash, your plane **blinks** for 2 seconds.
 While it blinks you are safe: nothing you touch costs a life then. So you do not
-lose two lives to the same flock of gulls. It flies at normal speed
-again, even if you were braking before: if it fell all the way to the
-ground after the crash, that costs no further life.
+lose two lives to the same flock of gulls. It flies at normal airspeed
+again, even if you were braking before, and while it blinks, hitting
+the ground costs no life either: if it fell all the way to the ground
+after the crash, you do not lose all your lives at once.
 
 You can see the damage: after the first lost life your plane trails a
 long grey trail of **smoke**; after the second there is much more smoke,

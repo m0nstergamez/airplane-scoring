@@ -1058,8 +1058,11 @@ that isn't code here. Keep entries short and dated.
   drifts back toward cruising meanwhile (0.5 to 0.725 when braking
   hard, stalling below 0.75). It reached the ground still stalling the
   moment the player got it back, and stalling into the ground breaks
-  the plane apart: every life gone. Now it flies on at cruising speed
-  (1.0) once the crash is over, like at the start of a level. Test:
+  the plane apart: every life gone. Now it flies on at cruising airspeed
+  (1.0) once the crash is over, like at the start of a level, and while
+  it blinks (`is_safe`), stalling into the ground does not break it
+  apart (from the review: holding the brake stalled it again within
+  0.4 s). Test, with the brake held throughout:
   `a_crash_while_slow_does_not_blow_up_the_plane_at_the_ground`. This
   changes how such flights go, so the server goes out with it (CI
   deploys it after the merge).

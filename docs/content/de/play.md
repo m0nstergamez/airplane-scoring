@@ -187,9 +187,10 @@ wird grau und blinkt kurz.
 Fliegst du nach einem Zusammenstoss wieder, **blinkt** dein Flugzeug
 2 Sekunden lang. Solange es blinkt, bist du geschützt: Was du
 dann berührst, kostet kein Leben. So verlierst du nicht zwei Leben an derselben
-Möwengruppe. Es fliegt dann wieder mit normalem Tempo, auch wenn du
-vorher gebremst hast: Fällt es nach dem Zusammenstoss bis an den Boden,
-kostet das kein weiteres Leben.
+Möwengruppe. Es fliegt dann wieder mit normaler Fluggeschwindigkeit,
+auch wenn du vorher gebremst hast, und solange es blinkt, kostet auch
+ein Aufschlag am Boden kein Leben: Fällt es nach dem Zusammenstoss bis
+an den Boden, verlierst du nicht gleich alle Leben.
 
 Man sieht den Schaden: Nach dem ersten verlorenen Leben zieht dein
 Flugzeug eine lange graue **Rauchfahne** hinter sich her; nach dem

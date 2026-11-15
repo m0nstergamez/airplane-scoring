@@ -1133,6 +1133,7 @@
         const ticket = latest.next();
         for (const tab of tabs.children) tab.setAttribute("aria-pressed", String(Number(tab.dataset.boardLevel) === level));
         lists.textContent = "Loading...";
+        flights.textContent = ""; // only ever the count of this answer
         try {
           const b = await board.call("GET", `/v1/leaderboard?level=${level}&limit=10`);
           if (!latest.current(ticket)) return;

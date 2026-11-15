@@ -888,10 +888,12 @@ async fn fly_replay(
         // Sent twice at the same moment: the other one counted.
         return Err(ApiError::new(StatusCode::CONFLICT, "already counted"));
     }
-    tx.execute(
-        "UPDATE stats SET flights = flights + ?1 WHERE id = 1",
-        [new.len()],
-    )?;
+    if !new.is_empty() {
+        tx.execute(
+            "UPDATE stats SET flights = flights + ?1 WHERE id = 1",
+            [new.len()],
+        )?;
+    }
     for done in new {
         let millis = done.millis as i64;
         let before: Option<i64> = tx
