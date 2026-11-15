@@ -203,15 +203,16 @@ function boardRows(b) {
   return rows;
 }
 
-// The line under the lists: how many levels all pilots together have
-// landed (the server's `flights`, every level, ever). "" when the server
-// does not say (an older one).
+// The end of the leaderboard's title ("Leaderboard: fastest levels, total
+// 48 flights landed"): how many levels all pilots together have landed
+// (the server's `flights`, every level, ever). In the title, not a line
+// of its own: on a phone every line counts. "" when the server does not
+// say (an older one).
 function boardFlights(b) {
   const n = b.flights;
   if (!Number.isSafeInteger(n) || n < 0) return "";
-  if (n === 0) return "No flights landed yet";
   const digits = String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-  return `${digits} flight${n === 1 ? "" : "s"} landed by all pilots`;
+  return `, total ${digits} flight${n === 1 ? "" : "s"} landed`;
 }
 
 // For requests whose answers can come back out of order (a slow list,

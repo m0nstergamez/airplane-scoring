@@ -1077,6 +1077,11 @@ that isn't code here. Keep entries short and dated.
   still know (`SUM(runs.counted)`). `GET /v1/leaderboard` returns it as
   `flights`, the same for every level; an older server without it shows
   no line.
+- The flight count moved into the leaderboard's title, asked for:
+  "Leaderboard: fastest levels, total 48 flights landed". Its own line
+  under the list pushed the name field down, which made it hard to type
+  a name in Safari on an iPhone. An older server without the count
+  leaves the title as before.
 
 ## Concepts
 
