@@ -152,8 +152,9 @@ nicht steuern. Danach fliegst du wieder.
 
 ## Tempo, Overspeed und Pull up
 
-Neben dem Tempo, das mit deiner Flugzeit langsam steigt, stellst du selbst
-ein, wie schnell du fliegst. Oben links zeigt die Anzeige «SPEED» dein
+Neben dem Tempo, das mit deiner Zeit im Level langsam steigt (jedes Level
+beginnt wieder beim gleichen Tempo, so ist seine Zeit ein faires
+Rennen), stellst du selbst ein, wie schnell du fliegst. Oben links zeigt die Anzeige «SPEED» dein
 Tempo: gelb ist zu langsam, grün ist gut, rot ist zu schnell. Gibst du
 kein Gas und bremst nicht, kommst du langsam zurück aufs normale Tempo.
 

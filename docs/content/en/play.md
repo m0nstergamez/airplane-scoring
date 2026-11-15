@@ -143,8 +143,9 @@ and ignores the controls for a moment (1.5 seconds). Then you fly again.
 
 ## Speed, overspeed and pull up
 
-Besides the speed that slowly rises with your flight time, you set how fast
-you fly yourself. At the top left, the "SPEED" gauge shows it: amber
+Besides the speed that slowly rises with your time in the level (every
+level starts at the same speed again, so its time is a fair race), you
+set how fast you fly yourself. At the top left, the "SPEED" gauge shows it: amber
 is too slow, green is fine, red is too fast. With no gas and no brake
 you slowly return to normal speed.
 

@@ -205,9 +205,10 @@ pub const DAMAGE_SMOKE: [f32; 3] = [0.0, 0.5, 1.0];
 /// phone; it grows with the screen). It fades out over the explosion.
 pub const SHAKE_PX: f32 = 10.0;
 
-/// The game speeds up a little with every point: the landscape and
-/// everything in it slide past this much faster per point (0.1 %: after
-/// a minute, 120 points, about 12 % faster).
+/// The game speeds up a little with every second flown in a level: the
+/// landscape and everything in it slide past this much faster per second
+/// (0.2 %: after a minute about 12 % faster). Starts again at 1 with
+/// every level ([`World::speed_up`]).
 pub const SPEED_PER_SECOND: f32 = 0.002;
 /// It never gets faster than this (1 = the start).
 pub const MAX_SPEED: f32 = 1.5;
@@ -660,12 +661,19 @@ impl World {
         )
     }
 
-    /// How fast the game goes now: 1 at the start, a little faster with
-    /// every second flown ([`SPEED_PER_SECOND`], at most [`MAX_SPEED`]), times the
-    /// airspeed you set with the throttle.
+    /// How fast the game goes now: the speed-up ([`World::speed_up`])
+    /// times the airspeed you set with the throttle.
     pub fn speed(&self) -> f32 {
-        let flown = (1.0 + SPEED_PER_SECOND * self.seconds_flown() as f32).min(MAX_SPEED);
-        flown * self.player.airspeed * self.rolling()
+        self.speed_up() * self.player.airspeed * self.rolling()
+    }
+
+    /// The speed-up: 1 at the start of every level, a little faster with
+    /// every second flown in it ([`SPEED_PER_SECOND`], at most
+    /// [`MAX_SPEED`]). Per level, not per flight, so a level's time is the
+    /// same race whether the flight started in it or came from the one
+    /// before (fair best times and leaderboard).
+    pub fn speed_up(&self) -> f32 {
+        (1.0 + SPEED_PER_SECOND * self.seconds_in_level() as f32).min(MAX_SPEED)
     }
 
     /// Start this flight on the airport's runway (the game does this for
@@ -849,15 +857,15 @@ impl World {
         self.is_over() && self.over_ticks as f32 * TICK_SECONDS >= RESTART_WAIT_SECONDS
     }
 
-    /// Full seconds flown in this flight, all levels together (the game
-    /// speeds up with them, see [`World::speed`]). Stands still at "Level
+    /// Full seconds flown in this flight, all levels together. Stands still at "Level
     /// complete" and game over, since time stands still then.
     pub fn seconds_flown(&self) -> u64 {
         self.ticks / TICKS_PER_SECOND
     }
 
     /// Full seconds flown in the level now: the clock on screen (see
-    /// [`clock_text`]) and the time for its best times. Starts again at
+    /// [`clock_text`]) and the time for its best times; the game speeds
+    /// up with them ([`World::speed_up`]). Starts again at
     /// 0:00 with every level; stands still like [`World::seconds_flown`].
     pub fn seconds_in_level(&self) -> u64 {
         self.level_ticks / TICKS_PER_SECOND
@@ -1808,7 +1816,7 @@ mod tests {
     }
 
     #[test]
-    fn the_game_speeds_up_a_little_with_every_point() {
+    fn the_game_speeds_up_a_little_with_every_second() {
         let mut w = World::new(PHONE);
         w.lives = u32::MAX;
         assert_eq!(w.speed(), 1.0);
@@ -1820,13 +1828,13 @@ mod tests {
         let start = step(&mut w);
         assert!((start - (SCROLL_SPEED * TICK_SECONDS) as f64).abs() < 1e-6);
         // A minute later: 12 % faster, only a little.
-        w.ticks = 60 * 60; // one minute of ticks
-        assert_eq!(w.seconds_flown(), 60);
+        w.level_ticks = 60 * 60; // one minute of ticks in this level
+        assert_eq!(w.seconds_in_level(), 60);
         assert!((w.speed() - 1.12).abs() < 1e-5, "{}", w.speed());
         let later = step(&mut w);
         assert!((later / start - w.speed() as f64).abs() < 0.01);
         // It stops getting faster.
-        w.ticks = 3600 * 60; // an hour
+        w.level_ticks = 3600 * 60; // an hour
         assert_eq!(w.speed(), MAX_SPEED);
     }
 
@@ -1835,7 +1843,7 @@ mod tests {
         let moved = |ticks: u64| {
             let mut w = World::new(PHONE);
             w.lives = u32::MAX;
-            w.ticks = ticks;
+            w.level_ticks = ticks;
             w.huts.list.push(Hut {
                 x: 600.0,
                 width: 100.0,
@@ -2093,7 +2101,31 @@ mod tests {
             w.tick(&Input::NONE);
         }
         assert_eq!(w.seconds_in_level(), 5);
-        assert_eq!(w.seconds_flown(), flown + 5, "the speed-up goes on");
+        assert_eq!(w.seconds_flown(), flown + 5, "the flight goes on");
+    }
+
+    #[test]
+    fn every_level_starts_at_the_same_speed() {
+        // Fair best times: a level flown after "Next level" goes as fast
+        // as one the flight started in, so the speed-up starts again.
+        let mut w = World::with_seed(PHONE, 2);
+        w.lives = u32::MAX;
+        assert_eq!(w.speed_up(), 1.0);
+        while w.level_complete().is_none() {
+            w.balloons.list.clear();
+            w.tick(&Input::NONE);
+        }
+        assert!(w.seconds_flown() >= 60);
+        w.go_on();
+        while w.countdown().is_some() || w.level_complete().is_some() {
+            w.tick(&Input::NONE);
+        }
+        assert_eq!(w.speed_up(), 1.0, "level 2 starts at speed 1 again");
+        for _ in 0..60 * 60 {
+            w.tick(&Input::NONE);
+        }
+        assert_eq!(w.seconds_in_level(), 60);
+        assert!((w.speed_up() - 1.12).abs() < 1e-5, "{}", w.speed_up());
     }
 
     #[test]
