@@ -239,8 +239,9 @@ flowchart LR
   it and, once `World::can_restart` says so, starts a new `World` on a tap.
   The time on screen (`World::seconds_in_level`, shown by `clock_text`
   as "m:ss") follows from the ticks flown in this level, so it stops
-  with them at game over and starts at 0:00 in every level;
-  `World::seconds_flown` counts the whole flight for the speed-up.
+  with them at game over and starts at 0:00 in every level. The
+  speed-up (`World::speed_up`) follows the same clock, so every level
+  starts at speed 1; `World::seconds_flown` counts the whole flight.
   Only "Level complete" records a best time: `World::millis_in_level`
   (shown by `best_time_text` as "m:ss.mmm") goes into `BestTimes`,
   fastest first; a game over or leaving records nothing.
@@ -460,7 +461,7 @@ keeps its size relative to the landscape:
 | `TILT_SMOOTHING` | `crates/core/src/tilt.rs` | smoother (lower) or more direct (higher) tilting |
 | `CRASH_SECONDS` | `crates/core/src/lib.rs` | how long a crashed plane is out of control |
 | `LIVES` | `crates/core/src/lib.rs` | lives at the start of a flight |
-| `SPEED_PER_SECOND` | `crates/core/src/lib.rs` | how much faster the game gets per second flown (`World::speed`, at most `MAX_SPEED`) |
+| `SPEED_PER_SECOND` | `crates/core/src/lib.rs` | how much faster the game gets per second flown in a level (`World::speed_up`, from 1 in every level, at most `MAX_SPEED`) |
 | `AIRSPEED_RANGE` | `crates/core/src/lib.rs` | slowest and fastest airspeed you can set (1 = cruising) |
 | `OVERSPEED_AT` | `crates/core/src/lib.rs` | airspeed above which "Overspeed" warns; after `OVERSPEED_SECONDS` it breaks apart |
 | `STALL_AT` | `crates/core/src/lib.rs` | airspeed below which "Pull up" warns and the plane sags (up to `STALL_SINK`) |

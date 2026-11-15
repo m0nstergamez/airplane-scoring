@@ -973,8 +973,25 @@ that isn't code here. Keep entries short and dated.
   newest request may change the list (`newestOnly`), both tested.
   - Also seen there: a time from a flight that started in level 1 is
     much faster in level 4 than one that started in level 4, as the game
-    speeds up with every second flown (0:50.450 against 1:10.333). Not
-    changed yet.
+    speeds up with every second flown (0:50.450 against 1:10.333).
+    Changed the next day (2026-11-15).
+
+## 2026-11-15
+
+- The speed-up starts again with every level, asked for, so the
+  leaderboard is fair: it counted the whole flight, so a level reached
+  with "Next level" was flown up to 1.4 times faster than the same level
+  started directly (level 4 from level 1: speed 1.39 to 1.5;
+  started there: 1.0 to about 1.12). `World::speed_up` now follows
+  `World::seconds_in_level`, the level's clock, so a time on the board is
+  the same race wherever the flight started; the speed still rises
+  within a level. Considered and not taken: counting only the level a
+  flight started in (makes "Next level" useless online) and scaling the
+  times (a second time to explain next to the clock). Flights that
+  start in a level fly exactly as before; times from flights that
+  came from an earlier level were too fast and do not fit any more.
+  Tests: `every_level_starts_at_the_same_speed`,
+  `a_level_takes_as_long_after_next_level_as_started_directly`.
 
 ## Concepts
 

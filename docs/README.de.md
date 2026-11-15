@@ -1082,7 +1082,25 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
   - Dabei gesehen: Eine Zeit aus einem Flug, der in Level 1 begann, ist
     in Level 4 viel schneller als eine aus einem Flug, der in Level 4
     begann, weil das Spiel mit jeder geflogenen Sekunde schneller wird
-    (0:50.450 gegen 1:10.333). Noch nicht geändert.
+    (0:50.450 gegen 1:10.333). Am nächsten Tag geändert (2026-11-15).
+
+## 2026-11-15
+
+- Das Schnellerwerden beginnt mit jedem Level neu, gewünscht, damit die
+  Bestenliste fair ist: Es zählte den ganzen Flug, also wurde ein Level,
+  das man mit «Next level» erreichte, bis zu 1,4-mal schneller geflogen
+  als dasselbe Level, direkt gestartet (Level 4 ab Level 1: Tempo 1,39
+  bis 1,5; dort gestartet: 1,0 bis etwa 1,12). `World::speed_up`
+  folgt jetzt `World::seconds_in_level`, der Uhr des Levels, also ist
+  eine Zeit auf dem Board dasselbe Rennen, egal wo der Flug begann;
+  innerhalb eines Levels steigt das Tempo weiterhin. Erwogen und nicht
+  gewählt: nur das Start-Level eines Flugs werten (macht «Next level»
+  online nutzlos) und die Zeiten umrechnen (eine zweite Zeit, die man
+  neben der Uhr erklären müsste). Flüge, die in einem Level beginnen,
+  fliegen genau wie vorher; Zeiten aus Flügen, die aus einem früheren
+  Level kamen, waren zu schnell und passen nicht mehr.
+  Tests: `every_level_starts_at_the_same_speed`,
+  `a_level_takes_as_long_after_next_level_as_started_directly`.
 
 ## Konzepte
 

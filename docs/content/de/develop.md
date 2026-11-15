@@ -254,8 +254,9 @@ flowchart LR
   Die Zeit auf dem Bildschirm (`World::seconds_in_level`, von
   `clock_text` als «m:ss» angezeigt) ergibt sich aus den in diesem Level
   geflogenen Ticks, darum bleibt sie bei «Game over» mit ihnen stehen und
-  beginnt in jedem Level bei 0:00; `World::seconds_flown` zählt den
-  ganzen Flug, für das Schnellerwerden.
+  beginnt in jedem Level bei 0:00. Das Schnellerwerden
+  (`World::speed_up`) folgt derselben Uhr, also beginnt jedes Level bei
+  Tempo 1; `World::seconds_flown` zählt den ganzen Flug.
   Nur «Level complete» speichert eine Bestzeit: `World::millis_in_level`
   (von `best_time_text` als «m:ss.mmm» angezeigt) kommt in `BestTimes`,
   die schnellste zuerst; «Game over» oder Verlassen speichert nichts.
@@ -484,7 +485,7 @@ Landschaft:
 | `TILT_SMOOTHING` | `crates/core/src/tilt.rs` | weicheres (kleiner) oder direkteres (grösser) Kippen |
 | `CRASH_SECONDS` | `crates/core/src/lib.rs` | wie lange sich ein Flugzeug nach einem Zusammenstoss nicht steuern lässt |
 | `LIVES` | `crates/core/src/lib.rs` | Leben am Anfang eines Flugs |
-| `SPEED_PER_SECOND` | `crates/core/src/lib.rs` | wie viel schneller das Spiel pro geflogene Sekunde wird (`World::speed`, höchstens `MAX_SPEED`) |
+| `SPEED_PER_SECOND` | `crates/core/src/lib.rs` | wie viel schneller das Spiel pro geflogene Sekunde im Level wird (`World::speed_up`, in jedem Level ab 1, höchstens `MAX_SPEED`) |
 | `AIRSPEED_RANGE` | `crates/core/src/lib.rs` | langsamste und schnellste einstellbare Geschwindigkeit (1 = normal) |
 | `OVERSPEED_AT` | `crates/core/src/lib.rs` | Geschwindigkeit, ab der «Overspeed» warnt; nach `OVERSPEED_SECONDS` bricht es auseinander |
 | `STALL_AT` | `crates/core/src/lib.rs` | Geschwindigkeit, unter der «Pull up» warnt und das Flugzeug absackt (bis `STALL_SINK`) |

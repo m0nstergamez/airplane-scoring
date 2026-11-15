@@ -32,7 +32,7 @@ short **meaning**.
 | Fluggeschwindigkeit | airspeed | `Player::airspeed`, `Input::throttle` | How fast you fly yourself: gas (→/D, tip forward) and brake (←/A, tip back) |
 | Overspeed | overspeed | `Warning::Overspeed`, `OVERSPEED_AT` | Too fast; after a countdown the plane breaks apart. On-screen label and voice stay English |
 | Pull up | pull up | `Warning::PullUp`, `STALL_AT` | Too slow; the plane sags. On-screen label and voice stay English |
-| Tempo | speed | `World::speed`, `SPEED_PER_SECOND` | How fast the landscape comes by; a little faster with every second flown |
+| Tempo | speed | `World::speed`, `World::speed_up`, `SPEED_PER_SECOND` | How fast the landscape comes by; a little faster with every second flown in a level, from the same start in every level |
 | Wackeln | shake | `World::shake`, `SHAKE_PX` | The screen shaking at the explosion |
 | Explosion | explosion | `Event::Explosion`, `explosion.wav` | The plane blowing up when the last life goes |
 | geschützt (blinken) | safe (blinking) | `Player::is_safe`, `SAFE_SECONDS` | After a crash the plane blinks and cannot lose another life |
