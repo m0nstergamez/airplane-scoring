@@ -1083,6 +1083,19 @@ that isn't code here. Keep entries short and dated.
   a name in Safari on an iPhone. An older server without the count
   leaves the title as before.
 
+## 2026-11-19
+
+- One Rust version for everyone, asked for: `rust-toolchain.toml` pins
+  Rust 1.100.0 with clippy, rustfmt and both wasm targets. Before, CI
+  took whatever `stable` was that day and a computer kept the one it
+  last updated to; on 1.97.1 clippy failed `scripts/check.sh` on a test
+  in `sunrise.rs` that CI (1.100.0) let pass. CI now installs from the
+  file (`rustup toolchain install`) instead of
+  `dtolnay/rust-toolchain@stable`, and the server image builds with
+  `rust:1.100.0-slim-bookworm`; `scripts/check.sh` fails when the
+  Dockerfile's tag and the file differ. A new Rust comes in by a PR
+  that changes both.
+
 ## Concepts
 
 ### Tilt: from sensor to steering

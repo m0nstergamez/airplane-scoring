@@ -38,7 +38,7 @@ jobs:
         env:
           BASE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
         run: |
-          paths='^(crates/|web/board\.js$|web/index\.html$|Cargo\.(toml|lock)$|\.cargo/|Dockerfile$|\.dockerignore$|fly\.toml$|scripts/(stage|set-board-api|build-web|find-chrome)\.sh$|scripts/cdp_shot\.py$|\.github/workflows/pages\.yml$)'
+          paths='^(crates/|web/board\.js$|web/index\.html$|Cargo\.(toml|lock)$|\.cargo/|Dockerfile$|rust-toolchain\.toml$|\.dockerignore$|fly\.toml$|scripts/(stage|set-board-api|build-web|find-chrome)\.sh$|scripts/cdp_shot\.py$|\.github/workflows/pages\.yml$)'
           if [ -z "$BASE" ] || [ "$BASE" = 0000000000000000000000000000000000000000 ] \
              || ! git cat-file -e "$BASE^{commit}" 2>/dev/null; then
             server=true  # no base to compare with (manual run, new branch)
@@ -53,10 +53,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: wasm32-unknown-unknown
-          components: clippy, rustfmt
+      # The version, components and targets come from rust-toolchain.toml.
+      - name: Rust (rust-toolchain.toml)
+        run: rustup toolchain install && rustc --version
       - uses: Swatinem/rust-cache@v2
       - name: Core tests
         run: cargo test -p airplane-scoring-core
@@ -96,9 +95,9 @@ jobs:
       STAGE_HOST: docker
     steps:
       - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: wasm32-unknown-unknown, wasm32-wasip1
+      # The version, components and targets come from rust-toolchain.toml.
+      - name: Rust (rust-toolchain.toml)
+        run: rustup toolchain install && rustc --version
       - uses: Swatinem/rust-cache@v2
       - name: Stage up (server image, web build)
         run: scripts/stage.sh up

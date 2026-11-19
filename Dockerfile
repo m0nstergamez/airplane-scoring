@@ -1,6 +1,7 @@
 # The leaderboard server (crates/server) as a small image, e.g. for Fly.io
 # (see fly.toml). The game itself is not in here: it stays on GitHub Pages.
-FROM rust:1-slim-bookworm AS build
+# Same Rust as rust-toolchain.toml (scripts/check.sh compares them).
+FROM rust:1.100.0-slim-bookworm AS build
 # SQLite is compiled into the server, which needs a C compiler.
 RUN apt-get update && apt-get install -y --no-install-recommends build-essential \
     && rm -rf /var/lib/apt/lists/*

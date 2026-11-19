@@ -7,7 +7,9 @@ the browser as WebAssembly. Drawing is done by the
 ## What you need
 
 - A computer with macOS, Linux or Windows
-- [Rust](https://rustup.rs/) (install with `rustup`)
+- [Rust](https://rustup.rs/) (install with `rustup`; the Rust version
+  comes from `rust-toolchain.toml` and installs itself on the first
+  `cargo` command)
 - [Git](https://git-scm.com/)
 - Python 3 (for the local web server)
 - Google Chrome (for automatic screenshots; optional)
@@ -21,7 +23,7 @@ the browser as WebAssembly. Drawing is done by the
 ```sh
 git clone https://github.com/m0nstergamez/airplane-scoring.git
 cd airplane-scoring
-rustup target add wasm32-unknown-unknown
+rustup toolchain install
 ```
 
 ## Run the game

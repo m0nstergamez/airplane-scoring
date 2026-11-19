@@ -1202,6 +1202,20 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
   Eintippen eines Namens in Safari auf dem iPhone erschwerte. Ein
   älterer Server ohne die Zahl lässt den Titel wie bisher.
 
+## 2026-11-19
+
+- Eine Rust-Version für alle, gewünscht: `rust-toolchain.toml` legt
+  Rust 1.100.0 fest, mit clippy, rustfmt und beiden wasm-Zielen. Vorher
+  nahm CI, was an dem Tag `stable` war, und ein Computer behielt die
+  Version seines letzten Updates; mit 1.97.1 liess clippy
+  `scripts/check.sh` an einem Test in `sunrise.rs` scheitern, den CI
+  (1.100.0) durchliess. CI installiert jetzt aus der Datei
+  (`rustup toolchain install`) statt mit
+  `dtolnay/rust-toolchain@stable`, und das Server-Image baut mit
+  `rust:1.100.0-slim-bookworm`; `scripts/check.sh` scheitert, wenn der
+  Tag im Dockerfile und die Datei nicht übereinstimmen. Ein neues Rust
+  kommt mit einem PR, der beides ändert.
+
 ## Konzepte
 
 ### Kippen: vom Sensor zur Steuerung

@@ -17,6 +17,10 @@ A 2D browser game in Rust. Three crates:
 Target: wasm32 in the browser (`web/index.html`), also runs native.
 
 ## Pinned versions — do not drift
+- **Rust = 1.100.0** (`rust-toolchain.toml`: clippy, rustfmt, both wasm
+  targets). rustup uses it locally and CI installs it from the file. The
+  Dockerfile's `FROM rust:1.100.0-…` must match; `scripts/check.sh`
+  checks that. To bump it, change both in one PR and run the full loop.
 - **macroquad = 0.4.16** (exact pin in root `Cargo.toml`). Do not use APIs
   from other versions. If an API you expect is missing, check the local docs
   below before assuming it exists.
