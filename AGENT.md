@@ -19,8 +19,8 @@ Target: wasm32 in the browser (`web/index.html`), also runs native.
 ## Pinned versions — do not drift
 - **Rust = 1.100.0** (`rust-toolchain.toml`: clippy, rustfmt, both wasm
   targets). rustup uses it locally and CI installs it from the file. The
-  Dockerfile's `FROM rust:1.100.0-…` must match; `scripts/check.sh`
-  checks that. To bump it, change both in one PR and run the full loop.
+  Dockerfile's `FROM rust:1.100.0-…` must match;
+  `scripts/check-rust-version.sh` checks that (in `check.sh` and CI). To bump it, change both in one PR and run the full loop.
 - **macroquad = 0.4.16** (exact pin in root `Cargo.toml`). Do not use APIs
   from other versions. If an API you expect is missing, check the local docs
   below before assuming it exists.
@@ -217,7 +217,7 @@ web/qr.svg            QR code to the live game (scripts/make-qr.py)
 web/plane.svg         the plane for the main menu (core's PLANE_* points)
 art/levels/levelN/    background.svg (source) + local photo.* (gitignored)
 .cargo/config.toml    wasm linker flag needed by the audio feature
-scripts/              check.sh, check-docs.sh, check-mermaid.sh, check-determinism.sh, shot.sh, cdp_shot.py, dev.sh, watch.sh, build-web.sh, stamp-build.sh, serve.sh,
+scripts/              check.sh, check-docs.sh, check-rust-version.sh, check-mermaid.sh, check-determinism.sh, shot.sh, cdp_shot.py, dev.sh, watch.sh, build-web.sh, stamp-build.sh, serve.sh,
                       docs.sh, vendor-js.sh, make-sounds.py, make-backgrounds.sh, make-qr.py,
                       stage.sh (leaderboard stage in an OrbStack VM, or STAGE_HOST=docker as in CI: up, e2e, e2e-browser, logs, reset, down),
                       set-board-api.sh, find-chrome.sh,

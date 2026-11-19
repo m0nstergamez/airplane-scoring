@@ -1092,8 +1092,9 @@ that isn't code here. Keep entries short and dated.
   in `sunrise.rs` that CI (1.100.0) let pass. CI now installs from the
   file (`rustup toolchain install`) instead of
   `dtolnay/rust-toolchain@stable`, and the server image builds with
-  `rust:1.100.0-slim-bookworm`; `scripts/check.sh` fails when the
-  Dockerfile's tag and the file differ. A new Rust comes in by a PR
+  `rust:1.100.0-slim-bookworm`; `scripts/check-rust-version.sh`
+  (in `scripts/check.sh` and CI) fails when the Dockerfile's tag and
+  the file differ. A new Rust comes in by a PR
   that changes both.
 
 ## Concepts

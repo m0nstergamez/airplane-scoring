@@ -8,8 +8,8 @@ the browser as WebAssembly. Drawing is done by the
 
 - A computer with macOS, Linux or Windows
 - [Rust](https://rustup.rs/) (install with `rustup`; the Rust version
-  comes from `rust-toolchain.toml` and installs itself on the first
-  `cargo` command)
+  comes from `rust-toolchain.toml`, `rustup toolchain install` below
+  installs it)
 - [Git](https://git-scm.com/)
 - Python 3 (for the local web server)
 - Google Chrome (for automatic screenshots; optional)

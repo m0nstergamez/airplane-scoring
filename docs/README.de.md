@@ -1212,8 +1212,9 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
   (1.100.0) durchliess. CI installiert jetzt aus der Datei
   (`rustup toolchain install`) statt mit
   `dtolnay/rust-toolchain@stable`, und das Server-Image baut mit
-  `rust:1.100.0-slim-bookworm`; `scripts/check.sh` scheitert, wenn der
-  Tag im Dockerfile und die Datei nicht übereinstimmen. Ein neues Rust
+  `rust:1.100.0-slim-bookworm`; `scripts/check-rust-version.sh`
+  (in `scripts/check.sh` und CI) scheitert, wenn der Tag im Dockerfile
+  und die Datei nicht übereinstimmen. Ein neues Rust
   kommt mit einem PR, der beides ändert.
 
 ## Konzepte

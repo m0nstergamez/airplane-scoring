@@ -1,6 +1,6 @@
 # The Rust version for everyone: rustup picks it up locally and in CI, so
 # clippy and the compiler are the same everywhere. Bump it in a PR,
-# together with the `FROM rust:` tag in the Dockerfile (scripts/check.sh
+# together with the `FROM rust:` tag in the Dockerfile (scripts/check-rust-version.sh
 # compares them).
 [toolchain]
 channel = "1.100.0"

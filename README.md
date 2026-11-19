@@ -9,7 +9,7 @@ wasm build, pinned engine version, Claude Code-friendly loop.
 
 ## Setup (once)
 ```
-rustup target add wasm32-unknown-unknown
+rustup toolchain install # the pinned Rust from rust-toolchain.toml
 scripts/docs.sh          # optional: local API docs for the pinned macroquad
 ```
 `web/mq_js_bundle.js` is already in the repo. Only run `scripts/vendor-js.sh`

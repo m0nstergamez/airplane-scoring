@@ -8,8 +8,8 @@ im Browser als WebAssembly. Gezeichnet wird mit der Engine
 
 - Einen Computer mit macOS, Linux oder Windows
 - [Rust](https://rustup.rs/) (Installation mit `rustup`; die Rust-Version
-  steht in `rust-toolchain.toml` und installiert sich beim ersten
-  `cargo`-Befehl selbst)
+  steht in `rust-toolchain.toml`, `rustup toolchain install` unten
+  installiert sie)
 - [Git](https://git-scm.com/)
 - Python 3 (für den lokalen Webserver)
 - Google Chrome (für automatische Screenshots; optional)

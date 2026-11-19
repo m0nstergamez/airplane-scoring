@@ -65,6 +65,8 @@ jobs:
         run: cargo test -p airplane-scoring-server
       - name: wasm and native fly the same
         run: scripts/check-determinism.sh
+      - name: Same Rust in rust-toolchain.toml and Dockerfile
+        run: scripts/check-rust-version.sh
       - name: Manual in sync (de/en)
         run: scripts/check-docs.sh
       - name: Diagrams render (Mermaid)
