@@ -48,6 +48,7 @@ short **meaning**.
 | Backup | backup | `scripts/board-db.sh backup`, `backups/` | A copy of the leaderboard database on the developer's computer, made with SQLite's `.backup` while the server runs. Stays English |
 | Snapshot | snapshot | `fly volumes snapshots list`, `snapshot_retention` | Fly.io's daily copy of the whole volume, kept 30 days. Stays English |
 | Rust-Version | Rust version | `rust-toolchain.toml` | The one Rust compiler and clippy everyone builds with, locally, in CI and in the server image; installed with `rustup toolchain install` |
+| WSL, WSLg | WSL, WSLg | — | Windows Subsystem for Linux: the Ubuntu inside Windows 11 where you develop on Windows; WSLg shows its windows and plays its sound. Stays English |
 | Deploy-Token | deploy token | `FLY_API_TOKEN` | A Fly.io token that can only deploy this one app; kept as a GitHub secret for CI |
 | Replay | replay | `replay.rs`, `Recorder`, `replay()` | A flight written down as its seed (Startwert) and every input, so the server can fly it again and read the time itself |
 | Strecke | distance | `LEVEL_DISTANCE`, `World::level_progress` | How far one level is; more throttle covers it sooner |

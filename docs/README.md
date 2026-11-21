@@ -1097,6 +1097,29 @@ that isn't code here. Keep entries short and dated.
   the file differ. A new Rust comes in by a PR
   that changes both.
 
+## 2026-11-21
+
+- Developing on Windows 11, asked for: a new manual section (Developing
+  → Developing on Windows 11) sets the project up in WSL with Ubuntu
+  26.04.1 LTS (`wsl --install -d Ubuntu-26.04`; plain `Ubuntu` is the
+  same release today), because every script is bash. Tried on a fresh
+  Ubuntu 26.04.1 (amd64, an OrbStack machine standing in for WSL): the
+  apt packages, rustup and `rustup toolchain install`, the full
+  `scripts/check.sh` with Chrome from Google's .deb, and
+  `scripts/make-backgrounds.sh` with apt's ImageMagick 7 (two of five
+  PNGs came out with other bytes, hence the advice to name the level).
+  Node from apt is 22, enough for everything; Ubuntu 24.04's Node 18
+  runs `scripts/check.sh` but not `scripts/stage.sh e2e`
+  (`wasi.getImportObject` is missing), and its ImageMagick 6 has no
+  `magick`. The stage with `STAGE_HOST=docker` passed on Ubuntu 24.04
+  with Node 22. quad-snd opens the ALSA device `default`, which in WSL
+  goes nowhere without `libasound2-plugins` and a `~/.asoundrc` that
+  sends it to WSLg's PulseAudio (checked against a PulseAudio server on
+  its own socket via `PULSE_SERVER`, as WSLg sets it); without it the
+  game runs silently. Not tried on a real Windows computer:
+  `wsl --install`, the window through WSLg, VS Code's WSL extension and
+  Docker Desktop.
+
 ## Concepts
 
 ### Tilt: from sensor to steering

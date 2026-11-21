@@ -6,7 +6,8 @@ im Browser als WebAssembly. Gezeichnet wird mit der Engine
 
 ## Was du brauchst
 
-- Einen Computer mit macOS, Linux oder Windows
+- Einen Computer mit macOS, Linux oder Windows (unter Windows 11 in WSL,
+  siehe [Entwickeln auf Windows 11](#entwickeln-auf-windows-11))
 - [Rust](https://rustup.rs/) (Installation mit `rustup`; die Rust-Version
   steht in `rust-toolchain.toml`, `rustup toolchain install` unten
   installiert sie)
@@ -25,6 +26,81 @@ git clone https://github.com/m0nstergamez/airplane-scoring.git
 cd airplane-scoring
 rustup toolchain install
 ```
+
+## Entwickeln auf Windows 11
+
+Die Hilfsbefehle in `scripts/` sind bash-Skripte. Unter Windows
+arbeitest du deshalb in **WSL** (Windows-Subsystem für Linux): einem
+Ubuntu, das in Windows 11 läuft. Das Projekt, Rust und die Skripte
+liegen in Ubuntu; du spielst in deinem gewohnten Windows-Browser und
+bearbeitest in VS Code:
+
+```mermaid
+flowchart LR
+    subgraph win["Windows 11"]
+        B["Browser (Edge, Chrome)"]
+        V["VS Code"]
+    end
+    subgraph wsl["WSL: Ubuntu"]
+        P["~/airplane-scoring<br/>Rust, Git, Skripte"]
+        S["scripts/dev.sh<br/>Webserver auf Port 8080"]
+        G["cargo run<br/>Fenster und Ton über WSLg"]
+    end
+    V -- "WSL-Erweiterung" --> P
+    P --> S
+    P --> G
+    B -- "localhost:8080" --> S
+```
+
+1. Öffne **PowerShell als Administrator** und starte
+   `wsl --install -d Ubuntu-26.04`. Starte Windows neu, wenn es fragt.
+2. Öffne **Ubuntu** im Startmenü und wähle einen Benutzernamen und ein
+   Passwort (du brauchst es für `sudo`).
+3. Installiere im Ubuntu-Fenster die Werkzeuge:
+
+```sh
+sudo apt update
+sudo apt install -y build-essential curl git python3 nodejs \
+  libasound2-dev libasound2-plugins libgl1 libx11-6 libxi6
+```
+
+4. Installiere Rust mit `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`
+   (Enter für die Voreinstellungen), dann schliesse das Ubuntu-Fenster
+   und öffne es neu.
+5. Klone das Projekt in deinen Ubuntu-Benutzerordner (`cd ~`), **nicht**
+   unter `/mnt/c`, und folge [Einrichten](#einrichten). In den eigenen
+   Ordnern von Ubuntu baut es viel schneller, und die Skripte behalten
+   ihre Linux-Zeilenenden.
+6. Starte `scripts/check.sh --fast`. Wenn es grün ist, starte
+   `scripts/dev.sh` und öffne <http://localhost:8080> in deinem
+   Windows-Browser: WSL reicht die Adresse an Windows weiter.
+7. Editor: Installiere [VS Code](https://code.visualstudio.com/) in
+   Windows mit der Erweiterung **WSL** und tippe `code .` im
+   Projektordner. VS Code arbeitet dann direkt auf den Dateien in Ubuntu.
+8. Für Ton bei `cargo run`: Das Spiel spielt über ALSA, und WSLg (in
+   Windows 11 eingebaut) hat einen PulseAudio-Server. Leite ALSA einmal
+   dorthin mit `printf 'pcm.default pulse\nctl.default pulse\n' > ~/.asoundrc`.
+   Ohne diese Datei geht das Fenster auf, bleibt aber stumm.
+
+Nur für einzelne Schritte:
+
+- **Screenshots** (Schritt 7 von `scripts/check.sh`, `scripts/shot.sh`)
+  und **Diagramme** (`scripts/check-mermaid.sh`) brauchen Chrome in
+  Ubuntu, nicht den in Windows: Lade ihn mit
+  `curl -LO https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb`
+  herunter, dann `sudo apt install -y ./google-chrome-stable_current_amd64.deb`.
+  Ohne Chrome überspringt `scripts/check.sh` den Screenshot.
+- **Stage** (`scripts/stage.sh`): OrbStack gibt es nur für den Mac.
+  Nimm [Docker Desktop](https://www.docker.com/products/docker-desktop/)
+  mit WSL-Integration für dein Ubuntu (Settings → Resources → WSL
+  integration) und setze `STAGE_HOST=docker` vor jeden Befehl, z. B.
+  `STAGE_HOST=docker scripts/stage.sh up`, wie CI.
+- **Level-Hintergründe** (`scripts/make-backgrounds.sh`): Installiere
+  `sudo apt install librsvg2-bin imagemagick` (Ubuntu 26.04 hat
+  ImageMagick 7 mit dem Befehl `magick`). Nenne das Level, das du
+  geändert hast, z. B. `scripts/make-backgrounds.sh level3`: Andere
+  Werkzeugversionen schreiben leicht andere PNGs, und nur dein Level
+  gehört in den Commit.
 
 ## Spiel starten
 

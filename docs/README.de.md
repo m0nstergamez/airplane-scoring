@@ -1217,6 +1217,30 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
   und die Datei nicht übereinstimmen. Ein neues Rust
   kommt mit einem PR, der beides ändert.
 
+## 2026-11-21
+
+- Entwickeln auf Windows 11, gewünscht: Ein neuer Abschnitt im Handbuch
+  (Entwickeln → Entwickeln auf Windows 11) richtet das Projekt in WSL mit
+  Ubuntu 26.04.1 LTS ein (`wsl --install -d Ubuntu-26.04`; das einfache
+  `Ubuntu` ist heute dieselbe Version), weil alle Skripte bash sind.
+  Ausprobiert auf einem frischen Ubuntu 26.04.1 (amd64, eine
+  OrbStack-Maschine an Stelle von WSL): die apt-Pakete, rustup und
+  `rustup toolchain install`, das ganze `scripts/check.sh` mit Chrome
+  aus dem .deb von Google und `scripts/make-backgrounds.sh` mit
+  ImageMagick 7 aus apt (zwei von fünf PNGs kamen mit anderen Bytes
+  heraus, daher der Rat, das Level zu nennen). Node aus apt ist 22 und
+  reicht für alles; Node 18 von Ubuntu 24.04 schafft `scripts/check.sh`,
+  aber nicht `scripts/stage.sh e2e` (`wasi.getImportObject` fehlt), und
+  sein ImageMagick 6 hat kein `magick`. Die Stage mit
+  `STAGE_HOST=docker` lief auf Ubuntu 24.04 mit Node 22 durch. quad-snd
+  öffnet das ALSA-Gerät `default`, das in WSL ins Leere geht ohne
+  `libasound2-plugins` und eine `~/.asoundrc`, die es zum PulseAudio von
+  WSLg schickt (geprüft gegen einen PulseAudio-Server an eigenem Socket
+  über `PULSE_SERVER`, wie WSLg es setzt); ohne sie läuft das Spiel
+  stumm. Nicht auf einem echten Windows-Computer ausprobiert:
+  `wsl --install`, das Fenster über WSLg, die WSL-Erweiterung von VS
+  Code und Docker Desktop.
+
 ## Konzepte
 
 ### Kippen: vom Sensor zur Steuerung
