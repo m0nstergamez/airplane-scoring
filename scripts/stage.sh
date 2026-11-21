@@ -111,6 +111,9 @@ up() {
 
 e2e() {
   command -v node >/dev/null || { echo "e2e needs node (https://nodejs.org)" >&2; exit 1; }
+  # Node 18 (Ubuntu 24.04's apt) has no wasi.getImportObject.
+  [ "$(node -p 'parseInt(process.versions.node)')" -ge 22 ] \
+    || { echo "e2e needs Node 22 or newer, found $(node --version)" >&2; exit 1; }
   if command -v rustup >/dev/null; then rustup target add wasm32-wasip1 >/dev/null 2>&1 || true; fi
   tmp=$(mktemp -d)
   trap 'rm -rf "$tmp"' EXIT

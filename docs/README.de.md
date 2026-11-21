@@ -1245,6 +1245,9 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
   Tests des Seitenskripts und den Vergleich wasm/nativ und meldete
   trotzdem «All checks passed». Jetzt aufgeführt (22 oder neuer, wie
   `scripts/stage.sh e2e` es braucht, siehe oben), mit `brew install node`.
+  `scripts/check.sh` endet jetzt mit einer gelben Liste der Schritte,
+  die nicht liefen, statt «All checks passed», und `scripts/stage.sh e2e`
+  bricht bei Node älter als 22 früh ab.
 
 ## Konzepte
 

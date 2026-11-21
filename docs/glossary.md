@@ -183,6 +183,8 @@ short **meaning**.
 | Entwickeln | developing | — | Changing the game |
 | bauen | build | `scripts/build-web.sh` | Turn the code into the playable game |
 | Prüfungen | checks | `scripts/check.sh` | Tests, formatting, lints, build, screenshot |
+| Seitenskript | page script | `web/board.js`, `tests/web/` | The JavaScript in the page that talks to the leaderboard, tested with Node |
+| Vergleich wasm/nativ | wasm/native check | `scripts/check-determinism.sh` | The same demo flights flown as wasm and natively must give the same replays |
 | Test | test | `#[test]` | Code that checks one rule automatically |
 | rot / grün | red / green | — | Test fails / passes |
 | aufräumen | tidy up | — | Improve code without changing behaviour (refactor) |

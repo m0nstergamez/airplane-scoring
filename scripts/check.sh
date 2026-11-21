@@ -4,6 +4,7 @@
 #   scripts/check.sh --fast   steps 1-3 only (seconds; for tight loops)
 set -euo pipefail
 cd "$(dirname "$0")/.."
+skipped=() # steps that could not run here (they run in CI)
 step() { printf '\n\033[1m==> %s\033[0m\n' "$*"; }
 
 step "1/7 core tests"
@@ -14,6 +15,7 @@ if command -v node >/dev/null; then
   node --test tests/web/*.test.mjs
 else
   echo "(skipped: no node found)"
+  skipped+=("2/7 page script tests (no node)")
 fi
 
 step "3/7 format + clippy + manual sync"
@@ -40,6 +42,7 @@ rc=$?
 set -e
 if [ $rc -eq 2 ]; then
   echo "(skipped: no node found; CI runs it)"
+  skipped+=("5/7 wasm and native fly the same (no node)")
 elif [ $rc -ne 0 ]; then
   exit $rc
 fi
@@ -54,8 +57,16 @@ rc=$?
 set -e
 if [ $rc -eq 2 ]; then
   echo "(skipped: no Chrome found)"
+  skipped+=("7/7 visual (no Chrome)")
 elif [ $rc -ne 0 ]; then
   exit $rc
 fi
 
+# A skipped step is not a passed one: say so instead of the green line.
+if [ ${#skipped[@]} -gt 0 ]; then
+  printf '\n\033[33mChecks passed, but %d step(s) did not run:\033[0m\n' "${#skipped[@]}"
+  printf '  - %s\n' "${skipped[@]}"
+  echo "Install what is missing (the manual, Developing, What you need) or rely on CI."
+  exit 0
+fi
 printf '\n\033[32mAll checks passed.\033[0m Look at target/shots/latest.png\n'

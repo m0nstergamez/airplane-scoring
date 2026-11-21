@@ -1123,7 +1123,9 @@ that isn't code here. Keep entries short and dated.
   without it, `scripts/check.sh` skipped the page script tests and the
   wasm/native check and still said "All checks passed". Now listed
   (22 or newer, as `scripts/stage.sh e2e` needs, see above), with
-  `brew install node`.
+  `brew install node`. `scripts/check.sh` now ends with a yellow list
+  of the steps that did not run instead of "All checks passed", and
+  `scripts/stage.sh e2e` stops early on Node older than 22.
 
 ## Concepts
 
