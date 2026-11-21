@@ -7,7 +7,9 @@ im Browser als WebAssembly. Gezeichnet wird mit der Engine
 ## Was du brauchst
 
 - Einen Computer mit macOS, Linux oder Windows
-- [Rust](https://rustup.rs/) (Installation mit `rustup`)
+- [Rust](https://rustup.rs/) (Installation mit `rustup`; die Rust-Version
+  steht in `rust-toolchain.toml`, `rustup toolchain install` unten
+  installiert sie)
 - [Git](https://git-scm.com/)
 - Python 3 (für den lokalen Webserver)
 - Google Chrome (für automatische Screenshots; optional)
@@ -21,7 +23,7 @@ im Browser als WebAssembly. Gezeichnet wird mit der Engine
 ```sh
 git clone https://github.com/m0nstergamez/airplane-scoring.git
 cd airplane-scoring
-rustup target add wasm32-unknown-unknown
+rustup toolchain install
 ```
 
 ## Spiel starten

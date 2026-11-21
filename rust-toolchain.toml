@@ -1,0 +1,9 @@
+# The Rust version for everyone: rustup picks it up locally and in CI, so
+# clippy and the compiler are the same everywhere. Bump it in a PR,
+# together with the `FROM rust:` tag in the Dockerfile (scripts/check-rust-version.sh
+# compares them).
+[toolchain]
+channel = "1.100.0"
+components = ["clippy", "rustfmt"]
+targets = ["wasm32-unknown-unknown", "wasm32-wasip1"]
+profile = "minimal"

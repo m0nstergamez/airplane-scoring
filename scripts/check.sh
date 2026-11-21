@@ -18,6 +18,7 @@ fi
 
 step "3/7 format + clippy + manual sync"
 scripts/check-docs.sh
+scripts/check-rust-version.sh
 cargo fmt --all --check || { echo "Run: cargo fmt --all" >&2; exit 1; }
 cargo clippy -q --workspace --all-targets -- -D warnings
 cargo clippy -q --target wasm32-unknown-unknown -p airplane-scoring -- -D warnings
