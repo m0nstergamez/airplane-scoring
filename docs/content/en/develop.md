@@ -76,17 +76,21 @@ sudo apt install -y build-essential curl git python3 nodejs \
    VS Code then works directly on the files in Ubuntu.
 8. For sound with `cargo run`: the game plays through ALSA, and WSLg
    (built into Windows 11) has a PulseAudio server. Send ALSA there
-   once with `printf 'pcm.default pulse\nctl.default pulse\n' > ~/.asoundrc`.
-   Without this file the window opens but stays silent.
+   once with `printf 'pcm.default pulse\nctl.default pulse\n' > ~/.asoundrc`
+   (this replaces an `~/.asoundrc` you may already have). Without this
+   file the window opens but stays silent.
 
 Only for some steps:
 
-- **Screenshots** (step 7 of `scripts/check.sh`, `scripts/shot.sh`)
-  and **diagrams** (`scripts/check-mermaid.sh`) need Chrome in Ubuntu,
-  not the one in Windows: download it with
+- **Screenshots** (step 7 of `scripts/check.sh`, `scripts/shot.sh`),
+  **diagrams** (`scripts/check-mermaid.sh`) and
+  `scripts/stage.sh e2e-browser` need Chrome in Ubuntu, not the one in
+  Windows. On a normal (x64) PC download it with
   `curl -LO https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb`,
   then `sudo apt install -y ./google-chrome-stable_current_amd64.deb`.
-  Without Chrome `scripts/check.sh` skips the screenshot.
+  Without Chrome `scripts/check.sh` skips the screenshot. Google has
+  no Chrome for Linux on ARM, so on a Windows ARM laptop these steps
+  are left to CI.
 - **Stage** (`scripts/stage.sh`): OrbStack exists only for the Mac. Use
   [Docker Desktop](https://www.docker.com/products/docker-desktop/) with
   WSL integration for your Ubuntu (Settings → Resources → WSL
@@ -488,7 +492,8 @@ an [OrbStack](https://orbstack.dev/) Linux machine named `stage` (amd64,
 like Fly's machines) runs the real server image from the `Dockerfile`
 and serves the game with `board-api` pointing at it. So the browser's
 wasm makes the replays and an x86-64 Linux server flies them again, as
-in production. It needs OrbStack; `e2e` also needs Node, `e2e-browser`
+in production. It needs OrbStack, or Docker with `STAGE_HOST=docker`
+(see [Developing on Windows 11](#developing-on-windows-11)); `e2e` also needs Node, `e2e-browser`
 Chrome. CI runs the same stage on every pull request that touches the
 server, `core` or the board plugin (`.github/workflows/pages.yml`, about
 five minutes), with `STAGE_HOST=docker`: Docker on the runner itself
