@@ -13,6 +13,9 @@ the browser as WebAssembly. Drawing is done by the
   installs it)
 - [Git](https://git-scm.com/)
 - Python 3 (for the local web server)
+- [Node.js](https://nodejs.org/) 22 or newer (for `scripts/check.sh`: the page
+  script tests and the wasm/native check, which it skips without Node;
+  also for `scripts/stage.sh e2e`; macOS: `brew install node`)
 - Google Chrome (for automatic screenshots; optional)
 - Linux only: the ALSA sound headers for `cargo run` (on Ubuntu:
   `sudo apt install libasound2-dev`)

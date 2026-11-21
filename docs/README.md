@@ -1119,6 +1119,11 @@ that isn't code here. Keep entries short and dated.
   game runs silently. Not tried on a real Windows computer:
   `wsl --install`, the window through WSLg, VS Code's WSL extension and
   Docker Desktop.
+- Node.js in the manual's "What you need", reported missing: on a Mac
+  without it, `scripts/check.sh` skipped the page script tests and the
+  wasm/native check and still said "All checks passed". Now listed
+  (22 or newer, as `scripts/stage.sh e2e` needs, see above), with
+  `brew install node`.
 
 ## Concepts
 

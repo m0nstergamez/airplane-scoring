@@ -13,6 +13,9 @@ im Browser als WebAssembly. Gezeichnet wird mit der Engine
   installiert sie)
 - [Git](https://git-scm.com/)
 - Python 3 (für den lokalen Webserver)
+- [Node.js](https://nodejs.org/) 22 oder neuer (für `scripts/check.sh`: die Tests des
+  Seitenskripts und den Vergleich wasm/nativ, die es ohne Node
+  überspringt; auch für `scripts/stage.sh e2e`; macOS: `brew install node`)
 - Google Chrome (für automatische Screenshots; optional)
 - Nur Linux: die ALSA-Ton-Header für `cargo run` (auf Ubuntu:
   `sudo apt install libasound2-dev`)

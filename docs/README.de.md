@@ -1240,6 +1240,11 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
   stumm. Nicht auf einem echten Windows-Computer ausprobiert:
   `wsl --install`, das Fenster über WSLg, die WSL-Erweiterung von VS
   Code und Docker Desktop.
+- Node.js unter «Was du brauchst» in der Anleitung, als fehlend
+  gemeldet: auf einem Mac ohne Node übersprang `scripts/check.sh` die
+  Tests des Seitenskripts und den Vergleich wasm/nativ und meldete
+  trotzdem «All checks passed». Jetzt aufgeführt (22 oder neuer, wie
+  `scripts/stage.sh e2e` es braucht, siehe oben), mit `brew install node`.
 
 ## Konzepte
 
