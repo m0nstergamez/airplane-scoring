@@ -6,7 +6,8 @@ the browser as WebAssembly. Drawing is done by the
 
 ## What you need
 
-- A computer with macOS, Linux or Windows
+- A computer with macOS, Linux or Windows (on Windows 11 in WSL, see
+  [Developing on Windows 11](#developing-on-windows-11))
 - [Rust](https://rustup.rs/) (install with `rustup`; the Rust version
   comes from `rust-toolchain.toml`, `rustup toolchain install` below
   installs it)
@@ -25,6 +26,81 @@ git clone https://github.com/m0nstergamez/airplane-scoring.git
 cd airplane-scoring
 rustup toolchain install
 ```
+
+## Developing on Windows 11
+
+The helper commands in `scripts/` are bash scripts, so on Windows you
+work in **WSL** (Windows Subsystem for Linux): an Ubuntu that runs
+inside Windows 11. The project, Rust and the scripts live in Ubuntu;
+you play in your usual Windows browser and edit in VS Code:
+
+```mermaid
+flowchart LR
+    subgraph win["Windows 11"]
+        B["Browser (Edge, Chrome)"]
+        V["VS Code"]
+    end
+    subgraph wsl["WSL: Ubuntu"]
+        P["~/airplane-scoring<br/>Rust, Git, scripts"]
+        S["scripts/dev.sh<br/>web server on port 8080"]
+        G["cargo run<br/>window and sound via WSLg"]
+    end
+    V -- "WSL extension" --> P
+    P --> S
+    P --> G
+    B -- "localhost:8080" --> S
+```
+
+1. Open **PowerShell as administrator** and run
+   `wsl --install -d Ubuntu-26.04`. Restart Windows when it asks.
+2. Open **Ubuntu** from the Start menu and choose a user name and a
+   password (you need it for `sudo`).
+3. In the Ubuntu window, install the tools:
+
+```sh
+sudo apt update
+sudo apt install -y build-essential curl git python3 nodejs \
+  libasound2-dev libasound2-plugins libgl1 libx11-6 libxi6
+```
+
+4. Install Rust with `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`
+   (press Enter for the defaults), then close and reopen the Ubuntu window.
+5. Clone the project into your Ubuntu home folder (`cd ~`), **not**
+   under `/mnt/c`, and follow [Set up](#set-up). In Ubuntu's own folders
+   builds are much faster, and the scripts keep their Linux line endings.
+6. Run `scripts/check.sh --fast`. When it is green, start
+   `scripts/dev.sh` and open <http://localhost:8080> in your Windows
+   browser: WSL passes the address through to Windows.
+7. Editor: install [VS Code](https://code.visualstudio.com/) in Windows
+   with the **WSL** extension, then type `code .` in the project folder.
+   VS Code then works directly on the files in Ubuntu.
+8. For sound with `cargo run`: the game plays through ALSA, and WSLg
+   (built into Windows 11) has a PulseAudio server. Send ALSA there
+   once with `printf 'pcm.default pulse\nctl.default pulse\n' > ~/.asoundrc`
+   (this replaces an `~/.asoundrc` you may already have). Without this
+   file the window opens but stays silent.
+
+Only for some steps:
+
+- **Screenshots** (step 7 of `scripts/check.sh`, `scripts/shot.sh`),
+  **diagrams** (`scripts/check-mermaid.sh`) and
+  `scripts/stage.sh e2e-browser` need Chrome in Ubuntu, not the one in
+  Windows. On a normal (x64) PC download it with
+  `curl -LO https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb`,
+  then `sudo apt install -y ./google-chrome-stable_current_amd64.deb`.
+  Without Chrome `scripts/check.sh` skips the screenshot. Google has
+  no Chrome for Linux on ARM, so on a Windows ARM laptop these steps
+  are left to CI.
+- **Stage** (`scripts/stage.sh`): OrbStack exists only for the Mac. Use
+  [Docker Desktop](https://www.docker.com/products/docker-desktop/) with
+  WSL integration for your Ubuntu (Settings → Resources → WSL
+  integration) and put `STAGE_HOST=docker` in front of each command,
+  e.g. `STAGE_HOST=docker scripts/stage.sh up`, as CI does.
+- **Level backgrounds** (`scripts/make-backgrounds.sh`): install
+  `sudo apt install librsvg2-bin imagemagick` (Ubuntu 26.04 has
+  ImageMagick 7 with the `magick` command). Name the level you changed,
+  e.g. `scripts/make-backgrounds.sh level3`: other tool versions write
+  slightly different PNGs, and only your level belongs in the commit.
 
 ## Run the game
 
@@ -416,7 +492,8 @@ an [OrbStack](https://orbstack.dev/) Linux machine named `stage` (amd64,
 like Fly's machines) runs the real server image from the `Dockerfile`
 and serves the game with `board-api` pointing at it. So the browser's
 wasm makes the replays and an x86-64 Linux server flies them again, as
-in production. It needs OrbStack; `e2e` also needs Node, `e2e-browser`
+in production. It needs OrbStack, or Docker with `STAGE_HOST=docker`
+(see [Developing on Windows 11](#developing-on-windows-11)); `e2e` also needs Node, `e2e-browser`
 Chrome. CI runs the same stage on every pull request that touches the
 server, `core` or the board plugin (`.github/workflows/pages.yml`, about
 five minutes), with `STAGE_HOST=docker`: Docker on the runner itself
