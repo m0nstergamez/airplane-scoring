@@ -13,6 +13,10 @@ im Browser als WebAssembly. Gezeichnet wird mit der Engine
   installiert sie)
 - [Git](https://git-scm.com/)
 - Python 3 (für den lokalen Webserver)
+- [Node.js](https://nodejs.org/) 22 oder neuer (für `scripts/check.sh`: die Tests des
+  Seitenskripts und den Vergleich wasm/nativ, die es ohne Node
+  überspringt; auch für `scripts/stage.sh e2e`; macOS: `brew install node`; Linux:
+  `apt install nodejs` von Ubuntu 26.04 ist neu genug, das von 24.04 nicht)
 - Google Chrome (für automatische Screenshots; optional)
 - Nur Linux: die ALSA-Ton-Header für `cargo run` (auf Ubuntu:
   `sudo apt install libasound2-dev`)
@@ -522,7 +526,7 @@ dem `Dockerfile` und liefert das Spiel aus, mit `board-api` auf sie
 gerichtet. So macht das wasm des Browsers die Replays, und ein
 x86-64-Linux-Server fliegt sie nach, wie im Betrieb. Sie braucht
 OrbStack oder Docker mit `STAGE_HOST=docker` (siehe [Entwickeln auf
-Windows 11](#entwickeln-auf-windows-11)); `e2e` braucht zusätzlich Node, `e2e-browser` Chrome. CI
+Windows 11](#entwickeln-auf-windows-11)); `e2e` braucht zusätzlich Node 22 oder neuer, `e2e-browser` Chrome. CI
 startet dieselbe Stage bei jedem Pull Request, der den Server, `core`
 oder das Board-Plugin ändert (`.github/workflows/pages.yml`, etwa fünf
 Minuten), mit `STAGE_HOST=docker`: Docker direkt auf dem Runner statt

@@ -13,6 +13,10 @@ the browser as WebAssembly. Drawing is done by the
   installs it)
 - [Git](https://git-scm.com/)
 - Python 3 (for the local web server)
+- [Node.js](https://nodejs.org/) 22 or newer (for `scripts/check.sh`: the page
+  script tests and the wasm/native check, which it skips without Node;
+  also for `scripts/stage.sh e2e`; macOS: `brew install node`; Linux:
+  Ubuntu 26.04's `apt install nodejs` is new enough, 24.04's is not)
 - Google Chrome (for automatic screenshots; optional)
 - Linux only: the ALSA sound headers for `cargo run` (on Ubuntu:
   `sudo apt install libasound2-dev`)
@@ -493,7 +497,7 @@ like Fly's machines) runs the real server image from the `Dockerfile`
 and serves the game with `board-api` pointing at it. So the browser's
 wasm makes the replays and an x86-64 Linux server flies them again, as
 in production. It needs OrbStack, or Docker with `STAGE_HOST=docker`
-(see [Developing on Windows 11](#developing-on-windows-11)); `e2e` also needs Node, `e2e-browser`
+(see [Developing on Windows 11](#developing-on-windows-11)); `e2e` also needs Node 22 or newer, `e2e-browser`
 Chrome. CI runs the same stage on every pull request that touches the
 server, `core` or the board plugin (`.github/workflows/pages.yml`, about
 five minutes), with `STAGE_HOST=docker`: Docker on the runner itself
