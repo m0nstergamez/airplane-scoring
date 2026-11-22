@@ -60,11 +60,15 @@ pub const BALL_BOUNCES: u32 = 2;
 /// How many of the kicks are aimed at the plane: kicked nearly straight
 /// up (drifting [`BALL_AIM_DRIFT`]) from where the ball peaks at the
 /// plane's height just as it gets there. Only while the plane flies high
-/// enough that the kick is at least [`BALL_AIM_AHEAD`] (a fraction of the
-/// screen width) ahead of it; else it is an ordinary kick.
+/// enough that the ball takes at least [`BALL_AIM_WARN_SECONDS`] to get
+/// there (so it depends on the plane's height alone, not on the speed
+/// or the screen), and the kick is on the screen; else it is an ordinary
+/// kick.
 pub const BALL_AIMED_SHARE: f32 = 0.5;
 pub const BALL_AIM_DRIFT: f32 = -30.0;
-pub const BALL_AIM_AHEAD: f32 = 0.15;
+pub const BALL_AIM_WARN_SECONDS: f32 = 1.1;
+/// How often an aimed kick whose spot is taken tries again (0.2 s apart).
+const AIM_TRIES: u32 = 5;
 /// An aimed ball's peak is up to this far above or below the plane, in px.
 pub const BALL_AIM_SPREAD: f32 = 10.0;
 
@@ -264,6 +268,8 @@ pub struct Pitch {
     next_sprinkler: u32,
     /// The game's speed (1 = normal), see [`Pitch::set_speed`].
     speed: f32,
+    /// Tries left for an aimed kick (0: the next kick is drawn anew).
+    aim_tries: u32,
     rng: Rng,
 }
 
@@ -277,6 +283,7 @@ impl Pitch {
             next_mast: ticks(FIRST_MAST_SECONDS),
             next_sprinkler: ticks(FIRST_SPRINKLER_SECONDS),
             speed: 1.0,
+            aim_tries: 0,
             // Its own stream, so the pitch does not change other things.
             rng: Rng::new(seed ^ 0xF007_BA11_0000_0006),
         }
@@ -284,6 +291,7 @@ impl Pitch {
 
     /// Clear it all away (a new level).
     pub fn clear(&mut self) {
+        self.aim_tries = 0;
         self.balls.clear();
         self.masts.clear();
         self.sprinklers.clear();
@@ -304,9 +312,16 @@ impl Pitch {
     }
 
     /// Advance one tick. `active`: is the pitch on screen (nothing new
-    /// comes while it is not)? `plane`: the plane's centre, where aimed
-    /// balls go. Kicks go to `events`.
-    pub fn tick(&mut self, bounds: Bounds, active: bool, plane: Vec2, events: &mut Vec<Event>) {
+    /// comes while it is not)? `aim`: the plane's centre, where aimed
+    /// balls go (`None` while it cannot be hit: no aimed balls). Kicks go
+    /// to `events`.
+    pub fn tick(
+        &mut self,
+        bounds: Bounds,
+        active: bool,
+        aim: Option<Vec2>,
+        events: &mut Vec<Event>,
+    ) {
         let s = bounds.scale();
         let dx = -SCROLL_SPEED * s * TICK_SECONDS;
         let ground = PITCH_GROUND * bounds.height;
@@ -331,6 +346,7 @@ impl Pitch {
             self.next_ball = ticks(FIRST_BALL_SECONDS);
             self.next_mast = ticks(FIRST_MAST_SECONDS);
             self.next_sprinkler = ticks(FIRST_SPRINKLER_SECONDS);
+            self.aim_tries = 0;
             return;
         }
         // Ground things wait until the last one has moved in by the room,
@@ -352,9 +368,26 @@ impl Pitch {
         }
         self.next_ball -= 1;
         if self.next_ball == 0 {
-            let kick = self
-                .aimed_kick(bounds, plane)
-                .or_else(|| self.plain_kick(bounds));
+            // Aimed or not is drawn once per kick; an aimed one whose spot
+            // is taken tries again a moment later (so masts and sprinklers
+            // do not thin out the aimed balls).
+            if self.aim_tries == 0 && self.rng.unit() < BALL_AIMED_SHARE {
+                self.aim_tries = AIM_TRIES;
+            }
+            let mut aimed = None;
+            if self.aim_tries > 0 {
+                match aim.and_then(|plane| self.aimed_kick(bounds, plane)) {
+                    Some(Some(kick)) => aimed = Some(kick),
+                    Some(None) if self.aim_tries > 1 => {
+                        self.aim_tries -= 1;
+                        self.next_ball = ticks(0.2);
+                        return;
+                    }
+                    _ => {} // too low, cannot be hit, or still taken: ordinary
+                }
+                self.aim_tries = 0;
+            }
+            let kick = aimed.or_else(|| self.plain_kick(bounds));
             let Some((x, peak, drift)) = kick else {
                 self.next_ball = ticks(0.2); // all blocked: a moment later
                 return;
@@ -395,28 +428,23 @@ impl Pitch {
         Some((x, peak, r.range(BALL_DRIFT.0, BALL_DRIFT.1)))
     }
 
-    /// An aimed kick ([`BALL_AIMED_SHARE`]), if this one is and the plane
-    /// is high enough for it: from where the ball, sliding toward the
-    /// plane, reaches it just at its peak.
-    fn aimed_kick(&mut self, bounds: Bounds, plane: Vec2) -> Option<(f32, f32, f32)> {
-        let r = &mut self.rng;
-        if r.unit() >= BALL_AIMED_SHARE {
-            return None;
-        }
+    /// An aimed kick ([`BALL_AIMED_SHARE`]): from where the ball, sliding
+    /// toward the plane, reaches it just at its peak. `None` if the plane
+    /// is too low for one, `Some(None)` if that spot is taken just now.
+    fn aimed_kick(&mut self, bounds: Bounds, plane: Vec2) -> Option<Option<(f32, f32, f32)>> {
         let s = bounds.scale();
-        let spread = r.range(-BALL_AIM_SPREAD, BALL_AIM_SPREAD) * s;
+        let spread = self.rng.range(-BALL_AIM_SPREAD, BALL_AIM_SPREAD) * s;
         let peak = (plane.y + spread).max(BALL_RADIUS * s);
         let ground = PITCH_GROUND * bounds.height - BALL_RADIUS * s;
         let rise_time = Self::launch(ground - peak, s) / (BALL_GRAVITY * s);
         let closing = SCROLL_SPEED * s * self.speed - BALL_AIM_DRIFT * s;
         let x = plane.x + closing * rise_time;
-        let far_enough = x >= plane.x + BALL_AIM_AHEAD * bounds.width;
-        let on_screen = x <= BALL_KICK_AT.1 * bounds.width;
-        (far_enough && on_screen && self.clear_to_kick(x, bounds)).then_some((
-            x,
-            peak,
-            BALL_AIM_DRIFT,
-        ))
+        let warned = rise_time >= BALL_AIM_WARN_SECONDS;
+        let on_screen = x <= bounds.width - 2.0 * BALL_RADIUS * s;
+        (warned && on_screen).then(|| {
+            self.clear_to_kick(x, bounds)
+                .then_some((x, peak, BALL_AIM_DRIFT))
+        })
     }
 
     /// Count down a mast's or a sprinkler's timer; true when one comes in
@@ -486,10 +514,10 @@ mod tests {
     };
     const PLANE_X: f32 = 0.2 * 844.0;
     /// A plane low over the grass: too low for aimed balls.
-    const LOW: Vec2 = Vec2 {
+    const LOW: Option<Vec2> = Some(Vec2 {
         x: PLANE_X,
         y: 330.0,
-    };
+    });
 
     fn run(p: &mut Pitch, seconds: f32, active: bool) -> Vec<Event> {
         let mut events = Vec::new();
@@ -527,12 +555,26 @@ mod tests {
     /// The balls kicked (where from) and how often one passed within
     /// `near` px of a plane holding still at `plane`, in `seconds`.
     fn aimed_at(plane: Vec2, seconds: f32, near: f32) -> (Vec<f32>, usize) {
+        aimed_on(PHONE, 1.0, plane, seconds, near)
+    }
+
+    /// The same on a screen of `bounds`, at the game's `speed`.
+    fn aimed_on(
+        bounds: Bounds,
+        speed: f32,
+        plane: Vec2,
+        seconds: f32,
+        near: f32,
+    ) -> (Vec<f32>, usize) {
         let mut p = Pitch::new(9);
+        p.set_speed(speed);
+        let extra = (speed - 1.0) * SCROLL_SPEED * bounds.scale() * TICK_SECONDS;
         let mut kicks = Vec::new();
         let mut met = std::collections::BTreeSet::new(); // by kick tick
         for t in 0..ticks(seconds) {
             let before = p.balls.len();
-            p.tick(PHONE, true, plane, &mut Vec::new());
+            p.tick(bounds, true, Some(plane), &mut Vec::new());
+            p.shift(-extra);
             if p.balls.len() > before {
                 kicks.push(p.balls.last().unwrap().pos.x);
             }
@@ -562,16 +604,47 @@ mod tests {
     }
 
     #[test]
-    fn aimed_balls_are_kicked_well_ahead_and_only_at_a_high_plane() {
-        let ahead = PLANE_X + BALL_AIM_AHEAD * PHONE.width;
-        for y in [12.0, 80.0, 160.0, 220.0, 330.0] {
-            let (kicks, _) = aimed_at(Vec2::new(PLANE_X, y), 120.0, 1.0);
-            assert!(kicks.iter().all(|&x| x >= ahead), "{y}: {kicks:?}");
+    fn aimed_balls_come_only_at_a_high_plane_whatever_the_speed() {
+        // The same height band at the start and at full speed: below it
+        // (here 230 of 390 px) every kick is an ordinary one, from far
+        // ahead. (Low balls bouncing along still meet a low plane.)
+        for speed in [1.0, crate::MAX_SPEED] {
+            for y in [230.0, 330.0] {
+                let (kicks, _) = aimed_on(PHONE, speed, Vec2::new(PLANE_X, y), 120.0, 14.0);
+                let far = BALL_KICK_AT.0 * PHONE.width - 5.0;
+                assert!(kicks.iter().all(|&x| x >= far), "{speed} {y}: {kicks:?}");
+            }
+            let (kicks, close) = aimed_on(PHONE, speed, Vec2::new(PLANE_X, 40.0), 120.0, 14.0);
+            assert!(
+                close * 3 > kicks.len(),
+                "{speed}: {close} of {}",
+                kicks.len()
+            );
         }
-        // Low over the grass, every kick is an ordinary one.
-        let (kicks, close) = aimed_at(LOW, 120.0, BALL_RADIUS + 6.0);
-        assert!(kicks.iter().all(|&x| x >= BALL_KICK_AT.0 * PHONE.width));
-        assert!(close < kicks.len() / 5, "{close} of {}", kicks.len());
+    }
+
+    #[test]
+    fn aimed_balls_come_on_a_wide_screen_too() {
+        // (A wide screen holds more masts and sprinklers in the way.)
+        let wide = Bounds {
+            width: 1920.0,
+            height: 390.0,
+        };
+        let plane = Vec2::new(0.2 * wide.width, 40.0);
+        let (kicks, close) = aimed_on(wide, 1.0, plane, 120.0, 14.0);
+        assert!(close * 4 > kicks.len(), "{close} of {}", kicks.len());
+    }
+
+    #[test]
+    fn no_aimed_balls_at_a_plane_that_cannot_be_hit() {
+        let mut p = Pitch::new(9);
+        for _ in 0..ticks(120.0) {
+            p.tick(PHONE, true, None, &mut Vec::new());
+            assert!(p
+                .balls
+                .iter()
+                .all(|b| b.vel.x != BALL_AIM_DRIFT || b.bounces > 0));
+        }
     }
 
     #[test]
@@ -581,16 +654,19 @@ mod tests {
         let mut slow = Pitch::new(9);
         let mut fast = Pitch::new(9);
         fast.set_speed(2.0);
-        let first = |p: &mut Pitch, speed: f32| loop {
-            p.tick(PHONE, true, plane, &mut Vec::new());
-            if p.balls.iter().any(|b| b.vel.x == BALL_AIM_DRIFT) {
-                let b = *p.balls.iter().find(|b| b.vel.x == BALL_AIM_DRIFT).unwrap();
+        let aimed = |b: &Ball| b.vel.x == BALL_AIM_DRIFT * PHONE.scale() && b.bounces == 0;
+        let first = |p: &mut Pitch, speed: f32| {
+            for _ in 0..ticks(60.0) {
+                p.tick(PHONE, true, Some(plane), &mut Vec::new());
+                let Some(&b) = p.balls.iter().find(|b| aimed(b)) else {
+                    continue;
+                };
                 p.balls.retain(|x| *x == b);
                 // Follow it alone, the ground sliding by the extra too.
                 let extra = (speed - 1.0) * SCROLL_SPEED * TICK_SECONDS;
                 let mut best = f32::MAX;
                 for _ in 0..ticks(4.0) {
-                    p.tick(PHONE, false, plane, &mut Vec::new());
+                    p.tick(PHONE, false, Some(plane), &mut Vec::new());
                     p.shift(-extra);
                     if let Some(b) = p.balls.first() {
                         best = best.min(libm::hypotf(b.pos.x - plane.x, b.pos.y - plane.y));
@@ -598,6 +674,7 @@ mod tests {
                 }
                 return (b.pos.x, best);
             }
+            panic!("no aimed ball in a minute");
         };
         let (x_slow, miss_slow) = first(&mut slow, 1.0);
         let (x_fast, miss_fast) = first(&mut fast, 2.0);

@@ -1140,8 +1140,11 @@ that isn't code here. Keep entries short and dated.
     Up to every second kick is aimed (`BALL_AIMED_SHARE`): it peaks at
     the plane's height just as it reaches the plane, allowing for the
     speed. Without it the top edge was a safe lane (found in a test
-    flight). Only while the kick is at least `BALL_AIM_AHEAD` ahead, so
-    a low plane gets ordinary kicks.
+    flight). Only while the ball takes at least `BALL_AIM_WARN_SECONDS`
+    to get there, so a low plane gets ordinary kicks; this depends on the
+    plane's height alone, not on the speed or the screen's shape. An
+    aimed kick whose spot a mast or sprinkler takes tries again a moment
+    later, and a plane that cannot be hit (blinking) is not aimed at.
   - Floodlight masts are rare (every 8–13 s), so they stay plausible for
     one pitch; the masts and the sprinklers are not in the picture.
   - A sprinkler's jet is solid only while it is up; it always rests

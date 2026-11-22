@@ -1183,7 +1183,9 @@ impl World {
         (self.forest).tick(self.bounds, woods, plane, &mut self.events);
         let field = levels.level == PITCH_LEVEL && !runway_in && !clearing;
         self.pitch.set_speed(speed);
-        self.pitch.tick(self.bounds, field, plane, &mut self.events);
+        // (No aimed balls at a plane that cannot be hit just now.)
+        let aim = (!self.player.is_safe() && !self.player.is_crashed()).then_some(plane);
+        self.pitch.tick(self.bounds, field, aim, &mut self.events);
         let town = levels.level == CITY_LEVEL && !runway_in && !clearing;
         self.city.set_speed(speed);
         self.city.tick(self.bounds, town, plane_y);

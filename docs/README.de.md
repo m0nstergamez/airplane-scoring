@@ -1264,9 +1264,14 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
     Bis zu jeder zweite Schuss ist gezielt (`BALL_AIMED_SHARE`): Er hat
     seinen höchsten Punkt auf der Höhe des Flugzeugs, gerade wenn er es
     erreicht, und rechnet mit dem Tempo. Ohne ihn war der obere Rand
-    eine sichere Spur (bei einem Testflug bemerkt). Nur solange der
-    Schuss mindestens `BALL_AIM_AHEAD` voraus ist, ein tiefes Flugzeug
-    bekommt also gewöhnliche Schüsse.
+    eine sichere Spur (bei einem Testflug bemerkt). Nur solange der Ball
+    mindestens `BALL_AIM_WARN_SECONDS` bis dorthin braucht, ein tiefes
+    Flugzeug bekommt also gewöhnliche Schüsse; das hängt nur von der
+    Höhe des Flugzeugs ab, nicht vom Tempo oder der Form des
+    Bildschirms. Ein gezielter Schuss, dessen Stelle ein Mast oder
+    Rasensprenger besetzt, versucht es kurz darauf nochmals, und auf ein
+    Flugzeug, das nicht getroffen werden kann (es blinkt), wird nicht
+    gezielt.
   - Flutlichtmasten sind selten (alle 8–13 s), damit sie für einen Platz
     glaubwürdig bleiben; Masten und Rasensprenger sind nicht im Bild.
   - Der Strahl eines Rasensprengers ist nur fest, solange er oben ist;
