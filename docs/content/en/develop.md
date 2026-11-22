@@ -305,11 +305,11 @@ flowchart LR
   no life lost; `Forest::fog` (0..1) tells the game how much to veil the
   screen.
 - **The football pitch** (`crates/core/src/pitch.rs`, level 6,
-  `PITCH_LEVEL`): a `Footballer` runs in every 2–4 s
+  `PITCH_LEVEL`): a `Footballer` runs in every 1.8–3.4 s
   (`FOOTBALLER_GAP_SECONDS`) with a ball and shoots it at the plane
   (`Event::BallKick`): an arc that meets the plane after
   `SHOT_WARN_SECONDS` (at least `SHOT_LEAST_SECONDS` if a mast or
-  sprinkler held the footballer back), about every second shot missing
+  sprinkler held the footballer back), about two in five shots missing
   (`SHOT_MISS_SHARE`); the `Ball` bounces and is knocked away when hit; `Mast`s (floodlights)
   are rare (`MAST_GAP_SECONDS`) and solid; a `Sprinkler`'s jet is solid
   for `SPRINKLER_ON_SECONDS`, then rests for `SPRINKLER_OFF_SECONDS`

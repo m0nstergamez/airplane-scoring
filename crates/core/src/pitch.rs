@@ -6,7 +6,7 @@
 //!   ball would take [`SHOT_WARN_SECONDS`] to get there (or as long as
 //!   it takes to rise to a high plane), they kick it in an arc that
 //!   meets the plane where it is: peaking at a high plane, dropping onto
-//!   a low one. About every second shot misses ([`SHOT_MISS_SHARE`]).
+//!   a low one. About two in five shots miss ([`SHOT_MISS_SHARE`]).
 //!   You see each one run in and shoot, so it is never a surprise: climb
 //!   or dive a little when a ball comes. A football that hits the plane
 //!   costs a life and is knocked away; the balls bounce
@@ -41,7 +41,7 @@ pub const PITCH_ROOM: f32 = 110.0;
 
 /// Time between two footballers coming in (each with one ball),
 /// shortest and longest, and the first, in seconds.
-pub const FOOTBALLER_GAP_SECONDS: (f32, f32) = (2.0, 4.0);
+pub const FOOTBALLER_GAP_SECONDS: (f32, f32) = (1.8, 3.4);
 pub const FIRST_FOOTBALLER_SECONDS: f32 = 1.0;
 /// How fast a footballer runs toward the plane with the ball, in px per
 /// second, on top of the ground sliding past (also after the shot).
@@ -69,7 +69,7 @@ pub const SHOT_WARN_SECONDS: f32 = 1.1;
 pub const SHOT_LEAST_SECONDS: f32 = 0.8;
 /// How many shots miss, and by how much above or below the plane, in px;
 /// the others are on target, within [`SHOT_SPREAD`].
-pub const SHOT_MISS_SHARE: f32 = 0.5;
+pub const SHOT_MISS_SHARE: f32 = 0.4;
 pub const SHOT_MISS: (f32, f32) = (35.0, 80.0);
 pub const SHOT_SPREAD: f32 = 8.0;
 /// How hard a ball falls back, in px per second, each second (at scale 1).
@@ -702,14 +702,14 @@ mod tests {
 
     #[test]
     fn nowhere_is_safe_the_footballers_aim_at_the_plane_high_or_low() {
-        // Holding still anywhere, about every second shot meets the
+        // Holding still anywhere, more than half the shots meet the
         // plane; the others miss it clearly.
         for y in [12.0, 40.0, 120.0, 200.0, 280.0, 340.0] {
             let shots = shots_at(PHONE, 1.0, Vec2::new(PLANE_X, y), 120.0);
             let (met, missed) = met_and_missed(&shots);
             let n = shots.len();
             assert!(n >= 25, "{y}: {n} shots");
-            // (About half each way; a random draw, so not exactly.)
+            // (About 3 in 5 meet it; a random draw, so not exactly.)
             assert!(met * 4 >= n && met * 4 <= n * 3, "{y}: {met} of {n} met");
             assert!(missed * 4 >= n, "{y}: {missed} of {n} missed");
         }

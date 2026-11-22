@@ -323,7 +323,7 @@ day, past a small grandstand:
 - **Footballers** run in with a ball and **shoot at you**: the ball
   flies an arc to just where you will be, rising to you when you fly
   high, dropping onto you when you fly low. Nowhere is safe, but you see
-  each one run in and kick, and about every second shot misses. Climb
+  each one run in and kick, and about two in five shots miss. Climb
   or dive a little as soon as a ball comes. If one hits you, you lose a
   life and it flies off; the same goes for a ball still at a
   footballer's feet. The footballers themselves are harmless.

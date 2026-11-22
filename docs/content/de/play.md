@@ -346,7 +346,7 @@ einen gemähten Rasen, an einer kleinen Tribüne vorbei:
   dich**: Der Ball fliegt im Bogen genau dorthin, wo du gleich bist; er
   steigt zu dir hinauf, wenn du hoch fliegst, und fällt auf dich herab,
   wenn du tief fliegst. Sicher ist es nirgends, aber du siehst jeden
-  heranrennen und schiessen, und etwa jeder zweite Schuss geht daneben.
+  heranrennen und schiessen, und etwa zwei von fünf Schüssen gehen daneben.
   Steig oder sink ein wenig, sobald ein Ball kommt. Trifft dich einer,
   verlierst du ein Leben, und er fliegt davon; das gilt auch für einen
   Ball, der noch am Fuss eines Fussballers ist. Die Fussballer selbst

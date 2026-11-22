@@ -112,7 +112,7 @@ short **meaning**.
 | Fussballplatz | football pitch | `Pitch`, `PITCH_LEVEL` | Level 6: a mown lawn with a small grandstand on a summer day |
 | Fussball | football | `Ball`, `Event::BallKick` | Level 6: shot by a footballer, flies an arc and bounces; an obstacle, knocked away when hit |
 | Fussballer | footballer | `Footballer` | Level 6: runs in with a ball and shoots it at the plane; harmless itself |
-| Schuss | shot | `SHOT_WARN_SECONDS`, `SHOT_MISS_SHARE` | Level 6: a footballer's kick at the plane, an arc that meets it where it will be; about every second one misses |
+| Schuss | shot | `SHOT_WARN_SECONDS`, `SHOT_MISS_SHARE` | Level 6: a footballer's kick at the plane, an arc that meets it where it will be; about two in five miss |
 | Flutlichtmast | floodlight mast | `Mast` | Level 6: a thin pole with lamps on top, rare; an obstacle, fly over it |
 | Rasensprenger | sprinkler | `Sprinkler` | Level 6: throws a jet of water up, then rests; the jet is an obstacle while it is up |
 | Wasserstrahl | jet (of water) | `Sprinkler::jet` | Level 6: what a sprinkler throws up |

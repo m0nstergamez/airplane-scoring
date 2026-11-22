@@ -1143,7 +1143,9 @@ that isn't code here. Keep entries short and dated.
     `SHOT_WARN_SECONDS` to get there, or the time to rise to a high
     plane, so the arc peaks at a high plane and drops onto a low one, and
     the warning does not depend on the speed or the screen's shape. About
-    every second shot misses by 35–80 px (`SHOT_MISS_SHARE`), away from
+    two in five shots miss by 35–80 px (`SHOT_MISS_SHARE`; first one in
+    two, made a bit harder after a test flight, with footballers every
+    1.8–3.4 s instead of 2–4 s), away from
     the grass and the screen's edge. No shots at a plane that cannot be
     hit (blinking); a footballer who gets too close without a shot (a
     mast or sprinkler in the way, `SHOT_LEAST_SECONDS`) runs on with the

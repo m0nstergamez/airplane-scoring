@@ -1268,8 +1268,9 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
     einem hohen Flugzeug aufzusteigen, damit der Bogen bei einem hohen
     Flugzeug seinen höchsten Punkt hat und auf ein tiefes herabfällt, und
     die Vorwarnung hängt nicht vom Tempo oder der Form des Bildschirms
-    ab. Etwa jeder zweite Schuss geht 35–80 px daneben
-    (`SHOT_MISS_SHARE`), weg vom Rasen und vom Bildschirmrand. Kein
+    ab. Etwa zwei von fünf Schüssen gehen 35–80 px daneben
+    (`SHOT_MISS_SHARE`; zuerst einer von zwei, nach einem Testflug etwas
+    schwerer gemacht, mit Fussballern alle 1,8–3,4 s statt 2–4 s), weg vom Rasen und vom Bildschirmrand. Kein
     Schuss auf ein Flugzeug, das nicht getroffen werden kann (es blinkt);
     ein Fussballer, der ohne Schuss zu nahe kommt (ein Mast oder
     Rasensprenger im Weg, `SHOT_LEAST_SECONDS`), rennt mit dem Ball
