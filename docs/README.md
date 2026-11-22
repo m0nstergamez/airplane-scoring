@@ -1160,6 +1160,10 @@ that isn't code here. Keep entries short and dated.
     point of its cycle, so two are not in step.
   - New sounds `ball-kick.wav` and `splash.wav`; the level map got a
     sixth stop and the golden NEW moved to it.
+  - A check on many screens before the merge found the level map's Back
+    button under the QR code on common laptop windows (1366x768,
+    1536x864, 1280x800; already so with five levels). The QR code now
+    waits in the main menu there, as on phones.
 
 ## Concepts
 

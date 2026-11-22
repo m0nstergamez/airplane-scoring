@@ -183,6 +183,11 @@
     /* The level map (three levels wide) reaches the plane on the left:
        the plane steps aside there too. */
     #start:has([data-panel="levels"].shown) .hero { display: none; }
+    /* On a laptop (1366x768, 1536x864, 1280x800) the map's Back button
+       reaches down to the QR code: it waits in the main menu there. */
+    @media (max-height: 960px) {
+      #start:has([data-panel="levels"].shown) figure { display: none; }
+    }
     #start .phone-only { display: none; }
     @media (pointer: coarse) {
       #start .phone-only { display: inline; }

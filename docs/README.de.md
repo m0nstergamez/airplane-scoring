@@ -1286,6 +1286,10 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
     gleichen Takt spritzen.
   - Neue Sounds `ball-kick.wav` und `splash.wav`; die Level-Karte hat
     einen sechsten Halt, und das goldene NEW ist zu ihm gewandert.
+  - Ein Test auf vielen Bildschirmen vor dem Merge fand den Back-Knopf
+    der Level-Karte unter dem QR-Code bei üblichen Laptop-Fenstern
+    (1366x768, 1536x864, 1280x800; schon mit fünf Levels so). Der
+    QR-Code wartet dort jetzt im Hauptmenü, wie auf dem Handy.
 
 ## Konzepte
 
