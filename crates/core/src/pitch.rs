@@ -17,8 +17,9 @@
 //!   They are solid: fly over them.
 //! * **Sprinklers** sit in the grass and throw a jet of water up
 //!   ([`SPRINKLER_TOP`]) for [`SPRINKLER_ON_SECONDS`], then rest for
-//!   [`SPRINKLER_OFF_SECONDS`]. The jet is solid while it is up: fly
-//!   through while it rests, or over it.
+//!   [`SPRINKLER_OFF_SECONDS`]. The jet costs no life: it throws the
+//!   plane up ([`SPRINKLER_LIFT`]), maybe into a ball. Fly through while
+//!   it rests, or over it.
 //!
 //! Masts and sprinklers stand on the ground and keep [`PITCH_ROOM`]
 //! between them, so there is always a gap to come down into. Positions
@@ -106,7 +107,11 @@ pub const SPRINKLER_TOP: (f32, f32) = (0.45, 0.62);
 /// The jet's width, in px, and the spray at its top: width and height.
 pub const SPRINKLER_JET: f32 = 14.0;
 pub const SPRINKLER_SPRAY: (f32, f32) = (40.0, 16.0);
-/// Below this much of its height, a jet is only a trickle: no obstacle.
+/// How hard a jet throws the plane up while it is in the water, in px
+/// per second, each second (at scale 1). Much harder than the steam
+/// (level 4): the jet is narrow, so the plane is in it only briefly.
+pub const SPRINKLER_LIFT: f32 = 1400.0;
+/// Below this much of its height, a jet is only a trickle: no water.
 const TRICKLE: f32 = 0.08;
 
 /// Things start and are dropped this far outside the screen, in px.
@@ -272,7 +277,7 @@ impl Sprinkler {
         (self.x - w / 2.0, t - h / 2.0, w, h)
     }
 
-    /// The water as drawn, for crashing: the jet and its spray, or
+    /// The water as drawn, for the lift: the jet and its spray, or
     /// nothing while it rests (or only trickles).
     pub fn shape(&self, bounds: Bounds) -> Vec<Poly> {
         if self.water() < TRICKLE {
@@ -491,6 +496,11 @@ impl Pitch {
         if kicked {
             events.push(Event::BallKick); // one sound, also for two at once
         }
+    }
+
+    /// Is the plane, as `me`, in a sprinkler's water?
+    pub fn in_jet(&self, bounds: Bounds, me: &[Poly]) -> bool {
+        (self.sprinklers.iter()).any(|sp| crate::shape::any_overlap(me, &sp.shape(bounds)))
     }
 
     /// The plane flew into the ball at footballer `i`'s feet: it flies
@@ -912,7 +922,7 @@ mod tests {
     }
 
     #[test]
-    fn a_sprinkler_throws_water_then_rests_and_its_jet_is_solid_only_when_up() {
+    fn a_sprinkler_throws_water_then_rests_and_its_jet_is_there_only_when_up() {
         let mut sp = Sprinkler {
             x: 400.0,
             top: 0.5,

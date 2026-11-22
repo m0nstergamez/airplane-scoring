@@ -329,8 +329,9 @@ flowchart LR
   (`SHOT_MISS_SHARE`); der `Ball` springt auf und wird weggeschossen,
   wenn getroffen; `Mast`s (Flutlicht) sind selten (`MAST_GAP_SECONDS`)
   und fest; der Strahl eines `Sprinkler`s ist `SPRINKLER_ON_SECONDS`
-  lang fest und ruht dann `SPRINKLER_OFF_SECONDS` lang (`Event::Splash`,
-  wenn das Flugzeug hineinfliegt); Masten und Rasensprenger halten
+  lang oben und ruht dann `SPRINKLER_OFF_SECONDS` lang; er kostet kein
+  Leben, stösst das Flugzeug aber nach oben (`SPRINKLER_LIFT`,
+  `Event::Splash`, wenn das Flugzeug hineinfliegt); Masten und Rasensprenger halten
   `PITCH_ROOM` Abstand.
 - **Möwen** (`crates/core/src/gulls.rs`) sind die Hindernisse am Strand.
   core entscheidet, wann und wo sie auftauchen (mit Startwert, wie das

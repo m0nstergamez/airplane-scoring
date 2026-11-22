@@ -137,7 +137,7 @@ quieter the thunder.
 
 If you touch a hot-air balloon, a launch pad or a hut (level 1) or a
 gull or a lifeguard tower (level 2) or a high-rise, a crane or a
-helicopter (level 3), a goose, a house or a high-rise (level 4), a fir or a buzzard (level 5) or a football, a floodlight mast or a sprinkler's jet (level 6), you **crash**. Only a real touch counts: flying past very
+helicopter (level 3), a goose, a house or a high-rise (level 4), a fir or a buzzard (level 5) or a football or a floodlight mast (level 6), you **crash**. Only a real touch counts: flying past very
 closely, or through the gap beside a roof, is fine. In a crash your plane smokes, falls
 and ignores the controls for a moment (1.5 seconds). Then you fly again.
 
@@ -330,8 +330,9 @@ day, past a small grandstand:
 - **Floodlight masts** stand here and there, a thin pole with a bank of
   lamps on top. Fly over them; lamps and pole count.
 - **Sprinklers** in the grass throw a jet of water up, rest, and throw
-  it again. The jet counts while it is up: fly through while it rests,
-  or over it. Two sprinklers do not go in step.
+  it again. The jet costs no life, but it throws you up, maybe into a
+  ball: fly through while it rests, or over it. Two sprinklers do not
+  go in step.
 
 ## Leaderboard
 
@@ -367,7 +368,7 @@ completed level that the server flew again and counted is one flight.
 | Wind | Always. Louder in rain, in gusts and when you dive. |
 | Rain | While it rains (only in later levels). Louder the harder it rains. |
 | Thunder | A moment after each lightning (only in later levels). |
-| Crash | When you touch a balloon, a launch pad, a hut, a gull, a lifeguard tower, a high-rise, a crane, a goose, a house, a fir, a buzzard, a football, a floodlight mast or a sprinkler's jet. |
+| Crash | When you touch a balloon, a launch pad, a hut, a gull, a lifeguard tower, a high-rise, a crane, a goose, a house, a fir, a buzzard, a football or a floodlight mast. |
 | Burner | When a hot-air balloon appears or takes off (level 1). |
 | Waves | At the beach (level 2). They fade in and out with the landscape. |
 | Gull | When a gull appears. Gulls from behind always call. |
@@ -376,7 +377,7 @@ completed level that the server flew again and counted is one flight.
 | Buzzard | When a buzzard starts its dive (level 5): a high, falling cry. |
 | Leaves | When you fly into a gust (level 5): rustling leaves. |
 | Kick | When a football is kicked up (level 6): a dull thump. |
-| Splash | When you fly into a sprinkler's jet (level 6): a wet splash. |
+| Splash | When you fly into a sprinkler's jet (level 6): a wet splash as it throws you up. |
 | Tune | When you have landed and a level is complete. |
 | Takeoff | Rolling down the runway: the engine spools up and the wheels rumble until the plane lifts off. |
 | Gear | Just after lift-off: a whir while the wheels fold up, then a clunk. |

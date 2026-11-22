@@ -311,9 +311,10 @@ flowchart LR
   `SHOT_WARN_SECONDS` (at least `SHOT_LEAST_SECONDS` if a mast or
   sprinkler held the footballer back), about two in five shots missing
   (`SHOT_MISS_SHARE`); the `Ball` bounces and is knocked away when hit; `Mast`s (floodlights)
-  are rare (`MAST_GAP_SECONDS`) and solid; a `Sprinkler`'s jet is solid
-  for `SPRINKLER_ON_SECONDS`, then rests for `SPRINKLER_OFF_SECONDS`
-  (`Event::Splash` when the plane flies into it); masts and sprinklers
+  are rare (`MAST_GAP_SECONDS`) and solid; a `Sprinkler`'s jet is up
+  for `SPRINKLER_ON_SECONDS`, then rests for `SPRINKLER_OFF_SECONDS`;
+  it costs no life but throws the plane up (`SPRINKLER_LIFT`,
+  `Event::Splash` when the plane flies into it); masts and sprinklers
   keep `PITCH_ROOM` between them.
 - **Gulls** (`crates/core/src/gulls.rs`) are the beach's obstacles. Core
   decides when and where they appear (seeded, like the weather), moves

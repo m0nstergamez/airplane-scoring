@@ -67,7 +67,8 @@ pub use level::{
 };
 pub use pitch::{
     Ball, Footballer, Mast, Pitch, Sprinkler, BALL_RADIUS, FOOTBALLER_HEIGHT, MAST_GAP_SECONDS,
-    PITCH_GROUND, PITCH_LEVEL, PITCH_ROOM, SPRINKLER_OFF_SECONDS, SPRINKLER_ON_SECONDS,
+    PITCH_GROUND, PITCH_LEVEL, PITCH_ROOM, SPRINKLER_LIFT, SPRINKLER_OFF_SECONDS,
+    SPRINKLER_ON_SECONDS,
 };
 pub use scenery::{background_x, scroll_distance, SCROLL_SPEED};
 pub use shape::{any_overlap, Poly};
@@ -257,7 +258,8 @@ pub enum Event {
     LeafRustle,
     /// A football is kicked up from the pitch (level 6): a thump.
     BallKick,
-    /// The plane flew into a sprinkler's jet (level 6): a splash.
+    /// The plane flies into a sprinkler's jet (level 6): a splash as it
+    /// is thrown up.
     Splash,
     /// The plane flies into a column of steam: a rushing hiss as it is
     /// thrown up (level 4).
@@ -490,6 +492,9 @@ pub struct World {
     /// Was the plane in a column of steam last tick? (It hisses on the
     /// way in.)
     in_steam: bool,
+    /// Was the plane in a sprinkler's water last tick? (It splashes on
+    /// the way in.)
+    in_jet: bool,
     pub weather: Weather,
     /// Volumes of the looping sounds, eased toward what fits the world now.
     pub mix: Mix,
@@ -555,6 +560,7 @@ impl World {
             pitch: Pitch::new(seed),
             in_gust: false,
             in_steam: false,
+            in_jet: false,
             weather: Weather::new(seed),
             mix: Mix::SILENT,
             ticks: 0,
@@ -1270,10 +1276,9 @@ impl World {
         } else {
             Vec::new()
         };
-        // The pitch: masts and sprinklers' jets are solid, balls (also
-        // one at a footballer's feet) are knocked away.
+        // The pitch: masts are solid, balls (also one at a footballer's
+        // feet) are knocked away.
         let mast = (self.pitch.masts.iter()).any(|m| hits(&m.shape(bounds)));
-        let splash = (self.pitch.sprinklers.iter()).any(|s| hits(&s.shape(bounds)));
         let balls: Vec<usize> = if open {
             (self.pitch.balls.iter().enumerate())
                 .filter(|(_, b)| !b.struck && hits(&[b.shape(scale)]))
@@ -1297,6 +1302,8 @@ impl World {
         let in_gust = open && self.forest.in_gust(bounds, &me);
         // Steam costs no life: the warm air throws the plane up.
         let in_steam = open && self.sunrise.in_steam(bounds, &me);
+        // Sprinklers too: the jet throws the plane up.
+        let in_jet = open && self.pitch.in_jet(bounds, &me);
         // Helicopters too (parked on a roof or flying): one the plane
         // flies into crashes and burns.
         let (roof_helis, flyers): (Vec<usize>, Vec<usize>) = if open {
@@ -1323,7 +1330,6 @@ impl World {
             || fir
             || !buzzards.is_empty()
             || mast
-            || splash
             || !balls.is_empty()
             || !dribbled.is_empty()
             || !roof_helis.is_empty()
@@ -1345,9 +1351,6 @@ impl World {
                 self.events.push(Event::Explosion);
             } else {
                 self.events.push(Event::Crash);
-            }
-            if splash {
-                self.events.push(Event::Splash);
             }
         }
         player.touching = touching;
@@ -1373,6 +1376,13 @@ impl World {
             }
         }
         self.in_steam = in_steam;
+        if in_jet {
+            self.player.vel_y -= SPRINKLER_LIFT * scale * TICK_SECONDS;
+            if !self.in_jet {
+                self.events.push(Event::Splash);
+            }
+        }
+        self.in_jet = in_jet;
         for &i in &buzzards {
             self.forest.buzzards[i].knock_down(scale);
         }
@@ -3081,46 +3091,60 @@ mod tests {
     }
 
     #[test]
-    fn a_sprinklers_jet_costs_a_life_while_it_is_up_and_none_while_it_rests() {
+    fn a_sprinklers_jet_throws_the_plane_up_but_costs_no_life() {
         let up = Sprinkler {
             x: 0.0,
             top: 0.45,
             phase: (0.3 / TICK_SECONDS) as u32,
         };
-        // On: its jet reaches the plane as it comes by.
+        // On: the plane flies into the jet and is thrown up, with one
+        // splash on the way in.
         let mut w = on_the_pitch();
         let y = 0.75 * PHONE.height;
+        (w.player.pos.y, w.player.vel_y) = (y, 0.0);
         w.pitch.sprinklers.push(Sprinkler {
-            x: w.player.pos.x + 60.0,
+            x: w.player.pos.x + 40.0,
             ..up
         });
-        let (lost, events) = hold_at(&mut w, y, 1.0);
-        assert_eq!(lost, 1, "the jet is solid");
-        assert!(events.contains(&Event::Splash));
-        // Resting all the way past the plane: no life lost.
+        let lives = w.lives;
+        let mut splashes = 0;
+        for _ in 0..(0.8 / TICK_SECONDS) as u32 {
+            clear_pitch_but_sprinklers(&mut w);
+            w.tick(&Input::NONE);
+            splashes += (w.events().iter()).filter(|e| **e == Event::Splash).count();
+        }
+        assert_eq!(w.lives, lives, "no life lost");
+        assert!(
+            w.player.pos.y < y - 40.0,
+            "thrown up: {} from {y}",
+            w.player.pos.y
+        );
+        assert_eq!(splashes, 1, "one splash on the way in");
+        // Resting all the way past the plane: no push, no splash.
         let mut w = on_the_pitch();
+        (w.player.pos.y, w.player.vel_y) = (y, 0.0);
         let resting = (SPRINKLER_ON_SECONDS / TICK_SECONDS) as u32 + 1;
         w.pitch.sprinklers.push(Sprinkler {
-            x: w.player.pos.x + 60.0,
+            x: w.player.pos.x + 40.0,
             phase: resting,
             ..up
         });
-        let (lost, _) = hold_at(&mut w, y, 1.2);
-        assert_eq!(lost, 0, "fly through while it rests");
+        let mut splashed = false;
+        for _ in 0..(1.2 / TICK_SECONDS) as u32 {
+            clear_pitch_but_sprinklers(&mut w);
+            w.tick(&Input::NONE);
+            splashed |= w.events().contains(&Event::Splash);
+        }
+        assert!(!splashed, "fly through while it rests");
+        assert!((w.player.pos.y - y).abs() < 3.0, "{}", w.player.pos.y);
     }
 
-    #[test]
-    fn a_safe_plane_in_a_jet_makes_no_splash() {
-        let mut w = on_the_pitch();
-        w.player.safe_ticks = (5.0 / TICK_SECONDS) as u32;
-        w.pitch.sprinklers.push(Sprinkler {
-            x: w.player.pos.x + 60.0,
-            top: 0.45,
-            phase: (0.3 / TICK_SECONDS) as u32,
-        });
-        let (lost, events) = hold_at(&mut w, 0.75 * PHONE.height, 1.0);
-        assert_eq!(lost, 0);
-        assert!(!events.contains(&Event::Splash), "no life lost, no splash");
+    /// Only the sprinklers a test put there: no balls, footballers or
+    /// masts in the way.
+    fn clear_pitch_but_sprinklers(w: &mut World) {
+        w.pitch.balls.clear();
+        w.pitch.footballers.clear();
+        w.pitch.masts.clear();
     }
 
     #[test]

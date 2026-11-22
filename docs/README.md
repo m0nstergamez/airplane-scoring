@@ -1155,9 +1155,13 @@ that isn't code here. Keep entries short and dated.
     off.
   - Floodlight masts are rare (every 8–13 s), so they stay plausible for
     one pitch; the masts and the sprinklers are not in the picture.
-  - A sprinkler's jet is solid only while it is up; it always rests
-    `SPRINKLER_OFF_SECONDS` per cycle, and each one starts at a random
-    point of its cycle, so two are not in step.
+  - A sprinkler's jet costs no life: while it is up, it throws the
+    plane up (`SPRINKLER_LIFT`, about a quarter of the screen on a
+    phone), like the steam in level 4 but harder, since the jet is
+    narrow. At first it was solid; it was changed so the water pushes
+    instead of crashing. It always rests `SPRINKLER_OFF_SECONDS` per
+    cycle, and each one starts at a random point of its cycle, so two
+    are not in step.
   - New sounds `ball-kick.wav` and `splash.wav`; the level map got a
     sixth stop and the golden NEW moved to it.
   - A check on many screens before the merge found the level map's Back
