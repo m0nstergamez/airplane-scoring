@@ -342,14 +342,14 @@ Hügel und die orangen Baumkronen im Tal:
 Auf dem **Fussballplatz** (Level 6) fliegst du an einem Sommertag über
 einen gemähten Rasen, an einer kleinen Tribüne vorbei:
 
-- **Fussbälle** werden vor dir aus dem Rasen hochgeschossen und fliegen
-  im Bogen: hinauf, dann wieder hinunter, wo sie aufspringen und
-  davonrollen. Du siehst jeden vom Boden abheben, also achte auf seinen
-  Bogen und flieg darüber, darunter oder hinter ihm durch. Trifft dich
-  einer, verlierst du ein Leben, und er fliegt davon. Fliegst du hoch,
-  zielen manche auf dich: Sie steigen genau dorthin, wo du gleich bist,
-  der obere Rand ist also kein Versteck. Steig oder sink ein wenig,
-  sobald du einen aufsteigen siehst.
+- **Fussballer** rennen mit einem Ball heran und **schiessen auf
+  dich**: Der Ball fliegt im Bogen genau dorthin, wo du gleich bist; er
+  steigt zu dir hinauf, wenn du hoch fliegst, und fällt auf dich herab,
+  wenn du tief fliegst. Sicher ist es nirgends, aber du siehst jeden
+  heranrennen und schiessen, und etwa jeder zweite Schuss geht daneben.
+  Steig oder sink ein wenig, sobald ein Ball kommt. Trifft dich einer,
+  verlierst du ein Leben, und er fliegt davon. Die Fussballer selbst
+  sind harmlos.
 - **Flutlichtmasten** stehen hier und dort, eine dünne Stange mit einer
   Reihe Lampen oben. Flieg über sie; Lampen und Stange zählen.
 - **Rasensprenger** im Rasen spritzen einen Wasserstrahl hoch, ruhen und

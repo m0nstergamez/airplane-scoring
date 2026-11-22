@@ -66,8 +66,8 @@ pub use level::{
     LEVEL_DISTANCE, LEVEL_FADE_SECONDS, LEVEL_SECONDS, RAINY_LEVELS,
 };
 pub use pitch::{
-    Ball, Mast, Pitch, Sprinkler, BALL_GAP_SECONDS, BALL_RADIUS, MAST_GAP_SECONDS, PITCH_GROUND,
-    PITCH_LEVEL, PITCH_ROOM, SPRINKLER_OFF_SECONDS, SPRINKLER_ON_SECONDS,
+    Ball, Footballer, Mast, Pitch, Sprinkler, BALL_RADIUS, FOOTBALLER_HEIGHT, MAST_GAP_SECONDS,
+    PITCH_GROUND, PITCH_LEVEL, PITCH_ROOM, SPRINKLER_OFF_SECONDS, SPRINKLER_ON_SECONDS,
 };
 pub use scenery::{background_x, scroll_distance, SCROLL_SPEED};
 pub use shape::{any_overlap, Poly};

@@ -320,9 +320,11 @@ flowchart LR
   `Forest::fog` (0..1) sagt dem Spiel, wie stark es den Bildschirm
   verschleiert.
 - **Der Fussballplatz** (`crates/core/src/pitch.rs`, Level 6,
-  `PITCH_LEVEL`): Alle 2–4 s wird ein `Ball` vor dem Flugzeug aus dem
-  Rasen hochgeschossen (`BALL_GAP_SECONDS`, `Event::BallKick`), fliegt
-  eine Parabel bis zu seinem höchsten Punkt und springt auf, weggeschossen,
+  `PITCH_LEVEL`): Alle 2–4 s rennt ein `Footballer` mit einem Ball
+  herein (`FOOTBALLER_GAP_SECONDS`) und schiesst ihn auf das Flugzeug
+  (`Event::BallKick`): ein Bogen, der das Flugzeug frühestens nach
+  `SHOT_WARN_SECONDS` erreicht, etwa jeder zweite Schuss geht daneben
+  (`SHOT_MISS_SHARE`); der `Ball` springt auf und wird weggeschossen,
   wenn getroffen; `Mast`s (Flutlicht) sind selten (`MAST_GAP_SECONDS`)
   und fest; der Strahl eines `Sprinkler`s ist `SPRINKLER_ON_SECONDS`
   lang fest und ruht dann `SPRINKLER_OFF_SECONDS` lang (`Event::Splash`,

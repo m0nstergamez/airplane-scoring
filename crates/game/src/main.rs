@@ -5,13 +5,13 @@ use airplane_scoring_core::Vec2 as Vec2Core;
 use airplane_scoring_core::{
     background_x, best_time_text, clock_text, has_next_level, pick_steer, pick_throttle,
     start_level, steer_from_keys, Airport, Ball, Balloon, BestTimes, Bounds, Buzzard, Clock, Crane,
-    Event, FarHighRise, Fir, Goose, Gull, Gust, HeliParts, HighRise, Hut, Mast, Mix, Pad,
-    Sprinkler, Steam, Tilt, Tower, TyreSmoke, Warning, World, Wreck, AIRSPEED_RANGE,
-    BALLOON_RADIUS, BALL_RADIUS, BASKET_BELOW, BEST_TIMES_COUNT, BUZZARD_SIZE, GOOSE_BODY,
-    HUT_EAVES, HUT_INSET, LIVES, MAIN_WHEEL_X, NOSE_WHEEL_X, OVERSPEED_AT, PAD_HEIGHT, PAD_WIDTH,
-    PITCH_GROUND, PLANE_COCKPIT, PLANE_FUSELAGE, PLANE_NOSE, PLANE_RADIUS, PLANE_TAIL, PLANE_WING,
-    RUNWAY_HEIGHT, RUNWAY_LENGTH, STALL_AT, STRUT_REACH, SUNRISE_LEVEL, SUN_AT, SUN_RADIUS,
-    TICK_SECONDS, WHEEL_RADIUS,
+    Event, FarHighRise, Fir, Footballer, Goose, Gull, Gust, HeliParts, HighRise, Hut, Mast, Mix,
+    Pad, Sprinkler, Steam, Tilt, Tower, TyreSmoke, Warning, World, Wreck, AIRSPEED_RANGE,
+    BALLOON_RADIUS, BALL_RADIUS, BASKET_BELOW, BEST_TIMES_COUNT, BUZZARD_SIZE, FOOTBALLER_HEIGHT,
+    GOOSE_BODY, HUT_EAVES, HUT_INSET, LIVES, MAIN_WHEEL_X, NOSE_WHEEL_X, OVERSPEED_AT, PAD_HEIGHT,
+    PAD_WIDTH, PITCH_GROUND, PLANE_COCKPIT, PLANE_FUSELAGE, PLANE_NOSE, PLANE_RADIUS, PLANE_TAIL,
+    PLANE_WING, RUNWAY_HEIGHT, RUNWAY_LENGTH, STALL_AT, STRUT_REACH, SUNRISE_LEVEL, SUN_AT,
+    SUN_RADIUS, TICK_SECONDS, WHEEL_RADIUS,
 };
 use macroquad::prelude::*;
 
@@ -307,12 +307,15 @@ async fn main() {
             draw_buzzard(buzzard, s);
         }
         // The pitch: floodlight masts and sprinklers on the grass, the
-        // footballs in the air in front of them.
+        // footballers in front of them, the footballs in front of all.
         for mast in &world.pitch.masts {
             draw_mast(mast, world.bounds);
         }
         for sprinkler in &world.pitch.sprinklers {
             draw_sprinkler(sprinkler, world.bounds, world.ticks);
+        }
+        for footballer in &world.pitch.footballers {
+            draw_footballer(footballer, world.bounds);
         }
         for ball in &world.pitch.balls {
             draw_ball(ball, s);
@@ -1351,6 +1354,93 @@ fn draw_sprinkler(sp: &Sprinkler, bounds: Bounds, ticks: u64) {
 
 /// A football (core's `Ball::shape`): white with black patches, spinning,
 /// with a shadow edge.
+/// A footballer (core's `Footballer`), facing the plane (left): running
+/// with the ball at their feet, then a kick, then arms up, watching it.
+fn draw_footballer(f: &Footballer, bounds: Bounds) {
+    let s = bounds.scale();
+    let x = f.x;
+    let g = PITCH_GROUND * bounds.height;
+    let (shirt, shorts, socks) = match f.kit {
+        0 => (
+            Color::from_rgba(206, 40, 44, 255),
+            Color::from_rgba(246, 246, 240, 255),
+            Color::from_rgba(206, 40, 44, 255),
+        ),
+        _ => (
+            Color::from_rgba(250, 204, 40, 255),
+            Color::from_rgba(28, 40, 92, 255),
+            Color::from_rgba(28, 40, 92, 255),
+        ),
+    };
+    let skin = Color::from_rgba(226, 178, 140, 255);
+    let hair = Color::from_rgba(70, 44, 28, 255);
+    let h = FOOTBALLER_HEIGHT * s / 30.0; // one unit of a 30-unit figure
+    let hip = Vec2::new(x, g - 13.0 * h);
+    let shoulder = Vec2::new(x, g - 23.0 * h);
+    let stride = f.age as f32 * TICK_SECONDS * 13.0;
+    // The feet: running strides, the kick (one foot up front), or still.
+    let (front, back) = if f.kicking() {
+        (
+            Vec2::new(x - 12.0 * h, g - 6.0 * h),
+            Vec2::new(x + 2.0 * h, g),
+        )
+    } else if f.shot.is_some() {
+        (Vec2::new(x - 2.5 * h, g), Vec2::new(x + 2.5 * h, g))
+    } else {
+        let a = stride.sin();
+        let lift = |c: f32| c.max(0.0) * 3.0 * h;
+        (
+            Vec2::new(x - 6.0 * a * h, g - lift(stride.cos())),
+            Vec2::new(x + 6.0 * a * h, g - lift(-stride.cos())),
+        )
+    };
+    for foot in [back, front] {
+        let knee = Vec2::new((hip.x + foot.x) / 2.0 - 1.5 * h, (hip.y + foot.y) / 2.0);
+        draw_line(hip.x, hip.y, knee.x, knee.y, 3.0 * h, skin);
+        draw_line(knee.x, knee.y, foot.x, foot.y, 3.0 * h, socks);
+        draw_circle(
+            foot.x - 1.0 * h,
+            foot.y - 1.0 * h,
+            1.8 * h,
+            Color::from_rgba(24, 24, 24, 255),
+        );
+    }
+    draw_rectangle(x - 4.5 * h, g - 16.0 * h, 9.0 * h, 5.0 * h, shorts);
+    draw_rectangle(x - 4.5 * h, g - 24.5 * h, 9.0 * h, 9.5 * h, shirt);
+    // Arms: swinging while running, up after the shot.
+    let cheer = f.shot.is_some() && !f.kicking();
+    for side in [-1.0, 1.0] {
+        let hand = if cheer {
+            Vec2::new(x + side * 6.0 * h, g - 33.0 * h)
+        } else {
+            let swing = -side * stride.sin() * 5.0 * h;
+            Vec2::new(x + swing, g - 15.0 * h)
+        };
+        draw_line(
+            shoulder.x + side * 3.5 * h,
+            shoulder.y,
+            hand.x,
+            hand.y,
+            2.5 * h,
+            shirt,
+        );
+        draw_circle(hand.x, hand.y, 1.4 * h, skin);
+    }
+    let head = Vec2::new(x - 0.5 * h, g - 27.5 * h);
+    draw_circle(head.x, head.y, 3.6 * h, skin);
+    draw_circle(head.x + 0.8 * h, head.y - 1.4 * h, 3.0 * h, hair);
+    if let Some(at) = f.ball(bounds) {
+        let ball = Ball {
+            pos: at,
+            vel: Vec2Core::new(0.0, 0.0),
+            bounces: 0,
+            struck: false,
+            age: f.age,
+        };
+        draw_ball(&ball, s);
+    }
+}
+
 fn draw_ball(b: &Ball, s: f32) {
     let r = BALL_RADIUS * s;
     let (x, y) = (b.pos.x, b.pos.y);

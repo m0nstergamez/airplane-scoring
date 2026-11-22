@@ -1257,21 +1257,24 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
   Vorschlägen gewählt: Fussbälle im Bogen, Flutlichtmasten und
   Rasensprenger, Sommerwetter (kein Regen), einen Schritt schwerer als
   Level 5.
-  - Fussbälle sind das erste Hindernis auf einer Parabel: Sie werden
-    weit vor dem Flugzeug aus dem Rasen geschossen (`BALL_KICK_AT`),
-    damit man jeden Bogen von Anfang an sieht; sie springen zweimal auf
-    (`BALL_BOUNCES`) und rollen davon.
-    Bis zu jeder zweite Schuss ist gezielt (`BALL_AIMED_SHARE`): Er hat
-    seinen höchsten Punkt auf der Höhe des Flugzeugs, gerade wenn er es
-    erreicht, und rechnet mit dem Tempo. Ohne ihn war der obere Rand
-    eine sichere Spur (bei einem Testflug bemerkt). Nur solange der Ball
-    mindestens `BALL_AIM_WARN_SECONDS` bis dorthin braucht, ein tiefes
-    Flugzeug bekommt also gewöhnliche Schüsse; das hängt nur von der
-    Höhe des Flugzeugs ab, nicht vom Tempo oder der Form des
-    Bildschirms. Ein gezielter Schuss, dessen Stelle ein Mast oder
-    Rasensprenger besetzt, versucht es kurz darauf nochmals, und auf ein
-    Flugzeug, das nicht getroffen werden kann (es blinkt), wird nicht
-    gezielt.
+  - Fussbälle sind das erste Hindernis auf einer Parabel, geschossen von
+    Fussballern, die mit dem Ball heranrennen (`FOOTBALLER_RUN`), damit
+    man jeden Schuss kommen sieht. Bei einem Testflug liessen zufällig
+    hochgeschossene Bälle den oberen Rand als sichere Spur frei; der
+    Benutzer wünschte sich Fussballer, die das Flugzeug abschiessen
+    wollen. Jeder Schuss zielt dorthin, wo das Flugzeug gleich ist, und
+    rechnet mit dem Tempo: Der Fussballer schiesst, sobald der Ball
+    `SHOT_WARN_SECONDS` bis dorthin brauchen würde, oder die Zeit, um zu
+    einem hohen Flugzeug aufzusteigen, damit der Bogen bei einem hohen
+    Flugzeug seinen höchsten Punkt hat und auf ein tiefes herabfällt, und
+    die Vorwarnung hängt nicht vom Tempo oder der Form des Bildschirms
+    ab. Etwa jeder zweite Schuss geht 35–80 px daneben
+    (`SHOT_MISS_SHARE`), weg vom Rasen und vom Bildschirmrand. Kein
+    Schuss auf ein Flugzeug, das nicht getroffen werden kann (es blinkt);
+    ein Fussballer, der ohne Schuss zu nahe kommt (ein Mast oder
+    Rasensprenger im Weg, `SHOT_LEAST_SECONDS`), rennt mit dem Ball
+    davon. Die Fussballer sind kein Hindernis; die Bälle springen
+    zweimal auf (`BALL_BOUNCES`) und rollen davon.
   - Flutlichtmasten sind selten (alle 8–13 s), damit sie für einen Platz
     glaubwürdig bleiben; Masten und Rasensprenger sind nicht im Bild.
   - Der Strahl eines Rasensprengers ist nur fest, solange er oben ist;

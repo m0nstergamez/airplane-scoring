@@ -1134,17 +1134,21 @@ that isn't code here. Keep entries short and dated.
   stripes, a small grandstand and trees behind). Picked from proposals:
   footballs kicked up in an arc, floodlight masts and sprinklers, summer
   weather (no rain), a step harder than level 5.
-  - Footballs are the first obstacle on a parabola: kicked up from the
-    grass well ahead of the plane (`BALL_KICK_AT`), so each arc is seen
-    from its start; they bounce twice (`BALL_BOUNCES`) and roll off.
-    Up to every second kick is aimed (`BALL_AIMED_SHARE`): it peaks at
-    the plane's height just as it reaches the plane, allowing for the
-    speed. Without it the top edge was a safe lane (found in a test
-    flight). Only while the ball takes at least `BALL_AIM_WARN_SECONDS`
-    to get there, so a low plane gets ordinary kicks; this depends on the
-    plane's height alone, not on the speed or the screen's shape. An
-    aimed kick whose spot a mast or sprinkler takes tries again a moment
-    later, and a plane that cannot be hit (blinking) is not aimed at.
+  - Footballs are the first obstacle on a parabola, shot by footballers
+    who run in with the ball (`FOOTBALLER_RUN`), so each shot is seen
+    coming. In a test flight, balls kicked up at random left the top
+    edge a safe lane; the user asked for footballers who try to shoot
+    the plane down. Each shot is aimed at where the plane will be,
+    allowing for the speed: the footballer kicks once the ball would take
+    `SHOT_WARN_SECONDS` to get there, or the time to rise to a high
+    plane, so the arc peaks at a high plane and drops onto a low one, and
+    the warning does not depend on the speed or the screen's shape. About
+    every second shot misses by 35–80 px (`SHOT_MISS_SHARE`), away from
+    the grass and the screen's edge. No shots at a plane that cannot be
+    hit (blinking); a footballer who gets too close without a shot (a
+    mast or sprinkler in the way, `SHOT_LEAST_SECONDS`) runs off with the
+    ball. The footballers are not an obstacle; the balls bounce twice
+    (`BALL_BOUNCES`) and roll off.
   - Floodlight masts are rare (every 8–13 s), so they stay plausible for
     one pitch; the masts and the sprinklers are not in the picture.
   - A sprinkler's jet is solid only while it is up; it always rests
