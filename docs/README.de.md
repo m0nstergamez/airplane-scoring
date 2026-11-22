@@ -1273,8 +1273,10 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
     Schuss auf ein Flugzeug, das nicht getroffen werden kann (es blinkt);
     ein Fussballer, der ohne Schuss zu nahe kommt (ein Mast oder
     Rasensprenger im Weg, `SHOT_LEAST_SECONDS`), rennt mit dem Ball
-    davon. Die Fussballer sind kein Hindernis; die Bälle springen
-    zweimal auf (`BALL_BOUNCES`) und rollen davon.
+    weiter, und der zählt wie ein geschossener. Nach einem Schuss rennt
+    der Fussballer ebenfalls weiter, damit nie zwei ineinanderlaufen.
+    Die Fussballer sind kein Hindernis; die Bälle springen zweimal auf
+    (`BALL_BOUNCES`) und rollen davon.
   - Flutlichtmasten sind selten (alle 8–13 s), damit sie für einen Platz
     glaubwürdig bleiben; Masten und Rasensprenger sind nicht im Bild.
   - Der Strahl eines Rasensprengers ist nur fest, solange er oben ist;

@@ -325,7 +325,8 @@ day, past a small grandstand:
   high, dropping onto you when you fly low. Nowhere is safe, but you see
   each one run in and kick, and about every second shot misses. Climb
   or dive a little as soon as a ball comes. If one hits you, you lose a
-  life and it flies off. The footballers themselves are harmless.
+  life and it flies off; the same goes for a ball still at a
+  footballer's feet. The footballers themselves are harmless.
 - **Floodlight masts** stand here and there, a thin pole with a bank of
   lamps on top. Fly over them; lamps and pole count.
 - **Sprinklers** in the grass throw a jet of water up, rest, and throw

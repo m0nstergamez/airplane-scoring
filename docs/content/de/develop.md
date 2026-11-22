@@ -322,8 +322,10 @@ flowchart LR
 - **Der Fussballplatz** (`crates/core/src/pitch.rs`, Level 6,
   `PITCH_LEVEL`): Alle 2–4 s rennt ein `Footballer` mit einem Ball
   herein (`FOOTBALLER_GAP_SECONDS`) und schiesst ihn auf das Flugzeug
-  (`Event::BallKick`): ein Bogen, der das Flugzeug frühestens nach
-  `SHOT_WARN_SECONDS` erreicht, etwa jeder zweite Schuss geht daneben
+  (`Event::BallKick`): ein Bogen, der das Flugzeug nach
+  `SHOT_WARN_SECONDS` erreicht (frühestens nach `SHOT_LEAST_SECONDS`,
+  wenn ein Mast oder Rasensprenger den Fussballer aufgehalten hat), etwa
+  jeder zweite Schuss geht daneben
   (`SHOT_MISS_SHARE`); der `Ball` springt auf und wird weggeschossen,
   wenn getroffen; `Mast`s (Flutlicht) sind selten (`MAST_GAP_SECONDS`)
   und fest; der Strahl eines `Sprinkler`s ist `SPRINKLER_ON_SECONDS`

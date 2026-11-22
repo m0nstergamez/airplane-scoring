@@ -44,21 +44,24 @@ pub const PITCH_ROOM: f32 = 110.0;
 pub const FOOTBALLER_GAP_SECONDS: (f32, f32) = (2.0, 4.0);
 pub const FIRST_FOOTBALLER_SECONDS: f32 = 1.0;
 /// How fast a footballer runs toward the plane with the ball, in px per
-/// second, on top of the ground sliding past. After the shot they stop.
+/// second, on top of the ground sliding past (also after the shot).
 pub const FOOTBALLER_RUN: f32 = 50.0;
 /// How tall a footballer is, in px (drawn only: not an obstacle).
 pub const FOOTBALLER_HEIGHT: f32 = 42.0;
 /// The ball at a footballer's feet is this far in front of them (toward
 /// the plane), in px.
 pub const FOOTBALLER_FOOT: f32 = 13.0;
-/// How long a footballer holds the kick pose after a shot, in seconds.
+/// How long a footballer holds the kick pose after a shot, in seconds
+/// (then they run on, arms up).
 pub const KICK_POSE_SECONDS: f32 = 0.3;
 /// How fast a shot flies across, in px per second (less than 0: toward
 /// the plane), on top of the ground sliding past.
 pub const SHOT_DRIFT: f32 = -70.0;
 /// A footballer shoots once the ball would take this long to reach the
 /// plane, in seconds, or as long as it takes to rise to it if that is
-/// longer (a high plane): so each shot comes with as much warning.
+/// longer (a high plane): so a shot comes with that much warning (unless
+/// a mast or sprinkler held the footballer back: then down to
+/// [`SHOT_LEAST_SECONDS`]).
 pub const SHOT_WARN_SECONDS: f32 = 1.1;
 /// Closer than this (the ball's time to the plane, in seconds) a
 /// footballer no longer shoots (say a mast stood in the way); they run
@@ -167,8 +170,13 @@ impl Ball {
 
     /// The ball as drawn, for crashing.
     pub fn shape(&self, scale: f32) -> Poly {
+        Self::shape_at(self.pos, scale)
+    }
+
+    /// A ball at `at` as drawn (also one at a footballer's feet).
+    pub fn shape_at(at: Vec2, scale: f32) -> Poly {
         let r = BALL_RADIUS * scale;
-        Poly::ellipse(self.pos, r, r)
+        Poly::ellipse(at, r, r)
     }
 
     /// Hit by the plane: it flies off up and away.
@@ -366,12 +374,11 @@ impl Pitch {
         }
         for f in &mut self.footballers {
             f.age += 1;
-            match &mut f.shot {
-                None => f.x += dx - FOOTBALLER_RUN * s * TICK_SECONDS,
-                Some(t) => {
-                    *t += 1;
-                    f.x += dx; // stands, watching the ball
-                }
+            // Running on after the shot too (after the ball), so two never
+            // run into each other.
+            f.x += dx - FOOTBALLER_RUN * s * TICK_SECONDS;
+            if let Some(t) = &mut f.shot {
+                *t += 1;
             }
         }
         for m in &mut self.masts {
@@ -445,6 +452,7 @@ impl Pitch {
         let g = BALL_GRAVITY * s;
         let r = BALL_RADIUS * s;
         let closing = (SCROLL_SPEED * self.speed - SHOT_DRIFT) * s;
+        let mut kicked = false;
         for i in 0..self.footballers.len() {
             let f = self.footballers[i];
             let Some(foot) = f.ball(bounds) else { continue };
@@ -466,7 +474,10 @@ impl Pitch {
             }
             // Up so that it is at `target` after `time`. (Plus half a
             // tick: the ball falls before it moves in every tick.)
+            // Never over the top of the screen (a late shot at a high
+            // plane, held back by a mast: it then peaks a little early).
             let up = (foot.y - target) / time + g * time / 2.0 + g * TICK_SECONDS / 2.0;
+            let up = up.min(Self::launch(foot.y - r, s));
             self.balls.push(Ball {
                 pos: foot,
                 vel: Vec2::new(SHOT_DRIFT * s, -up),
@@ -475,8 +486,28 @@ impl Pitch {
                 age: f.age,
             });
             self.footballers[i].shot = Some(0);
-            events.push(Event::BallKick);
+            kicked = true;
         }
+        if kicked {
+            events.push(Event::BallKick); // one sound, also for two at once
+        }
+    }
+
+    /// The plane flew into the ball at footballer `i`'s feet: it flies
+    /// off, and they run on without it.
+    pub fn knock_from_feet(&mut self, i: usize, bounds: Bounds) {
+        let f = &mut self.footballers[i];
+        let Some(at) = f.ball(bounds) else { return };
+        f.shot = Some(ticks(KICK_POSE_SECONDS)); // no kick pose
+        let mut ball = Ball {
+            pos: at,
+            vel: Vec2::new(0.0, 0.0),
+            bounces: 0,
+            struck: false,
+            age: f.age,
+        };
+        ball.knock_away(bounds.scale());
+        self.balls.push(ball);
     }
 
     /// How fast a ball must go up to rise `rise` px. (Plus half a tick of
@@ -575,15 +606,17 @@ mod tests {
     /// before.
     fn first_shot(p: &mut Pitch) -> (Ball, Vec2) {
         for _ in 0..ticks(30.0) {
-            let feet: Vec<Option<Vec2>> = p.footballers.iter().map(|f| f.ball(PHONE)).collect();
+            // (By age: footballers come and go in a tick.)
+            let feet: Vec<(u32, Option<Vec2>)> = p
+                .footballers
+                .iter()
+                .map(|f| (f.age, f.ball(PHONE)))
+                .collect();
             p.tick(PHONE, true, LOW, &mut Vec::new());
             if let Some(&b) = p.balls.last() {
-                let i = p
-                    .footballers
-                    .iter()
-                    .position(|f| f.shot == Some(0))
-                    .unwrap();
-                return (b, feet[i].unwrap());
+                let f = p.footballers.iter().find(|f| f.shot == Some(0)).unwrap();
+                let (_, at) = feet.iter().find(|(age, _)| *age + 1 == f.age).unwrap();
+                return (b, at.unwrap());
             }
         }
         panic!("no shot in 30 s");
@@ -645,8 +678,11 @@ mod tests {
     fn a_shot_leaves_the_footballers_feet_well_ahead_of_the_plane() {
         let mut p = Pitch::new(2);
         let mut events = Vec::new();
-        while p.balls.is_empty() {
+        for _ in 0..ticks(30.0) {
             p.tick(PHONE, true, LOW, &mut events);
+            if !p.balls.is_empty() {
+                break;
+            }
         }
         assert_eq!(events, vec![Event::BallKick]);
         let mut p = Pitch::new(2);
@@ -694,6 +730,39 @@ mod tests {
                 assert!(met * 4 >= n, "{bounds:?} {speed} {y}: {met} of {n}");
             }
         }
+    }
+
+    #[test]
+    fn real_shots_stay_on_the_screen_and_one_at_a_low_plane_lands() {
+        for y in [12.0, 200.0, 340.0] {
+            let plane = Vec2::new(PLANE_X, y);
+            let mut p = Pitch::new(9);
+            let mut top = f32::MAX;
+            let mut landed = std::collections::BTreeSet::new();
+            for t in 0..ticks(120.0) {
+                p.tick(PHONE, true, Some(plane), &mut Vec::new());
+                for b in &p.balls {
+                    top = top.min(b.pos.y);
+                    if b.bounces > 0 {
+                        landed.insert(t - b.age);
+                    }
+                }
+            }
+            assert!(top > 0.0, "{y}: up to {top}");
+            if y > 300.0 {
+                assert!(landed.len() > 20, "{y}: {} landed", landed.len());
+            }
+        }
+    }
+
+    #[test]
+    fn a_ball_at_a_footballers_feet_flies_off_when_hit() {
+        let mut p = Pitch::new(2);
+        run(&mut p, FIRST_FOOTBALLER_SECONDS + 0.01, true);
+        p.knock_from_feet(0, PHONE);
+        assert!(p.footballers[0].ball(PHONE).is_none());
+        assert!(!p.footballers[0].kicking());
+        assert!(p.balls.len() == 1 && p.balls[0].struck);
     }
 
     #[test]
@@ -758,13 +827,17 @@ mod tests {
     }
 
     #[test]
-    fn after_the_shot_a_footballer_stands_and_slides_off_with_the_ground() {
+    fn after_the_shot_a_footballer_runs_on_and_off_the_screen() {
         let mut p = Pitch::new(2);
         first_shot(&mut p);
         let i = p.footballers.iter().position(|f| f.shot.is_some()).unwrap();
         let x = p.footballers[i].x;
         run(&mut p, 1.0, false);
-        assert!((x - p.footballers[i].x - SCROLL_SPEED).abs() < 1.0);
+        let moved = x - p.footballers[i].x;
+        assert!(
+            (moved - SCROLL_SPEED - FOOTBALLER_RUN).abs() < 1.0,
+            "{moved}"
+        );
         assert!(!p.footballers[i].kicking(), "the kick is over");
         run(&mut p, 20.0, false);
         assert!(p.footballers.is_empty());

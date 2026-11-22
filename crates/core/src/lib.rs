@@ -1183,7 +1183,7 @@ impl World {
         (self.forest).tick(self.bounds, woods, plane, &mut self.events);
         let field = levels.level == PITCH_LEVEL && !runway_in && !clearing;
         self.pitch.set_speed(speed);
-        // (No aimed balls at a plane that cannot be hit just now.)
+        // (No shots at a plane that cannot be hit just now.)
         let aim = (!self.player.is_safe() && !self.player.is_crashed()).then_some(plane);
         self.pitch.tick(self.bounds, field, aim, &mut self.events);
         let town = levels.level == CITY_LEVEL && !runway_in && !clearing;
@@ -1270,13 +1270,24 @@ impl World {
         } else {
             Vec::new()
         };
-        // The pitch: masts and sprinklers' jets are solid, balls are
-        // knocked away.
+        // The pitch: masts and sprinklers' jets are solid, balls (also
+        // one at a footballer's feet) are knocked away.
         let mast = (self.pitch.masts.iter()).any(|m| hits(&m.shape(bounds)));
         let splash = (self.pitch.sprinklers.iter()).any(|s| hits(&s.shape(bounds)));
         let balls: Vec<usize> = if open {
             (self.pitch.balls.iter().enumerate())
                 .filter(|(_, b)| !b.struck && hits(&[b.shape(scale)]))
+                .map(|(i, _)| i)
+                .collect()
+        } else {
+            Vec::new()
+        };
+        let dribbled: Vec<usize> = if open {
+            (self.pitch.footballers.iter().enumerate())
+                .filter(|(_, f)| {
+                    f.ball(bounds)
+                        .is_some_and(|at| hits(&[Ball::shape_at(at, scale)]))
+                })
                 .map(|(i, _)| i)
                 .collect()
         } else {
@@ -1314,6 +1325,7 @@ impl World {
             || mast
             || splash
             || !balls.is_empty()
+            || !dribbled.is_empty()
             || !roof_helis.is_empty()
             || !flyers.is_empty()
             || (self.balloons.pads.iter()).any(|p| hits(&p.shape(bounds)))
@@ -1366,6 +1378,9 @@ impl World {
         }
         for &i in &balls {
             self.pitch.balls[i].knock_away(scale);
+        }
+        for &i in &dribbled {
+            self.pitch.knock_from_feet(i, bounds);
         }
         if in_gust {
             self.player.vel_y += GUST_PUSH * scale * TICK_SECONDS;
@@ -3135,6 +3150,31 @@ mod tests {
         }
         assert!(kicked, "a ball was kicked");
         assert!(crashed, "a plane waiting in its path is hit");
+    }
+
+    #[test]
+    fn a_ball_at_a_footballers_feet_costs_a_life_too() {
+        // (They shoot long before they get there; one who could not,
+        // say a mast was in the way, runs past with the ball.)
+        let mut w = on_the_pitch();
+        for _ in 0..(10.0 / TICK_SECONDS) as u32 {
+            if !w.pitch.footballers.is_empty() {
+                break;
+            }
+            w.tick(&Input::NONE);
+        }
+        let f = &mut w.pitch.footballers[0];
+        let at = f.ball(w.bounds).unwrap();
+        f.x += w.player.pos.x - at.x;
+        w.player.pos.y = at.y - 2.0;
+        w.player.vel_y = 0.0;
+        w.tick(&Input::NONE);
+        assert!(w.events().contains(&Event::Crash));
+        assert!(
+            w.pitch.balls.iter().any(|b| b.struck),
+            "knocked off the feet"
+        );
+        assert!(w.pitch.footballers[0].ball(w.bounds).is_none());
     }
 
     #[test]

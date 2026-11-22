@@ -307,8 +307,9 @@ flowchart LR
 - **The football pitch** (`crates/core/src/pitch.rs`, level 6,
   `PITCH_LEVEL`): a `Footballer` runs in every 2–4 s
   (`FOOTBALLER_GAP_SECONDS`) with a ball and shoots it at the plane
-  (`Event::BallKick`): an arc that meets the plane after at least
-  `SHOT_WARN_SECONDS`, about every second shot missing
+  (`Event::BallKick`): an arc that meets the plane after
+  `SHOT_WARN_SECONDS` (at least `SHOT_LEAST_SECONDS` if a mast or
+  sprinkler held the footballer back), about every second shot missing
   (`SHOT_MISS_SHARE`); the `Ball` bounces and is knocked away when hit; `Mast`s (floodlights)
   are rare (`MAST_GAP_SECONDS`) and solid; a `Sprinkler`'s jet is solid
   for `SPRINKLER_ON_SECONDS`, then rests for `SPRINKLER_OFF_SECONDS`

@@ -348,7 +348,8 @@ einen gemähten Rasen, an einer kleinen Tribüne vorbei:
   wenn du tief fliegst. Sicher ist es nirgends, aber du siehst jeden
   heranrennen und schiessen, und etwa jeder zweite Schuss geht daneben.
   Steig oder sink ein wenig, sobald ein Ball kommt. Trifft dich einer,
-  verlierst du ein Leben, und er fliegt davon. Die Fussballer selbst
+  verlierst du ein Leben, und er fliegt davon; das gilt auch für einen
+  Ball, der noch am Fuss eines Fussballers ist. Die Fussballer selbst
   sind harmlos.
 - **Flutlichtmasten** stehen hier und dort, eine dünne Stange mit einer
   Reihe Lampen oben. Flieg über sie; Lampen und Stange zählen.

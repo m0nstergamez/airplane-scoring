@@ -1146,9 +1146,11 @@ that isn't code here. Keep entries short and dated.
     every second shot misses by 35–80 px (`SHOT_MISS_SHARE`), away from
     the grass and the screen's edge. No shots at a plane that cannot be
     hit (blinking); a footballer who gets too close without a shot (a
-    mast or sprinkler in the way, `SHOT_LEAST_SECONDS`) runs off with the
-    ball. The footballers are not an obstacle; the balls bounce twice
-    (`BALL_BOUNCES`) and roll off.
+    mast or sprinkler in the way, `SHOT_LEAST_SECONDS`) runs on with the
+    ball, which counts like a kicked one. After a shot the footballer
+    runs on too, so two never run into each other. The footballers are
+    not an obstacle; the balls bounce twice (`BALL_BOUNCES`) and roll
+    off.
   - Floodlight masts are rare (every 8–13 s), so they stay plausible for
     one pitch; the masts and the sprinklers are not in the picture.
   - A sprinkler's jet is solid only while it is up; it always rests

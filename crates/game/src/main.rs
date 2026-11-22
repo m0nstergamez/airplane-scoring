@@ -1352,10 +1352,8 @@ fn draw_sprinkler(sp: &Sprinkler, bounds: Bounds, ticks: u64) {
     }
 }
 
-/// A football (core's `Ball::shape`): white with black patches, spinning,
-/// with a shadow edge.
 /// A footballer (core's `Footballer`), facing the plane (left): running
-/// with the ball at their feet, then a kick, then arms up, watching it.
+/// with the ball at their feet, then a kick, then on with arms up.
 fn draw_footballer(f: &Footballer, bounds: Bounds) {
     let s = bounds.scale();
     let x = f.x;
@@ -1441,6 +1439,8 @@ fn draw_footballer(f: &Footballer, bounds: Bounds) {
     }
 }
 
+/// A football (core's `Ball::shape`): white with black patches, spinning,
+/// with a shadow edge.
 fn draw_ball(b: &Ball, s: f32) {
     let r = BALL_RADIUS * s;
     let (x, y) = (b.pos.x, b.pos.y);
