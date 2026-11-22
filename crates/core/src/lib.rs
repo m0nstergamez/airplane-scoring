@@ -1208,7 +1208,8 @@ impl World {
         let aim = (!self.player.is_safe() && !self.player.is_crashed()).then_some(plane);
         self.pitch.tick(self.bounds, field, aim, &mut self.events);
         let snow = levels.level == WINTER_LEVEL && !runway_in && !clearing;
-        (self.winter).tick(self.bounds, snow, plane.x, &mut self.events);
+        self.winter.set_speed(speed);
+        (self.winter).tick(self.bounds, snow, plane.x, aim, &mut self.events);
         let town = levels.level == CITY_LEVEL && !runway_in && !clearing;
         self.city.set_speed(speed);
         self.city.tick(self.bounds, town, plane_y);
@@ -3128,6 +3129,7 @@ mod tests {
         w.winter.jumpers.push(Jumper {
             pos: Vec2::new(at.x + 30.0, at.y),
             vel: Vec2::new(-200.0, 0.0),
+            gravity: 0.0,
             state: JumperState::Flying,
         });
         let lives = w.lives;

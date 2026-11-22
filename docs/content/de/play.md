@@ -365,16 +365,18 @@ schneit:
 - **Verschneite Tannen** stehen hoch, allein oder zu zweit oder dritt,
   wie die Tannen im Herbstwald. Flieg über sie.
 - Ab und zu kommt eine **Sprungschanze**: ein Stahlturm mit dem Anlauf
-  hinunter zum Schanzentisch. Turm, Anlauf und die Stütze unter dem
-  Schanzentisch zählen; unter dem Anlauf ist frei. Kommst du näher,
-  startet oben ein **Skispringer**: Du siehst ihn den Anlauf
-  hinunterrasen, dann springt er und fliegt in einem langen, fallenden
-  Bogen auf dich zu, jedes Mal auf einer anderen Höhe. Trifft dich
+  hinunter zu einem langen Schanzentisch auf einem festen Block. Turm,
+  Anlauf und Tisch zählen; unter dem Anlauf ist frei. Kommst du näher,
+  startet oben ein **Skispringer**: Du siehst ihn den Anlauf und über
+  den Tisch rasen, dann springt er **auf die Höhe, auf der du fliegst**:
+  Er steigt zu dir hinauf, wenn du hoch fliegst, und fällt auf dich
+  herab, wenn du tief fliegst. Sicher ist es nirgends, auch nicht am
+  oberen Rand: Steig oder sink, sobald er abgesprungen ist. Trifft dich
   einer, verlierst du ein Leben, und er stürzt ab.
 - Ab und zu kommt für ein paar Sekunden ein **Schneesturm**: Der Wind
-  drückt dein Flugzeug nach unten, und das Schneetreiben verdeckt, was
-  kommt. Er kostet kein Leben, kann dich aber auf eine Tanne drücken.
-  Steig gegen ihn an.
+  drückt dein Flugzeug kräftig nach unten, und dichtes Schneetreiben
+  verdeckt, was kommt. Er kostet kein Leben, kann dich aber auf eine
+  Tanne drücken. Steig gegen ihn an.
 
 ## Bestenliste
 

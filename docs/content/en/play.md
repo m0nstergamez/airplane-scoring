@@ -340,14 +340,16 @@ over a snowy forest and fields of snow, while snow falls:
 - **Snowy firs** stand tall, alone or two or three together, like the
   firs in the autumn forest. Fly over them.
 - Now and then a **ski jump** comes: a steel tower with the inrun down
-  to the take-off. Tower, inrun and the post under the take-off count;
-  under the inrun is free. When you come near, a **ski jumper** sets off
-  at the top: you see them race down the inrun, then they jump and fly
-  at you in a long, falling arc, at a different height each time. If
-  one hits you, you lose a life and they tumble down.
+  to a long take-off table on a solid block. Tower, inrun and table
+  count; under the inrun is free. When you come near, a **ski jumper**
+  sets off at the top: you see them race down the inrun and over the
+  table, then they jump **at the height you fly at**, rising to you when
+  you fly high, dropping onto you when you fly low. Nowhere is safe, not
+  even along the top edge: climb or dive as soon as they are off. If one
+  hits you, you lose a life and they tumble down.
 - Now and then a **snowstorm** comes for a few seconds: the wind
-  presses your plane down, and driving snow hides what comes. It costs
-  no life, but it can push you onto a fir. Climb against it.
+  presses your plane down hard, and thick driving snow hides what comes.
+  It costs no life, but it can push you onto a fir. Climb against it.
 
 ## Leaderboard
 

@@ -1308,16 +1308,24 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
     Höhen (`SNOW_FIR_TOP`).
   - Eine Sprungschanze war zuerst ein fester Hügel aus Schnee; im Bild
     sah er aus wie ein Eisblock. Jetzt ist sie ein Stahlturm mit dem
-    Anlauf und einer Stütze unter dem Schanzentisch, fest, wo sie
-    gezeichnet ist, damit das Flugzeug unter dem Anlauf durchfliegen
-    kann. Ihr Springer startet, wenn der Schanzentisch `SKI_START_AHEAD`
-    (330–560 px) vor dem Flugzeug ist, so kreuzt er das Flugzeug
-    irgendwo zwischen der Höhe des Schanzentischs und dem Schnee, und
-    man sieht ihn zuerst den Anlauf hinunterrasen (`SKI_INRUN_SECONDS`).
+    Anlauf, fest, wo sie gezeichnet ist, damit das Flugzeug unter dem
+    Anlauf durchfliegen kann. Nach einem Testflug wünschte sich der
+    Nutzer einen grösseren Absprung: einen langen Tisch (`SKI_TABLE`)
+    auf einem festen Block. Ihr Springer startet, wenn der
+    Schanzentisch `SKI_START_AHEAD` (330–560 px) vor dem Flugzeug ist,
+    und man sieht ihn zuerst den Anlauf hinunterrasen
+    (`SKI_INRUN_SECONDS`). Zuerst flog er einen festen Bogen, so war das
+    Flugzeug am oberen Rand sicher; jetzt springt jeder auf die Höhe des
+    Flugzeugs beim Absprung, mit dem Tempo verrechnet, wie die Schüsse
+    der Fussballer: Er steigt zu einem hohen Flugzeug (mit dem Scheitel
+    dort, wenn der Bogen sonst den Bildschirm verlässt) und fällt auf
+    ein tiefes, innerhalb von `SKI_SPREAD`. Kein Zielen auf ein
+    blinkendes Flugzeug.
   - Ein Schneesturm ist wie Nebel und Böen des Waldes in einem: Für
     `STORM_SECONDS` verschleiert Schneetreiben den Bildschirm, und das
-    Flugzeug wird nach unten gedrückt (`STORM_PUSH`, schwächer als eine
-    Böe, weil er länger dauert).
+    Flugzeug wird nach unten gedrückt (`STORM_PUSH`). Zuerst schwächer
+    als eine Böe (500); nach einem Testflug stärker (1100) und mit
+    dichterem Schleier.
   - Neue Sounds `ski-jump.wav` und `blizzard.wav`. Die Level-Karte hat
     einen siebten Halt und das goldene NEW; mit sieben Halten passte sie
     nicht mehr aufs Handy (667 px) und ins Laptop-Fenster (1366 px):

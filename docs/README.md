@@ -1178,15 +1178,21 @@ that isn't code here. Keep entries short and dated.
   - Snowy firs are the forest's `Fir` (same shape, same crash), drawn
     with snow; their own timer and heights (`SNOW_FIR_TOP`).
   - A ski jump was first a solid hill of snow; on screen it looked like
-    a block of ice. It is now a steel tower with the inrun and a post
-    under the take-off, solid where it is drawn, so the plane can fly
-    under the inrun. Its jumper sets off when the take-off is
-    `SKI_START_AHEAD` (330–560 px) ahead of the plane, so they cross the
-    plane anywhere from the take-off's height down to the snow, and you
-    see them race down the inrun first (`SKI_INRUN_SECONDS`).
+    a block of ice. It is now a steel tower with the inrun, solid where
+    it is drawn, so the plane can fly under the inrun. After a test
+    flight the user asked for a bigger take-off: a long table
+    (`SKI_TABLE`) on a solid block. Its jumper sets off when the
+    take-off is `SKI_START_AHEAD` (330–560 px) ahead of the plane, and
+    you see them race down the inrun first (`SKI_INRUN_SECONDS`). At
+    first they flew a fixed arc, so holding the plane at the top edge
+    was safe; now each jumps at the plane's height as they take off,
+    allowing for the speed, like the footballers' shots: rising to a high
+    plane (peaking at it if the arc would leave the screen), dropping
+    onto a low one, within `SKI_SPREAD`. No aim at a blinking plane.
   - A snowstorm is like the forest's fog and gusts in one: for
     `STORM_SECONDS` the screen is veiled in driving snow and the plane
-    pressed down (`STORM_PUSH`, weaker than a gust as it lasts longer).
+    pressed down (`STORM_PUSH`). First weaker than a gust (500); after a
+    test flight made harder (1100) with a thicker veil.
   - New sounds `ski-jump.wav` and `blizzard.wav`. The level map got a
     seventh stop and the golden NEW; with seven stops it no longer fit
     a phone (667 px) or a laptop window (1366 px): the dashes between

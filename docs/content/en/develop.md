@@ -319,13 +319,15 @@ flowchart LR
 - **The mountains in winter** (`crates/core/src/winter.rs`, level 7,
   `WINTER_LEVEL`): groups of one to three snowy `Fir`s
   (`SNOW_FIR_GROUP`, the forest's firs); a `SkiJump` every 6–9 s
-  (`SKI_JUMP_GAP_SECONDS`) whose inrun, tower and post are solid; its
-  jumper sets off when the take-off is `SKI_START_AHEAD` ahead of the
-  plane, races down the inrun for `SKI_INRUN_SECONDS` and flies at the
-  plane as a `Jumper` (`SKI_SPEED`, `SKI_GRAVITY`, `Event::SkiJump`),
-  knocked down when hit; `Winter::storm` (0..1, every 10–15 s for
-  `STORM_SECONDS`, `Event::Blizzard`) presses the plane down
-  (`STORM_PUSH`, weaker than climbing), no life lost, and tells the
+  (`SKI_JUMP_GAP_SECONDS`) whose inrun, tower and take-off table
+  (`SKI_TABLE`, on a block) are solid; its jumper sets off when the
+  take-off is `SKI_START_AHEAD` ahead of the plane, races down the
+  inrun and over the table for `SKI_INRUN_SECONDS` and jumps as a
+  `Jumper` aimed at the plane's height then, allowing for the speed
+  (`SKI_SPEED`, `SKI_SPREAD`, `Event::SkiJump`), knocked down when hit;
+  `Winter::storm` (0..1, every 10–15 s for `STORM_SECONDS`,
+  `Event::Blizzard`) presses the plane down (`STORM_PUSH`, harder than a
+  gust, weaker than climbing), no life lost, and tells the
   game how much to veil the screen; firs and ski jumps keep
   `WINTER_ROOM` between them.
 - **Gulls** (`crates/core/src/gulls.rs`) are the beach's obstacles. Core

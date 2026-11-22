@@ -119,10 +119,10 @@ short **meaning**.
 | Gischt | spray | `Sprinkler::spray`, `SPRINKLER_SPRAY` | Level 6: the wider burst of drops at the top of a sprinkler's jet |
 | Berge im Winter | mountains in winter | `Winter`, `WINTER_LEVEL` | Level 7: snow-capped peaks, a snowy forest and snow fields, snow falling |
 | Verschneite Tanne | snowy fir | `Winter::firs`, `SNOW_FIR_TOP` | Level 7: a fir deep in snow; an obstacle, like the forest's firs |
-| Sprungschanze, Schanze | ski jump | `SkiJump`, `SKI_JUMP_GAP_SECONDS` | Level 7: a steel tower with the inrun; tower, inrun and post are obstacles |
+| Sprungschanze, Schanze | ski jump | `SkiJump`, `SKI_JUMP_GAP_SECONDS` | Level 7: a steel tower with the inrun and the take-off table; all of it is an obstacle, under the inrun is free |
 | Anlauf | inrun | `SkiJump::inrun`, `SKI_INRUN_SECONDS` | Level 7: the track down from the tower, where the jumper picks up speed |
-| Schanzentisch | take-off | `SkiJump::inrun`, `SKI_START_AHEAD` | Level 7: the end of the inrun, where the jumper leaves it |
-| Skispringer | ski jumper | `Jumper`, `Event::SkiJump` | Level 7: flies at the plane in a long, falling arc; an obstacle, knocked down when hit |
+| Schanzentisch | take-off (table) | `SkiJump::table`, `SkiJump::take_off`, `SKI_TABLE` | Level 7: the long table at the foot of the inrun, on a solid block; the jumper leaves it at its edge |
+| Skispringer | ski jumper | `Jumper`, `Event::SkiJump`, `SKI_SPREAD` | Level 7: jumps at the height the plane flies at; an obstacle, knocked down when hit |
 | Schneesturm | snowstorm | `Winter::storm`, `STORM_PUSH`, `Event::Blizzard` | Level 7: for a few seconds presses the plane down and veils the screen; costs no life |
 | Wrack | wreck | `Wreck` | A helicopter the plane flew into: it falls, burning, and is no obstacle any more |
 | Ausleger | jib | `Crane`, `JIB_TOP` | The crane's long arm, on top of its mast |

@@ -1489,15 +1489,16 @@ fn draw_snowy_fir(f: &Fir, bounds: Bounds) {
     }
 }
 
-/// A ski jump (core's `SkiJump::parts`, `inrun` and `rider`): a steel
-/// tower with cross braces and a starting hut on top, the inrun down from
-/// it with snow on its track and a red take-off edge, the post under the
-/// take-off, and the jumper racing down while they are on it.
+/// A ski jump (core's `SkiJump::tower`, `inrun`, `table` and `rider`): a
+/// steel tower with cross braces and a starting hut on top, the inrun
+/// down from it with snow on its track, the long take-off table on its
+/// block with a red take-off edge, and the jumper racing down while they
+/// are on it.
 fn draw_ski_jump(j: &SkiJump, bounds: Bounds) {
     let s = bounds.scale();
     let steel = Color::from_rgba(92, 108, 128, 255);
     let brace = Color::from_rgba(70, 84, 102, 255);
-    let ((tl, tt, tw, th), (pl, pt, pw, ph)) = j.parts(bounds);
+    let (tl, tt, tw, th) = j.tower(bounds);
     // The tower: two legs and cross braces between them.
     let leg = 4.0 * s;
     draw_rectangle(tl, tt, leg, th, steel);
@@ -1510,30 +1511,40 @@ fn draw_ski_jump(j: &SkiJump, bounds: Bounds) {
         draw_line(tl, y, tl + tw, y, 1.5 * s, brace);
         y += step;
     }
-    // The post under the take-off.
-    draw_rectangle(pl, pt, pw, ph, steel);
-    // The inrun: a steel deck, snow on its track.
-    let (lip, top) = j.inrun(bounds);
+    // The take-off table (core's `SkiJump::table`): a block of concrete
+    // down to the snow, its face in shadow, snow on its top.
+    let t = j.table(bounds).map(|p| vec2(p.x, p.y));
+    let concrete = Color::from_rgba(150, 162, 178, 255);
+    draw_triangle(t[0], t[1], t[2], concrete);
+    draw_triangle(t[0], t[2], t[3], concrete);
+    let face = Color::from_rgba(118, 132, 150, 255);
+    draw_rectangle(t[3].x, t[0].y, 5.0 * s, t[3].y - t[0].y, face);
+    let line = Color::from_rgba(132, 146, 164, 255);
+    let mut y = t[1].y + 16.0 * s;
+    while y < t[2].y {
+        draw_line(t[0].x, y, t[1].x, y, 1.0 * s, line);
+        y += 16.0 * s;
+    }
+    // The inrun: a steel deck, snow on its track, on into the table.
+    let (foot, top) = j.inrun(bounds);
     let deck = SKI_DECK * s;
     let mid = |p: Vec2Core| (p.x, p.y + deck / 2.0);
-    let (a, b) = (mid(lip), mid(top));
+    let (a, b) = (mid(foot), mid(top));
     draw_line(a.0, a.1, b.0, b.1, deck, steel);
+    let track = Color::from_rgba(236, 242, 248, 255);
     draw_line(
-        lip.x,
-        lip.y + 1.0 * s,
+        foot.x,
+        foot.y + 1.0 * s,
         top.x,
         top.y + 1.0 * s,
         2.5 * s,
-        Color::from_rgba(236, 242, 248, 255),
+        track,
     );
+    let edge = j.take_off(bounds);
+    draw_line(edge.x, edge.y, foot.x, foot.y, 3.0 * s, track);
     // A red take-off edge.
-    draw_rectangle(
-        lip.x - 1.0 * s,
-        lip.y - 1.0 * s,
-        4.0 * s,
-        deck + 2.0 * s,
-        Color::from_rgba(200, 52, 44, 255),
-    );
+    let red = Color::from_rgba(200, 52, 44, 255);
+    draw_rectangle(edge.x, edge.y - 1.0 * s, 4.0 * s, 8.0 * s, red);
     // The starting hut on top (core's `SkiJump::hut`): wood, a red roof
     // with snow on it, a lit window.
     let (l, t, w, h) = j.hut(bounds);
@@ -1601,11 +1612,11 @@ fn draw_snow(winter: f32, storm: f32, bounds: Bounds, ticks: u64) {
     let (w, h) = (bounds.width, bounds.height);
     let s = bounds.scale();
     if storm > 0.0 {
-        draw_rectangle(0.0, 0.0, w, h, Color::new(0.93, 0.95, 0.98, 0.45 * storm));
+        draw_rectangle(0.0, 0.0, w, h, Color::new(0.93, 0.95, 0.98, 0.6 * storm));
     }
     let seconds = ticks as f32 * TICK_SECONDS;
-    let count = ((0.25 * winter + 1.2 * storm) * w * h / 1500.0) as u32;
-    let drive = 40.0 + 420.0 * storm;
+    let count = ((0.25 * winter + 2.0 * storm) * w * h / 1500.0) as u32;
+    let drive = 40.0 + 620.0 * storm;
     for i in 0..count {
         // Two fixed pseudo-random numbers in 0..1 per flake.
         let a = (i.wrapping_mul(2_654_435_761) >> 8) as f32 / (1 << 24) as f32;
