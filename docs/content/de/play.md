@@ -382,7 +382,7 @@ Ist das Spiel mit einem Server für die Bestenliste verbunden, hat das
 Hauptmenü einen fünften Knopf, **Leaderboard**. Er zeigt die
 schnellsten Pilotinnen und Piloten eines Levels aufs Mal: eine Zeile pro
 Person, mit ihrer schnellsten Zeit. Die Knöpfe über der Liste
-(**1 Coast** bis **6 Pitch**) wechseln das Level; sie öffnet sich beim
+(**1 Coast** bis **7 Winter**) wechseln das Level; sie öffnet sich beim
 Level, das du zuletzt begonnen oder abgeschlossen hast. Deine eigene Zeile ist golden.
 Unter der Liste kannst du **Your name** ändern (1 bis 16 Buchstaben,
 Ziffern, Leerzeichen, `-` oder `_`).
@@ -425,7 +425,7 @@ Flug.
 | Schuss | Wenn ein Fussball hochgeschossen wird (Level 6): ein dumpfer Schlag. |
 | Platschen | Wenn du in den Strahl eines Rasensprengers fliegst (Level 6): ein nasses Platschen, während er dich nach oben stösst. |
 | Skisprung | Wenn ein Skispringer abspringt (Level 7): Ski zischen auf dem Anlauf, dann rauscht die Luft. |
-| Schneesturm | Wenn ein Schneesturm aufkommt (Level 7): eine heulende Böe. |
+| Schneesturm | Wenn ein Schneesturm aufkommt (Level 7): heulender Wind, solange er dauert. |
 | Melodie | Wenn du gelandet bist und ein Level geschafft ist. |
 | Start | Beim Rollen auf der Startbahn: Das Triebwerk dreht hoch, die Räder rumpeln, bis das Flugzeug abhebt. |
 | Fahrwerk | Kurz nach dem Abheben: Surren, während die Räder einfahren, dann ein «Klonk». |

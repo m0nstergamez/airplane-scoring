@@ -1477,11 +1477,14 @@ fn draw_snowy_fir(f: &Fir, bounds: Bounds) {
         let (cb, cc) = (a + (b - a) * cap, a + (c - a) * cap);
         draw_triangle(a, cb, cc, snow);
         draw_triangle(a, (cb + cc) * 0.5, cc, shadow);
-        // Snow along the hem, in lumps.
+        // Snow along the hem, in lumps, inside what core hits
+        // (`Fir::shape`): resting on the hem, clear of the corners.
+        let r = 3.2 * s;
         let steps = 5;
         for k in 0..steps {
-            let x = b.x + (c.x - b.x) * (k as f32 + 0.5) / steps as f32;
-            draw_circle(x, b.y - 1.5 * s, 3.2 * s, snow);
+            let f = 0.2 + 0.6 * k as f32 / (steps - 1) as f32;
+            let x = b.x + (c.x - b.x) * f;
+            draw_circle(x, b.y - r, r, snow);
         }
     }
 }
@@ -1531,37 +1534,28 @@ fn draw_ski_jump(j: &SkiJump, bounds: Bounds) {
         deck + 2.0 * s,
         Color::from_rgba(200, 52, 44, 255),
     );
-    // The starting hut on top: wood, a red roof with snow on it.
-    let (hx, hw, hh) = (top.x + 2.0 * s, 18.0 * s, 13.0 * s);
-    draw_rectangle(hx, top.y - hh, hw, hh, Color::from_rgba(120, 82, 52, 255));
+    // The starting hut on top (core's `SkiJump::hut`): wood, a red roof
+    // with snow on it, a lit window.
+    let (l, t, w, h) = j.hut(bounds);
+    let roof_h = 8.0 * s;
+    let wood = Color::from_rgba(120, 82, 52, 255);
+    draw_rectangle(l + 3.0 * s, t + roof_h, w - 6.0 * s, h - roof_h, wood);
     let roof = (
-        vec2(hx - 3.0 * s, top.y - hh),
-        vec2(hx + hw + 3.0 * s, top.y - hh),
-        vec2(hx + hw / 2.0, top.y - hh - 8.0 * s),
+        vec2(l, t + roof_h),
+        vec2(l + w, t + roof_h),
+        vec2(l + w / 2.0, t),
     );
     draw_triangle(roof.0, roof.1, roof.2, Color::from_rgba(180, 52, 44, 255));
-    draw_line(
-        roof.0.x,
-        roof.0.y,
-        roof.2.x,
-        roof.2.y,
-        2.5 * s,
-        Color::from_rgba(240, 245, 250, 255),
-    );
-    draw_line(
-        roof.2.x,
-        roof.2.y,
-        roof.1.x,
-        roof.1.y,
-        2.5 * s,
-        Color::from_rgba(240, 245, 250, 255),
-    );
+    let snow = Color::from_rgba(240, 245, 250, 255);
+    draw_line(roof.0.x, roof.0.y, roof.2.x, roof.2.y, 2.5 * s, snow);
+    draw_line(roof.2.x, roof.2.y, roof.1.x, roof.1.y, 2.5 * s, snow);
+    let lit = Color::from_rgba(250, 220, 140, 255);
     draw_rectangle(
-        hx + hw / 2.0 - 3.0 * s,
-        top.y - hh + 3.0 * s,
+        l + w / 2.0 - 3.0 * s,
+        t + roof_h + 3.0 * s,
         6.0 * s,
         4.5 * s,
-        Color::from_rgba(250, 220, 140, 255),
+        lit,
     );
     if let Some((at, angle)) = j.rider(bounds) {
         draw_jumper_at(at, angle, s);

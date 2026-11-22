@@ -354,7 +354,7 @@ over a snowy forest and fields of snow, while snow falls:
 When the game is connected to a leaderboard server, the main menu has a
 fifth button, **Leaderboard**. It shows the fastest pilots of one level
 at a time: one line per pilot, with their fastest time. The buttons
-above the list (**1 Coast** to **6 Pitch**) switch the level; it opens
+above the list (**1 Coast** to **7 Winter**) switch the level; it opens
 on the level you started or completed last. Your own line is gold. Under the list you
 can change **Your name** (1 to 16 letters, digits, spaces, `-` or `_`).
 
@@ -394,7 +394,7 @@ completed level that the server flew again and counted is one flight.
 | Kick | When a football is kicked up (level 6): a dull thump. |
 | Splash | When you fly into a sprinkler's jet (level 6): a wet splash as it throws you up. |
 | Ski jump | When a ski jumper takes off (level 7): skis hissing on the inrun, then a rush of air. |
-| Snowstorm | When a snowstorm comes up (level 7): a howling gust. |
+| Snowstorm | When a snowstorm comes up (level 7): a howling wind while it lasts. |
 | Tune | When you have landed and a level is complete. |
 | Takeoff | Rolling down the runway: the engine spools up and the wheels rumble until the plane lifts off. |
 | Gear | Just after lift-off: a whir while the wheels fold up, then a clunk. |

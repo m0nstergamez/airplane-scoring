@@ -98,8 +98,8 @@ pub use weather::{
     THUNDER_DELAY_SECONDS, THUNDER_VOLUME,
 };
 pub use winter::{
-    jumper_parts, Jumper, JumperState, SkiJump, Winter, SKI_DECK, SKI_JUMP_GAP_SECONDS, STORM_PUSH,
-    WINTER_GROUND, WINTER_LEVEL, WINTER_ROOM,
+    jumper_parts, Jumper, JumperState, Ride, SkiJump, Winter, SKI_DECK, SKI_JUMP_GAP_SECONDS,
+    STORM_PUSH, WINTER_GROUND, WINTER_LEVEL, WINTER_ROOM,
 };
 
 /// The screen height that every size and speed in px below is made for:
@@ -272,7 +272,8 @@ pub enum Event {
     /// A ski jumper leaves the take-off (level 7): the hiss of skis and
     /// a rush of air.
     SkiJump,
-    /// A snowstorm comes up (level 7): a howling gust.
+    /// A snowstorm comes up (level 7): a howling wind for as long as it
+    /// lasts (the sound is `STORM_SECONDS` long).
     Blizzard,
     /// A hot-air balloon's burner roars as it appears.
     BalloonBurner,
@@ -3146,8 +3147,7 @@ mod tests {
             top: 0.4,
             lip: 0.54,
             start: 0.0,
-            slide: Some(0),
-            jumped: true,
+            ride: Ride::Jumped,
         };
         w.winter.jumps.push(jump);
         let (lip, _) = jump.inrun(PHONE);

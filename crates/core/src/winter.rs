@@ -62,6 +62,8 @@ pub const SKI_INRUN: f32 = 120.0;
 pub const SKI_DECK: f32 = 7.0;
 pub const SKI_TOWER: f32 = 26.0;
 pub const SKI_POST: f32 = 6.0;
+/// The starting hut on the tower, roof and all: width and height, in px.
+pub const SKI_HUT: (f32, f32) = (24.0, 21.0);
 /// How far ahead of the plane a ski jump's take-off is when its jumper
 /// sets off at the top, nearest and furthest, in px; how long the
 /// jumper takes down the inrun, in seconds.
@@ -110,10 +112,19 @@ pub struct SkiJump {
     /// How far ahead of the plane the take-off is when the jumper sets
     /// off, in px at scale 1.
     pub start: f32,
-    /// Ticks since the jumper set off down the inrun; `None` before.
-    pub slide: Option<u32>,
-    /// Has the jumper left the take-off?
-    pub jumped: bool,
+    /// Where its jumper is.
+    pub ride: Ride,
+}
+
+/// Where a ski jump's jumper is.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Ride {
+    /// At the top, waiting for the plane to come near.
+    Waiting,
+    /// Racing down the inrun, for this many ticks so far.
+    Sliding { ticks: u32 },
+    /// Off the take-off (or thrown off the inrun): a [`Jumper`] now.
+    Jumped,
 }
 
 impl SkiJump {
@@ -140,11 +151,21 @@ impl SkiJump {
         )
     }
 
-    /// The ski jump as drawn, for crashing: the inrun, the tower and the
-    /// post. Under the inrun is free.
+    /// The starting hut on the tower, roof and all: left, top, width,
+    /// height, in px.
+    pub fn hut(&self, bounds: Bounds) -> Rect {
+        let s = bounds.scale();
+        let (_, top) = self.inrun(bounds);
+        let (w, h) = (SKI_HUT.0 * s, SKI_HUT.1 * s);
+        (top.x - 1.0 * s, top.y - h, w, h)
+    }
+
+    /// The ski jump as drawn, for crashing: the inrun, the tower, its hut
+    /// and the post. Under the inrun is free.
     pub fn shape(&self, bounds: Bounds) -> Vec<Poly> {
         let (lip, top) = self.inrun(bounds);
         let ((tl, tt, tw, th), (pl, pt, pw, ph)) = self.parts(bounds);
+        let (hl, ht, hw, hh) = self.hut(bounds);
         let half = SKI_DECK * bounds.scale() / 2.0;
         // (the inrun's top side is where the jumper's skis run)
         let down = |p: Vec2| Vec2::new(p.x, p.y + half);
@@ -152,6 +173,7 @@ impl SkiJump {
             Poly::line(down(lip), down(top), 2.0 * half),
             Poly::rect(tl, tt, tw, th),
             Poly::rect(pl, pt, pw, ph),
+            Poly::rect(hl, ht, hw, hh),
         ]
     }
 
@@ -165,10 +187,9 @@ impl SkiJump {
     /// they head (radians, 0 = right). `None` before they set off and
     /// after they jumped.
     pub fn rider(&self, bounds: Bounds) -> Option<(Vec2, f32)> {
-        let t = self.slide?;
-        if self.jumped {
+        let Ride::Sliding { ticks: t } = self.ride else {
             return None;
-        }
+        };
         let (lip, top) = self.inrun(bounds);
         // Faster and faster down the inrun.
         let f = (t as f32 * TICK_SECONDS / SKI_INRUN_SECONDS).min(1.0);
@@ -354,7 +375,7 @@ impl Winter {
                 let Some((pos, a)) = self.jumps[i].rider(bounds) else {
                     return;
                 };
-                self.jumps[i].jumped = true;
+                self.jumps[i].ride = Ride::Jumped;
                 let speed = SKI_SPEED * s;
                 let mut j = Jumper {
                     pos,
@@ -381,12 +402,19 @@ impl Winter {
         let mut jumped = false;
         for jump in &mut self.jumps {
             jump.x += dx;
-            match jump.slide {
-                None if jump.x - plane_x <= jump.start * s => jump.slide = Some(0),
-                Some(t) if !jump.jumped => {
+            match jump.ride {
+                // Near the plane, and all of it on the screen (so on a
+                // wide one the jumper is never off before it is seen).
+                Ride::Waiting
+                    if jump.x - plane_x <= jump.start * s
+                        && jump.span(bounds).1 <= bounds.width =>
+                {
+                    jump.ride = Ride::Sliding { ticks: 0 }
+                }
+                Ride::Sliding { ticks: t } => {
                     if t >= ticks(SKI_INRUN_SECONDS) {
                         // Off the take-off, toward the plane.
-                        jump.jumped = true;
+                        jump.ride = Ride::Jumped;
                         jumped = true;
                         let (lip, _) = jump.inrun(bounds);
                         self.jumpers.push(Jumper {
@@ -395,7 +423,7 @@ impl Winter {
                             state: JumperState::Flying,
                         });
                     } else {
-                        jump.slide = Some(t + 1);
+                        jump.ride = Ride::Sliding { ticks: t + 1 };
                     }
                 }
                 _ => {}
@@ -444,9 +472,8 @@ impl Winter {
             self.next_storm = ticks(FIRST_STORM_SECONDS);
             return; // (a storm going on still dies down)
         }
-        let crowded = self.crowded(bounds);
         self.next_fir -= 1;
-        if self.next_fir == 0 && crowded {
+        if self.next_fir == 0 && self.crowded(bounds) {
             self.next_fir = ticks(0.2);
         }
         if self.next_fir == 0 {
@@ -456,9 +483,8 @@ impl Winter {
                 .range(SNOW_FIR_GAP_SECONDS.0, SNOW_FIR_GAP_SECONDS.1);
             self.next_fir = ticks(gap);
         }
-        let crowded = self.crowded(bounds);
         self.next_jump -= 1;
-        if self.next_jump == 0 && crowded {
+        if self.next_jump == 0 && self.crowded(bounds) {
             self.next_jump = ticks(0.2);
         }
         if self.next_jump == 0 {
@@ -472,8 +498,7 @@ impl Winter {
                 top,
                 lip,
                 start,
-                slide: None,
-                jumped: false,
+                ride: Ride::Waiting,
             });
             let gap = r.range(SKI_JUMP_GAP_SECONDS.0, SKI_JUMP_GAP_SECONDS.1);
             self.next_jump = ticks(gap);
@@ -546,8 +571,7 @@ mod tests {
             top: 0.4,
             lip: 0.54,
             start: 450.0,
-            slide: None,
-            jumped: false,
+            ride: Ride::Waiting,
         }
     }
 
@@ -605,7 +629,12 @@ mod tests {
             !any_overlap(&probe(mid.x, mid.y + 40.0), &jump),
             "under the inrun"
         );
-        assert!(!any_overlap(&probe(top.x, top.y - 15.0), &jump), "over it");
+        let (_, hut_top, _, _) = j.hut(PHONE);
+        assert!(
+            any_overlap(&probe(top.x + 8.0, top.y - 10.0), &jump),
+            "the hut"
+        );
+        assert!(!any_overlap(&probe(top.x, hut_top - 6.0), &jump), "over it");
         assert!(
             !any_overlap(&probe(lip.x - 10.0, lip.y), &jump),
             "in front of the take-off"
@@ -625,7 +654,7 @@ mod tests {
         while w.jumpers.is_empty() {
             w.tick(PHONE, false, PLANE_X, &mut events);
             let j = w.jumps[0];
-            if j.slide == Some(0) {
+            if j.ride == (Ride::Sliding { ticks: 0 }) {
                 set_off_at = Some(j.x - PLANE_X);
             }
             if let Some((at, _)) = j.rider(PHONE) {
@@ -658,8 +687,9 @@ mod tests {
 
     #[test]
     fn jumpers_cross_the_plane_at_many_heights() {
-        // Taking off 250 to 480 px ahead, they pass the plane anywhere
-        // from about the take-off's height down to the snow.
+        // Setting off 330 to 560 px ahead (the whole SKI_START_AHEAD),
+        // they pass the plane anywhere from about the take-off's height
+        // down to the snow.
         let mut heights = Vec::new();
         for start in [330.0, 400.0, 480.0, 560.0] {
             let mut w = Winter::new(1);
@@ -687,6 +717,27 @@ mod tests {
     }
 
     #[test]
+    fn a_jumper_never_sets_off_before_the_ski_jump_is_on_screen() {
+        // A 4:3 window: big scale, so SKI_START_AHEAD reaches past the
+        // right edge.
+        let wide = Bounds {
+            width: 1024.0,
+            height: 768.0,
+        };
+        let mut w = Winter::new(1);
+        let mut events = Vec::new();
+        for _ in 0..(60.0 / TICK_SECONDS) as u32 {
+            w.tick(wide, true, 0.2 * wide.width, &mut events);
+            for j in &w.jumps {
+                if j.ride == (Ride::Sliding { ticks: 0 }) {
+                    assert!(j.span(wide).1 <= wide.width, "all of it: {j:?}");
+                }
+            }
+        }
+        assert!(events.contains(&Event::SkiJump));
+    }
+
+    #[test]
     fn a_struck_jumper_tumbles_down_and_is_gone() {
         let mut w = Winter::new(1);
         w.jumpers.push(Jumper {
@@ -706,7 +757,7 @@ mod tests {
     fn a_jumper_struck_on_the_inrun_is_thrown_off_it() {
         let mut w = Winter::new(1);
         w.jumps.push(SkiJump {
-            slide: Some(10),
+            ride: Ride::Sliding { ticks: 10 },
             ..a_jump()
         });
         let shapes = w.jumper_shapes(PHONE);

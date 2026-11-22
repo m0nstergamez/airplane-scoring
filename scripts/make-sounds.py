@@ -382,8 +382,9 @@ def ski_jump(seed, seconds):
 
 
 def blizzard(seed, seconds):
-    """A snowstorm comes up (level 7): a howling gust that swells and dies
-    away, its pitch wandering, with fine snow hissing in it."""
+    """A snowstorm (level 7), as long as one lasts: a howling wind that
+    swells and dies away, its pitch wandering, with fine snow hissing in
+    it."""
     rng = random.Random(seed)
     n = int(seconds * RATE)
     cut = [700.0 + 500.0 * math.sin(2 * math.pi * 0.9 * i / RATE) for i in range(n)]
@@ -631,7 +632,7 @@ if __name__ == "__main__":
     write("ball-kick.wav", ball_kick(18, 0.35), 0.8)
     write("splash.wav", splash(19, 0.9), 0.7)
     write("ski-jump.wav", ski_jump(20, 0.9), 0.7)
-    write("blizzard.wav", blizzard(21, 2.2), 0.75)
+    write("blizzard.wav", blizzard(21, 4.5), 0.75)  # STORM_SECONDS
     write("explosion.wav", explosion(9, 2.5), 0.95)
     write("runway-rumble.wav", runway_rumble(10, 2.0), 0.85)
     write("takeoff.wav", takeoff_spool(11, 6.0, 6.8), 0.9)  # ROLL_SECONDS + 0.8
