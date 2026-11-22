@@ -6,13 +6,14 @@ use airplane_scoring_core::{
     background_x, best_time_text, clock_text, has_next_level, pick_steer, pick_throttle,
     start_level, steer_from_keys, Airport, Ball, Balloon, BestTimes, Bounds, Buzzard, Clock, Crane,
     Event, FarHighRise, Fir, Footballer, Goose, Gull, Gust, HeliParts, HighRise, Hut, Mast, Mix,
-    Pad, Sprinkler, Steam, Tilt, Tower, TyreSmoke, Warning, World, Wreck, AIRSPEED_RANGE,
+    Pad, SkiJump, Sprinkler, Steam, Tilt, Tower, TyreSmoke, Warning, World, Wreck, AIRSPEED_RANGE,
     BALLOON_RADIUS, BALL_RADIUS, BASKET_BELOW, BEST_TIMES_COUNT, BUZZARD_SIZE, FOOTBALLER_HEIGHT,
     GOOSE_BODY, HUT_EAVES, HUT_INSET, LIVES, MAIN_WHEEL_X, NOSE_WHEEL_X, OVERSPEED_AT, PAD_HEIGHT,
     PAD_WIDTH, PITCH_GROUND, PLANE_COCKPIT, PLANE_FUSELAGE, PLANE_NOSE, PLANE_RADIUS, PLANE_TAIL,
     PLANE_WING, RUNWAY_HEIGHT, RUNWAY_LENGTH, STALL_AT, STRUT_REACH, SUNRISE_LEVEL, SUN_AT,
     SUN_RADIUS, TICK_SECONDS, WHEEL_RADIUS,
 };
+use airplane_scoring_core::{jumper_parts, Jumper, SKI_DECK, WINTER_LEVEL};
 use macroquad::prelude::*;
 
 mod audio;
@@ -320,6 +321,17 @@ async fn main() {
         for ball in &world.pitch.balls {
             draw_ball(ball, s);
         }
+        // The winter: ski jumps and snowy firs on the snow, the jumpers
+        // in front of them.
+        for jump in &world.winter.jumps {
+            draw_ski_jump(jump, world.bounds);
+        }
+        for fir in &world.winter.firs {
+            draw_snowy_fir(fir, world.bounds);
+        }
+        for jumper in &world.winter.jumpers {
+            draw_jumper(jumper, s);
+        }
 
         // A safe plane blinks (5 times a second), on real time so it
         // also blinks smoothly between ticks.
@@ -351,6 +363,8 @@ async fn main() {
         draw_rain(rain, world.weather.wind, world.ticks, scale);
         draw_glare(world.sunrise.glare(), world.bounds);
         draw_fog(world.forest.fog(), world.bounds, world.ticks);
+        let winter = world.levels().presence(WINTER_LEVEL);
+        draw_snow(winter, world.winter.storm(), world.bounds, world.ticks);
 
         set_default_camera(); // flashes and the time do not shake
                               // Lightning lights the whole sky; a crash flashes red.
@@ -1436,6 +1450,178 @@ fn draw_footballer(f: &Footballer, bounds: Bounds) {
             age: f.age,
         };
         draw_ball(&ball, s);
+    }
+}
+
+/// A fir deep in snow (core's `Fir::parts`, like the forest's firs):
+/// dark blue-green tiers, each with a cap of snow on its upper part and
+/// snow lying along its hem, and the trunk.
+fn draw_snowy_fir(f: &Fir, bounds: Bounds) {
+    let s = bounds.scale();
+    let p = f.parts(bounds);
+    let (l, t, w, h) = p.trunk;
+    draw_rectangle(l, t, w, h, Color::from_rgba(64, 46, 36, 255));
+    let snow = Color::from_rgba(240, 245, 250, 255);
+    let shadow = Color::from_rgba(196, 212, 228, 255);
+    for (i, (a, b, c)) in p.tiers.iter().enumerate() {
+        let green = [
+            Color::from_rgba(34, 58, 54, 255),
+            Color::from_rgba(30, 52, 50, 255),
+            Color::from_rgba(26, 46, 46, 255),
+        ][i];
+        let (a, b, c) = (vec2(a.x, a.y), vec2(b.x, b.y), vec2(c.x, c.y));
+        draw_triangle(a, b, c, green);
+        // The cap: the tier's top part, white, a little shadow on the
+        // right.
+        let cap = if i == 0 { 0.55 } else { 0.35 };
+        let (cb, cc) = (a + (b - a) * cap, a + (c - a) * cap);
+        draw_triangle(a, cb, cc, snow);
+        draw_triangle(a, (cb + cc) * 0.5, cc, shadow);
+        // Snow along the hem, in lumps.
+        let steps = 5;
+        for k in 0..steps {
+            let x = b.x + (c.x - b.x) * (k as f32 + 0.5) / steps as f32;
+            draw_circle(x, b.y - 1.5 * s, 3.2 * s, snow);
+        }
+    }
+}
+
+/// A ski jump (core's `SkiJump::parts`, `inrun` and `rider`): a steel
+/// tower with cross braces and a starting hut on top, the inrun down from
+/// it with snow on its track and a red take-off edge, the post under the
+/// take-off, and the jumper racing down while they are on it.
+fn draw_ski_jump(j: &SkiJump, bounds: Bounds) {
+    let s = bounds.scale();
+    let steel = Color::from_rgba(92, 108, 128, 255);
+    let brace = Color::from_rgba(70, 84, 102, 255);
+    let ((tl, tt, tw, th), (pl, pt, pw, ph)) = j.parts(bounds);
+    // The tower: two legs and cross braces between them.
+    let leg = 4.0 * s;
+    draw_rectangle(tl, tt, leg, th, steel);
+    draw_rectangle(tl + tw - leg, tt, leg, th, steel);
+    let mut y = tt;
+    let step = 22.0 * s;
+    while y + step <= tt + th {
+        draw_line(tl + leg, y, tl + tw - leg, y + step, 1.5 * s, brace);
+        draw_line(tl + tw - leg, y, tl + leg, y + step, 1.5 * s, brace);
+        draw_line(tl, y, tl + tw, y, 1.5 * s, brace);
+        y += step;
+    }
+    // The post under the take-off.
+    draw_rectangle(pl, pt, pw, ph, steel);
+    // The inrun: a steel deck, snow on its track.
+    let (lip, top) = j.inrun(bounds);
+    let deck = SKI_DECK * s;
+    let mid = |p: Vec2Core| (p.x, p.y + deck / 2.0);
+    let (a, b) = (mid(lip), mid(top));
+    draw_line(a.0, a.1, b.0, b.1, deck, steel);
+    draw_line(
+        lip.x,
+        lip.y + 1.0 * s,
+        top.x,
+        top.y + 1.0 * s,
+        2.5 * s,
+        Color::from_rgba(236, 242, 248, 255),
+    );
+    // A red take-off edge.
+    draw_rectangle(
+        lip.x - 1.0 * s,
+        lip.y - 1.0 * s,
+        4.0 * s,
+        deck + 2.0 * s,
+        Color::from_rgba(200, 52, 44, 255),
+    );
+    // The starting hut on top: wood, a red roof with snow on it.
+    let (hx, hw, hh) = (top.x + 2.0 * s, 18.0 * s, 13.0 * s);
+    draw_rectangle(hx, top.y - hh, hw, hh, Color::from_rgba(120, 82, 52, 255));
+    let roof = (
+        vec2(hx - 3.0 * s, top.y - hh),
+        vec2(hx + hw + 3.0 * s, top.y - hh),
+        vec2(hx + hw / 2.0, top.y - hh - 8.0 * s),
+    );
+    draw_triangle(roof.0, roof.1, roof.2, Color::from_rgba(180, 52, 44, 255));
+    draw_line(
+        roof.0.x,
+        roof.0.y,
+        roof.2.x,
+        roof.2.y,
+        2.5 * s,
+        Color::from_rgba(240, 245, 250, 255),
+    );
+    draw_line(
+        roof.2.x,
+        roof.2.y,
+        roof.1.x,
+        roof.1.y,
+        2.5 * s,
+        Color::from_rgba(240, 245, 250, 255),
+    );
+    draw_rectangle(
+        hx + hw / 2.0 - 3.0 * s,
+        top.y - hh + 3.0 * s,
+        6.0 * s,
+        4.5 * s,
+        Color::from_rgba(250, 220, 140, 255),
+    );
+    if let Some((at, angle)) = j.rider(bounds) {
+        draw_jumper_at(at, angle, s);
+    }
+}
+
+/// A ski jumper in the air or in the snow (core's `Jumper`), tumbling
+/// once struck.
+fn draw_jumper(j: &Jumper, s: f32) {
+    draw_jumper_at(j.pos, j.heading(), s);
+}
+
+/// A ski jumper with their boots at `at`, heading `angle` (core's
+/// `jumper_parts`): long red skis, a bright suit leaning far over them
+/// and a white helmet.
+fn draw_jumper_at(at: Vec2Core, angle: f32, s: f32) {
+    let (skis, body, head) = jumper_parts(at, angle, s);
+    let ski = Color::from_rgba(200, 40, 40, 255);
+    draw_line(skis.0.x, skis.0.y, skis.1.x, skis.1.y, 3.0 * s, ski);
+    let (b0, b1) = (vec2(body.0.x, body.0.y), vec2(body.1.x, body.1.y));
+    let suit = Color::from_rgba(30, 110, 200, 255);
+    draw_line(b0.x, b0.y, b1.x, b1.y, 8.0 * s, suit);
+    let knee = (b0 + b1) * 0.5;
+    let legs = Color::from_rgba(250, 200, 40, 255);
+    draw_line(b0.x, b0.y, knee.x, knee.y, 8.0 * s, legs);
+    draw_circle(
+        head.x,
+        head.y,
+        5.0 * s,
+        Color::from_rgba(245, 245, 245, 255),
+    );
+    draw_circle(head.x, head.y, 2.2 * s, Color::from_rgba(40, 40, 50, 255));
+}
+
+/// Snow falling over the winter (`winter`: how much of level 7 is on
+/// screen, 0..1), and a snowstorm (core's `Winter::storm`, 0..1): many
+/// more flakes, driven sideways, and a white veil, so what comes is
+/// harder to see (but never gone).
+fn draw_snow(winter: f32, storm: f32, bounds: Bounds, ticks: u64) {
+    if winter <= 0.0 && storm <= 0.0 {
+        return;
+    }
+    let (w, h) = (bounds.width, bounds.height);
+    let s = bounds.scale();
+    if storm > 0.0 {
+        draw_rectangle(0.0, 0.0, w, h, Color::new(0.93, 0.95, 0.98, 0.45 * storm));
+    }
+    let seconds = ticks as f32 * TICK_SECONDS;
+    let count = ((0.25 * winter + 1.2 * storm) * w * h / 1500.0) as u32;
+    let drive = 40.0 + 420.0 * storm;
+    for i in 0..count {
+        // Two fixed pseudo-random numbers in 0..1 per flake.
+        let a = (i.wrapping_mul(2_654_435_761) >> 8) as f32 / (1 << 24) as f32;
+        let b = (i.wrapping_mul(40_503).wrapping_add(977) % 4096) as f32 / 4096.0;
+        let fall = (50.0 + 40.0 * b + 160.0 * storm) * s;
+        let sway = (seconds * (1.0 + b) + a * 6.0).sin() * 6.0 * s;
+        let y = (b * h + seconds * fall) % (h + 20.0) - 10.0;
+        let x = (a * w - seconds * drive * s + sway).rem_euclid(w + 20.0) - 10.0;
+        let r = (1.0 + 1.4 * b) * s;
+        draw_circle(x, y, r, Color::new(1.0, 1.0, 1.0, 0.85));
     }
 }
 

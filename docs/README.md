@@ -1170,6 +1170,27 @@ that isn't code here. Keep entries short and dated.
     button under the QR code on common laptop windows (1366x768,
     1536x864, 1280x800; already so with five levels). The QR code now
     waits in the main menu there, as on phones.
+- Level 7, the mountains in winter. Without a photo (the one at hand was
+  the lawn of level 6): the background is drawn in the style of the
+  other levels, from a short seeded script (peaks with snow caps, a snowy
+  forest, snow fields with chalets). Picked from proposals: snowy firs,
+  ski jumps with jumpers and snowstorms; same frequency as level 6.
+  - Snowy firs are the forest's `Fir` (same shape, same crash), drawn
+    with snow; their own timer and heights (`SNOW_FIR_TOP`).
+  - A ski jump was first a solid hill of snow; on screen it looked like
+    a block of ice. It is now a steel tower with the inrun and a post
+    under the take-off, solid where it is drawn, so the plane can fly
+    under the inrun. Its jumper sets off when the take-off is
+    `SKI_START_AHEAD` (330–560 px) ahead of the plane, so they cross the
+    plane anywhere from the take-off's height down to the snow, and you
+    see them race down the inrun first (`SKI_INRUN_SECONDS`).
+  - A snowstorm is like the forest's fog and gusts in one: for
+    `STORM_SECONDS` the screen is veiled in driving snow and the plane
+    pressed down (`STORM_PUSH`, weaker than a gust as it lasts longer).
+  - New sounds `ski-jump.wav` and `blizzard.wav`. The level map got a
+    seventh stop and the golden NEW; with seven stops it no longer fit
+    a phone (667 px) or a laptop window (1366 px): the dashes between
+    the stops now give way first, then the pictures get smaller.
 
 ## Concepts
 

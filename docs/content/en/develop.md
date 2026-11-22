@@ -316,6 +316,18 @@ flowchart LR
   it costs no life but kicks the plane up once (`SPRINKLER_KICK`,
   `Event::Splash` when the plane flies into it); masts and sprinklers
   keep `PITCH_ROOM` between them.
+- **The mountains in winter** (`crates/core/src/winter.rs`, level 7,
+  `WINTER_LEVEL`): groups of one to three snowy `Fir`s
+  (`SNOW_FIR_GROUP`, the forest's firs); a `SkiJump` every 6–9 s
+  (`SKI_JUMP_GAP_SECONDS`) whose inrun, tower and post are solid; its
+  jumper sets off when the take-off is `SKI_START_AHEAD` ahead of the
+  plane, races down the inrun for `SKI_INRUN_SECONDS` and flies at the
+  plane as a `Jumper` (`SKI_SPEED`, `SKI_GRAVITY`, `Event::SkiJump`),
+  knocked down when hit; `Winter::storm` (0..1, every 10–15 s for
+  `STORM_SECONDS`, `Event::Blizzard`) presses the plane down
+  (`STORM_PUSH`, weaker than climbing), no life lost, and tells the
+  game how much to veil the screen; firs and ski jumps keep
+  `WINTER_ROOM` between them.
 - **Gulls** (`crates/core/src/gulls.rs`) are the beach's obstacles. Core
   decides when and where they appear (seeded, like the weather), moves
   them and checks the crash; a gull that calls sends a `GullCall` event,

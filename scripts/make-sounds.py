@@ -363,6 +363,40 @@ def splash(seed, seconds):
     return out
 
 
+def ski_jump(seed, seconds):
+    """A ski jumper leaves the take-off (level 7): the hiss of skis on the
+    icy inrun rising to the edge, then a rush of air as they fly."""
+    rng = random.Random(seed)
+    n = int(seconds * RATE)
+    src = noise(rng, n)
+    hiss = highpass(src, 2500.0)
+    air = lowpass(highpass(noise(rng, n), 200.0), 1200.0)
+    edge = 0.3  # seconds of skis on the snow before the take-off
+    out = []
+    for i in range(n):
+        t = i / RATE
+        skis = (t / edge) ** 2 if t < edge else math.exp(-(t - edge) / 0.03)
+        rush = 0.0 if t < edge else math.sin(math.pi * (t - edge) / (seconds - edge)) ** 0.8
+        out.append(0.6 * skis * hiss[i] + rush * air[i])
+    return out
+
+
+def blizzard(seed, seconds):
+    """A snowstorm comes up (level 7): a howling gust that swells and dies
+    away, its pitch wandering, with fine snow hissing in it."""
+    rng = random.Random(seed)
+    n = int(seconds * RATE)
+    cut = [700.0 + 500.0 * math.sin(2 * math.pi * 0.9 * i / RATE) for i in range(n)]
+    howl = lowpass(highpass(noise(rng, n), 150.0), cut)
+    snow = highpass(noise(rng, n), 4000.0)
+    out = []
+    for i in range(n):
+        t = i / RATE
+        env = math.sin(math.pi * t / seconds) ** 1.2
+        out.append(env * (howl[i] + 0.12 * snow[i]))
+    return out
+
+
 def steam_hiss(seed, seconds):
     """Flying into a column of steam (level 4): a soft rushing hiss that
     swells and fades, with a low buffet under it."""
@@ -596,6 +630,8 @@ if __name__ == "__main__":
     write("steam.wav", steam_hiss(13, 1.0), 0.7)
     write("ball-kick.wav", ball_kick(18, 0.35), 0.8)
     write("splash.wav", splash(19, 0.9), 0.7)
+    write("ski-jump.wav", ski_jump(20, 0.9), 0.7)
+    write("blizzard.wav", blizzard(21, 2.2), 0.75)
     write("explosion.wav", explosion(9, 2.5), 0.95)
     write("runway-rumble.wav", runway_rumble(10, 2.0), 0.85)
     write("takeoff.wav", takeoff_spool(11, 6.0, 6.8), 0.9)  # ROLL_SECONDS + 0.8

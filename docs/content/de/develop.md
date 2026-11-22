@@ -333,6 +333,19 @@ flowchart LR
   Leben, stösst das Flugzeug aber einmal nach oben (`SPRINKLER_KICK`,
   `Event::Splash`, wenn das Flugzeug hineinfliegt); Masten und Rasensprenger halten
   `PITCH_ROOM` Abstand.
+- **Die Berge im Winter** (`crates/core/src/winter.rs`, Level 7,
+  `WINTER_LEVEL`): Gruppen von einer bis drei verschneiten `Fir`s
+  (`SNOW_FIR_GROUP`, die Tannen des Waldes); alle 6–9 s eine `SkiJump`
+  (`SKI_JUMP_GAP_SECONDS`), deren Anlauf, Turm und Stütze fest sind;
+  ihr Springer startet, wenn der Schanzentisch `SKI_START_AHEAD` vor
+  dem Flugzeug ist, rast `SKI_INRUN_SECONDS` lang den Anlauf hinunter
+  und fliegt als `Jumper` auf das Flugzeug zu (`SKI_SPEED`,
+  `SKI_GRAVITY`, `Event::SkiJump`), abgeschossen, wenn getroffen;
+  `Winter::storm` (0..1, alle 10–15 s für `STORM_SECONDS`,
+  `Event::Blizzard`) drückt das Flugzeug nach unten (`STORM_PUSH`,
+  schwächer als Steigen), ohne Leben zu verlieren, und sagt dem Spiel,
+  wie stark es den Bildschirm verschleiert; Tannen und Schanzen halten
+  `WINTER_ROOM` Abstand.
 - **Möwen** (`crates/core/src/gulls.rs`) sind die Hindernisse am Strand.
   core entscheidet, wann und wo sie auftauchen (mit Startwert, wie das
   Wetter), bewegt sie und prüft den Zusammenstoss; eine Möwe, die ruft,

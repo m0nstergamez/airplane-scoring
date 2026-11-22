@@ -211,7 +211,7 @@ Dockerfile, fly.toml  the server's image and its Fly.io app (the game stays on G
                       CI deploys it: .github/workflows/pages.yml)
 web/index.html        canvas page; loads mq_js_bundle.js + airplane-scoring.wasm
 web/board.js          the page's leaderboard logic (no DOM), tests in tests/web/ (Node)
-web/sounds/           generated .wav files (engine, wind, rain, thunder, crash, beach, new level, gull call, goose calls and a crow, steam hiss, buzzard cry, leaves, balloon burner, explosion, overspeed and pull-up warnings and voices, runway rumble, takeoff spool-up, gear-up, football kick, splash)
+web/sounds/           generated .wav files (engine, wind, rain, thunder, crash, beach, new level, gull call, goose calls and a crow, steam hiss, buzzard cry, leaves, balloon burner, explosion, overspeed and pull-up warnings and voices, runway rumble, takeoff spool-up, gear-up, football kick, splash, ski jump, blizzard)
 web/levels/           rendered level backgrounds (PNG, from art/levels)
 web/qr.svg            QR code to the live game (scripts/make-qr.py)
 web/plane.svg         the plane for the main menu (core's PLANE_* points)

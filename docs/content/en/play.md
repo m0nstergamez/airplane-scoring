@@ -137,7 +137,7 @@ quieter the thunder.
 
 If you touch a hot-air balloon, a launch pad or a hut (level 1) or a
 gull or a lifeguard tower (level 2) or a high-rise, a crane or a
-helicopter (level 3), a goose, a house or a high-rise (level 4), a fir or a buzzard (level 5) or a football or a floodlight mast (level 6), you **crash**. Only a real touch counts: flying past very
+helicopter (level 3), a goose, a house or a high-rise (level 4), a fir or a buzzard (level 5) or a football or a floodlight mast (level 6) or a snowy fir, a ski jump or a ski jumper (level 7), you **crash**. Only a real touch counts: flying past very
 closely, or through the gap beside a roof, is fine. In a crash your plane smokes, falls
 and ignores the controls for a moment (1.5 seconds). Then you fly again.
 
@@ -207,7 +207,7 @@ The **Leaderboard** (below) compares your times with everybody's.
 
 Each **level** has its own landscape: first the coast (level 1), then a
 beach at sunset (level 2), then a town at night (level 3), then a
-sunrise (level 4), then an autumn forest (level 5), then a football pitch (level 6). After its distance (about a minute at cruising speed), a level ends
+sunrise (level 4), then an autumn forest (level 5), then a football pitch (level 6), then the mountains in winter (level 7). After its distance (about a minute at cruising speed), a level ends
 with a **landing**: no new obstacles come, a runway appears, and the
 autopilot takes over. Speed warnings stay off while it flies, and the
 speed settles back by itself. The gear comes down, the plane touches down
@@ -217,7 +217,7 @@ stops: "Level 1 complete" shows with your time, the
 level's best times and two
 buttons. **Next level** (or Enter) starts the next level: its landscape
 appears, it counts 3, 2, 1, and you take off from its runway. **Menu**
-goes to the main menu. The last level (level 6 for now) has no **Next
+goes to the main menu. The last level (level 7 for now) has no **Next
 level**: it says "No more levels yet, new ones are coming!" in its place,
 next to **Menu** (Enter too).
 
@@ -334,6 +334,21 @@ day, past a small grandstand:
   ball: fly through while it rests, or over it. Two sprinklers do not
   go in step.
 
+In the **mountains in winter** (level 7) you fly past snow-capped peaks,
+over a snowy forest and fields of snow, while snow falls:
+
+- **Snowy firs** stand tall, alone or two or three together, like the
+  firs in the autumn forest. Fly over them.
+- Now and then a **ski jump** comes: a steel tower with the inrun down
+  to the take-off. Tower, inrun and the post under the take-off count;
+  under the inrun is free. When you come near, a **ski jumper** sets off
+  at the top: you see them race down the inrun, then they jump and fly
+  at you in a long, falling arc, at a different height each time. If
+  one hits you, you lose a life and they tumble down.
+- Now and then a **snowstorm** comes for a few seconds: the wind
+  presses your plane down, and driving snow hides what comes. It costs
+  no life, but it can push you onto a fir. Climb against it.
+
 ## Leaderboard
 
 When the game is connected to a leaderboard server, the main menu has a
@@ -368,7 +383,7 @@ completed level that the server flew again and counted is one flight.
 | Wind | Always. Louder in rain, in gusts and when you dive. |
 | Rain | While it rains (only in later levels). Louder the harder it rains. |
 | Thunder | A moment after each lightning (only in later levels). |
-| Crash | When you touch a balloon, a launch pad, a hut, a gull, a lifeguard tower, a high-rise, a crane, a goose, a house, a fir, a buzzard, a football or a floodlight mast. |
+| Crash | When you touch a balloon, a launch pad, a hut, a gull, a lifeguard tower, a high-rise, a crane, a goose, a house, a fir, a buzzard, a football, a floodlight mast, a snowy fir, a ski jump or a ski jumper. |
 | Burner | When a hot-air balloon appears or takes off (level 1). |
 | Waves | At the beach (level 2). They fade in and out with the landscape. |
 | Gull | When a gull appears. Gulls from behind always call. |
@@ -378,6 +393,8 @@ completed level that the server flew again and counted is one flight.
 | Leaves | When you fly into a gust (level 5): rustling leaves. |
 | Kick | When a football is kicked up (level 6): a dull thump. |
 | Splash | When you fly into a sprinkler's jet (level 6): a wet splash as it throws you up. |
+| Ski jump | When a ski jumper takes off (level 7): skis hissing on the inrun, then a rush of air. |
+| Snowstorm | When a snowstorm comes up (level 7): a howling gust. |
 | Tune | When you have landed and a level is complete. |
 | Takeoff | Rolling down the runway: the engine spools up and the wheels rumble until the plane lifts off. |
 | Gear | Just after lift-off: a whir while the wheels fold up, then a clunk. |

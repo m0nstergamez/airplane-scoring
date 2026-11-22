@@ -1297,6 +1297,32 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
     der Level-Karte unter dem QR-Code bei üblichen Laptop-Fenstern
     (1366x768, 1536x864, 1280x800; schon mit fünf Levels so). Der
     QR-Code wartet dort jetzt im Hauptmenü, wie auf dem Handy.
+- Level 7, die Berge im Winter. Ohne Foto (das vorhandene war der Rasen
+  von Level 6): Der Hintergrund ist im Stil der anderen Levels
+  gezeichnet, mit einem kurzen Skript mit Startwert (Gipfel mit
+  Schneekappen, ein verschneiter Wald, Schneefelder mit Chalets). Aus
+  Vorschlägen gewählt: verschneite Tannen, Sprungschanzen mit Springern
+  und Schneestürme; gleich häufig wie Level 6.
+  - Verschneite Tannen sind die `Fir` des Waldes (gleiche Form, gleicher
+    Zusammenstoss), mit Schnee gezeichnet; eigener Takt und eigene
+    Höhen (`SNOW_FIR_TOP`).
+  - Eine Sprungschanze war zuerst ein fester Hügel aus Schnee; im Bild
+    sah er aus wie ein Eisblock. Jetzt ist sie ein Stahlturm mit dem
+    Anlauf und einer Stütze unter dem Schanzentisch, fest, wo sie
+    gezeichnet ist, damit das Flugzeug unter dem Anlauf durchfliegen
+    kann. Ihr Springer startet, wenn der Schanzentisch `SKI_START_AHEAD`
+    (330–560 px) vor dem Flugzeug ist, so kreuzt er das Flugzeug
+    irgendwo zwischen der Höhe des Schanzentischs und dem Schnee, und
+    man sieht ihn zuerst den Anlauf hinunterrasen (`SKI_INRUN_SECONDS`).
+  - Ein Schneesturm ist wie Nebel und Böen des Waldes in einem: Für
+    `STORM_SECONDS` verschleiert Schneetreiben den Bildschirm, und das
+    Flugzeug wird nach unten gedrückt (`STORM_PUSH`, schwächer als eine
+    Böe, weil er länger dauert).
+  - Neue Sounds `ski-jump.wav` und `blizzard.wav`. Die Level-Karte hat
+    einen siebten Halt und das goldene NEW; mit sieben Halten passte sie
+    nicht mehr aufs Handy (667 px) und ins Laptop-Fenster (1366 px):
+    Jetzt geben zuerst die Striche zwischen den Halten nach, dann werden
+    die Bilder kleiner.
 
 ## Konzepte
 

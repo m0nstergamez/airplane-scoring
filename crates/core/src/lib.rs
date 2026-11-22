@@ -27,6 +27,7 @@ mod sunrise;
 mod tilt;
 mod towers;
 mod weather;
+mod winter;
 pub use airport::{
     Airport, TyreSmoke, APPROACH_DISTANCE, BRAKE_SECONDS, CLEAR_SECONDS, CLIMB_OUT_SECONDS,
     CLIMB_OUT_STEER, COUNTDOWN_SECONDS, FLARE_PITCH, GEAR_DELAY_SECONDS, GEAR_RETRACT_SECONDS,
@@ -74,10 +75,10 @@ pub use scenery::{background_x, scroll_distance, SCROLL_SPEED};
 pub use shape::{any_overlap, Poly};
 pub use sound::{
     Mix, BALLOON_BURNER_VOLUME, BALLOON_BURST_VOLUME, BALL_KICK_VOLUME, BEACH_LEVEL, BEACH_VOLUME,
-    BUZZARD_VOLUME, CRASH_VOLUME, DIVE_WIND, ENGINE_FAR_VOLUME, ENGINE_VOLUME, EXPLOSION_VOLUME,
-    GEAR_VOLUME, GOOSE_HONK_VOLUME, GULL_CALL_VOLUME, LEAVES_VOLUME, MIX_CHANGE_PER_SECOND,
-    NEW_LEVEL_VOLUME, RAIN_VOLUME, RUMBLE_VOLUME, SPLASH_VOLUME, STEAM_VOLUME, TAKEOFF_VOLUME,
-    VOICE_VOLUME, WARNING_VOLUME, WIND_VOLUME,
+    BLIZZARD_VOLUME, BUZZARD_VOLUME, CRASH_VOLUME, DIVE_WIND, ENGINE_FAR_VOLUME, ENGINE_VOLUME,
+    EXPLOSION_VOLUME, GEAR_VOLUME, GOOSE_HONK_VOLUME, GULL_CALL_VOLUME, LEAVES_VOLUME,
+    MIX_CHANGE_PER_SECOND, NEW_LEVEL_VOLUME, RAIN_VOLUME, RUMBLE_VOLUME, SKI_JUMP_VOLUME,
+    SPLASH_VOLUME, STEAM_VOLUME, TAKEOFF_VOLUME, VOICE_VOLUME, WARNING_VOLUME, WIND_VOLUME,
 };
 pub use sunrise::{
     FarHighRise, FarHighRiseParts, Goose, HouseParts, Steam, Sunrise, GLARE_SECONDS, GOOSE_BODY,
@@ -95,6 +96,10 @@ pub use weather::{
     Weather, CALM_WIND, DRY_SECONDS, FIRST_DRY_SECONDS, FLASH_SECONDS, GUST_WIND,
     RAIN_CHANGE_PER_SECOND, RAIN_PEAK, RAIN_SECONDS, RAIN_WIND, STORM_RAIN, STRIKE_GAP_SECONDS,
     THUNDER_DELAY_SECONDS, THUNDER_VOLUME,
+};
+pub use winter::{
+    jumper_parts, Jumper, JumperState, SkiJump, Winter, SKI_DECK, SKI_JUMP_GAP_SECONDS, STORM_PUSH,
+    WINTER_GROUND, WINTER_LEVEL, WINTER_ROOM,
 };
 
 /// The screen height that every size and speed in px below is made for:
@@ -264,6 +269,11 @@ pub enum Event {
     /// The plane flies into a column of steam: a rushing hiss as it is
     /// thrown up (level 4).
     SteamHiss,
+    /// A ski jumper leaves the take-off (level 7): the hiss of skis and
+    /// a rush of air.
+    SkiJump,
+    /// A snowstorm comes up (level 7): a howling gust.
+    Blizzard,
     /// A hot-air balloon's burner roars as it appears.
     BalloonBurner,
     /// The plane flew into a balloon: it explodes (a bang) and falls.
@@ -486,6 +496,9 @@ pub struct World {
     pub forest: Forest,
     /// The football pitch (level 6): balls, floodlight masts, sprinklers.
     pub pitch: Pitch,
+    /// Winter in the mountains (level 7): snowy firs, ski jumps and their
+    /// jumpers, snowstorms.
+    pub winter: Winter,
     /// Was the plane in a gust last tick? (The leaves rustle on the way
     /// in.)
     in_gust: bool,
@@ -558,6 +571,7 @@ impl World {
             sunrise: Sunrise::new(seed),
             forest: Forest::new(seed),
             pitch: Pitch::new(seed),
+            winter: Winter::new(seed),
             in_gust: false,
             in_steam: false,
             in_jet: false,
@@ -1192,6 +1206,8 @@ impl World {
         // (No shots at a plane that cannot be hit just now.)
         let aim = (!self.player.is_safe() && !self.player.is_crashed()).then_some(plane);
         self.pitch.tick(self.bounds, field, aim, &mut self.events);
+        let snow = levels.level == WINTER_LEVEL && !runway_in && !clearing;
+        (self.winter).tick(self.bounds, snow, plane.x, &mut self.events);
         let town = levels.level == CITY_LEVEL && !runway_in && !clearing;
         self.city.set_speed(speed);
         self.city.tick(self.bounds, town, plane_y);
@@ -1224,6 +1240,7 @@ impl World {
             self.sunrise.shift(-extra);
             self.forest.shift(-extra);
             self.pitch.shift(-extra);
+            self.winter.shift(-extra);
         }
 
         // Crash: the plane as drawn newly overlaps another plane, a
@@ -1298,6 +1315,18 @@ impl World {
         } else {
             Vec::new()
         };
+        // Winter: snowy firs and ski jumps are solid, jumpers (also one
+        // on an inrun) are knocked down.
+        let snowy = (self.winter.firs.iter()).any(|f| hits(&f.shape(bounds)))
+            || (self.winter.jumps.iter()).any(|j| hits(&j.shape(bounds)));
+        let jumpers: Vec<Result<usize, usize>> = if open {
+            (self.winter.jumper_shapes(bounds).into_iter())
+                .filter(|(_, shape)| hits(shape))
+                .map(|(which, _)| which)
+                .collect()
+        } else {
+            Vec::new()
+        };
         // Gusts cost no life: they press the plane down.
         let in_gust = open && self.forest.in_gust(bounds, &me);
         // Steam costs no life: the warm air throws the plane up.
@@ -1331,6 +1360,8 @@ impl World {
             || fir
             || !buzzards.is_empty()
             || mast
+            || snowy
+            || !jumpers.is_empty()
             || !balls.is_empty()
             || !dribbled.is_empty()
             || !roof_helis.is_empty()
@@ -1390,6 +1421,15 @@ impl World {
         }
         for &i in &dribbled {
             self.pitch.knock_from_feet(i, bounds);
+        }
+        for &which in &jumpers {
+            self.winter.knock_down(which, bounds);
+        }
+        // A snowstorm costs no life either: the wind presses the plane
+        // down (not a crashed one: it falls whatever happens).
+        if open && !self.player.is_crashed() {
+            let storm = self.winter.storm();
+            self.player.vel_y += STORM_PUSH * storm * scale * TICK_SECONDS;
         }
         if in_gust {
             self.player.vel_y += GUST_PUSH * scale * TICK_SECONDS;
@@ -1483,6 +1523,7 @@ impl World {
         self.sunrise.clear();
         self.forest.clear();
         self.pitch.clear();
+        self.winter.clear();
         self.tyre_smoke.clear();
         // A fresh start in every level: all lives back (and so no smoke).
         self.lives = self.lives.max(LIVES);
@@ -3040,6 +3081,114 @@ mod tests {
         (lives - w.lives, events)
     }
 
+    fn in_the_winter() -> World {
+        let mut w = World::with_seed(PHONE, 7);
+        w.start_level = WINTER_LEVEL;
+        let mut w = w.with_takeoff();
+        while w.hands_off() {
+            w.tick(&Input::NONE);
+        }
+        w.winter = Winter::new(99);
+        w
+    }
+
+    #[test]
+    fn the_winter_is_only_in_level_7() {
+        let mut w = World::with_seed(PHONE, 7);
+        w.lives = u32::MAX;
+        // Through every level, the winter and back into level 1.
+        let all = LEVEL_COUNT as f32 + 1.0;
+        for _ in 0..(all * 1.6 * LEVEL_SECONDS / TICK_SECONDS) as u32 {
+            w.go_on();
+            w.tick(&Input::NONE);
+            if w.levels().level != WINTER_LEVEL {
+                let v = &w.winter;
+                assert!(v.firs.is_empty() && v.jumps.is_empty() && v.jumpers.is_empty());
+                assert_eq!(v.storm(), 0.0);
+            }
+        }
+        let mut w = in_the_winter();
+        let mut seen = (false, false, false, false);
+        for _ in 0..(30.0 / TICK_SECONDS) as u32 {
+            w.lives = LIVES;
+            w.tick(&Input::NONE);
+            seen.0 |= !w.winter.firs.is_empty();
+            seen.1 |= !w.winter.jumps.is_empty();
+            seen.2 |= !w.winter.jumpers.is_empty();
+            seen.3 |= w.winter.storm() > 0.0;
+        }
+        assert_eq!(seen, (true, true, true, true));
+    }
+
+    #[test]
+    fn a_ski_jumper_the_plane_flies_into_costs_a_life_and_tumbles_down() {
+        let mut w = in_the_winter();
+        let at = w.player.pos;
+        w.winter.jumpers.push(Jumper {
+            pos: Vec2::new(at.x + 30.0, at.y),
+            vel: Vec2::new(-200.0, 0.0),
+            state: JumperState::Flying,
+        });
+        let lives = w.lives;
+        for _ in 0..(0.5 / TICK_SECONDS) as u32 {
+            (w.player.pos.y, w.player.vel_y) = (at.y, 0.0);
+            w.tick(&Input::NONE);
+        }
+        assert_eq!(w.lives, lives - 1);
+        assert!(w.winter.jumpers[0].is_down());
+    }
+
+    #[test]
+    fn flying_into_a_ski_jump_or_a_snowy_fir_costs_a_life() {
+        let mut w = in_the_winter();
+        let jump = SkiJump {
+            x: w.player.pos.x + 80.0,
+            top: 0.4,
+            lip: 0.54,
+            start: 0.0,
+            slide: Some(0),
+            jumped: true,
+        };
+        w.winter.jumps.push(jump);
+        let (lip, _) = jump.inrun(PHONE);
+        let (lost, _) = hold_at(&mut w, lip.y + 30.0, 1.5);
+        assert_eq!(lost, 1, "the hill is solid");
+        let mut w = in_the_winter();
+        w.winter.firs.push(Fir {
+            x: w.player.pos.x + 80.0,
+            top: 0.45,
+        });
+        let (lost, _) = hold_at(&mut w, 0.85 * PHONE.height, 1.5);
+        assert_eq!(lost, 1, "the fir is solid");
+    }
+
+    #[test]
+    fn a_snowstorm_presses_the_plane_down_but_costs_no_life() {
+        let mut w = in_the_winter();
+        // Only the storm: no firs, jumps or jumpers in the way.
+        let storm_only = |w: &mut World| {
+            w.winter.firs.clear();
+            w.winter.jumps.clear();
+            w.winter.jumpers.clear();
+        };
+        while w.winter.storm() == 0.0 {
+            storm_only(&mut w);
+            w.tick(&Input::NONE);
+        }
+        // Hands off, level, through the storm: pressed down.
+        let y = 0.4 * PHONE.height;
+        (w.player.pos.y, w.player.vel_y) = (y, 0.0);
+        let lives = w.lives;
+        for _ in 0..(1.5 / TICK_SECONDS) as u32 {
+            storm_only(&mut w);
+            w.tick(&Input::NONE);
+        }
+        assert!(w.winter.storm() > 0.9, "still in the storm");
+        assert_eq!(w.lives, lives, "no life lost");
+        let down = w.player.pos.y - y;
+        assert!(down > 30.0, "pressed down {down} px");
+    }
+
     fn on_the_pitch() -> World {
         let mut w = World::with_seed(PHONE, 6);
         w.start_level = PITCH_LEVEL;
@@ -3656,7 +3805,9 @@ mod tests {
                         | Event::BuzzardCry
                         | Event::LeafRustle
                         | Event::BallKick
-                        | Event::Splash => {}
+                        | Event::Splash
+                        | Event::SkiJump
+                        | Event::Blizzard => {}
                         Event::GameOver => panic!("lives cannot run out"),
                         Event::Explosion => panic!("lives cannot run out"),
                         Event::Overspeed | Event::PullUp => panic!("no throttle given"),

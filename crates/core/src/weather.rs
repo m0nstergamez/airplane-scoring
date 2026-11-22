@@ -302,6 +302,8 @@ mod tests {
                 | Event::LeafRustle
                 | Event::BallKick
                 | Event::Splash
+                | Event::SkiJump
+                | Event::Blizzard
                 | Event::GameOver
                 | Event::Explosion
                 | Event::Takeoff
