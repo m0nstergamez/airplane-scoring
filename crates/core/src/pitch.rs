@@ -231,6 +231,13 @@ impl Sprinkler {
     }
 }
 
+/// Which ground thing a timer is for.
+#[derive(Clone, Copy)]
+enum Which {
+    Mast,
+    Sprinkler,
+}
+
 /// The pitch's balls, masts and sprinklers.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Pitch {
@@ -304,44 +311,42 @@ impl Pitch {
             self.next_sprinkler = ticks(FIRST_SPRINKLER_SECONDS);
             return;
         }
-        let w = bounds.width;
-        // Ground things wait until the last one has moved in by the room.
-        self.next_mast -= 1;
-        if self.next_mast == 0 && self.crowded(bounds) {
-            self.next_mast = ticks(0.2);
-        }
-        if self.next_mast == 0 {
+        // Ground things wait until the last one has moved in by the room,
+        // then come in with their left edge just off the screen.
+        let spawn_x = |width: f32| bounds.width + (MARGIN + width / 2.0) * s;
+        if self.due_on_ground(Which::Mast, bounds) {
             let top = self.rng.range(MAST_TOP.0, MAST_TOP.1);
-            let half = MAST_LAMPS.0 * s / 2.0;
-            self.masts.push(Mast {
-                x: w + MARGIN * s + half,
-                top,
-            });
+            let x = spawn_x(MAST_LAMPS.0);
+            self.masts.push(Mast { x, top });
             self.next_mast = ticks(self.rng.range(MAST_GAP_SECONDS.0, MAST_GAP_SECONDS.1));
         }
-        self.next_sprinkler -= 1;
-        if self.next_sprinkler == 0 && self.crowded(bounds) {
-            self.next_sprinkler = ticks(0.2);
-        }
-        if self.next_sprinkler == 0 {
+        if self.due_on_ground(Which::Sprinkler, bounds) {
             let r = &mut self.rng;
             let top = r.range(SPRINKLER_TOP.0, SPRINKLER_TOP.1);
             let phase = (r.unit() * cycle as f32) as u32 % cycle;
-            let half = SPRINKLER_SPRAY.0 * s / 2.0;
-            self.sprinklers.push(Sprinkler {
-                x: w + MARGIN * s + half,
-                top,
-                phase,
-            });
+            let x = spawn_x(SPRINKLER_SPRAY.0);
+            self.sprinklers.push(Sprinkler { x, top, phase });
             self.next_sprinkler = ticks(r.range(SPRINKLER_GAP_SECONDS.0, SPRINKLER_GAP_SECONDS.1));
         }
         self.next_ball -= 1;
         if self.next_ball == 0 {
+            // Never out of a mast or a sprinkler: try a few spots, else a
+            // moment later.
             let r = &mut self.rng;
-            let x = r.range(BALL_KICK_AT.0, BALL_KICK_AT.1) * w;
+            let spots: Vec<f32> = (0..4)
+                .map(|_| r.range(BALL_KICK_AT.0, BALL_KICK_AT.1) * bounds.width)
+                .collect();
+            let Some(x) = spots.into_iter().find(|&x| self.clear_to_kick(x, bounds)) else {
+                self.next_ball = ticks(0.2);
+                return;
+            };
+            let r = &mut self.rng;
             let y = ground - BALL_RADIUS * s;
             let peak = r.range(BALL_PEAK.0, BALL_PEAK.1) * bounds.height;
-            let up = (2.0 * BALL_GRAVITY * s * (y - peak).max(0.0)).sqrt();
+            // (Plus half a tick of falling: the ball falls before it
+            // moves in every tick, so it peaks exactly at `peak`.)
+            let g = BALL_GRAVITY * s;
+            let up = (2.0 * g * (y - peak).max(0.0)).sqrt() + g * TICK_SECONDS / 2.0;
             self.balls.push(Ball {
                 pos: Vec2::new(x, y),
                 vel: Vec2::new(r.range(BALL_DRIFT.0, BALL_DRIFT.1) * s, -up),
@@ -352,6 +357,31 @@ impl Pitch {
             events.push(Event::BallKick);
             self.next_ball = ticks(r.range(BALL_GAP_SECONDS.0, BALL_GAP_SECONDS.1));
         }
+    }
+
+    /// Count down a mast's or a sprinkler's timer; true when one comes in
+    /// now. While the last ground thing is still too close to the right
+    /// edge, it waits a moment longer.
+    fn due_on_ground(&mut self, which: Which, bounds: Bounds) -> bool {
+        let crowded = self.crowded(bounds);
+        let timer = match which {
+            Which::Mast => &mut self.next_mast,
+            Which::Sprinkler => &mut self.next_sprinkler,
+        };
+        *timer -= 1;
+        if *timer == 0 && crowded {
+            *timer = ticks(0.2);
+        }
+        *timer == 0
+    }
+
+    /// Is the grass at `x` free of masts and sprinklers, with room for a
+    /// ball beside them?
+    fn clear_to_kick(&self, x: f32, bounds: Bounds) -> bool {
+        let room = 2.0 * BALL_RADIUS * bounds.scale();
+        (self.masts.iter().map(|m| m.span(bounds)))
+            .chain(self.sprinklers.iter().map(|sp| sp.span(bounds)))
+            .all(|(l, r)| x < l - room || x > r + room)
     }
 
     /// Is the last mast or sprinkler still too close to the right edge for
@@ -443,7 +473,7 @@ mod tests {
                 came_down |= b.bounces > 0;
             }
             let (hi, lo) = (BALL_PEAK.0 * PHONE.height, BALL_PEAK.1 * PHONE.height);
-            assert!(top > hi - 2.0 && top < lo + 2.0, "peak {top} in {hi}..{lo}");
+            assert!(top > hi - 1.0 && top < lo + 1.0, "peak {top} in {hi}..{lo}");
             assert!(came_down, "it lands and bounces");
         }
     }
@@ -624,6 +654,25 @@ mod tests {
         run(&mut p, 1.0, false);
         assert!((mast - p.masts.last().unwrap().x - SCROLL_SPEED).abs() < 1.0);
         assert!((sp - p.sprinklers.last().unwrap().x - SCROLL_SPEED).abs() < 1.0);
+    }
+
+    #[test]
+    fn a_ball_is_never_kicked_out_of_a_mast_or_a_sprinkler() {
+        for seed in 0..10 {
+            let mut p = Pitch::new(seed);
+            for _ in 0..ticks(120.0) {
+                let before = p.balls.len();
+                p.tick(PHONE, true, &mut Vec::new());
+                if p.balls.len() > before {
+                    let x = p.balls.last().unwrap().pos.x;
+                    for (l, r) in (p.masts.iter().map(|m| m.span(PHONE)))
+                        .chain(p.sprinklers.iter().map(|s| s.span(PHONE)))
+                    {
+                        assert!(x < l || x > r, "seed {seed}: kicked at {x} in {l}..{r}");
+                    }
+                }
+            }
+        }
     }
 
     #[test]

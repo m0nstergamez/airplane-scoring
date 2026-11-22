@@ -1365,8 +1365,9 @@ fn draw_ball(b: &Ball, s: f32) {
         let (px, py) = (x + 0.78 * r * a.cos(), y + 0.78 * r * a.sin());
         draw_poly(px, py, 5, 0.2 * r, (a + 0.6).to_degrees(), patch);
     }
-    // Shade on the lower right.
-    draw_circle_lines(x, y, r - 1.5 * s, 1.5 * s, Color::new(0.0, 0.0, 0.0, 0.12));
+    // Shade on the lower right: a dark crescent where the light ends.
+    let shade = Color::new(0.0, 0.0, 0.0, 0.12);
+    draw_circle_lines(x + 0.5 * s, y + 0.5 * s, r - 1.5 * s, 1.5 * s, shade);
 }
 
 /// A gust of leaves (core's `Gust::rect`): orange, yellow and brown leaves

@@ -1331,6 +1331,9 @@ impl World {
             } else {
                 self.events.push(Event::Crash);
             }
+            if splash {
+                self.events.push(Event::Splash);
+            }
         }
         player.touching = touching;
         for &i in &struck {
@@ -1360,9 +1363,6 @@ impl World {
         }
         for &i in &balls {
             self.pitch.balls[i].knock_away(scale);
-        }
-        if splash && hit {
-            self.events.push(Event::Splash);
         }
         if in_gust {
             self.player.vel_y += GUST_PUSH * scale * TICK_SECONDS;
@@ -2997,10 +2997,10 @@ mod tests {
         w
     }
 
-    /// Hold the plane level at `y` in the forest for `seconds`; the lives
-    /// lost and the events. (A fresh `Forest` sends nothing new in its
-    /// first seconds, so what a test put there is all there is.)
-    fn hold_in_forest(w: &mut World, y: f32, seconds: f32) -> (u32, Vec<Event>) {
+    /// Hold the plane level at `y` for `seconds`; the lives lost and the
+    /// events. (A fresh `Forest` or `Pitch` sends nothing new in its first
+    /// seconds, so what a test put there is all there is.)
+    fn hold_at(w: &mut World, y: f32, seconds: f32) -> (u32, Vec<Event>) {
         let lives = w.lives;
         let mut events = Vec::new();
         for _ in 0..(seconds / TICK_SECONDS) as u32 {
@@ -3058,7 +3058,7 @@ mod tests {
         };
         w.pitch.masts.push(mast);
         let (_, t, _, h) = mast.lamps(PHONE);
-        let (lost, _) = hold_in_forest(&mut w, t + h / 2.0, 2.0);
+        let (lost, _) = hold_at(&mut w, t + h / 2.0, 2.0);
         assert_eq!(lost, 1, "the mast is solid");
     }
 
@@ -3076,7 +3076,7 @@ mod tests {
             x: w.player.pos.x + 60.0,
             ..up
         });
-        let (lost, events) = hold_in_forest(&mut w, y, 1.0);
+        let (lost, events) = hold_at(&mut w, y, 1.0);
         assert_eq!(lost, 1, "the jet is solid");
         assert!(events.contains(&Event::Splash));
         // Resting all the way past the plane: no life lost.
@@ -3087,8 +3087,22 @@ mod tests {
             phase: resting,
             ..up
         });
-        let (lost, _) = hold_in_forest(&mut w, y, 1.2);
+        let (lost, _) = hold_at(&mut w, y, 1.2);
         assert_eq!(lost, 0, "fly through while it rests");
+    }
+
+    #[test]
+    fn a_safe_plane_in_a_jet_makes_no_splash() {
+        let mut w = on_the_pitch();
+        w.player.safe_ticks = (5.0 / TICK_SECONDS) as u32;
+        w.pitch.sprinklers.push(Sprinkler {
+            x: w.player.pos.x + 60.0,
+            top: 0.45,
+            phase: (0.3 / TICK_SECONDS) as u32,
+        });
+        let (lost, events) = hold_at(&mut w, 0.75 * PHONE.height, 1.0);
+        assert_eq!(lost, 0);
+        assert!(!events.contains(&Event::Splash), "no life lost, no splash");
     }
 
     #[test]
@@ -3157,7 +3171,7 @@ mod tests {
         w.forest = Forest::new(99);
         w.forest.firs.push(fir);
         let (_, top, _, _) = fir.parts(PHONE).trunk;
-        let (lost, _) = hold_in_forest(&mut w, top - 20.0, 2.0);
+        let (lost, _) = hold_at(&mut w, top - 20.0, 2.0);
         assert_eq!(lost, 1, "the fir is solid");
     }
 

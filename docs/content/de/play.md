@@ -143,7 +143,7 @@ desto später und leiser der Donner.
 
 Berührst du einen Heissluftballon, eine Startrampe oder eine Hütte
 (Level 1), eine Möwe oder einen Strandturm (Level 2) oder ein Hochhaus,
-einen Kran oder einen Helikopter (Level 3) eine Gans, ein Haus oder ein Hochhaus (Level 4) eine Tanne oder einen Bussard (Level 5) oder einen Fussball, einen Flutlichtmast oder den Strahl eines Rasensprengers (Level 6), gibt es einen
+einen Kran oder einen Helikopter (Level 3), eine Gans, ein Haus oder ein Hochhaus (Level 4), eine Tanne oder einen Bussard (Level 5) oder einen Fussball, einen Flutlichtmast oder den Strahl eines Rasensprengers (Level 6), gibt es einen
 **Zusammenstoss**.
 Nur eine echte Berührung zählt: Ganz knapp vorbeifliegen oder durch die
 Lücke neben einem Dach ist erlaubt. Beim Zusammenstoss

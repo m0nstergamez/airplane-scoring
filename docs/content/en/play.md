@@ -137,7 +137,7 @@ quieter the thunder.
 
 If you touch a hot-air balloon, a launch pad or a hut (level 1) or a
 gull or a lifeguard tower (level 2) or a high-rise, a crane or a
-helicopter (level 3), a goose, a house or a high-rise (level 4) a fir or a buzzard (level 5) or a football, a floodlight mast or a sprinkler's jet (level 6), you **crash**. Only a real touch counts: flying past very
+helicopter (level 3), a goose, a house or a high-rise (level 4), a fir or a buzzard (level 5) or a football, a floodlight mast or a sprinkler's jet (level 6), you **crash**. Only a real touch counts: flying past very
 closely, or through the gap beside a roof, is fine. In a crash your plane smokes, falls
 and ignores the controls for a moment (1.5 seconds). Then you fly again.
 
