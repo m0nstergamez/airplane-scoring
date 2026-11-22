@@ -1,0 +1,1038 @@
+//! The football pitch (level 6): footballs kicked up in an arc, tall
+//! floodlight masts and lawn sprinklers that come on and off.
+//!
+//! * **Footballers** run in from the right with a ball at their feet,
+//!   toward the plane ([`FOOTBALLER_RUN`]), and shoot at it: once the
+//!   ball would take [`SHOT_WARN_SECONDS`] to get there (or as long as
+//!   it takes to rise to a high plane), they kick it in an arc that
+//!   meets the plane where it is: peaking at a high plane, dropping onto
+//!   a low one. About two in five shots miss ([`SHOT_MISS_SHARE`]).
+//!   You see each one run in and shoot, so it is never a surprise: climb
+//!   or dive a little when a ball comes. A football that hits the plane
+//!   costs a life and is knocked away; the balls bounce
+//!   ([`BALL_BOUNCE`]) and roll off. The footballers themselves are not
+//!   an obstacle.
+//! * **Floodlight masts** stand at the edge of the pitch, rarely
+//!   ([`MAST_GAP_SECONDS`]): a thin pole with a bank of lamps on top.
+//!   They are solid: fly over them.
+//! * **Sprinklers** sit in the grass and throw a jet of water up
+//!   ([`SPRINKLER_TOP`]) for [`SPRINKLER_ON_SECONDS`], then rest for
+//!   [`SPRINKLER_OFF_SECONDS`]. The jet costs no life: flying into it
+//!   kicks the plane up ([`SPRINKLER_KICK`]), maybe into a ball. Fly through while
+//!   it rests, or over it.
+//!
+//! Masts and sprinklers stand on the ground and keep [`PITCH_ROOM`]
+//! between them, so there is always a gap to come down into. Positions
+//! are screen px; sizes are for a phone and grow with the screen
+//! ([`Bounds::scale`]). Seeded, so the same seed gives the same pitch.
+
+use crate::rng::Rng;
+use crate::shape::Poly;
+use crate::{Bounds, Event, Vec2, SCROLL_SPEED, TICK_SECONDS};
+
+/// The level with the football pitch.
+pub const PITCH_LEVEL: u32 = 6;
+
+/// Where the grass is: the ground line, as a fraction of the screen
+/// height from the top.
+pub const PITCH_GROUND: f32 = crate::huts::HUT_GROUND;
+/// The least free ground between two things standing on it (masts,
+/// sprinklers), in px.
+pub const PITCH_ROOM: f32 = 110.0;
+
+/// Time between two footballers coming in (each with one ball),
+/// shortest and longest, and the first, in seconds.
+pub const FOOTBALLER_GAP_SECONDS: (f32, f32) = (1.8, 3.4);
+pub const FIRST_FOOTBALLER_SECONDS: f32 = 1.0;
+/// How fast a footballer runs toward the plane with the ball, in px per
+/// second, on top of the ground sliding past (also after the shot).
+pub const FOOTBALLER_RUN: f32 = 50.0;
+/// How tall a footballer is, in px (drawn only: not an obstacle).
+pub const FOOTBALLER_HEIGHT: f32 = 42.0;
+/// The ball at a footballer's feet is this far in front of them (toward
+/// the plane), in px.
+pub const FOOTBALLER_FOOT: f32 = 13.0;
+/// How long a footballer holds the kick pose after a shot, in seconds
+/// (then they run on, arms up).
+pub const KICK_POSE_SECONDS: f32 = 0.3;
+/// How fast a shot flies across, in px per second (less than 0: toward
+/// the plane), on top of the ground sliding past.
+pub const SHOT_DRIFT: f32 = -70.0;
+/// A footballer shoots once the ball would take this long to reach the
+/// plane, in seconds, or as long as it takes to rise to it if that is
+/// longer (a high plane): so a shot comes with that much warning (unless
+/// a mast or sprinkler held the footballer back: then down to
+/// [`SHOT_LEAST_SECONDS`]).
+pub const SHOT_WARN_SECONDS: f32 = 1.1;
+/// Closer than this (the ball's time to the plane, in seconds) a
+/// footballer no longer shoots (say a mast stood in the way); they run
+/// off with the ball.
+pub const SHOT_LEAST_SECONDS: f32 = 0.8;
+/// How many shots miss, and by how much above or below the plane, in px;
+/// the others are on target, within [`SHOT_SPREAD`].
+pub const SHOT_MISS_SHARE: f32 = 0.4;
+pub const SHOT_MISS: (f32, f32) = (35.0, 80.0);
+pub const SHOT_SPREAD: f32 = 8.0;
+/// How hard a ball falls back, in px per second, each second (at scale 1).
+pub const BALL_GRAVITY: f32 = 300.0;
+/// A ball's radius, in px.
+pub const BALL_RADIUS: f32 = 8.0;
+/// How much of its speed a ball keeps when it bounces on the grass, and
+/// how often it bounces before it just rolls.
+pub const BALL_BOUNCE: f32 = 0.45;
+pub const BALL_BOUNCES: u32 = 2;
+/// Time between two floodlight masts, shortest and longest, and the
+/// first, in seconds. (Rare: a pitch has only a few.)
+pub const MAST_GAP_SECONDS: (f32, f32) = (8.0, 13.0);
+pub const FIRST_MAST_SECONDS: f32 = 7.0;
+/// The top of a mast's lamps, as a fraction of the screen height from the
+/// top (tallest and shortest).
+pub const MAST_TOP: (f32, f32) = (0.34, 0.48);
+/// The bank of lamps: width and height, in px; the pole's width.
+pub const MAST_LAMPS: (f32, f32) = (44.0, 22.0);
+pub const MAST_POLE: f32 = 7.0;
+
+/// Time between two sprinklers, shortest and longest, and the first, in
+/// seconds.
+pub const SPRINKLER_GAP_SECONDS: (f32, f32) = (2.6, 4.6);
+pub const FIRST_SPRINKLER_SECONDS: f32 = 5.0;
+/// How long a sprinkler throws water and how long it rests, in seconds;
+/// how long its jet takes to rise and to fall.
+pub const SPRINKLER_ON_SECONDS: f32 = 1.4;
+pub const SPRINKLER_OFF_SECONDS: f32 = 1.6;
+pub const SPRINKLER_RISE_SECONDS: f32 = 0.3;
+/// How high a full jet reaches, as a fraction of the screen height from
+/// the top (highest and lowest).
+pub const SPRINKLER_TOP: (f32, f32) = (0.45, 0.62);
+/// The jet's width, in px, and the spray at its top: width and height.
+pub const SPRINKLER_JET: f32 = 14.0;
+pub const SPRINKLER_SPRAY: (f32, f32) = (40.0, 16.0);
+/// How hard a jet kicks the plane up as it flies in: upward speed added
+/// once, in px per second (at scale 1). Once, not while it is in the
+/// water, so the kick is the same wherever the plane touches the jet or
+/// its wider spray, and at any speed: about 110 px up on a phone, as
+/// the climb eases it off ([`crate::CLIMB_RESPONSE`]).
+pub const SPRINKLER_KICK: f32 = 900.0;
+/// Below this much of its height, a jet is only a trickle: no water.
+const TRICKLE: f32 = 0.08;
+
+/// Things start and are dropped this far outside the screen, in px.
+const MARGIN: f32 = 40.0;
+
+fn ticks(seconds: f32) -> u32 {
+    (seconds / TICK_SECONDS).round().max(1.0) as u32
+}
+
+/// A footballer: runs in with a ball and shoots it at the plane.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Footballer {
+    /// Where they stand on the grass (their middle), in px.
+    pub x: f32,
+    /// Which team's kit: 0 or 1.
+    pub kit: u8,
+    /// Ticks since they came in (for their running legs).
+    pub age: u32,
+    /// Ticks since their shot; `None` while they still have the ball.
+    pub shot: Option<u32>,
+    /// How far off the plane they aim, in px (at scale 1).
+    aim_off: f32,
+}
+
+impl Footballer {
+    /// The ball at their feet (its centre), while they have it.
+    pub fn ball(&self, bounds: Bounds) -> Option<Vec2> {
+        let s = bounds.scale();
+        let y = PITCH_GROUND * bounds.height - BALL_RADIUS * s;
+        (self.shot.is_none()).then(|| Vec2::new(self.x - FOOTBALLER_FOOT * s, y))
+    }
+
+    /// Kicking just now (the kick pose)?
+    pub fn kicking(&self) -> bool {
+        self.shot.is_some_and(|t| t < ticks(KICK_POSE_SECONDS))
+    }
+}
+
+/// A football.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Ball {
+    /// Its centre on screen, in px.
+    pub pos: Vec2,
+    /// Its own speed, in px per second: across on top of the ground
+    /// sliding past, and up (less than 0) or down.
+    pub vel: Vec2,
+    /// How often it has bounced on the grass.
+    pub bounces: u32,
+    /// The plane hit it: it flies off and cannot be hit again.
+    pub struck: bool,
+    /// Ticks since it was kicked (for its spin; at a footballer's feet,
+    /// since they came in).
+    pub age: u32,
+}
+
+impl Ball {
+    /// How far it has turned, in radians: it spins as it flies or rolls.
+    pub fn spin(&self) -> f32 {
+        -(self.age as f32) * TICK_SECONDS * 6.0
+    }
+
+    /// The ball as drawn, for crashing.
+    pub fn shape(&self, scale: f32) -> Poly {
+        Self::shape_at(self.pos, scale)
+    }
+
+    /// A ball at `at` as drawn (also one at a footballer's feet).
+    pub fn shape_at(at: Vec2, scale: f32) -> Poly {
+        let r = BALL_RADIUS * scale;
+        Poly::ellipse(at, r, r)
+    }
+
+    /// Hit by the plane: it flies off up and away.
+    pub fn knock_away(&mut self, scale: f32) {
+        if self.struck {
+            return;
+        }
+        self.struck = true;
+        self.vel = Vec2::new(160.0 * scale, -220.0 * scale);
+    }
+}
+
+/// A floodlight mast.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Mast {
+    /// Its pole's x on screen, in px.
+    pub x: f32,
+    /// The top of its lamps, as a fraction of the screen height.
+    pub top: f32,
+}
+
+impl Mast {
+    /// The bank of lamps: left, top, width, height, in px.
+    pub fn lamps(&self, bounds: Bounds) -> (f32, f32, f32, f32) {
+        let s = bounds.scale();
+        let (w, h) = (MAST_LAMPS.0 * s, MAST_LAMPS.1 * s);
+        (self.x - w / 2.0, self.top * bounds.height, w, h)
+    }
+
+    /// The pole under the lamps down to the grass: left, top, width,
+    /// height, in px.
+    pub fn pole(&self, bounds: Bounds) -> (f32, f32, f32, f32) {
+        let (_, t, _, h) = self.lamps(bounds);
+        let w = MAST_POLE * bounds.scale();
+        let ground = PITCH_GROUND * bounds.height;
+        (self.x - w / 2.0, t + h, w, ground - t - h)
+    }
+
+    /// The mast as drawn, for crashing: lamps and pole.
+    pub fn shape(&self, bounds: Bounds) -> Vec<Poly> {
+        let (l, t, w, h) = self.lamps(bounds);
+        let (pl, pt, pw, ph) = self.pole(bounds);
+        vec![Poly::rect(l, t, w, h), Poly::rect(pl, pt, pw, ph)]
+    }
+
+    /// Its leftmost and rightmost x, in px.
+    pub fn span(&self, bounds: Bounds) -> (f32, f32) {
+        let (l, _, w, _) = self.lamps(bounds);
+        (l, l + w)
+    }
+}
+
+/// A lawn sprinkler.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Sprinkler {
+    /// Its x on screen, in px.
+    pub x: f32,
+    /// How high its full jet reaches, as a fraction of the screen height.
+    pub top: f32,
+    /// Ticks into its on-and-off cycle (it starts at a random point, so
+    /// two sprinklers do not go in step).
+    pub phase: u32,
+}
+
+impl Sprinkler {
+    /// How much of its jet is up now: 0 = resting, 1 = full. It rises and
+    /// falls over [`SPRINKLER_RISE_SECONDS`].
+    pub fn water(&self) -> f32 {
+        let t = self.phase as f32 * TICK_SECONDS;
+        if t >= SPRINKLER_ON_SECONDS {
+            return 0.0;
+        }
+        let rise = (t / SPRINKLER_RISE_SECONDS).min(1.0);
+        let fall = ((SPRINKLER_ON_SECONDS - t) / SPRINKLER_RISE_SECONDS).min(1.0);
+        rise.min(fall)
+    }
+
+    /// The jet as it is now: left, top, width, height, in px (height 0
+    /// while it rests).
+    pub fn jet(&self, bounds: Bounds) -> (f32, f32, f32, f32) {
+        let ground = PITCH_GROUND * bounds.height;
+        let full = ground - self.top * bounds.height;
+        let h = full * self.water();
+        let w = SPRINKLER_JET * bounds.scale();
+        (self.x - w / 2.0, ground - h, w, h)
+    }
+
+    /// The spray at the jet's top: left, top, width, height, in px.
+    pub fn spray(&self, bounds: Bounds) -> (f32, f32, f32, f32) {
+        let s = bounds.scale();
+        let (_, t, _, _) = self.jet(bounds);
+        let (w, h) = (SPRINKLER_SPRAY.0 * s, SPRINKLER_SPRAY.1 * s);
+        (self.x - w / 2.0, t - h / 2.0, w, h)
+    }
+
+    /// The water as drawn, for the lift: the jet and its spray, or
+    /// nothing while it rests (or only trickles).
+    pub fn shape(&self, bounds: Bounds) -> Vec<Poly> {
+        if self.water() < TRICKLE {
+            return Vec::new();
+        }
+        let (l, t, w, h) = self.jet(bounds);
+        let (sl, st, sw, sh) = self.spray(bounds);
+        vec![Poly::rect(l, t, w, h), Poly::rect(sl, st, sw, sh)]
+    }
+
+    /// Its leftmost and rightmost x, in px (as wide as its spray).
+    pub fn span(&self, bounds: Bounds) -> (f32, f32) {
+        let half = SPRINKLER_SPRAY.0 * bounds.scale() / 2.0;
+        (self.x - half, self.x + half)
+    }
+}
+
+/// Which ground thing a timer is for.
+#[derive(Clone, Copy)]
+enum Which {
+    Mast,
+    Sprinkler,
+}
+
+/// The pitch's balls, masts and sprinklers.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Pitch {
+    /// Footballers, oldest first.
+    pub footballers: Vec<Footballer>,
+    /// Footballs shot, in the air or rolling, oldest first.
+    pub balls: Vec<Ball>,
+    /// Floodlight masts.
+    pub masts: Vec<Mast>,
+    /// Lawn sprinklers.
+    pub sprinklers: Vec<Sprinkler>,
+    next_footballer: u32,
+    next_mast: u32,
+    next_sprinkler: u32,
+    /// The game's speed (1 = normal), see [`Pitch::set_speed`].
+    speed: f32,
+    rng: Rng,
+}
+
+impl Pitch {
+    pub fn new(seed: u64) -> Self {
+        Self {
+            footballers: Vec::new(),
+            balls: Vec::new(),
+            masts: Vec::new(),
+            sprinklers: Vec::new(),
+            next_footballer: ticks(FIRST_FOOTBALLER_SECONDS),
+            next_mast: ticks(FIRST_MAST_SECONDS),
+            next_sprinkler: ticks(FIRST_SPRINKLER_SECONDS),
+            speed: 1.0,
+            // Its own stream, so the pitch does not change other things.
+            rng: Rng::new(seed ^ 0xF007_BA11_0000_0006),
+        }
+    }
+
+    /// Clear it all away (a new level).
+    pub fn clear(&mut self) {
+        self.footballers.clear();
+        self.balls.clear();
+        self.masts.clear();
+        self.sprinklers.clear();
+    }
+
+    /// Everything slides further left by `dx` px (the game going faster):
+    /// it all stands or rolls on the ground.
+    pub fn shift(&mut self, dx: f32) {
+        self.footballers.iter_mut().for_each(|f| f.x += dx);
+        self.balls.iter_mut().for_each(|b| b.pos.x += dx);
+        self.masts.iter_mut().for_each(|m| m.x += dx);
+        self.sprinklers.iter_mut().for_each(|s| s.x += dx);
+    }
+
+    /// How fast the game goes now (1 = normal; the world slides the pitch
+    /// by the extra, see [`Pitch::shift`]): shots allow for it.
+    pub fn set_speed(&mut self, speed: f32) {
+        self.speed = speed.max(0.1);
+    }
+
+    /// Advance one tick. `active`: is the pitch on screen (nothing new
+    /// comes while it is not)? `aim`: the plane's centre, where the
+    /// footballers shoot (`None` while it cannot be hit: no shots). Kicks
+    /// go to `events`.
+    pub fn tick(
+        &mut self,
+        bounds: Bounds,
+        active: bool,
+        aim: Option<Vec2>,
+        events: &mut Vec<Event>,
+    ) {
+        let s = bounds.scale();
+        let dx = -SCROLL_SPEED * s * TICK_SECONDS;
+        let ground = PITCH_GROUND * bounds.height;
+        for b in &mut self.balls {
+            Self::step_ball(b, s, dx, ground);
+        }
+        for f in &mut self.footballers {
+            f.age += 1;
+            // Running on after the shot too (after the ball), so two never
+            // run into each other.
+            f.x += dx - FOOTBALLER_RUN * s * TICK_SECONDS;
+            if let Some(t) = &mut f.shot {
+                *t += 1;
+            }
+        }
+        for m in &mut self.masts {
+            m.x += dx;
+        }
+        let cycle = ticks(SPRINKLER_ON_SECONDS + SPRINKLER_OFF_SECONDS);
+        for sp in &mut self.sprinklers {
+            sp.x += dx;
+            sp.phase = (sp.phase + 1) % cycle;
+        }
+        let m = MARGIN * s;
+        let h = bounds.height;
+        self.footballers.retain(|f| f.x > -m);
+        (self.balls).retain(|b| b.pos.x > -m && b.pos.y < h + m && b.pos.y > -4.0 * m);
+        self.masts.retain(|x| x.span(bounds).1 > -m);
+        self.sprinklers.retain(|x| x.span(bounds).1 > -m);
+
+        if !active {
+            self.next_footballer = ticks(FIRST_FOOTBALLER_SECONDS);
+            self.next_mast = ticks(FIRST_MAST_SECONDS);
+            self.next_sprinkler = ticks(FIRST_SPRINKLER_SECONDS);
+            return;
+        }
+        // Ground things wait until the last one has moved in by the room,
+        // then come in with their left edge just off the screen.
+        let spawn_x = |width: f32| bounds.width + (MARGIN + width / 2.0) * s;
+        if self.due_on_ground(Which::Mast, bounds) {
+            let top = self.rng.range(MAST_TOP.0, MAST_TOP.1);
+            let x = spawn_x(MAST_LAMPS.0);
+            self.masts.push(Mast { x, top });
+            self.next_mast = ticks(self.rng.range(MAST_GAP_SECONDS.0, MAST_GAP_SECONDS.1));
+        }
+        if self.due_on_ground(Which::Sprinkler, bounds) {
+            let r = &mut self.rng;
+            let top = r.range(SPRINKLER_TOP.0, SPRINKLER_TOP.1);
+            let phase = (r.unit() * cycle as f32) as u32 % cycle;
+            let x = spawn_x(SPRINKLER_SPRAY.0);
+            self.sprinklers.push(Sprinkler { x, top, phase });
+            self.next_sprinkler = ticks(r.range(SPRINKLER_GAP_SECONDS.0, SPRINKLER_GAP_SECONDS.1));
+        }
+        self.next_footballer -= 1;
+        if self.next_footballer == 0 {
+            let r = &mut self.rng;
+            let kit = (r.unit() < 0.5) as u8;
+            let aim_off = if r.unit() < SHOT_MISS_SHARE {
+                let sign = if r.unit() < 0.5 { -1.0 } else { 1.0 };
+                sign * r.range(SHOT_MISS.0, SHOT_MISS.1)
+            } else {
+                r.range(-SHOT_SPREAD, SHOT_SPREAD)
+            };
+            self.footballers.push(Footballer {
+                x: bounds.width + MARGIN * s,
+                kit,
+                age: 0,
+                shot: None,
+                aim_off,
+            });
+            let gap = r.range(FOOTBALLER_GAP_SECONDS.0, FOOTBALLER_GAP_SECONDS.1);
+            self.next_footballer = ticks(gap);
+        }
+        if let Some(plane) = aim {
+            self.shoot(bounds, plane, events);
+        }
+    }
+
+    /// Every footballer with the ball who is far enough ahead of the plane
+    /// now shoots: a ball that meets the plane (or misses it by their aim)
+    /// just as it gets there. Not out of a mast or a sprinkler.
+    fn shoot(&mut self, bounds: Bounds, plane: Vec2, events: &mut Vec<Event>) {
+        let s = bounds.scale();
+        let g = BALL_GRAVITY * s;
+        let r = BALL_RADIUS * s;
+        let closing = (SCROLL_SPEED * self.speed - SHOT_DRIFT) * s;
+        let mut kicked = false;
+        for i in 0..self.footballers.len() {
+            let f = self.footballers[i];
+            let Some(foot) = f.ball(bounds) else { continue };
+            if foot.x > bounds.width - 2.0 * r || !self.clear_to_kick(foot.x, bounds) {
+                continue;
+            }
+            // Where the ball is to be when it gets to the plane: off by
+            // the aim, the other way if that is off the screen or down on
+            // the grass.
+            let mut target = plane.y + f.aim_off * s;
+            if target < r || target > foot.y - 2.0 * r {
+                target = plane.y - f.aim_off * s;
+            }
+            let target = target.clamp(r, foot.y);
+            let time = (foot.x - plane.x) / closing;
+            let rise = Self::launch(foot.y - target, s) / g;
+            if time > rise.max(SHOT_WARN_SECONDS) || time < SHOT_LEAST_SECONDS {
+                continue;
+            }
+            // Up so that it is at `target` after `time`. (Plus half a
+            // tick: the ball falls before it moves in every tick.)
+            // Never over the top of the screen (a late shot at a high
+            // plane, held back by a mast: it then peaks a little early).
+            let up = (foot.y - target) / time + g * time / 2.0 + g * TICK_SECONDS / 2.0;
+            let up = up.min(Self::launch(foot.y - r, s));
+            self.balls.push(Ball {
+                pos: foot,
+                vel: Vec2::new(SHOT_DRIFT * s, -up),
+                bounces: 0,
+                struck: false,
+                age: f.age,
+            });
+            self.footballers[i].shot = Some(0);
+            kicked = true;
+        }
+        if kicked {
+            events.push(Event::BallKick); // one sound, also for two at once
+        }
+    }
+
+    /// Is the plane, as `me`, in a sprinkler's water?
+    pub fn in_jet(&self, bounds: Bounds, me: &[Poly]) -> bool {
+        (self.sprinklers.iter()).any(|sp| crate::shape::any_overlap(me, &sp.shape(bounds)))
+    }
+
+    /// The plane flew into the ball at footballer `i`'s feet: it flies
+    /// off, and they run on without it.
+    pub fn knock_from_feet(&mut self, i: usize, bounds: Bounds) {
+        let f = &mut self.footballers[i];
+        let Some(at) = f.ball(bounds) else { return };
+        f.shot = Some(ticks(KICK_POSE_SECONDS)); // no kick pose
+        let mut ball = Ball {
+            pos: at,
+            vel: Vec2::new(0.0, 0.0),
+            bounces: 0,
+            struck: false,
+            age: f.age,
+        };
+        ball.knock_away(bounds.scale());
+        self.balls.push(ball);
+    }
+
+    /// How fast a ball must go up to rise `rise` px. (Plus half a tick of
+    /// falling: the ball falls before it moves in every tick, so it peaks
+    /// exactly that high.)
+    fn launch(rise: f32, s: f32) -> f32 {
+        let g = BALL_GRAVITY * s;
+        (2.0 * g * rise.max(0.0)).sqrt() + g * TICK_SECONDS / 2.0
+    }
+
+    /// Count down a mast's or a sprinkler's timer; true when one comes in
+    /// now. While the last ground thing is still too close to the right
+    /// edge, it waits a moment longer.
+    fn due_on_ground(&mut self, which: Which, bounds: Bounds) -> bool {
+        let crowded = self.crowded(bounds);
+        let timer = match which {
+            Which::Mast => &mut self.next_mast,
+            Which::Sprinkler => &mut self.next_sprinkler,
+        };
+        *timer -= 1;
+        if *timer == 0 && crowded {
+            *timer = ticks(0.2);
+        }
+        *timer == 0
+    }
+
+    /// Is the grass at `x` free of masts and sprinklers, with room for a
+    /// ball beside them?
+    fn clear_to_kick(&self, x: f32, bounds: Bounds) -> bool {
+        let room = 2.0 * BALL_RADIUS * bounds.scale();
+        (self.masts.iter().map(|m| m.span(bounds)))
+            .chain(self.sprinklers.iter().map(|sp| sp.span(bounds)))
+            .all(|(l, r)| x < l - room || x > r + room)
+    }
+
+    /// Is the last mast or sprinkler still too close to the right edge for
+    /// another one to come in?
+    fn crowded(&self, bounds: Bounds) -> bool {
+        let last = (self.masts.iter().map(|x| x.span(bounds).1))
+            .chain(self.sprinklers.iter().map(|x| x.span(bounds).1))
+            .fold(f32::MIN, f32::max);
+        last > bounds.width - PITCH_ROOM * bounds.scale()
+    }
+
+    /// Move a ball on by one tick: with the ground (`dx`), by its own
+    /// speed and falling; it bounces on the grass, then rolls.
+    fn step_ball(b: &mut Ball, s: f32, dx: f32, ground: f32) {
+        b.age += 1;
+        b.vel.y += BALL_GRAVITY * s * TICK_SECONDS;
+        b.pos.x += dx + b.vel.x * TICK_SECONDS;
+        b.pos.y += b.vel.y * TICK_SECONDS;
+        let floor = ground - BALL_RADIUS * s;
+        if b.struck || b.pos.y < floor || b.vel.y <= 0.0 {
+            return; // (a struck ball falls through, off the screen)
+        }
+        b.pos.y = floor;
+        if b.bounces < BALL_BOUNCES {
+            b.bounces += 1;
+            b.vel.y = -b.vel.y * BALL_BOUNCE;
+            b.vel.x *= 0.7;
+        } else {
+            b.vel.y = 0.0;
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::shape::any_overlap;
+
+    const PHONE: Bounds = Bounds {
+        width: 844.0,
+        height: 390.0,
+    };
+    const PLANE_X: f32 = 0.2 * 844.0;
+    /// A plane low over the grass.
+    const LOW: Option<Vec2> = Some(Vec2 {
+        x: PLANE_X,
+        y: 330.0,
+    });
+
+    fn run(p: &mut Pitch, seconds: f32, active: bool) -> Vec<Event> {
+        let mut events = Vec::new();
+        for _ in 0..ticks(seconds) {
+            p.tick(PHONE, active, LOW, &mut events);
+        }
+        events
+    }
+
+    fn probe(x: f32, y: f32) -> Vec<Poly> {
+        vec![Poly::rect(x - 1.0, y - 1.0, 2.0, 2.0)]
+    }
+
+    /// Run until the first shot; the ball, and the footballer's feet just
+    /// before.
+    fn first_shot(p: &mut Pitch) -> (Ball, Vec2) {
+        for _ in 0..ticks(30.0) {
+            // (By age: footballers come and go in a tick.)
+            let feet: Vec<(u32, Option<Vec2>)> = p
+                .footballers
+                .iter()
+                .map(|f| (f.age, f.ball(PHONE)))
+                .collect();
+            p.tick(PHONE, true, LOW, &mut Vec::new());
+            if let Some(&b) = p.balls.last() {
+                let f = p.footballers.iter().find(|f| f.shot == Some(0)).unwrap();
+                let (_, at) = feet.iter().find(|(age, _)| *age + 1 == f.age).unwrap();
+                return (b, at.unwrap());
+            }
+        }
+        panic!("no shot in 30 s");
+    }
+
+    /// Shots at a plane holding still at `plane`, at the game's `speed`
+    /// on a screen of `bounds`: where each was kicked and how close it
+    /// came to the plane, in px.
+    fn shots_at(bounds: Bounds, speed: f32, plane: Vec2, seconds: f32) -> Vec<(f32, f32)> {
+        let mut p = Pitch::new(9);
+        p.set_speed(speed);
+        let extra = (speed - 1.0) * SCROLL_SPEED * bounds.scale() * TICK_SECONDS;
+        let mut shots = std::collections::BTreeMap::new(); // by kick tick
+        for t in 0..ticks(seconds) {
+            p.tick(bounds, true, Some(plane), &mut Vec::new());
+            p.shift(-extra);
+            for b in &p.balls {
+                let d = libm::hypotf(b.pos.x - plane.x, b.pos.y - plane.y);
+                let shot = shots.entry(t - b.age).or_insert((b.pos.x, f32::MAX));
+                shot.1 = shot.1.min(d);
+            }
+        }
+        shots.into_values().collect()
+    }
+
+    /// How many of `shots` met the plane, and how many missed it clearly.
+    fn met_and_missed(shots: &[(f32, f32)]) -> (usize, usize) {
+        let met = shots.iter().filter(|s| s.1 < SHOT_SPREAD + 6.0).count();
+        let missed = shots.iter().filter(|s| s.1 > SHOT_MISS.0 - 6.0).count();
+        (met, missed)
+    }
+
+    #[test]
+    fn nothing_away_from_the_pitch() {
+        let mut p = Pitch::new(1);
+        let events = run(&mut p, 60.0, false);
+        assert!(p.footballers.is_empty() && p.balls.is_empty());
+        assert!(p.masts.is_empty() && p.sprinklers.is_empty());
+        assert!(events.is_empty());
+    }
+
+    #[test]
+    fn a_footballer_runs_in_with_a_ball_toward_the_plane() {
+        let mut p = Pitch::new(2);
+        run(&mut p, FIRST_FOOTBALLER_SECONDS + 0.01, true);
+        assert_eq!(p.footballers.len(), 1);
+        let f = p.footballers[0];
+        assert!(f.x > PHONE.width, "comes in from the right: {}", f.x);
+        assert!(f.ball(PHONE).is_some(), "with the ball");
+        run(&mut p, 1.0, false);
+        let moved = f.x - p.footballers[0].x;
+        assert!(
+            (moved - SCROLL_SPEED - FOOTBALLER_RUN).abs() < 1.0,
+            "{moved}"
+        );
+    }
+
+    #[test]
+    fn a_shot_leaves_the_footballers_feet_well_ahead_of_the_plane() {
+        let mut p = Pitch::new(2);
+        let mut events = Vec::new();
+        for _ in 0..ticks(30.0) {
+            p.tick(PHONE, true, LOW, &mut events);
+            if !p.balls.is_empty() {
+                break;
+            }
+        }
+        assert_eq!(events, vec![Event::BallKick]);
+        let mut p = Pitch::new(2);
+        let (b, feet) = first_shot(&mut p);
+        let step = (SCROLL_SPEED + FOOTBALLER_RUN) * TICK_SECONDS;
+        assert!((b.pos.x - feet.x).abs() < step + 2.0 && (b.pos.y - feet.y).abs() < 6.0);
+        let closing = SCROLL_SPEED - SHOT_DRIFT;
+        assert!(
+            b.pos.x - PLANE_X > closing * SHOT_LEAST_SECONDS,
+            "{}",
+            b.pos.x
+        );
+        assert!(b.vel.y < 0.0, "going up");
+        let f = p.footballers.iter().find(|f| f.shot.is_some()).unwrap();
+        assert!(f.ball(PHONE).is_none() && f.kicking());
+    }
+
+    #[test]
+    fn nowhere_is_safe_the_footballers_aim_at_the_plane_high_or_low() {
+        // Holding still anywhere, more than half the shots meet the
+        // plane; the others miss it clearly.
+        for y in [12.0, 40.0, 120.0, 200.0, 280.0, 340.0] {
+            let shots = shots_at(PHONE, 1.0, Vec2::new(PLANE_X, y), 120.0);
+            let (met, missed) = met_and_missed(&shots);
+            let n = shots.len();
+            assert!(n >= 25, "{y}: {n} shots");
+            // (About 3 in 5 meet it; a random draw, so not exactly.)
+            assert!(met * 4 >= n && met * 4 <= n * 3, "{y}: {met} of {n} met");
+            assert!(missed * 4 >= n, "{y}: {missed} of {n} missed");
+        }
+    }
+
+    #[test]
+    fn shots_allow_for_the_speed_and_the_screen() {
+        let wide = Bounds {
+            width: 1920.0,
+            height: 390.0,
+        };
+        for (bounds, speed) in [(PHONE, crate::MAX_SPEED), (PHONE, 2.0), (wide, 1.0)] {
+            for y in [30.0, 300.0] {
+                let plane = Vec2::new(0.2 * bounds.width, y);
+                let shots = shots_at(bounds, speed, plane, 120.0);
+                let (met, _) = met_and_missed(&shots);
+                let n = shots.len();
+                assert!(met * 4 >= n, "{bounds:?} {speed} {y}: {met} of {n}");
+            }
+        }
+    }
+
+    #[test]
+    fn real_shots_stay_on_the_screen_and_one_at_a_low_plane_lands() {
+        for y in [12.0, 200.0, 340.0] {
+            let plane = Vec2::new(PLANE_X, y);
+            let mut p = Pitch::new(9);
+            let mut top = f32::MAX;
+            let mut landed = std::collections::BTreeSet::new();
+            for t in 0..ticks(120.0) {
+                p.tick(PHONE, true, Some(plane), &mut Vec::new());
+                for b in &p.balls {
+                    top = top.min(b.pos.y);
+                    if b.bounces > 0 {
+                        landed.insert(t - b.age);
+                    }
+                }
+            }
+            assert!(top > 0.0, "{y}: up to {top}");
+            if y > 300.0 {
+                assert!(landed.len() > 20, "{y}: {} landed", landed.len());
+            }
+        }
+    }
+
+    #[test]
+    fn a_ball_at_a_footballers_feet_flies_off_when_hit() {
+        let mut p = Pitch::new(2);
+        run(&mut p, FIRST_FOOTBALLER_SECONDS + 0.01, true);
+        p.knock_from_feet(0, PHONE);
+        assert!(p.footballers[0].ball(PHONE).is_none());
+        assert!(!p.footballers[0].kicking());
+        assert!(p.balls.len() == 1 && p.balls[0].struck);
+    }
+
+    #[test]
+    fn every_shot_comes_with_warning() {
+        // From far enough ahead that the ball takes at least
+        // SHOT_LEAST_SECONDS to the plane, also at full speed.
+        for speed in [1.0, crate::MAX_SPEED] {
+            let closing = SCROLL_SPEED * speed - SHOT_DRIFT;
+            for y in [12.0, 200.0, 340.0] {
+                for (x, _) in shots_at(PHONE, speed, Vec2::new(PLANE_X, y), 120.0) {
+                    let time = (x - PLANE_X) / closing;
+                    assert!(time > SHOT_LEAST_SECONDS - 0.05, "{speed} {y}: {time}");
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn no_shots_at_a_plane_that_cannot_be_hit() {
+        let mut p = Pitch::new(9);
+        let mut events = Vec::new();
+        for _ in 0..ticks(60.0) {
+            p.tick(PHONE, true, None, &mut events);
+        }
+        assert!(p.balls.is_empty() && events.is_empty());
+        assert!(!p.footballers.is_empty());
+        assert!(p.footballers.iter().all(|f| f.ball(PHONE).is_some()));
+    }
+
+    #[test]
+    fn a_ball_comes_down_bounces_then_rolls_off() {
+        // A ball on the grass far to the right, coming down.
+        let mut p = Pitch::new(3);
+        let ground = PITCH_GROUND * PHONE.height;
+        p.balls.push(Ball {
+            pos: Vec2::new(PHONE.width, ground - 100.0),
+            vel: Vec2::new(SHOT_DRIFT, 50.0),
+            bounces: 0,
+            struck: false,
+            age: 0,
+        });
+        let mut rolled = false;
+        for _ in 0..ticks(12.0) {
+            p.tick(PHONE, false, LOW, &mut Vec::new());
+            if let Some(b) = p.balls.first() {
+                assert!(b.bounces <= BALL_BOUNCES && b.pos.y <= ground - BALL_RADIUS + 0.01);
+                rolled |= b.bounces == BALL_BOUNCES && b.vel.y == 0.0;
+            }
+        }
+        assert!(rolled, "it ends up rolling");
+        assert!(p.balls.is_empty(), "and rolls off the screen");
+    }
+
+    #[test]
+    fn a_footballer_comes_every_few_seconds_and_shoots() {
+        let mut p = Pitch::new(4);
+        let kicks = run(&mut p, 120.0, true).len();
+        let gap = FOOTBALLER_GAP_SECONDS;
+        // (A few do not get to shoot: a mast or a sprinkler in the way.)
+        let (lo, hi) = (0.8 * 120.0 / gap.1, 120.0 / gap.0);
+        assert!((lo as usize..=hi as usize + 1).contains(&kicks), "{kicks}");
+    }
+
+    #[test]
+    fn after_the_shot_a_footballer_runs_on_and_off_the_screen() {
+        let mut p = Pitch::new(2);
+        first_shot(&mut p);
+        let i = p.footballers.iter().position(|f| f.shot.is_some()).unwrap();
+        let x = p.footballers[i].x;
+        run(&mut p, 1.0, false);
+        let moved = x - p.footballers[i].x;
+        assert!(
+            (moved - SCROLL_SPEED - FOOTBALLER_RUN).abs() < 1.0,
+            "{moved}"
+        );
+        assert!(!p.footballers[i].kicking(), "the kick is over");
+        run(&mut p, 20.0, false);
+        assert!(p.footballers.is_empty());
+    }
+
+    #[test]
+    fn a_struck_ball_flies_off_and_is_gone() {
+        let mut p = Pitch::new(2);
+        first_shot(&mut p);
+        p.balls[0].knock_away(PHONE.scale());
+        assert!(p.balls[0].struck);
+        run(&mut p, 6.0, false);
+        assert!(p.balls.is_empty());
+    }
+
+    #[test]
+    fn a_ball_is_hit_on_it_not_beside_it() {
+        let b = Ball {
+            pos: Vec2::new(300.0, 200.0),
+            vel: Vec2::new(0.0, 0.0),
+            bounces: 0,
+            struck: false,
+            age: 0,
+        };
+        let shape = [b.shape(1.0)];
+        assert!(any_overlap(
+            &shape,
+            &probe(300.0, 200.0 + BALL_RADIUS - 2.0)
+        ));
+        assert!(!any_overlap(
+            &shape,
+            &probe(300.0 + BALL_RADIUS + 3.0, 200.0)
+        ));
+    }
+
+    #[test]
+    fn masts_are_rare_and_leave_room_above() {
+        let mut p = Pitch::new(5);
+        let mut placed = Vec::new();
+        for tick in 0..ticks(240.0) {
+            let before = p.masts.len();
+            p.tick(PHONE, true, LOW, &mut Vec::new());
+            if p.masts.len() > before {
+                placed.push(tick as f32 * TICK_SECONDS);
+            }
+        }
+        assert!(placed.len() >= 10, "{}", placed.len());
+        for pair in placed.windows(2) {
+            let gap = pair[1] - pair[0];
+            assert!(gap >= MAST_GAP_SECONDS.0 - 0.01, "too close: {gap}");
+        }
+        let m = Mast {
+            x: 400.0,
+            top: MAST_TOP.0,
+        };
+        let (_, t, _, _) = m.lamps(PHONE);
+        assert!(t > 0.3 * PHONE.height, "room above the tallest: {t}");
+    }
+
+    #[test]
+    fn a_mast_is_hit_on_its_lamps_and_pole_not_beside_or_above() {
+        let m = Mast { x: 400.0, top: 0.4 };
+        let shape = m.shape(PHONE);
+        let hit = |x: f32, y: f32| any_overlap(&shape, &probe(x, y));
+        let (l, t, w, h) = m.lamps(PHONE);
+        assert!(hit(l + 3.0, t + 3.0), "the lamps");
+        let (pl, pt, pw, ph) = m.pole(PHONE);
+        assert!(hit(pl + pw / 2.0, pt + ph / 2.0), "the pole");
+        assert!(!hit(400.0, t - 4.0), "above it");
+        assert!(!hit(l + w + 4.0, t + h / 2.0), "beside the lamps");
+        assert!(!hit(pl - 8.0, pt + ph / 2.0), "beside the pole");
+    }
+
+    #[test]
+    fn a_sprinkler_throws_water_then_rests_and_its_jet_is_there_only_when_up() {
+        let mut sp = Sprinkler {
+            x: 400.0,
+            top: 0.5,
+            phase: 0,
+        };
+        assert_eq!(sp.water(), 0.0, "rising from nothing");
+        assert!(sp.shape(PHONE).is_empty());
+        sp.phase = ticks(SPRINKLER_ON_SECONDS / 2.0);
+        assert_eq!(sp.water(), 1.0);
+        let (_, t, _, _) = sp.jet(PHONE);
+        assert!((t - 0.5 * PHONE.height).abs() < 0.5, "full height: {t}");
+        let shape = sp.shape(PHONE);
+        assert!(any_overlap(&shape, &probe(400.0, t + 20.0)), "in the jet");
+        assert!(
+            !any_overlap(&shape, &probe(400.0, t - 20.0)),
+            "above the spray"
+        );
+        sp.phase = ticks(SPRINKLER_ON_SECONDS + 0.1);
+        assert_eq!(sp.water(), 0.0, "resting");
+        assert!(sp.shape(PHONE).is_empty(), "fly through while it rests");
+    }
+
+    #[test]
+    fn a_sprinkler_rests_long_enough_every_cycle_to_fly_through() {
+        let mut p = Pitch::new(6);
+        run(&mut p, FIRST_SPRINKLER_SECONDS + 0.01, true);
+        assert_eq!(p.sprinklers.len(), 1);
+        // Over two cycles: the longest stretch without water.
+        let mut dry = 0u32;
+        let mut longest = 0u32;
+        let mut wet = false;
+        for _ in 0..ticks(2.0 * (SPRINKLER_ON_SECONDS + SPRINKLER_OFF_SECONDS)) {
+            p.tick(PHONE, false, LOW, &mut Vec::new());
+            let s = p.sprinklers[0];
+            if s.shape(PHONE).is_empty() {
+                dry += 1;
+                longest = longest.max(dry);
+            } else {
+                dry = 0;
+                wet = true;
+            }
+        }
+        assert!(wet, "it comes on");
+        let secs = longest as f32 * TICK_SECONDS;
+        assert!(secs >= SPRINKLER_OFF_SECONDS, "rests {secs} s");
+    }
+
+    #[test]
+    fn sprinklers_do_not_go_in_step() {
+        let mut p = Pitch::new(7);
+        run(&mut p, 30.0, true);
+        let phases: Vec<u32> = p.sprinklers.iter().map(|s| s.phase).collect();
+        assert!(phases.len() >= 2, "{phases:?}");
+        assert!(phases.windows(2).any(|w| w[0] != w[1]), "{phases:?}");
+    }
+
+    #[test]
+    fn things_on_the_ground_leave_room_between_them() {
+        let mut p = Pitch::new(8);
+        for _ in 0..ticks(240.0) {
+            p.tick(PHONE, true, LOW, &mut Vec::new());
+            let mut spans: Vec<(f32, f32)> = (p.masts.iter().map(|m| m.span(PHONE)))
+                .chain(p.sprinklers.iter().map(|s| s.span(PHONE)))
+                .collect();
+            spans.sort_by(|a, b| a.0.total_cmp(&b.0));
+            for pair in spans.windows(2) {
+                let gap = pair[1].0 - pair[0].1;
+                assert!(gap >= PITCH_ROOM - 2.0, "{gap}");
+            }
+        }
+    }
+
+    #[test]
+    fn everything_slides_with_the_ground() {
+        let mut p = Pitch::new(9);
+        run(&mut p, 20.0, true);
+        // The newest of each: still well on the screen a second later.
+        let mast = p.masts.last().unwrap().x;
+        let sp = p.sprinklers.last().unwrap().x;
+        run(&mut p, 1.0, false);
+        assert!((mast - p.masts.last().unwrap().x - SCROLL_SPEED).abs() < 1.0);
+        assert!((sp - p.sprinklers.last().unwrap().x - SCROLL_SPEED).abs() < 1.0);
+    }
+
+    #[test]
+    fn a_ball_is_never_kicked_out_of_a_mast_or_a_sprinkler() {
+        for seed in 0..10 {
+            let mut p = Pitch::new(seed);
+            for _ in 0..ticks(120.0) {
+                let before = p.balls.len();
+                p.tick(PHONE, true, LOW, &mut Vec::new());
+                if p.balls.len() > before {
+                    let x = p.balls.last().unwrap().pos.x;
+                    for (l, r) in (p.masts.iter().map(|m| m.span(PHONE)))
+                        .chain(p.sprinklers.iter().map(|s| s.span(PHONE)))
+                    {
+                        assert!(x < l || x > r, "seed {seed}: kicked at {x} in {l}..{r}");
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn same_seed_same_pitch() {
+        let (mut a, mut b) = (Pitch::new(9), Pitch::new(9));
+        run(&mut a, 40.0, true);
+        run(&mut b, 40.0, true);
+        assert_eq!(a, b);
+    }
+}

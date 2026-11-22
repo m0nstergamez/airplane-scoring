@@ -1127,6 +1127,50 @@ that isn't code here. Keep entries short and dated.
   of the steps that did not run instead of "All checks passed", and
   `scripts/stage.sh e2e` stops early on Node older than 22.
 
+## 2026-11-22
+
+- Level 6, a football pitch, from our own photo of a mown lawn (seen
+  from above; the picture shows it from the side, with the mowing
+  stripes, a small grandstand and trees behind). Picked from proposals:
+  footballs kicked up in an arc, floodlight masts and sprinklers, summer
+  weather (no rain), a step harder than level 5.
+  - Footballs are the first obstacle on a parabola, shot by footballers
+    who run in with the ball (`FOOTBALLER_RUN`), so each shot is seen
+    coming. In a test flight, balls kicked up at random left the top
+    edge a safe lane; the user asked for footballers who try to shoot
+    the plane down. Each shot is aimed at where the plane will be,
+    allowing for the speed: the footballer kicks once the ball would take
+    `SHOT_WARN_SECONDS` to get there, or the time to rise to a high
+    plane, so the arc peaks at a high plane and drops onto a low one, and
+    the warning does not depend on the speed or the screen's shape. About
+    two in five shots miss by 35–80 px (`SHOT_MISS_SHARE`; first one in
+    two, made a bit harder after a test flight, with footballers every
+    1.8–3.4 s instead of 2–4 s), away from
+    the grass and the screen's edge. No shots at a plane that cannot be
+    hit (blinking); a footballer who gets too close without a shot (a
+    mast or sprinkler in the way, `SHOT_LEAST_SECONDS`) runs on with the
+    ball, which counts like a kicked one. After a shot the footballer
+    runs on too, so two never run into each other. The footballers are
+    not an obstacle; the balls bounce twice (`BALL_BOUNCES`) and roll
+    off.
+  - Floodlight masts are rare (every 8–13 s), so they stay plausible for
+    one pitch; the masts and the sprinklers are not in the picture.
+  - A sprinkler's jet costs no life: flying into it while it is up
+    kicks the plane up once (`SPRINKLER_KICK`, about a quarter of the
+    screen on a phone). Once on the way in, not for as long as it is in
+    the water like the steam in level 4: the jet is narrow and its
+    spray wider, so the kick is the same wherever and however fast the
+    plane touches it. A crashed plane falls through. At first it was solid; it was changed so the water pushes
+    instead of crashing. It always rests `SPRINKLER_OFF_SECONDS` per
+    cycle, and each one starts at a random point of its cycle, so two
+    are not in step.
+  - New sounds `ball-kick.wav` and `splash.wav`; the level map got a
+    sixth stop and the golden NEW moved to it.
+  - A check on many screens before the merge found the level map's Back
+    button under the QR code on common laptop windows (1366x768,
+    1536x864, 1280x800; already so with five levels). The QR code now
+    waits in the main menu there, as on phones.
+
 ## Concepts
 
 ### Tilt: from sensor to steering

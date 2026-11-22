@@ -117,6 +117,7 @@
     #start .node[data-level="3"] { background-image: url(levels/level3.png); }
     #start .node[data-level="4"] { background-image: url(levels/level4.png); }
     #start .node[data-level="5"] { background-image: url(levels/level5.png); }
+    #start .node[data-level="6"] { background-image: url(levels/level6.png); }
     #start .node .lock { display: none; font-size: 34px; }
     #start .node.locked { filter: grayscale(1) brightness(0.55); cursor: default; }
     #start .node.locked .lock { display: block; }
@@ -182,6 +183,11 @@
     /* The level map (three levels wide) reaches the plane on the left:
        the plane steps aside there too. */
     #start:has([data-panel="levels"].shown) .hero { display: none; }
+    /* On a laptop (1366x768, 1536x864, 1280x800) the map's Back button
+       reaches down to the QR code: it waits in the main menu there. */
+    @media (max-height: 960px) {
+      #start:has([data-panel="levels"].shown) figure { display: none; }
+    }
     #start .phone-only { display: none; }
     @media (pointer: coarse) {
       #start .phone-only { display: inline; }
@@ -457,9 +463,14 @@
         </div>
         <div class="path" aria-hidden="true"></div>
         <div class="stop">
-          <button type="button" class="node" data-level="5" data-name="Forest" aria-label="Level 5: Forest (new)"><span class="lock">&#128274;</span><span class="done" aria-hidden="true">&#10003;</span></button>
+          <button type="button" class="node" data-level="5" data-name="Forest" aria-label="Level 5: Forest"><span class="lock">&#128274;</span><span class="done" aria-hidden="true">&#10003;</span></button>
           <span class="name">5 Forest</span>
-          <span class="new" data-new-level="5">NEW</span>
+        </div>
+        <div class="path" aria-hidden="true"></div>
+        <div class="stop">
+          <button type="button" class="node" data-level="6" data-name="Pitch" aria-label="Level 6: Pitch (new)"><span class="lock">&#128274;</span><span class="done" aria-hidden="true">&#10003;</span></button>
+          <span class="name">6 Pitch</span>
+          <span class="new" data-new-level="6">NEW</span>
         </div>
       </div>
       <p class="map-note" id="map-note" aria-live="polite"></p>
@@ -470,7 +481,7 @@
       <div class="guide">
         <section>
           <h3>The goal</h3>
-          <p>Fly each level as fast as you can: every level is the same distance, and more throttle gets you there sooner. The clock at the top counts your time in this level, from 0:00 in every level; the bar under it shows how far it is to the landing. Dodge what is in your way: hot-air balloons, launch pads and huts on the coast; gulls and lifeguard towers at the beach; in the town at night, fly over the high-rises and the cranes, and dodge the helicopters that fly at you at your height; at sunrise, fly over or under the geese that come in a V, fly over the high-rises and the houses, and mind the steam from their chimneys (it throws you up) and the low sun that blinds you now and then; in the autumn forest, fly over the tall firs, watch out for the buzzard that circles and then dives at you, and fight the gusts of leaves that press you down and the fog. You have <strong>3 lives</strong>; each crash costs one.</p>
+          <p>Fly each level as fast as you can: every level is the same distance, and more throttle gets you there sooner. The clock at the top counts your time in this level, from 0:00 in every level; the bar under it shows how far it is to the landing. Dodge what is in your way: hot-air balloons, launch pads and huts on the coast; gulls and lifeguard towers at the beach; in the town at night, fly over the high-rises and the cranes, and dodge the helicopters that fly at you at your height; at sunrise, fly over or under the geese that come in a V, fly over the high-rises and the houses, and mind the steam from their chimneys (it throws you up) and the low sun that blinds you now and then; in the autumn forest, fly over the tall firs, watch out for the buzzard that circles and then dives at you, and fight the gusts of leaves that press you down and the fog; on the football pitch, dodge the balls the footballers shoot at you, fly over the floodlight masts, and mind the sprinklers' jets (they throw you up). You have <strong>3 lives</strong>; each crash costs one.</p>
           <p>At the end of a level the autopilot <strong>lands</strong> on a runway: level complete! That unlocks the next level (after the last one, more are coming). Each level keeps your <strong>5 fastest times</strong>, with milliseconds; only a completed level gets a time.</p>
         </section>
         <section>
@@ -779,7 +790,7 @@
     let chosenLevel = requestedLevel; // the level the next flight starts in
     // The level map: level 1 is open; landing a level completes it and
     // opens the next. The completed levels are kept in this browser.
-    const LEVELS = 5;
+    const LEVELS = 6;
     const UNLOCK_KEY = "airplane-scoring.unlocked"; // older versions: highest open level
     const COMPLETED_KEY = "airplane-scoring.completed";
     let completed = [];

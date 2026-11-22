@@ -26,7 +26,7 @@ short **meaning**.
 | Finger | finger | `pointer` | Steering by touching the screen |
 | Taste | key | `steer_from_keys` | Keyboard key (↑/W, ↓/S) |
 | Spielerin / Spieler (kurz: Spieler:in) | player | — | Person playing. In running text «Spielerin oder Spieler», in short labels «Spieler:in» |
-| Hindernis | obstacle | `Balloons`, `Pad`, `Huts`, `Gulls`, `Towers`, `City`, `Sunrise`, `Forest` | Something you must not fly into; touching it is a crash. So far: hot-air balloons, launch pads and huts in level 1, gulls and lifeguard towers in level 2, high-rises, cranes and helicopters in level 3, geese, houses and high-rises in level 4, firs and buzzards in level 5 |
+| Hindernis | obstacle | `Balloons`, `Pad`, `Huts`, `Gulls`, `Towers`, `City`, `Sunrise`, `Forest`, `Pitch` | Something you must not fly into; touching it is a crash. So far: hot-air balloons, launch pads and huts in level 1, gulls and lifeguard towers in level 2, high-rises, cranes and helicopters in level 3, geese, houses and high-rises in level 4, firs and buzzards in level 5, footballs and floodlight masts in level 6 |
 | Leben | life, lives | `World.lives`, `LIVES` | Crashes you can afford; shown as small planes at the top right |
 | Rauchfahne | smoke trail | `World::smoke`, `DAMAGE_SMOKE` | Smoke behind a damaged plane; thicker with every life lost |
 | Fluggeschwindigkeit | airspeed | `Player::airspeed`, `Input::throttle` | How fast you fly yourself: gas (→/D, tip forward) and brake (←/A, tip back) |
@@ -109,6 +109,14 @@ short **meaning**.
 | Bussard | buzzard | `Buzzard`, `BuzzardState` | Level 5: circles, then cries and dives at the plane; an obstacle, knocked down when hit |
 | Böe, Laubwirbel | gust (of leaves) | `Gust`, `GUST_PUSH` | Level 5: presses the plane down, costs no life |
 | Nebel, Nebelbank | fog, bank of fog | `Forest::fog` | Level 5: now and then the screen is veiled for a few seconds |
+| Fussballplatz | football pitch | `Pitch`, `PITCH_LEVEL` | Level 6: a mown lawn with a small grandstand on a summer day |
+| Fussball | football | `Ball`, `Event::BallKick` | Level 6: shot by a footballer, flies an arc and bounces; an obstacle, knocked away when hit |
+| Fussballer | footballer | `Footballer` | Level 6: runs in with a ball and shoots it at the plane; harmless itself |
+| Schuss | shot | `SHOT_WARN_SECONDS`, `SHOT_MISS_SHARE` | Level 6: a footballer's kick at the plane, an arc that meets it where it will be; about two in five miss |
+| Flutlichtmast | floodlight mast | `Mast` | Level 6: a thin pole with lamps on top, rare; an obstacle, fly over it |
+| Rasensprenger | sprinkler | `Sprinkler`, `SPRINKLER_KICK` | Level 6: throws a jet of water up, then rests; flying into the jet while it is up kicks the plane up once, costs no life |
+| Wasserstrahl | jet (of water) | `Sprinkler::jet` | Level 6: what a sprinkler throws up |
+| Gischt | spray | `Sprinkler::spray`, `SPRINKLER_SPRAY` | Level 6: the wider burst of drops at the top of a sprinkler's jet |
 | Wrack | wreck | `Wreck` | A helicopter the plane flew into: it falls, burning, and is no obstacle any more |
 | Ausleger | jib | `Crane`, `JIB_TOP` | The crane's long arm, on top of its mast |
 | Mast | mast | `Crane`, `MAST_WIDTH` | The crane's lattice tower, from the jib down to the ground; it counts as a hit |

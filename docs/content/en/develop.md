@@ -304,6 +304,18 @@ flowchart LR
   plane down (`GUST_PUSH`, weaker than climbing, `Event::LeafRustle`),
   no life lost; `Forest::fog` (0..1) tells the game how much to veil the
   screen.
+- **The football pitch** (`crates/core/src/pitch.rs`, level 6,
+  `PITCH_LEVEL`): a `Footballer` runs in every 1.8–3.4 s
+  (`FOOTBALLER_GAP_SECONDS`) with a ball and shoots it at the plane
+  (`Event::BallKick`): an arc that meets the plane after
+  `SHOT_WARN_SECONDS` (at least `SHOT_LEAST_SECONDS` if a mast or
+  sprinkler held the footballer back), about two in five shots missing
+  (`SHOT_MISS_SHARE`); the `Ball` bounces and is knocked away when hit; `Mast`s (floodlights)
+  are rare (`MAST_GAP_SECONDS`) and solid; a `Sprinkler`'s jet is up
+  for `SPRINKLER_ON_SECONDS`, then rests for `SPRINKLER_OFF_SECONDS`;
+  it costs no life but kicks the plane up once (`SPRINKLER_KICK`,
+  `Event::Splash` when the plane flies into it); masts and sprinklers
+  keep `PITCH_ROOM` between them.
 - **Gulls** (`crates/core/src/gulls.rs`) are the beach's obstacles. Core
   decides when and where they appear (seeded, like the weather), moves
   them and checks the crash; a gull that calls sends a `GullCall` event,

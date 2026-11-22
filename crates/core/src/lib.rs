@@ -17,6 +17,7 @@ mod gulls;
 mod huts;
 mod input;
 mod level;
+mod pitch;
 pub mod replay;
 mod rng;
 mod scenery;
@@ -64,14 +65,19 @@ pub use level::{
     has_next_level, level_view, start_level, LevelView, LEVEL_BANNER_SECONDS, LEVEL_COUNT,
     LEVEL_DISTANCE, LEVEL_FADE_SECONDS, LEVEL_SECONDS, RAINY_LEVELS,
 };
+pub use pitch::{
+    Ball, Footballer, Mast, Pitch, Sprinkler, BALL_RADIUS, FOOTBALLER_HEIGHT, MAST_GAP_SECONDS,
+    PITCH_GROUND, PITCH_LEVEL, PITCH_ROOM, SPRINKLER_KICK, SPRINKLER_OFF_SECONDS,
+    SPRINKLER_ON_SECONDS,
+};
 pub use scenery::{background_x, scroll_distance, SCROLL_SPEED};
 pub use shape::{any_overlap, Poly};
 pub use sound::{
-    Mix, BALLOON_BURNER_VOLUME, BALLOON_BURST_VOLUME, BEACH_LEVEL, BEACH_VOLUME, BUZZARD_VOLUME,
-    CRASH_VOLUME, DIVE_WIND, ENGINE_FAR_VOLUME, ENGINE_VOLUME, EXPLOSION_VOLUME, GEAR_VOLUME,
-    GOOSE_HONK_VOLUME, GULL_CALL_VOLUME, LEAVES_VOLUME, MIX_CHANGE_PER_SECOND, NEW_LEVEL_VOLUME,
-    RAIN_VOLUME, RUMBLE_VOLUME, STEAM_VOLUME, TAKEOFF_VOLUME, VOICE_VOLUME, WARNING_VOLUME,
-    WIND_VOLUME,
+    Mix, BALLOON_BURNER_VOLUME, BALLOON_BURST_VOLUME, BALL_KICK_VOLUME, BEACH_LEVEL, BEACH_VOLUME,
+    BUZZARD_VOLUME, CRASH_VOLUME, DIVE_WIND, ENGINE_FAR_VOLUME, ENGINE_VOLUME, EXPLOSION_VOLUME,
+    GEAR_VOLUME, GOOSE_HONK_VOLUME, GULL_CALL_VOLUME, LEAVES_VOLUME, MIX_CHANGE_PER_SECOND,
+    NEW_LEVEL_VOLUME, RAIN_VOLUME, RUMBLE_VOLUME, SPLASH_VOLUME, STEAM_VOLUME, TAKEOFF_VOLUME,
+    VOICE_VOLUME, WARNING_VOLUME, WIND_VOLUME,
 };
 pub use sunrise::{
     FarHighRise, FarHighRiseParts, Goose, HouseParts, Steam, Sunrise, GLARE_SECONDS, GOOSE_BODY,
@@ -250,6 +256,11 @@ pub enum Event {
     /// The plane flies into a gust of leaves: a rustling whoosh as it is
     /// pressed down (level 5).
     LeafRustle,
+    /// A football is kicked up from the pitch (level 6): a thump.
+    BallKick,
+    /// The plane flies into a sprinkler's jet (level 6): a splash as it
+    /// is thrown up.
+    Splash,
     /// The plane flies into a column of steam: a rushing hiss as it is
     /// thrown up (level 4).
     SteamHiss,
@@ -473,12 +484,17 @@ pub struct World {
     pub sunrise: Sunrise,
     /// The autumn forest (level 5): firs, buzzards, gusts and fog.
     pub forest: Forest,
+    /// The football pitch (level 6): balls, floodlight masts, sprinklers.
+    pub pitch: Pitch,
     /// Was the plane in a gust last tick? (The leaves rustle on the way
     /// in.)
     in_gust: bool,
     /// Was the plane in a column of steam last tick? (It hisses on the
     /// way in.)
     in_steam: bool,
+    /// Was the plane in a sprinkler's water last tick? (It splashes on
+    /// the way in.)
+    in_jet: bool,
     pub weather: Weather,
     /// Volumes of the looping sounds, eased toward what fits the world now.
     pub mix: Mix,
@@ -541,8 +557,10 @@ impl World {
             city: City::new(seed),
             sunrise: Sunrise::new(seed),
             forest: Forest::new(seed),
+            pitch: Pitch::new(seed),
             in_gust: false,
             in_steam: false,
+            in_jet: false,
             weather: Weather::new(seed),
             mix: Mix::SILENT,
             ticks: 0,
@@ -1169,6 +1187,11 @@ impl World {
         let woods = levels.level == FOREST_LEVEL && !runway_in && !clearing;
         let plane = self.player.pos;
         (self.forest).tick(self.bounds, woods, plane, &mut self.events);
+        let field = levels.level == PITCH_LEVEL && !runway_in && !clearing;
+        self.pitch.set_speed(speed);
+        // (No shots at a plane that cannot be hit just now.)
+        let aim = (!self.player.is_safe() && !self.player.is_crashed()).then_some(plane);
+        self.pitch.tick(self.bounds, field, aim, &mut self.events);
         let town = levels.level == CITY_LEVEL && !runway_in && !clearing;
         self.city.set_speed(speed);
         self.city.tick(self.bounds, town, plane_y);
@@ -1200,6 +1223,7 @@ impl World {
             self.city.shift(-extra);
             self.sunrise.shift(-extra);
             self.forest.shift(-extra);
+            self.pitch.shift(-extra);
         }
 
         // Crash: the plane as drawn newly overlaps another plane, a
@@ -1252,10 +1276,35 @@ impl World {
         } else {
             Vec::new()
         };
+        // The pitch: masts are solid, balls (also one at a footballer's
+        // feet) are knocked away.
+        let mast = (self.pitch.masts.iter()).any(|m| hits(&m.shape(bounds)));
+        let balls: Vec<usize> = if open {
+            (self.pitch.balls.iter().enumerate())
+                .filter(|(_, b)| !b.struck && hits(&[b.shape(scale)]))
+                .map(|(i, _)| i)
+                .collect()
+        } else {
+            Vec::new()
+        };
+        let dribbled: Vec<usize> = if open {
+            (self.pitch.footballers.iter().enumerate())
+                .filter(|(_, f)| {
+                    f.ball(bounds)
+                        .is_some_and(|at| hits(&[Ball::shape_at(at, scale)]))
+                })
+                .map(|(i, _)| i)
+                .collect()
+        } else {
+            Vec::new()
+        };
         // Gusts cost no life: they press the plane down.
         let in_gust = open && self.forest.in_gust(bounds, &me);
         // Steam costs no life: the warm air throws the plane up.
         let in_steam = open && self.sunrise.in_steam(bounds, &me);
+        // Sprinklers too: the jet kicks the plane up (not a crashed one:
+        // it falls whatever happens).
+        let in_jet = open && !self.player.is_crashed() && self.pitch.in_jet(bounds, &me);
         // Helicopters too (parked on a roof or flying): one the plane
         // flies into crashes and burns.
         let (roof_helis, flyers): (Vec<usize>, Vec<usize>) = if open {
@@ -1281,6 +1330,9 @@ impl World {
             || house
             || fir
             || !buzzards.is_empty()
+            || mast
+            || !balls.is_empty()
+            || !dribbled.is_empty()
             || !roof_helis.is_empty()
             || !flyers.is_empty()
             || (self.balloons.pads.iter()).any(|p| hits(&p.shape(bounds)))
@@ -1325,8 +1377,19 @@ impl World {
             }
         }
         self.in_steam = in_steam;
+        if in_jet && !self.in_jet {
+            self.player.vel_y -= SPRINKLER_KICK * scale;
+            self.events.push(Event::Splash);
+        }
+        self.in_jet = in_jet;
         for &i in &buzzards {
             self.forest.buzzards[i].knock_down(scale);
+        }
+        for &i in &balls {
+            self.pitch.balls[i].knock_away(scale);
+        }
+        for &i in &dribbled {
+            self.pitch.knock_from_feet(i, bounds);
         }
         if in_gust {
             self.player.vel_y += GUST_PUSH * scale * TICK_SECONDS;
@@ -1419,6 +1482,7 @@ impl World {
         self.city.clear();
         self.sunrise.clear();
         self.forest.clear();
+        self.pitch.clear();
         self.tyre_smoke.clear();
         // A fresh start in every level: all lives back (and so no smoke).
         self.lives = self.lives.max(LIVES);
@@ -1426,6 +1490,7 @@ impl World {
         self.player.vel_y = 0.0;
         self.player.pitch = 0.0;
         self.player.safe_ticks = 0;
+        (self.in_gust, self.in_steam, self.in_jet) = (false, false, false);
         self.airport = Some(Airport::at_start(self.bounds));
         self.takeoff = Some(0);
         self.player.pos.y = self.runway_y();
@@ -2960,10 +3025,10 @@ mod tests {
         w
     }
 
-    /// Hold the plane level at `y` in the forest for `seconds`; the lives
-    /// lost and the events. (A fresh `Forest` sends nothing new in its
-    /// first seconds, so what a test put there is all there is.)
-    fn hold_in_forest(w: &mut World, y: f32, seconds: f32) -> (u32, Vec<Event>) {
+    /// Hold the plane level at `y` for `seconds`; the lives lost and the
+    /// events. (A fresh `Forest` or `Pitch` sends nothing new in its first
+    /// seconds, so what a test put there is all there is.)
+    fn hold_at(w: &mut World, y: f32, seconds: f32) -> (u32, Vec<Event>) {
         let lives = w.lives;
         let mut events = Vec::new();
         for _ in 0..(seconds / TICK_SECONDS) as u32 {
@@ -2973,6 +3038,205 @@ mod tests {
             events.extend_from_slice(w.events());
         }
         (lives - w.lives, events)
+    }
+
+    fn on_the_pitch() -> World {
+        let mut w = World::with_seed(PHONE, 6);
+        w.start_level = PITCH_LEVEL;
+        let mut w = w.with_takeoff();
+        while w.hands_off() {
+            w.tick(&Input::NONE);
+        }
+        w.pitch = Pitch::new(99);
+        w
+    }
+
+    #[test]
+    fn the_pitch_is_only_in_level_6() {
+        let mut w = World::with_seed(PHONE, 6);
+        w.lives = u32::MAX;
+        // Through every level, the pitch and back into level 1.
+        let all = LEVEL_COUNT as f32 + 1.0;
+        for _ in 0..(all * 1.6 * LEVEL_SECONDS / TICK_SECONDS) as u32 {
+            w.go_on();
+            w.tick(&Input::NONE);
+            if w.levels().level != PITCH_LEVEL {
+                let p = &w.pitch;
+                assert!(p.balls.is_empty() && p.masts.is_empty() && p.sprinklers.is_empty());
+            }
+        }
+        let mut w = on_the_pitch();
+        let mut seen = (false, false, false);
+        for _ in 0..(20.0 / TICK_SECONDS) as u32 {
+            w.lives = LIVES;
+            w.tick(&Input::NONE);
+            seen.0 |= !w.pitch.balls.is_empty();
+            seen.1 |= !w.pitch.masts.is_empty();
+            seen.2 |= !w.pitch.sprinklers.is_empty();
+        }
+        assert_eq!(seen, (true, true, true), "balls, masts and sprinklers");
+    }
+
+    #[test]
+    fn flying_into_a_floodlight_mast_costs_a_life() {
+        let mut w = on_the_pitch();
+        let mast = Mast {
+            x: w.player.pos.x + 100.0,
+            top: 0.4,
+        };
+        w.pitch.masts.push(mast);
+        let (_, t, _, h) = mast.lamps(PHONE);
+        let (lost, _) = hold_at(&mut w, t + h / 2.0, 2.0);
+        assert_eq!(lost, 1, "the mast is solid");
+    }
+
+    #[test]
+    fn a_sprinklers_jet_throws_the_plane_up_but_costs_no_life() {
+        let up = Sprinkler {
+            x: 0.0,
+            top: 0.45,
+            phase: (0.3 / TICK_SECONDS) as u32,
+        };
+        // On: the plane flies into the jet and is thrown up, with one
+        // splash on the way in.
+        let mut w = on_the_pitch();
+        let y = 0.75 * PHONE.height;
+        (w.player.pos.y, w.player.vel_y) = (y, 0.0);
+        w.pitch.sprinklers.push(Sprinkler {
+            x: w.player.pos.x + 40.0,
+            ..up
+        });
+        let lives = w.lives;
+        let mut splashes = 0;
+        for _ in 0..(0.8 / TICK_SECONDS) as u32 {
+            clear_pitch_but_sprinklers(&mut w);
+            w.tick(&Input::NONE);
+            splashes += (w.events().iter()).filter(|e| **e == Event::Splash).count();
+        }
+        assert_eq!(w.lives, lives, "no life lost");
+        assert!(
+            w.player.pos.y < y - 40.0,
+            "thrown up: {} from {y}",
+            w.player.pos.y
+        );
+        assert_eq!(splashes, 1, "one splash on the way in");
+        // As hard at full throttle as at cruise (more time in the water
+        // does not throw it higher): one kick on the way in.
+        let thrown = |throttle: f32, top: f32| {
+            let mut w = on_the_pitch();
+            (w.player.pos.y, w.player.vel_y) = (y, 0.0);
+            w.player.airspeed = throttle;
+            let sp = Sprinkler {
+                x: w.player.pos.x + 40.0,
+                top,
+                ..up
+            };
+            w.pitch.sprinklers.push(sp);
+            for _ in 0..(0.8 / TICK_SECONDS) as u32 {
+                clear_pitch_but_sprinklers(&mut w);
+                w.player.airspeed = throttle;
+                w.tick(&Input::NONE);
+            }
+            y - w.player.pos.y
+        };
+        let slow = thrown(1.0, 0.45);
+        let fast = thrown(AIRSPEED_RANGE.1, 0.45);
+        assert!((slow - fast).abs() < 15.0, "slow {slow}, fast {fast}");
+        // A crashed plane falls through the water: no kick, no splash.
+        let mut w = on_the_pitch();
+        (w.player.pos.y, w.player.vel_y) = (y, 0.0);
+        w.player.crash_ticks = CRASH_TICKS;
+        w.pitch.sprinklers.push(Sprinkler {
+            x: w.player.pos.x + 40.0,
+            ..up
+        });
+        let mut splashed = false;
+        for _ in 0..(0.5 / TICK_SECONDS) as u32 {
+            clear_pitch_but_sprinklers(&mut w);
+            w.tick(&Input::NONE);
+            splashed |= w.events().contains(&Event::Splash);
+        }
+        assert!(!splashed, "a crashed plane does not splash");
+        assert!(w.player.pos.y > y, "it falls");
+        // Resting all the way past the plane: no push, no splash.
+        let mut w = on_the_pitch();
+        (w.player.pos.y, w.player.vel_y) = (y, 0.0);
+        let resting = (SPRINKLER_ON_SECONDS / TICK_SECONDS) as u32 + 1;
+        w.pitch.sprinklers.push(Sprinkler {
+            x: w.player.pos.x + 40.0,
+            phase: resting,
+            ..up
+        });
+        let mut splashed = false;
+        for _ in 0..(1.2 / TICK_SECONDS) as u32 {
+            clear_pitch_but_sprinklers(&mut w);
+            w.tick(&Input::NONE);
+            splashed |= w.events().contains(&Event::Splash);
+        }
+        assert!(!splashed, "fly through while it rests");
+        assert!((w.player.pos.y - y).abs() < 3.0, "{}", w.player.pos.y);
+    }
+
+    /// Only the sprinklers a test put there: no balls, footballers or
+    /// masts in the way.
+    fn clear_pitch_but_sprinklers(w: &mut World) {
+        w.pitch.balls.clear();
+        w.pitch.footballers.clear();
+        w.pitch.masts.clear();
+    }
+
+    #[test]
+    fn a_ball_the_plane_flies_into_costs_a_life_and_is_knocked_away() {
+        let mut w = on_the_pitch();
+        let mut crashed = false;
+        let mut kicked = false;
+        for _ in 0..(40.0 / TICK_SECONDS) as u32 {
+            w.pitch.masts.clear();
+            w.pitch.sprinklers.clear();
+            w.lives = LIVES;
+            // Follow the nearest ball ahead down to its height.
+            if let Some(b) = (w.pitch.balls.iter())
+                .filter(|b| !b.struck && b.pos.x > w.player.pos.x)
+                .min_by(|a, b| a.pos.x.total_cmp(&b.pos.x))
+            {
+                w.player.pos.y = b.pos.y;
+            }
+            w.player.vel_y = 0.0;
+            w.tick(&Input::NONE);
+            kicked |= w.events().contains(&Event::BallKick);
+            if w.events().contains(&Event::Crash) {
+                crashed = true;
+                assert!(w.pitch.balls.iter().any(|b| b.struck));
+                break;
+            }
+        }
+        assert!(kicked, "a ball was kicked");
+        assert!(crashed, "a plane waiting in its path is hit");
+    }
+
+    #[test]
+    fn a_ball_at_a_footballers_feet_costs_a_life_too() {
+        // (They shoot long before they get there; one who could not,
+        // say a mast was in the way, runs past with the ball.)
+        let mut w = on_the_pitch();
+        for _ in 0..(10.0 / TICK_SECONDS) as u32 {
+            if !w.pitch.footballers.is_empty() {
+                break;
+            }
+            w.tick(&Input::NONE);
+        }
+        let f = &mut w.pitch.footballers[0];
+        let at = f.ball(w.bounds).unwrap();
+        f.x += w.player.pos.x - at.x;
+        w.player.pos.y = at.y - 2.0;
+        w.player.vel_y = 0.0;
+        w.tick(&Input::NONE);
+        assert!(w.events().contains(&Event::Crash));
+        assert!(
+            w.pitch.balls.iter().any(|b| b.struck),
+            "knocked off the feet"
+        );
+        assert!(w.pitch.footballers[0].ball(w.bounds).is_none());
     }
 
     #[test]
@@ -3012,7 +3276,7 @@ mod tests {
         w.forest = Forest::new(99);
         w.forest.firs.push(fir);
         let (_, top, _, _) = fir.parts(PHONE).trunk;
-        let (lost, _) = hold_in_forest(&mut w, top - 20.0, 2.0);
+        let (lost, _) = hold_at(&mut w, top - 20.0, 2.0);
         assert_eq!(lost, 1, "the fir is solid");
     }
 
@@ -3390,7 +3654,9 @@ mod tests {
                         | Event::GooseHonk { .. }
                         | Event::SteamHiss
                         | Event::BuzzardCry
-                        | Event::LeafRustle => {}
+                        | Event::LeafRustle
+                        | Event::BallKick
+                        | Event::Splash => {}
                         Event::GameOver => panic!("lives cannot run out"),
                         Event::Explosion => panic!("lives cannot run out"),
                         Event::Overspeed | Event::PullUp => panic!("no throttle given"),

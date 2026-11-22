@@ -300,6 +300,8 @@ mod tests {
                 | Event::SteamHiss
                 | Event::BuzzardCry
                 | Event::LeafRustle
+                | Event::BallKick
+                | Event::Splash
                 | Event::GameOver
                 | Event::Explosion
                 | Event::Takeoff

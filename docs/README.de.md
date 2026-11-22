@@ -1249,6 +1249,55 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
   die nicht liefen, statt «All checks passed», und `scripts/stage.sh e2e`
   bricht bei Node älter als 22 früh ab.
 
+## 2026-11-22
+
+- Level 6, ein Fussballplatz, nach unserem eigenen Foto eines gemähten
+  Rasens (von oben; das Bild zeigt ihn von der Seite, mit den
+  Mähstreifen, einer kleinen Tribüne und Bäumen dahinter). Aus
+  Vorschlägen gewählt: Fussbälle im Bogen, Flutlichtmasten und
+  Rasensprenger, Sommerwetter (kein Regen), einen Schritt schwerer als
+  Level 5.
+  - Fussbälle sind das erste Hindernis auf einer Parabel, geschossen von
+    Fussballern, die mit dem Ball heranrennen (`FOOTBALLER_RUN`), damit
+    man jeden Schuss kommen sieht. Bei einem Testflug liessen zufällig
+    hochgeschossene Bälle den oberen Rand als sichere Spur frei; der
+    Benutzer wünschte sich Fussballer, die das Flugzeug abschiessen
+    wollen. Jeder Schuss zielt dorthin, wo das Flugzeug gleich ist, und
+    rechnet mit dem Tempo: Der Fussballer schiesst, sobald der Ball
+    `SHOT_WARN_SECONDS` bis dorthin brauchen würde, oder die Zeit, um zu
+    einem hohen Flugzeug aufzusteigen, damit der Bogen bei einem hohen
+    Flugzeug seinen höchsten Punkt hat und auf ein tiefes herabfällt, und
+    die Vorwarnung hängt nicht vom Tempo oder der Form des Bildschirms
+    ab. Etwa zwei von fünf Schüssen gehen 35–80 px daneben
+    (`SHOT_MISS_SHARE`; zuerst einer von zwei, nach einem Testflug etwas
+    schwerer gemacht, mit Fussballern alle 1,8–3,4 s statt 2–4 s), weg vom Rasen und vom Bildschirmrand. Kein
+    Schuss auf ein Flugzeug, das nicht getroffen werden kann (es blinkt);
+    ein Fussballer, der ohne Schuss zu nahe kommt (ein Mast oder
+    Rasensprenger im Weg, `SHOT_LEAST_SECONDS`), rennt mit dem Ball
+    weiter, und der zählt wie ein geschossener. Nach einem Schuss rennt
+    der Fussballer ebenfalls weiter, damit nie zwei ineinanderlaufen.
+    Die Fussballer sind kein Hindernis; die Bälle springen zweimal auf
+    (`BALL_BOUNCES`) und rollen davon.
+  - Flutlichtmasten sind selten (alle 8–13 s), damit sie für einen Platz
+    glaubwürdig bleiben; Masten und Rasensprenger sind nicht im Bild.
+  - Der Strahl eines Rasensprengers kostet kein Leben: Wer hineinfliegt,
+    solange er oben ist, wird einmal nach oben gestossen
+    (`SPRINKLER_KICK`, etwa ein Viertel des Bildschirms auf dem Handy).
+    Einmal beim Hineinfliegen, nicht so lange wie im Wasser wie beim
+    Dampf in Level 4: Der Strahl ist schmal und seine Gischt breiter,
+    so ist der Stoss gleich, wo und wie schnell das Flugzeug ihn
+    berührt. Ein abgestürztes Flugzeug fällt hindurch. Zuerst war er fest; er
+    wurde geändert, damit das Wasser stösst statt abstürzen lässt. Er
+    ruht in jedem Takt `SPRINKLER_OFF_SECONDS` lang, und jeder beginnt
+    an einer zufälligen Stelle seines Takts, damit zwei nicht im
+    gleichen Takt spritzen.
+  - Neue Sounds `ball-kick.wav` und `splash.wav`; die Level-Karte hat
+    einen sechsten Halt, und das goldene NEW ist zu ihm gewandert.
+  - Ein Test auf vielen Bildschirmen vor dem Merge fand den Back-Knopf
+    der Level-Karte unter dem QR-Code bei üblichen Laptop-Fenstern
+    (1366x768, 1536x864, 1280x800; schon mit fünf Levels so). Der
+    QR-Code wartet dort jetzt im Hauptmenü, wie auf dem Handy.
+
 ## Konzepte
 
 ### Kippen: vom Sensor zur Steuerung
