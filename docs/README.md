@@ -1127,6 +1127,24 @@ that isn't code here. Keep entries short and dated.
   of the steps that did not run instead of "All checks passed", and
   `scripts/stage.sh e2e` stops early on Node older than 22.
 
+## 2026-11-22
+
+- Level 6, a football pitch, from our own photo of a mown lawn (seen
+  from above; the picture shows it from the side, with the mowing
+  stripes, a small grandstand and trees behind). Picked from proposals:
+  footballs kicked up in an arc, floodlight masts and sprinklers, summer
+  weather (no rain), a step harder than level 5.
+  - Footballs are the first obstacle on a parabola: kicked up from the
+    grass well ahead of the plane (`BALL_KICK_AT`), so each arc is seen
+    from its start; they bounce twice (`BALL_BOUNCES`) and roll off.
+  - Floodlight masts are rare (every 8–13 s), so they stay plausible for
+    one pitch; the masts and the sprinklers are not in the picture.
+  - A sprinkler's jet is solid only while it is up; it always rests
+    `SPRINKLER_OFF_SECONDS` per cycle, and each one starts at a random
+    point of its cycle, so two are not in step.
+  - New sounds `ball-kick.wav` and `splash.wav`; the level map got a
+    sixth stop and the golden NEW moved to it.
+
 ## Concepts
 
 ### Tilt: from sensor to steering

@@ -319,6 +319,15 @@ flowchart LR
   schwächer als Steigen, `Event::LeafRustle`), ohne Leben zu verlieren;
   `Forest::fog` (0..1) sagt dem Spiel, wie stark es den Bildschirm
   verschleiert.
+- **Der Fussballplatz** (`crates/core/src/pitch.rs`, Level 6,
+  `PITCH_LEVEL`): Alle 2–4 s wird ein `Ball` vor dem Flugzeug aus dem
+  Rasen hochgeschossen (`BALL_GAP_SECONDS`, `Event::BallKick`), fliegt
+  eine Parabel bis zu seinem höchsten Punkt und springt auf, weggeschossen,
+  wenn getroffen; `Mast`s (Flutlicht) sind selten (`MAST_GAP_SECONDS`)
+  und fest; der Strahl eines `Sprinkler`s ist `SPRINKLER_ON_SECONDS`
+  lang fest und ruht dann `SPRINKLER_OFF_SECONDS` lang (`Event::Splash`,
+  wenn das Flugzeug hineinfliegt); Masten und Rasensprenger halten
+  `PITCH_ROOM` Abstand.
 - **Möwen** (`crates/core/src/gulls.rs`) sind die Hindernisse am Strand.
   core entscheidet, wann und wo sie auftauchen (mit Startwert, wie das
   Wetter), bewegt sie und prüft den Zusammenstoss; eine Möwe, die ruft,

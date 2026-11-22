@@ -117,6 +117,7 @@
     #start .node[data-level="3"] { background-image: url(levels/level3.png); }
     #start .node[data-level="4"] { background-image: url(levels/level4.png); }
     #start .node[data-level="5"] { background-image: url(levels/level5.png); }
+    #start .node[data-level="6"] { background-image: url(levels/level6.png); }
     #start .node .lock { display: none; font-size: 34px; }
     #start .node.locked { filter: grayscale(1) brightness(0.55); cursor: default; }
     #start .node.locked .lock { display: block; }
@@ -457,9 +458,14 @@
         </div>
         <div class="path" aria-hidden="true"></div>
         <div class="stop">
-          <button type="button" class="node" data-level="5" data-name="Forest" aria-label="Level 5: Forest (new)"><span class="lock">&#128274;</span><span class="done" aria-hidden="true">&#10003;</span></button>
+          <button type="button" class="node" data-level="5" data-name="Forest" aria-label="Level 5: Forest"><span class="lock">&#128274;</span><span class="done" aria-hidden="true">&#10003;</span></button>
           <span class="name">5 Forest</span>
-          <span class="new" data-new-level="5">NEW</span>
+        </div>
+        <div class="path" aria-hidden="true"></div>
+        <div class="stop">
+          <button type="button" class="node" data-level="6" data-name="Pitch" aria-label="Level 6: Pitch (new)"><span class="lock">&#128274;</span><span class="done" aria-hidden="true">&#10003;</span></button>
+          <span class="name">6 Pitch</span>
+          <span class="new" data-new-level="6">NEW</span>
         </div>
       </div>
       <p class="map-note" id="map-note" aria-live="polite"></p>
@@ -470,7 +476,7 @@
       <div class="guide">
         <section>
           <h3>The goal</h3>
-          <p>Fly each level as fast as you can: every level is the same distance, and more throttle gets you there sooner. The clock at the top counts your time in this level, from 0:00 in every level; the bar under it shows how far it is to the landing. Dodge what is in your way: hot-air balloons, launch pads and huts on the coast; gulls and lifeguard towers at the beach; in the town at night, fly over the high-rises and the cranes, and dodge the helicopters that fly at you at your height; at sunrise, fly over or under the geese that come in a V, fly over the high-rises and the houses, and mind the steam from their chimneys (it throws you up) and the low sun that blinds you now and then; in the autumn forest, fly over the tall firs, watch out for the buzzard that circles and then dives at you, and fight the gusts of leaves that press you down and the fog. You have <strong>3 lives</strong>; each crash costs one.</p>
+          <p>Fly each level as fast as you can: every level is the same distance, and more throttle gets you there sooner. The clock at the top counts your time in this level, from 0:00 in every level; the bar under it shows how far it is to the landing. Dodge what is in your way: hot-air balloons, launch pads and huts on the coast; gulls and lifeguard towers at the beach; in the town at night, fly over the high-rises and the cranes, and dodge the helicopters that fly at you at your height; at sunrise, fly over or under the geese that come in a V, fly over the high-rises and the houses, and mind the steam from their chimneys (it throws you up) and the low sun that blinds you now and then; in the autumn forest, fly over the tall firs, watch out for the buzzard that circles and then dives at you, and fight the gusts of leaves that press you down and the fog; on the football pitch, dodge the balls kicked up in an arc, fly over the floodlight masts, and fly through a sprinkler only while it rests. You have <strong>3 lives</strong>; each crash costs one.</p>
           <p>At the end of a level the autopilot <strong>lands</strong> on a runway: level complete! That unlocks the next level (after the last one, more are coming). Each level keeps your <strong>5 fastest times</strong>, with milliseconds; only a completed level gets a time.</p>
         </section>
         <section>

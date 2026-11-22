@@ -327,6 +327,42 @@ def leaf_rustle(seed, seconds):
     return out
 
 
+def ball_kick(seed, seconds):
+    """A football kicked up from the pitch (level 6): a dull, round thump
+    of a boot on leather, with a short slap of the ball on top."""
+    rng = random.Random(seed)
+    n = int(seconds * RATE)
+    slap = lowpass(highpass(noise(rng, n), 900.0), 4000.0)
+    out = []
+    phase = 0.0
+    for i in range(n):
+        t = i / RATE
+        hz = 140.0 * math.exp(-t / 0.05) + 70.0
+        phase += 2 * math.pi * hz / RATE
+        body = math.sin(phase) * math.exp(-t / 0.07)
+        out.append(body + 0.5 * slap[i] * math.exp(-t / 0.012))
+    return out
+
+
+def splash(seed, seconds):
+    """Flying into a sprinkler's jet (level 6): a wet splash that hisses
+    out, with drops pattering after it."""
+    rng = random.Random(seed)
+    n = int(seconds * RATE)
+    src = noise(rng, n)
+    hiss = lowpass(highpass(src, 1200.0), 6000.0)
+    out = []
+    drop = 0.0
+    for i in range(n):
+        t = i / RATE
+        env = min(1.0, t / 0.01) * math.exp(-t / 0.18)
+        if rng.random() < 0.002 * (1.0 - t / seconds):
+            drop = rng.uniform(0.3, 0.8)
+        drop *= 0.97
+        out.append(env * hiss[i] + drop * math.sin(2 * math.pi * 1800.0 * t) * 0.3)
+    return out
+
+
 def steam_hiss(seed, seconds):
     """Flying into a column of steam (level 4): a soft rushing hiss that
     swells and fades, with a low buffet under it."""
@@ -558,6 +594,8 @@ if __name__ == "__main__":
     write("buzzard.wav", buzzard_cry(16, 1.05), 0.7)
     write("leaves.wav", leaf_rustle(17, 1.1), 0.7)
     write("steam.wav", steam_hiss(13, 1.0), 0.7)
+    write("ball-kick.wav", ball_kick(18, 0.35), 0.8)
+    write("splash.wav", splash(19, 0.9), 0.7)
     write("explosion.wav", explosion(9, 2.5), 0.95)
     write("runway-rumble.wav", runway_rumble(10, 2.0), 0.85)
     write("takeoff.wav", takeoff_spool(11, 6.0, 6.8), 0.9)  # ROLL_SECONDS + 0.8

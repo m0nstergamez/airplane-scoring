@@ -1249,6 +1249,27 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
   die nicht liefen, statt «All checks passed», und `scripts/stage.sh e2e`
   bricht bei Node älter als 22 früh ab.
 
+## 2026-11-22
+
+- Level 6, ein Fussballplatz, nach unserem eigenen Foto eines gemähten
+  Rasens (von oben; das Bild zeigt ihn von der Seite, mit den
+  Mähstreifen, einer kleinen Tribüne und Bäumen dahinter). Aus
+  Vorschlägen gewählt: Fussbälle im Bogen, Flutlichtmasten und
+  Rasensprenger, Sommerwetter (kein Regen), einen Schritt schwerer als
+  Level 5.
+  - Fussbälle sind das erste Hindernis auf einer Parabel: Sie werden
+    weit vor dem Flugzeug aus dem Rasen geschossen (`BALL_KICK_AT`),
+    damit man jeden Bogen von Anfang an sieht; sie springen zweimal auf
+    (`BALL_BOUNCES`) und rollen davon.
+  - Flutlichtmasten sind selten (alle 8–13 s), damit sie für einen Platz
+    glaubwürdig bleiben; Masten und Rasensprenger sind nicht im Bild.
+  - Der Strahl eines Rasensprengers ist nur fest, solange er oben ist;
+    er ruht in jedem Takt `SPRINKLER_OFF_SECONDS` lang, und jeder beginnt
+    an einer zufälligen Stelle seines Takts, damit zwei nicht im
+    gleichen Takt spritzen.
+  - Neue Sounds `ball-kick.wav` und `splash.wav`; die Level-Karte hat
+    einen sechsten Halt, und das goldene NEW ist zu ihm gewandert.
+
 ## Konzepte
 
 ### Kippen: vom Sensor zur Steuerung

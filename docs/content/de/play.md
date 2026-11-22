@@ -143,7 +143,7 @@ desto später und leiser der Donner.
 
 Berührst du einen Heissluftballon, eine Startrampe oder eine Hütte
 (Level 1), eine Möwe oder einen Strandturm (Level 2) oder ein Hochhaus,
-einen Kran oder einen Helikopter (Level 3) eine Gans, ein Haus oder ein Hochhaus (Level 4) oder eine Tanne oder einen Bussard (Level 5), gibt es einen
+einen Kran oder einen Helikopter (Level 3) eine Gans, ein Haus oder ein Hochhaus (Level 4) eine Tanne oder einen Bussard (Level 5) oder einen Fussball, einen Flutlichtmast oder den Strahl eines Rasensprengers (Level 6), gibt es einen
 **Zusammenstoss**.
 Nur eine echte Berührung zählt: Ganz knapp vorbeifliegen oder durch die
 Lücke neben einem Dach ist erlaubt. Beim Zusammenstoss
@@ -221,7 +221,7 @@ anderen.
 Jedes **Level** hat seine eigene Landschaft: zuerst die Küste (Level 1),
 dann einen Strand bei Sonnenuntergang (Level 2), dann eine Stadt bei
 Nacht (Level 3), dann einen Sonnenaufgang (Level 4), dann einen
-Herbstwald (Level 5). Nach seiner Strecke (bei Reisetempo etwa eine Minute)
+Herbstwald (Level 5), dann einen Fussballplatz (Level 6). Nach seiner Strecke (bei Reisetempo etwa eine Minute)
 endet ein Level mit einer **Landung**: Es kommen keine neuen
 Hindernisse mehr, eine Landebahn erscheint, und der Autopilot übernimmt.
 Solange er fliegt, schweigen die Tempo-Warnungen, und das Tempo geht von
@@ -233,7 +233,7 @@ gibt eine Wolke **Reifenrauch**. Es bremst und steht: «Level
 zwei Knöpfen. **Next level**
 (oder Enter) startet das nächste Level: Seine Landschaft erscheint, es
 zählt 3, 2, 1, und du startest von seiner Startbahn. **Menu** führt ins
-Hauptmenü. Das letzte Level (zurzeit Level 5) hat kein **Next level**:
+Hauptmenü. Das letzte Level (zurzeit Level 6) hat kein **Next level**:
 Dort steht an seiner Stelle «No more levels yet, new ones are coming!»,
 neben **Menu** (auch mit Enter).
 
@@ -339,13 +339,28 @@ Hügel und die orangen Baumkronen im Tal:
 - Ab und zu zieht eine **Nebelbank** vorbei, und du siehst ein paar
   Sekunden lang weniger.
 
+Auf dem **Fussballplatz** (Level 6) fliegst du an einem Sommertag über
+einen gemähten Rasen, an einer kleinen Tribüne vorbei:
+
+- **Fussbälle** werden vor dir aus dem Rasen hochgeschossen und fliegen
+  im Bogen: hinauf, dann wieder hinunter, wo sie aufspringen und
+  davonrollen. Du siehst jeden vom Boden abheben, also achte auf seinen
+  Bogen und flieg darüber, darunter oder hinter ihm durch. Trifft dich
+  einer, verlierst du ein Leben, und er fliegt davon.
+- **Flutlichtmasten** stehen hier und dort, eine dünne Stange mit einer
+  Reihe Lampen oben. Flieg über sie; Lampen und Stange zählen.
+- **Rasensprenger** im Rasen spritzen einen Wasserstrahl hoch, ruhen und
+  spritzen wieder. Der Strahl zählt, solange er oben ist: Flieg durch,
+  während er ruht, oder darüber. Zwei Rasensprenger spritzen nicht im
+  gleichen Takt.
+
 ## Bestenliste
 
 Ist das Spiel mit einem Server für die Bestenliste verbunden, hat das
 Hauptmenü einen fünften Knopf, **Leaderboard**. Er zeigt die
 schnellsten Pilotinnen und Piloten eines Levels aufs Mal: eine Zeile pro
 Person, mit ihrer schnellsten Zeit. Die Knöpfe über der Liste
-(**1 Coast** bis **5 Forest**) wechseln das Level; sie öffnet sich beim
+(**1 Coast** bis **6 Pitch**) wechseln das Level; sie öffnet sich beim
 Level, das du zuletzt begonnen oder abgeschlossen hast. Deine eigene Zeile ist golden.
 Unter der Liste kannst du **Your name** ändern (1 bis 16 Buchstaben,
 Ziffern, Leerzeichen, `-` oder `_`).
@@ -377,7 +392,7 @@ Flug.
 | Wind | Immer. Lauter bei Regen, in Böen und wenn du sinkst. |
 | Regen | Solange es regnet (erst in späteren Levels). Je stärker der Regen, desto lauter. |
 | Donner | Einen Moment nach jedem Blitz (erst in späteren Levels). |
-| Zusammenstoss | Wenn du einen Ballon, eine Startrampe, eine Hütte, eine Möwe, einen Strandturm, ein Hochhaus, einen Kran, eine Gans, ein Haus, eine Tanne oder einen Bussard berührst. |
+| Zusammenstoss | Wenn du einen Ballon, eine Startrampe, eine Hütte, eine Möwe, einen Strandturm, ein Hochhaus, einen Kran, eine Gans, ein Haus, eine Tanne, einen Bussard, einen Fussball, einen Flutlichtmast oder den Strahl eines Rasensprengers berührst. |
 | Brenner | Wenn ein Heissluftballon auftaucht oder abhebt (Level 1). |
 | Wellen | Am Strand (Level 2). Sie werden mit der Landschaft ein- und ausgeblendet. |
 | Möwe | Wenn eine Möwe auftaucht. Möwen von hinten rufen immer. |
@@ -385,6 +400,8 @@ Flug.
 | Dampf | Wenn du in Dampf fliegst (Level 4): ein rauschendes Zischen. |
 | Bussard | Wenn ein Bussard herabstösst (Level 5): ein hoher, fallender Schrei. |
 | Laub | Wenn du in eine Böe fliegst (Level 5): raschelndes Laub. |
+| Schuss | Wenn ein Fussball hochgeschossen wird (Level 6): ein dumpfer Schlag. |
+| Platschen | Wenn du in den Strahl eines Rasensprengers fliegst (Level 6): ein nasses Platschen. |
 | Melodie | Wenn du gelandet bist und ein Level geschafft ist. |
 | Start | Beim Rollen auf der Startbahn: Das Triebwerk dreht hoch, die Räder rumpeln, bis das Flugzeug abhebt. |
 | Fahrwerk | Kurz nach dem Abheben: Surren, während die Räder einfahren, dann ein «Klonk». |

@@ -39,6 +39,11 @@ pub const STEAM_VOLUME: f32 = 0.45;
 pub const BUZZARD_VOLUME: f32 = 0.35;
 /// Volume of the leaves when the plane flies into a gust (level 5).
 pub const LEAVES_VOLUME: f32 = 0.45;
+/// Volume of the thump when a football is kicked up (level 6).
+pub const BALL_KICK_VOLUME: f32 = 0.4;
+/// Volume of the splash when the plane flies into a sprinkler's jet
+/// (level 6).
+pub const SPLASH_VOLUME: f32 = 0.6;
 /// Loudest the runway rumble gets (just before lift-off).
 pub const RUMBLE_VOLUME: f32 = 0.8;
 /// Volume of the landing gear folding up.
