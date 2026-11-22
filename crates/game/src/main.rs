@@ -1615,7 +1615,8 @@ fn draw_snow(winter: f32, storm: f32, bounds: Bounds, ticks: u64) {
         draw_rectangle(0.0, 0.0, w, h, Color::new(0.93, 0.95, 0.98, 0.6 * storm));
     }
     let seconds = ticks as f32 * TICK_SECONDS;
-    let count = ((0.25 * winter + 2.0 * storm) * w * h / 1500.0) as u32;
+    // (at most so many, so a big window does not stutter in a storm)
+    let count = (((0.25 * winter + 2.0 * storm) * w * h / 1500.0) as u32).min(1500);
     let drive = 40.0 + 620.0 * storm;
     for i in 0..count {
         // Two fixed pseudo-random numbers in 0..1 per flake.

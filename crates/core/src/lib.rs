@@ -3152,9 +3152,10 @@ mod tests {
             ride: Ride::Jumped,
         };
         w.winter.jumps.push(jump);
-        let (lip, _) = jump.inrun(PHONE);
-        let (lost, _) = hold_at(&mut w, lip.y + 30.0, 1.5);
-        assert_eq!(lost, 1, "the hill is solid");
+        // Level with the take-off table, a little under its top.
+        let edge = jump.take_off(PHONE);
+        let (lost, _) = hold_at(&mut w, edge.y + 30.0, 1.5);
+        assert_eq!(lost, 1, "the take-off table is solid");
         let mut w = in_the_winter();
         w.winter.firs.push(Fir {
             x: w.player.pos.x + 80.0,
@@ -3162,6 +3163,33 @@ mod tests {
         });
         let (lost, _) = hold_at(&mut w, 0.85 * PHONE.height, 1.5);
         assert_eq!(lost, 1, "the fir is solid");
+    }
+
+    #[test]
+    fn climbing_beats_a_full_snowstorm() {
+        let mut w = in_the_winter();
+        let storm_only = |w: &mut World| {
+            w.winter.firs.clear();
+            w.winter.jumps.clear();
+            w.winter.jumpers.clear();
+        };
+        while w.winter.storm() < 1.0 {
+            storm_only(&mut w);
+            w.tick(&Input::NONE);
+        }
+        let y = 0.7 * PHONE.height;
+        (w.player.pos.y, w.player.vel_y) = (y, 0.0);
+        let climb = Input::new(-1.0);
+        for _ in 0..(1.0 / TICK_SECONDS) as u32 {
+            storm_only(&mut w);
+            w.tick(&climb);
+        }
+        assert!(w.winter.storm() > 0.9, "still in the storm");
+        assert!(
+            w.player.pos.y < y - 60.0,
+            "climbs: {} from {y}",
+            w.player.pos.y
+        );
     }
 
     #[test]

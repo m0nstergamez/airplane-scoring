@@ -1312,7 +1312,7 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
     Anlauf durchfliegen kann. Nach einem Testflug wünschte sich der
     Nutzer einen grösseren Absprung: einen langen Tisch (`SKI_TABLE`)
     auf einem festen Block. Ihr Springer startet, wenn der
-    Schanzentisch `SKI_START_AHEAD` (330–560 px) vor dem Flugzeug ist,
+    Schanzentisch `SKI_START_AHEAD` (280–390 px) vor dem Flugzeug ist,
     und man sieht ihn zuerst den Anlauf hinunterrasen
     (`SKI_INRUN_SECONDS`). Zuerst flog er einen festen Bogen, so war das
     Flugzeug am oberen Rand sicher; jetzt springt jeder auf die Höhe des

@@ -1182,7 +1182,7 @@ that isn't code here. Keep entries short and dated.
     it is drawn, so the plane can fly under the inrun. After a test
     flight the user asked for a bigger take-off: a long table
     (`SKI_TABLE`) on a solid block. Its jumper sets off when the
-    take-off is `SKI_START_AHEAD` (330–560 px) ahead of the plane, and
+    take-off is `SKI_START_AHEAD` (280–390 px) ahead of the plane, and
     you see them race down the inrun first (`SKI_INRUN_SECONDS`). At
     first they flew a fixed arc, so holding the plane at the top edge
     was safe; now each jumps at the plane's height as they take off,
