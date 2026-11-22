@@ -26,7 +26,7 @@ short **meaning**.
 | Finger | finger | `pointer` | Steering by touching the screen |
 | Taste | key | `steer_from_keys` | Keyboard key (↑/W, ↓/S) |
 | Spielerin / Spieler (kurz: Spieler:in) | player | — | Person playing. In running text «Spielerin oder Spieler», in short labels «Spieler:in» |
-| Hindernis | obstacle | `Balloons`, `Pad`, `Huts`, `Gulls`, `Towers`, `City`, `Sunrise`, `Forest`, `Pitch` | Something you must not fly into; touching it is a crash. So far: hot-air balloons, launch pads and huts in level 1, gulls and lifeguard towers in level 2, high-rises, cranes and helicopters in level 3, geese, houses and high-rises in level 4, firs and buzzards in level 5, footballs and floodlight masts in level 6 |
+| Hindernis | obstacle | `Balloons`, `Pad`, `Huts`, `Gulls`, `Towers`, `City`, `Sunrise`, `Forest`, `Pitch` | Something you must not fly into; touching it is a crash. So far: hot-air balloons, launch pads and huts in level 1, gulls and lifeguard towers in level 2, high-rises, cranes and helicopters in level 3, geese, houses and high-rises in level 4, firs and buzzards in level 5, footballs and floodlight masts in level 6, snowy firs, ski jumps and ski jumpers in level 7 |
 | Leben | life, lives | `World.lives`, `LIVES` | Crashes you can afford; shown as small planes at the top right |
 | Rauchfahne | smoke trail | `World::smoke`, `DAMAGE_SMOKE` | Smoke behind a damaged plane; thicker with every life lost |
 | Fluggeschwindigkeit | airspeed | `Player::airspeed`, `Input::throttle` | How fast you fly yourself: gas (→/D, tip forward) and brake (←/A, tip back) |
@@ -117,6 +117,13 @@ short **meaning**.
 | Rasensprenger | sprinkler | `Sprinkler`, `SPRINKLER_KICK` | Level 6: throws a jet of water up, then rests; flying into the jet while it is up kicks the plane up once, costs no life |
 | Wasserstrahl | jet (of water) | `Sprinkler::jet` | Level 6: what a sprinkler throws up |
 | Gischt | spray | `Sprinkler::spray`, `SPRINKLER_SPRAY` | Level 6: the wider burst of drops at the top of a sprinkler's jet |
+| Berge im Winter | mountains in winter | `Winter`, `WINTER_LEVEL` | Level 7: snow-capped peaks, a snowy forest and snow fields, snow falling |
+| Verschneite Tanne | snowy fir | `Winter::firs`, `SNOW_FIR_TOP` | Level 7: a fir deep in snow; an obstacle, like the forest's firs |
+| Sprungschanze, Schanze | ski jump | `SkiJump`, `SKI_JUMP_GAP_SECONDS` | Level 7: a steel tower with the inrun and the take-off table; all of it is an obstacle, under the inrun is free |
+| Anlauf | inrun | `SkiJump::inrun`, `SKI_INRUN_SECONDS` | Level 7: the track down from the tower, where the jumper picks up speed |
+| Schanzentisch | take-off (table) | `SkiJump::table`, `SkiJump::take_off`, `SKI_TABLE` | Level 7: the long table at the foot of the inrun, on a solid block; the jumper leaves it at its edge |
+| Skispringer | ski jumper | `Jumper`, `Event::SkiJump`, `SKI_SPREAD` | Level 7: jumps at the height the plane flies at; an obstacle, knocked down when hit |
+| Schneesturm | snowstorm | `Winter::storm`, `STORM_PUSH`, `Event::Blizzard` | Level 7: for a few seconds presses the plane down and veils the screen; costs no life |
 | Wrack | wreck | `Wreck` | A helicopter the plane flew into: it falls, burning, and is no obstacle any more |
 | Ausleger | jib | `Crane`, `JIB_TOP` | The crane's long arm, on top of its mast |
 | Mast | mast | `Crane`, `MAST_WIDTH` | The crane's lattice tower, from the jib down to the ground; it counts as a hit |

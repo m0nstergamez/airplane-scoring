@@ -8,9 +8,10 @@
 //! own unlock misses iPhones; see docs/README.md).
 
 use airplane_scoring_core::{
-    Event, Mix, BALLOON_BURNER_VOLUME, BALLOON_BURST_VOLUME, BALL_KICK_VOLUME, BUZZARD_VOLUME,
-    CRASH_VOLUME, EXPLOSION_VOLUME, GEAR_VOLUME, GOOSE_CALLS, GOOSE_HONK_VOLUME, GULL_CALL_VOLUME,
-    LEAVES_VOLUME, NEW_LEVEL_VOLUME, SPLASH_VOLUME, STEAM_VOLUME, TAKEOFF_VOLUME, VOICE_VOLUME,
+    Event, Mix, BALLOON_BURNER_VOLUME, BALLOON_BURST_VOLUME, BALL_KICK_VOLUME, BLIZZARD_VOLUME,
+    BUZZARD_VOLUME, CRASH_VOLUME, EXPLOSION_VOLUME, GEAR_VOLUME, GOOSE_CALLS, GOOSE_HONK_VOLUME,
+    GULL_CALL_VOLUME, LEAVES_VOLUME, NEW_LEVEL_VOLUME, SKI_JUMP_VOLUME, SPLASH_VOLUME,
+    STEAM_VOLUME, TAKEOFF_VOLUME, VOICE_VOLUME,
 };
 use macroquad::audio::{load_sound, play_sound, set_sound_volume, PlaySoundParams, Sound};
 use macroquad::experimental::coroutines::{start_coroutine, Coroutine};
@@ -33,6 +34,8 @@ struct Sounds {
     leaves: Sound,
     ball_kick: Sound,
     splash: Sound,
+    ski_jump: Sound,
+    blizzard: Sound,
     burner: Sound,
     explosion: Sound,
     overspeed_alarm: Sound,
@@ -80,6 +83,8 @@ impl Sounds {
             leaves: file("leaves").await?,
             ball_kick: file("ball-kick").await?,
             splash: file("splash").await?,
+            ski_jump: file("ski-jump").await?,
+            blizzard: file("blizzard").await?,
             burner: file("balloon-burner").await?,
             explosion: file("explosion").await?,
             overspeed_alarm: file("warning-overspeed").await?,
@@ -164,6 +169,8 @@ impl Audio {
             set_sound_volume(&s.leaves, 0.0);
             set_sound_volume(&s.ball_kick, 0.0);
             set_sound_volume(&s.splash, 0.0);
+            set_sound_volume(&s.ski_jump, 0.0);
+            set_sound_volume(&s.blizzard, 0.0);
             set_sound_volume(&s.burner, 0.0);
             set_sound_volume(&s.explosion, 0.0);
             set_sound_volume(&s.takeoff, 0.0);
@@ -199,6 +206,8 @@ impl Audio {
             Event::LeafRustle => (&s.leaves, LEAVES_VOLUME),
             Event::BallKick => (&s.ball_kick, BALL_KICK_VOLUME),
             Event::Splash => (&s.splash, SPLASH_VOLUME),
+            Event::SkiJump => (&s.ski_jump, SKI_JUMP_VOLUME),
+            Event::Blizzard => (&s.blizzard, BLIZZARD_VOLUME),
             Event::BalloonBurner => (&s.burner, BALLOON_BURNER_VOLUME),
             Event::BalloonBurst | Event::HeliCrash => (&s.explosion, BALLOON_BURST_VOLUME),
             Event::Lightning { .. } => return, // seen, not heard

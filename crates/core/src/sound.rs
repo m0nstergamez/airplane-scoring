@@ -44,6 +44,10 @@ pub const BALL_KICK_VOLUME: f32 = 0.4;
 /// Volume of the splash when the plane flies into a sprinkler's jet
 /// (level 6).
 pub const SPLASH_VOLUME: f32 = 0.6;
+/// Volume of the skis' hiss when a jumper leaves the take-off (level 7).
+pub const SKI_JUMP_VOLUME: f32 = 0.4;
+/// Volume of the howl when a snowstorm comes up (level 7).
+pub const BLIZZARD_VOLUME: f32 = 0.55;
 /// Loudest the runway rumble gets (just before lift-off).
 pub const RUMBLE_VOLUME: f32 = 0.8;
 /// Volume of the landing gear folding up.

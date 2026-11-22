@@ -143,7 +143,7 @@ desto später und leiser der Donner.
 
 Berührst du einen Heissluftballon, eine Startrampe oder eine Hütte
 (Level 1), eine Möwe oder einen Strandturm (Level 2) oder ein Hochhaus,
-einen Kran oder einen Helikopter (Level 3), eine Gans, ein Haus oder ein Hochhaus (Level 4), eine Tanne oder einen Bussard (Level 5) oder einen Fussball oder einen Flutlichtmast (Level 6), gibt es einen
+einen Kran oder einen Helikopter (Level 3), eine Gans, ein Haus oder ein Hochhaus (Level 4), eine Tanne oder einen Bussard (Level 5) oder einen Fussball oder einen Flutlichtmast (Level 6) oder eine verschneite Tanne, eine Sprungschanze oder einen Skispringer (Level 7), gibt es einen
 **Zusammenstoss**.
 Nur eine echte Berührung zählt: Ganz knapp vorbeifliegen oder durch die
 Lücke neben einem Dach ist erlaubt. Beim Zusammenstoss
@@ -221,7 +221,7 @@ anderen.
 Jedes **Level** hat seine eigene Landschaft: zuerst die Küste (Level 1),
 dann einen Strand bei Sonnenuntergang (Level 2), dann eine Stadt bei
 Nacht (Level 3), dann einen Sonnenaufgang (Level 4), dann einen
-Herbstwald (Level 5), dann einen Fussballplatz (Level 6). Nach seiner Strecke (bei Reisetempo etwa eine Minute)
+Herbstwald (Level 5), dann einen Fussballplatz (Level 6), dann die Berge im Winter (Level 7). Nach seiner Strecke (bei Reisetempo etwa eine Minute)
 endet ein Level mit einer **Landung**: Es kommen keine neuen
 Hindernisse mehr, eine Landebahn erscheint, und der Autopilot übernimmt.
 Solange er fliegt, schweigen die Tempo-Warnungen, und das Tempo geht von
@@ -233,7 +233,7 @@ gibt eine Wolke **Reifenrauch**. Es bremst und steht: «Level
 zwei Knöpfen. **Next level**
 (oder Enter) startet das nächste Level: Seine Landschaft erscheint, es
 zählt 3, 2, 1, und du startest von seiner Startbahn. **Menu** führt ins
-Hauptmenü. Das letzte Level (zurzeit Level 6) hat kein **Next level**:
+Hauptmenü. Das letzte Level (zurzeit Level 7) hat kein **Next level**:
 Dort steht an seiner Stelle «No more levels yet, new ones are coming!»,
 neben **Menu** (auch mit Enter).
 
@@ -358,13 +358,33 @@ einen gemähten Rasen, an einer kleinen Tribüne vorbei:
   nach oben, vielleicht in einen Ball: Flieg durch, während er ruht,
   oder darüber. Zwei Rasensprenger spritzen nicht im gleichen Takt.
 
+In den **Bergen im Winter** (Level 7) fliegst du an verschneiten Gipfeln
+vorbei, über einen verschneiten Wald und Schneefelder, während es
+schneit:
+
+- **Verschneite Tannen** stehen hoch, allein oder zu zweit oder dritt,
+  wie die Tannen im Herbstwald. Flieg über sie.
+- Ab und zu kommt eine **Sprungschanze**: ein Stahlturm mit dem Anlauf
+  hinunter zu einem langen Schanzentisch auf einem festen Block. Turm,
+  Anlauf und Tisch zählen; unter dem Anlauf ist frei. Kommst du näher,
+  startet oben ein **Skispringer**: Du siehst ihn den Anlauf und über
+  den Tisch rasen, dann springt er **auf die Höhe, auf der du fliegst**:
+  Er steigt zu dir hinauf, wenn du hoch fliegst, und fällt auf dich
+  herab, wenn du tief fliegst. Sicher ist es nirgends, auch nicht am
+  oberen Rand: Steig oder sink, sobald er abgesprungen ist. Trifft dich
+  einer, verlierst du ein Leben, und er stürzt ab.
+- Ab und zu kommt für ein paar Sekunden ein **Schneesturm**: Der Wind
+  drückt dein Flugzeug kräftig nach unten, und dichtes Schneetreiben
+  verdeckt, was kommt. Er kostet kein Leben, kann dich aber auf eine
+  Tanne drücken. Steig gegen ihn an.
+
 ## Bestenliste
 
 Ist das Spiel mit einem Server für die Bestenliste verbunden, hat das
 Hauptmenü einen fünften Knopf, **Leaderboard**. Er zeigt die
 schnellsten Pilotinnen und Piloten eines Levels aufs Mal: eine Zeile pro
 Person, mit ihrer schnellsten Zeit. Die Knöpfe über der Liste
-(**1 Coast** bis **6 Pitch**) wechseln das Level; sie öffnet sich beim
+(**1 Coast** bis **7 Winter**) wechseln das Level; sie öffnet sich beim
 Level, das du zuletzt begonnen oder abgeschlossen hast. Deine eigene Zeile ist golden.
 Unter der Liste kannst du **Your name** ändern (1 bis 16 Buchstaben,
 Ziffern, Leerzeichen, `-` oder `_`).
@@ -396,7 +416,7 @@ Flug.
 | Wind | Immer. Lauter bei Regen, in Böen und wenn du sinkst. |
 | Regen | Solange es regnet (erst in späteren Levels). Je stärker der Regen, desto lauter. |
 | Donner | Einen Moment nach jedem Blitz (erst in späteren Levels). |
-| Zusammenstoss | Wenn du einen Ballon, eine Startrampe, eine Hütte, eine Möwe, einen Strandturm, ein Hochhaus, einen Kran, eine Gans, ein Haus, eine Tanne, einen Bussard, einen Fussball oder einen Flutlichtmast berührst. |
+| Zusammenstoss | Wenn du einen Ballon, eine Startrampe, eine Hütte, eine Möwe, einen Strandturm, ein Hochhaus, einen Kran, eine Gans, ein Haus, eine Tanne, einen Bussard, einen Fussball, einen Flutlichtmast, eine verschneite Tanne, eine Sprungschanze oder einen Skispringer berührst. |
 | Brenner | Wenn ein Heissluftballon auftaucht oder abhebt (Level 1). |
 | Wellen | Am Strand (Level 2). Sie werden mit der Landschaft ein- und ausgeblendet. |
 | Möwe | Wenn eine Möwe auftaucht. Möwen von hinten rufen immer. |
@@ -406,6 +426,8 @@ Flug.
 | Laub | Wenn du in eine Böe fliegst (Level 5): raschelndes Laub. |
 | Schuss | Wenn ein Fussball hochgeschossen wird (Level 6): ein dumpfer Schlag. |
 | Platschen | Wenn du in den Strahl eines Rasensprengers fliegst (Level 6): ein nasses Platschen, während er dich nach oben stösst. |
+| Skisprung | Wenn ein Skispringer abspringt (Level 7): Ski zischen auf dem Anlauf, dann rauscht die Luft. |
+| Schneesturm | Wenn ein Schneesturm aufkommt (Level 7): heulender Wind, solange er dauert. |
 | Melodie | Wenn du gelandet bist und ein Level geschafft ist. |
 | Start | Beim Rollen auf der Startbahn: Das Triebwerk dreht hoch, die Räder rumpeln, bis das Flugzeug abhebt. |
 | Fahrwerk | Kurz nach dem Abheben: Surren, während die Räder einfahren, dann ein «Klonk». |
