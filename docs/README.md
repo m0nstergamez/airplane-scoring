@@ -1155,10 +1155,12 @@ that isn't code here. Keep entries short and dated.
     off.
   - Floodlight masts are rare (every 8–13 s), so they stay plausible for
     one pitch; the masts and the sprinklers are not in the picture.
-  - A sprinkler's jet costs no life: while it is up, it throws the
-    plane up (`SPRINKLER_LIFT`, about a quarter of the screen on a
-    phone), like the steam in level 4 but harder, since the jet is
-    narrow. At first it was solid; it was changed so the water pushes
+  - A sprinkler's jet costs no life: flying into it while it is up
+    kicks the plane up once (`SPRINKLER_KICK`, about a quarter of the
+    screen on a phone). Once on the way in, not for as long as it is in
+    the water like the steam in level 4: the jet is narrow and its
+    spray wider, so the kick is the same wherever and however fast the
+    plane touches it. A crashed plane falls through. At first it was solid; it was changed so the water pushes
     instead of crashing. It always rests `SPRINKLER_OFF_SECONDS` per
     cycle, and each one starts at a random point of its cycle, so two
     are not in step.

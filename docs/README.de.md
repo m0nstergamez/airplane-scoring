@@ -1280,10 +1280,13 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
     (`BALL_BOUNCES`) und rollen davon.
   - Flutlichtmasten sind selten (alle 8–13 s), damit sie für einen Platz
     glaubwürdig bleiben; Masten und Rasensprenger sind nicht im Bild.
-  - Der Strahl eines Rasensprengers kostet kein Leben: Solange er oben
-    ist, stösst er das Flugzeug nach oben (`SPRINKLER_LIFT`, etwa ein
-    Viertel des Bildschirms auf dem Handy), wie der Dampf in Level 4,
-    aber stärker, weil der Strahl schmal ist. Zuerst war er fest; er
+  - Der Strahl eines Rasensprengers kostet kein Leben: Wer hineinfliegt,
+    solange er oben ist, wird einmal nach oben gestossen
+    (`SPRINKLER_KICK`, etwa ein Viertel des Bildschirms auf dem Handy).
+    Einmal beim Hineinfliegen, nicht so lange wie im Wasser wie beim
+    Dampf in Level 4: Der Strahl ist schmal und seine Gischt breiter,
+    so ist der Stoss gleich, wo und wie schnell das Flugzeug ihn
+    berührt. Ein abgestürztes Flugzeug fällt hindurch. Zuerst war er fest; er
     wurde geändert, damit das Wasser stösst statt abstürzen lässt. Er
     ruht in jedem Takt `SPRINKLER_OFF_SECONDS` lang, und jeder beginnt
     an einer zufälligen Stelle seines Takts, damit zwei nicht im

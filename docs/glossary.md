@@ -114,8 +114,9 @@ short **meaning**.
 | Fussballer | footballer | `Footballer` | Level 6: runs in with a ball and shoots it at the plane; harmless itself |
 | Schuss | shot | `SHOT_WARN_SECONDS`, `SHOT_MISS_SHARE` | Level 6: a footballer's kick at the plane, an arc that meets it where it will be; about two in five miss |
 | Flutlichtmast | floodlight mast | `Mast` | Level 6: a thin pole with lamps on top, rare; an obstacle, fly over it |
-| Rasensprenger | sprinkler | `Sprinkler`, `SPRINKLER_LIFT` | Level 6: throws a jet of water up, then rests; while it is up, the jet throws the plane up, costs no life |
+| Rasensprenger | sprinkler | `Sprinkler`, `SPRINKLER_KICK` | Level 6: throws a jet of water up, then rests; flying into the jet while it is up kicks the plane up once, costs no life |
 | Wasserstrahl | jet (of water) | `Sprinkler::jet` | Level 6: what a sprinkler throws up |
+| Gischt | spray | `Sprinkler::spray`, `SPRINKLER_SPRAY` | Level 6: the wider burst of drops at the top of a sprinkler's jet |
 | Wrack | wreck | `Wreck` | A helicopter the plane flew into: it falls, burning, and is no obstacle any more |
 | Ausleger | jib | `Crane`, `JIB_TOP` | The crane's long arm, on top of its mast |
 | Mast | mast | `Crane`, `MAST_WIDTH` | The crane's lattice tower, from the jib down to the ground; it counts as a hit |

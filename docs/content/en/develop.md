@@ -313,7 +313,7 @@ flowchart LR
   (`SHOT_MISS_SHARE`); the `Ball` bounces and is knocked away when hit; `Mast`s (floodlights)
   are rare (`MAST_GAP_SECONDS`) and solid; a `Sprinkler`'s jet is up
   for `SPRINKLER_ON_SECONDS`, then rests for `SPRINKLER_OFF_SECONDS`;
-  it costs no life but throws the plane up (`SPRINKLER_LIFT`,
+  it costs no life but kicks the plane up once (`SPRINKLER_KICK`,
   `Event::Splash` when the plane flies into it); masts and sprinklers
   keep `PITCH_ROOM` between them.
 - **Gulls** (`crates/core/src/gulls.rs`) are the beach's obstacles. Core

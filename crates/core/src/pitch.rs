@@ -17,8 +17,8 @@
 //!   They are solid: fly over them.
 //! * **Sprinklers** sit in the grass and throw a jet of water up
 //!   ([`SPRINKLER_TOP`]) for [`SPRINKLER_ON_SECONDS`], then rest for
-//!   [`SPRINKLER_OFF_SECONDS`]. The jet costs no life: it throws the
-//!   plane up ([`SPRINKLER_LIFT`]), maybe into a ball. Fly through while
+//!   [`SPRINKLER_OFF_SECONDS`]. The jet costs no life: flying into it
+//!   kicks the plane up ([`SPRINKLER_KICK`]), maybe into a ball. Fly through while
 //!   it rests, or over it.
 //!
 //! Masts and sprinklers stand on the ground and keep [`PITCH_ROOM`]
@@ -107,10 +107,12 @@ pub const SPRINKLER_TOP: (f32, f32) = (0.45, 0.62);
 /// The jet's width, in px, and the spray at its top: width and height.
 pub const SPRINKLER_JET: f32 = 14.0;
 pub const SPRINKLER_SPRAY: (f32, f32) = (40.0, 16.0);
-/// How hard a jet throws the plane up while it is in the water, in px
-/// per second, each second (at scale 1). Much harder than the steam
-/// (level 4): the jet is narrow, so the plane is in it only briefly.
-pub const SPRINKLER_LIFT: f32 = 1400.0;
+/// How hard a jet kicks the plane up as it flies in: upward speed added
+/// once, in px per second (at scale 1). Once, not while it is in the
+/// water, so the kick is the same wherever the plane touches the jet or
+/// its wider spray, and at any speed: about 110 px up on a phone, as
+/// the climb eases it off ([`crate::CLIMB_RESPONSE`]).
+pub const SPRINKLER_KICK: f32 = 900.0;
 /// Below this much of its height, a jet is only a trickle: no water.
 const TRICKLE: f32 = 0.08;
 

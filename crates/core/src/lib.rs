@@ -67,7 +67,7 @@ pub use level::{
 };
 pub use pitch::{
     Ball, Footballer, Mast, Pitch, Sprinkler, BALL_RADIUS, FOOTBALLER_HEIGHT, MAST_GAP_SECONDS,
-    PITCH_GROUND, PITCH_LEVEL, PITCH_ROOM, SPRINKLER_LIFT, SPRINKLER_OFF_SECONDS,
+    PITCH_GROUND, PITCH_LEVEL, PITCH_ROOM, SPRINKLER_KICK, SPRINKLER_OFF_SECONDS,
     SPRINKLER_ON_SECONDS,
 };
 pub use scenery::{background_x, scroll_distance, SCROLL_SPEED};
@@ -1302,8 +1302,9 @@ impl World {
         let in_gust = open && self.forest.in_gust(bounds, &me);
         // Steam costs no life: the warm air throws the plane up.
         let in_steam = open && self.sunrise.in_steam(bounds, &me);
-        // Sprinklers too: the jet throws the plane up.
-        let in_jet = open && self.pitch.in_jet(bounds, &me);
+        // Sprinklers too: the jet kicks the plane up (not a crashed one:
+        // it falls whatever happens).
+        let in_jet = open && !self.player.is_crashed() && self.pitch.in_jet(bounds, &me);
         // Helicopters too (parked on a roof or flying): one the plane
         // flies into crashes and burns.
         let (roof_helis, flyers): (Vec<usize>, Vec<usize>) = if open {
@@ -1376,11 +1377,9 @@ impl World {
             }
         }
         self.in_steam = in_steam;
-        if in_jet {
-            self.player.vel_y -= SPRINKLER_LIFT * scale * TICK_SECONDS;
-            if !self.in_jet {
-                self.events.push(Event::Splash);
-            }
+        if in_jet && !self.in_jet {
+            self.player.vel_y -= SPRINKLER_KICK * scale;
+            self.events.push(Event::Splash);
         }
         self.in_jet = in_jet;
         for &i in &buzzards {
@@ -1491,6 +1490,7 @@ impl World {
         self.player.vel_y = 0.0;
         self.player.pitch = 0.0;
         self.player.safe_ticks = 0;
+        (self.in_gust, self.in_steam, self.in_jet) = (false, false, false);
         self.airport = Some(Airport::at_start(self.bounds));
         self.takeoff = Some(0);
         self.player.pos.y = self.runway_y();
@@ -3120,6 +3120,44 @@ mod tests {
             w.player.pos.y
         );
         assert_eq!(splashes, 1, "one splash on the way in");
+        // As hard at full throttle as at cruise (more time in the water
+        // does not throw it higher): one kick on the way in.
+        let thrown = |throttle: f32, top: f32| {
+            let mut w = on_the_pitch();
+            (w.player.pos.y, w.player.vel_y) = (y, 0.0);
+            w.player.airspeed = throttle;
+            let sp = Sprinkler {
+                x: w.player.pos.x + 40.0,
+                top,
+                ..up
+            };
+            w.pitch.sprinklers.push(sp);
+            for _ in 0..(0.8 / TICK_SECONDS) as u32 {
+                clear_pitch_but_sprinklers(&mut w);
+                w.player.airspeed = throttle;
+                w.tick(&Input::NONE);
+            }
+            y - w.player.pos.y
+        };
+        let slow = thrown(1.0, 0.45);
+        let fast = thrown(AIRSPEED_RANGE.1, 0.45);
+        assert!((slow - fast).abs() < 15.0, "slow {slow}, fast {fast}");
+        // A crashed plane falls through the water: no kick, no splash.
+        let mut w = on_the_pitch();
+        (w.player.pos.y, w.player.vel_y) = (y, 0.0);
+        w.player.crash_ticks = CRASH_TICKS;
+        w.pitch.sprinklers.push(Sprinkler {
+            x: w.player.pos.x + 40.0,
+            ..up
+        });
+        let mut splashed = false;
+        for _ in 0..(0.5 / TICK_SECONDS) as u32 {
+            clear_pitch_but_sprinklers(&mut w);
+            w.tick(&Input::NONE);
+            splashed |= w.events().contains(&Event::Splash);
+        }
+        assert!(!splashed, "a crashed plane does not splash");
+        assert!(w.player.pos.y > y, "it falls");
         // Resting all the way past the plane: no push, no splash.
         let mut w = on_the_pitch();
         (w.player.pos.y, w.player.vel_y) = (y, 0.0);

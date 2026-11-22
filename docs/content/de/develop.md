@@ -330,7 +330,7 @@ flowchart LR
   wenn getroffen; `Mast`s (Flutlicht) sind selten (`MAST_GAP_SECONDS`)
   und fest; der Strahl eines `Sprinkler`s ist `SPRINKLER_ON_SECONDS`
   lang oben und ruht dann `SPRINKLER_OFF_SECONDS` lang; er kostet kein
-  Leben, stösst das Flugzeug aber nach oben (`SPRINKLER_LIFT`,
+  Leben, stösst das Flugzeug aber einmal nach oben (`SPRINKLER_KICK`,
   `Event::Splash`, wenn das Flugzeug hineinfliegt); Masten und Rasensprenger halten
   `PITCH_ROOM` Abstand.
 - **Möwen** (`crates/core/src/gulls.rs`) sind die Hindernisse am Strand.
