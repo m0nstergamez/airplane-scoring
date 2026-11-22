@@ -1137,6 +1137,11 @@ that isn't code here. Keep entries short and dated.
   - Footballs are the first obstacle on a parabola: kicked up from the
     grass well ahead of the plane (`BALL_KICK_AT`), so each arc is seen
     from its start; they bounce twice (`BALL_BOUNCES`) and roll off.
+    Up to every second kick is aimed (`BALL_AIMED_SHARE`): it peaks at
+    the plane's height just as it reaches the plane, allowing for the
+    speed. Without it the top edge was a safe lane (found in a test
+    flight). Only while the kick is at least `BALL_AIM_AHEAD` ahead, so
+    a low plane gets ordinary kicks.
   - Floodlight masts are rare (every 8–13 s), so they stay plausible for
     one pitch; the masts and the sprinklers are not in the picture.
   - A sprinkler's jet is solid only while it is up; it always rests

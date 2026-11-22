@@ -323,7 +323,10 @@ day, past a small grandstand:
 - **Footballs** are kicked up from the grass ahead of you and fly an
   arc: up, then down again, where they bounce and roll off. You see each
   one leave the ground, so watch its arc and fly over, under or behind
-  it. If one hits you, you lose a life and it flies off.
+  it. If one hits you, you lose a life and it flies off. While you fly
+  high, some are aimed at you: kicked up to just where you will be, so
+  the top of the screen is no hiding place. Climb or dive a little as
+  soon as you see one rise.
 - **Floodlight masts** stand here and there, a thin pole with a bank of
   lamps on top. Fly over them; lamps and pole count.
 - **Sprinklers** in the grass throw a jet of water up, rest, and throw

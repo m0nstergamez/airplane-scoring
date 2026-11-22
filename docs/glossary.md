@@ -111,6 +111,7 @@ short **meaning**.
 | Nebel, Nebelbank | fog, bank of fog | `Forest::fog` | Level 5: now and then the screen is veiled for a few seconds |
 | Fussballplatz | football pitch | `Pitch`, `PITCH_LEVEL` | Level 6: a mown lawn with a small grandstand on a summer day |
 | Fussball | football | `Ball`, `Event::BallKick` | Level 6: kicked up from the grass, flies an arc and bounces; an obstacle, knocked away when hit |
+| gezielter Ball | aimed ball | `BALL_AIMED_SHARE` | Level 6: a kick that peaks at the plane's height just as it gets there, so the top edge is not safe |
 | Flutlichtmast | floodlight mast | `Mast` | Level 6: a thin pole with lamps on top, rare; an obstacle, fly over it |
 | Rasensprenger | sprinkler | `Sprinkler` | Level 6: throws a jet of water up, then rests; the jet is an obstacle while it is up |
 | Wasserstrahl | jet (of water) | `Sprinkler::jet` | Level 6: what a sprinkler throws up |

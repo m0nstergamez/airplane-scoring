@@ -1182,7 +1182,8 @@ impl World {
         let plane = self.player.pos;
         (self.forest).tick(self.bounds, woods, plane, &mut self.events);
         let field = levels.level == PITCH_LEVEL && !runway_in && !clearing;
-        self.pitch.tick(self.bounds, field, &mut self.events);
+        self.pitch.set_speed(speed);
+        self.pitch.tick(self.bounds, field, plane, &mut self.events);
         let town = levels.level == CITY_LEVEL && !runway_in && !clearing;
         self.city.set_speed(speed);
         self.city.tick(self.bounds, town, plane_y);

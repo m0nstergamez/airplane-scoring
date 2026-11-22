@@ -1261,6 +1261,12 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
     weit vor dem Flugzeug aus dem Rasen geschossen (`BALL_KICK_AT`),
     damit man jeden Bogen von Anfang an sieht; sie springen zweimal auf
     (`BALL_BOUNCES`) und rollen davon.
+    Bis zu jeder zweite Schuss ist gezielt (`BALL_AIMED_SHARE`): Er hat
+    seinen höchsten Punkt auf der Höhe des Flugzeugs, gerade wenn er es
+    erreicht, und rechnet mit dem Tempo. Ohne ihn war der obere Rand
+    eine sichere Spur (bei einem Testflug bemerkt). Nur solange der
+    Schuss mindestens `BALL_AIM_AHEAD` voraus ist, ein tiefes Flugzeug
+    bekommt also gewöhnliche Schüsse.
   - Flutlichtmasten sind selten (alle 8–13 s), damit sie für einen Platz
     glaubwürdig bleiben; Masten und Rasensprenger sind nicht im Bild.
   - Der Strahl eines Rasensprengers ist nur fest, solange er oben ist;
