@@ -1198,6 +1198,17 @@ that isn't code here. Keep entries short and dated.
     a phone (667 px) or a laptop window (1366 px): the dashes between
     the stops now give way first, then the pictures get smaller.
 
+## 2026-11-27
+- Fix: the tilt throttle was reversed on Android (pulling the phone
+  toward you sped up, tipping it forward braked). The page flips
+  gravity's z on iOS and recognised iOS by
+  `DeviceMotionEvent.requestPermission` being a function; Chrome has that
+  function too (seen in Chromium 153), so Android got the flip as well.
+  iOS is now recognised by the device: user agent iPhone/iPad/iPod, or
+  platform `MacIntel` with touch (iPadOS). The permission prompt still
+  asks wherever the function exists. Checked in headless Chromium with an
+  Android and an iPhone user agent; not on real phones.
+
 ## Concepts
 
 ### Tilt: from sensor to steering

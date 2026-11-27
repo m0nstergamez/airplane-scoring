@@ -716,7 +716,11 @@
     const tilt = { has: 0, gx: 0, gy: 0, gz: 0, epoch: 0 };
     // iOS reports gravity negated; only z's sign matters to core (tipping
     // forward must make it grow on every phone), so flip it there.
-    const isIOS = typeof DeviceMotionEvent !== "undefined" && typeof DeviceMotionEvent.requestPermission === "function";
+    // Detect the device, not DeviceMotionEvent.requestPermission: Chrome has
+    // that function too, and Android then got the flip and a reversed
+    // throttle. iPadOS calls itself a Mac, hence the touch check.
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+      (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
     addEventListener("devicemotion", (e) => {
       const g = e.accelerationIncludingGravity;
       if (g && g.x != null && g.y != null) {
