@@ -45,8 +45,9 @@ Prefer `cargo doc` output and the vendored crate source in
 ## The verification loop
 `scripts/check.sh` runs all of it in order (~10 s when incremental):
 1. `cargo test -p airplane-scoring-core` — fast, no engine. Must stay green.
-2. `node --test tests/web/*.test.mjs` — the page's leaderboard script
-   (`web/board.js`) against a fake server. Page logic that can live
+2. `node --test tests/web/*.test.mjs` — the page's scripts: the
+   leaderboard (`web/board.js`) against a fake server, and which devices
+   get tilt flipped (`web/tilt.js`). Page logic that can live
    outside the DOM goes into such a file, with tests.
 3. `cargo fmt --all --check`, `cargo clippy --workspace --all-targets -- -D warnings`
    (also for wasm, with and without `--features autopilot`)
@@ -95,9 +96,14 @@ Visual checks:
 - Tilt: emulate in a browser tool by dispatching
   `new DeviceMotionEvent('devicemotion', {accelerationIncludingGravity: {x, y, z}})`
   at ~60 Hz after tapping "Tap to fly"; stub `DeviceMotionEvent.requestPermission`
-  to test the iOS permission prompt. The page flips gravity's z for iOS,
-  which it recognises by the user agent (iPhone/iPad), not by that
-  function (Chrome has it too): use an iPhone user agent to test the flip.
+  to test the iOS permission prompt. The page flips gravity's z for iOS
+  (`isIOSDevice` in `web/tilt.js`, tested in `tests/web/tilt.test.mjs`),
+  which it recognises by the user agent (iPhone/iPad/iPod) or by
+  platform `MacIntel` with touch points (iPadOS), not by that function
+  (Chrome has it too): use an iPhone user agent to test the flip. Touch
+  emulation on a Mac keeps `MacIntel` and so counts as iOS even with an
+  Android user agent; to test Android, override the platform too (CDP
+  `Emulation.setUserAgentOverride` with `platform: "Linux armv8l"`).
   Steering maths is tested in `core/src/tilt.rs`.
 
 ## Git & PRs
@@ -214,6 +220,7 @@ Dockerfile, fly.toml  the server's image and its Fly.io app (the game stays on G
                       CI deploys it: .github/workflows/pages.yml)
 web/index.html        canvas page; loads mq_js_bundle.js + airplane-scoring.wasm
 web/board.js          the page's leaderboard logic (no DOM), tests in tests/web/ (Node)
+web/tilt.js           which devices get tilt's z flipped (iOS; no DOM), tests in tests/web/
 web/sounds/           generated .wav files (engine, wind, rain, thunder, crash, beach, new level, gull call, goose calls and a crow, steam hiss, buzzard cry, leaves, balloon burner, explosion, overspeed and pull-up warnings and voices, runway rumble, takeoff spool-up, gear-up, football kick, splash, ski jump, blizzard)
 web/levels/           rendered level backgrounds (PNG, from art/levels)
 web/qr.svg            QR code to the live game (scripts/make-qr.py)

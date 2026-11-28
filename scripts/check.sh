@@ -10,7 +10,7 @@ step() { printf '\n\033[1m==> %s\033[0m\n' "$*"; }
 step "1/7 core tests"
 cargo test -q -p airplane-scoring-core
 
-step "2/7 page script tests (web/board.js, Node)"
+step "2/7 page script tests (web/board.js, web/tilt.js, Node)"
 if command -v node >/dev/null; then
   node --test tests/web/*.test.mjs
 else

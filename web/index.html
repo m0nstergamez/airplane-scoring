@@ -710,17 +710,15 @@
       setInterval(fit, 500);
     })();
   </script>
+  <script src="tilt.js?v=__BUILD__"></script>
   <script>
     // Tilt plugin: keeps the latest gravity sample for the Rust side
     // (crates/game/src/tilt_js.rs). Steering maths lives in core (Tilt).
     const tilt = { has: 0, gx: 0, gy: 0, gz: 0, epoch: 0 };
     // iOS reports gravity negated; only z's sign matters to core (tipping
-    // forward must make it grow on every phone), so flip it there.
-    // Detect the device, not DeviceMotionEvent.requestPermission: Chrome has
-    // that function too, and Android then got the flip and a reversed
-    // throttle. iPadOS calls itself a Mac, hence the touch check.
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-      (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    // forward must make it grow on every phone), so flip it there. Which
+    // devices are iOS: web/tilt.js (tested in tests/web/tilt.test.mjs).
+    const isIOS = isIOSDevice(navigator.userAgent, navigator.platform, navigator.maxTouchPoints);
     addEventListener("devicemotion", (e) => {
       const g = e.accelerationIncludingGravity;
       if (g && g.x != null && g.y != null) {
