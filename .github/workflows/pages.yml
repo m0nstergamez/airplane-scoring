@@ -59,7 +59,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - name: Core tests
         run: cargo test -p airplane-scoring-core
-      - name: Page script tests (web/board.js)
+      - name: Page script tests (web/board.js, web/tilt.js)
         run: node --test tests/web/*.test.mjs
       - name: Leaderboard server tests
         run: cargo test -p airplane-scoring-server

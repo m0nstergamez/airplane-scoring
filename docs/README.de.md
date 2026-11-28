@@ -1332,6 +1332,19 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
     Jetzt geben zuerst die Striche zwischen den Halten nach, dann werden
     die Bilder kleiner.
 
+## 2026-11-27
+
+- Korrektur: Das Gasgeben durch Kippen war auf Android verkehrt (Handy
+  zu sich ziehen beschleunigte, nach vorn kippen bremste). Die Seite
+  dreht das z der Schwerkraft auf iOS um und erkannte iOS daran, dass
+  `DeviceMotionEvent.requestPermission` eine Funktion ist; Chrome hat
+  diese Funktion auch (gesehen in Chromium 153), also wurde auch auf
+  Android umgedreht. iOS wird jetzt am Gerät erkannt: User-Agent
+  iPhone/iPad/iPod oder Plattform `MacIntel` mit Touch (iPadOS). Die
+  Berechtigungsabfrage fragt weiterhin überall, wo es die Funktion gibt.
+  Geprüft im Headless-Chromium mit einem Android- und einem
+  iPhone-User-Agent; nicht auf echten Handys.
+
 ## Konzepte
 
 ### Kippen: vom Sensor zur Steuerung
