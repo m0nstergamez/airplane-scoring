@@ -1199,6 +1199,7 @@ that isn't code here. Keep entries short and dated.
     the stops now give way first, then the pictures get smaller.
 
 ## 2026-11-27
+
 - Fix: the tilt throttle was reversed on Android (pulling the phone
   toward you sped up, tipping it forward braked). The page flips
   gravity's z on iOS and recognised iOS by

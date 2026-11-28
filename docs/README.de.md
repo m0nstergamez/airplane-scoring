@@ -1333,6 +1333,7 @@ wissen sollte und nicht im Code steht. Halte die Einträge kurz und datiert.
     die Bilder kleiner.
 
 ## 2026-11-27
+
 - Korrektur: Das Gasgeben durch Kippen war auf Android verkehrt (Handy
   zu sich ziehen beschleunigte, nach vorn kippen bremste). Die Seite
   dreht das z der Schwerkraft auf iOS um und erkannte iOS daran, dass
